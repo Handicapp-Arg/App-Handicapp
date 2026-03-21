@@ -4,6 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 
+const testUsers = [
+  { email: 'admin@test.com', password: '123456', name: 'Admin', role: 'admin' },
+  { email: 'propietario@test.com', password: '123456', name: 'Juan Propietario', role: 'propietario' },
+  { email: 'establo@test.com', password: '123456', name: 'Establo Sur', role: 'establecimiento' },
+];
+
 export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -22,6 +28,12 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fillUser = (user: (typeof testUsers)[number]) => {
+    setEmail(user.email);
+    setPassword(user.password);
+    setError('');
   };
 
   return (
@@ -80,6 +92,21 @@ export default function LoginPage() {
           Registrate
         </Link>
       </p>
+
+      <div className="mt-6 border-t border-gray-200 pt-4">
+        <div className="grid grid-cols-3 gap-2">
+          {testUsers.map((u) => (
+            <button
+              key={u.email}
+              type="button"
+              onClick={() => fillUser(u)}
+              className="rounded-md border border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+            >
+              {u.role}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

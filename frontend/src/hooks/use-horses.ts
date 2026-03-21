@@ -40,3 +40,37 @@ export function useCreateHorse() {
     },
   });
 }
+
+export function useUpdateHorse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...dto
+    }: {
+      id: string;
+      name?: string;
+      birth_date?: string | null;
+    }) => {
+      const { data } = await api.patch(`/horses/${id}`, dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}
+
+export function useDeleteHorse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/horses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}

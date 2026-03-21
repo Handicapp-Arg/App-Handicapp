@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Horse } from './horse.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
+import { UpdateHorseDto } from './dto/update-horse.dto';
 import { User, UserRole } from '../auth/user.entity';
 
 @Injectable()
@@ -84,6 +85,31 @@ export class HorsesService {
     this.assertAccess(horse, user);
 
     return horse;
+  }
+
+  async update(id: string, dto: UpdateHorseDto, user: User): Promise<Horse> {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+
+    if (!horse) {
+      throw new NotFoundException('Caballo no encontrado');
+    }
+
+    this.assertAccess(horse, user);
+
+    Object.assign(horse, dto);
+    return this.horseRepository.save(horse);
+  }
+
+  async remove(id: string, user: User): Promise<void> {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+
+    if (!horse) {
+      throw new NotFoundException('Caballo no encontrado');
+    }
+
+    this.assertAccess(horse, user);
+
+    await this.horseRepository.remove(horse);
   }
 
   private assertAccess(horse: Horse, user: User): void {
