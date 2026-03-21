@@ -12,6 +12,8 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { PermissionGuard } from '../common/guards/permission.guard';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { HorsesService } from './horses.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
@@ -19,11 +21,12 @@ import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
 
 @Controller('horses')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), PermissionGuard)
 export class HorsesController {
   constructor(private readonly horsesService: HorsesService) {}
 
   @Post()
+  @RequirePermission('horses', 'create')
   create(
     @Body(ValidationPipe) dto: CreateHorseDto,
     @GetUser() user: User,
@@ -32,16 +35,19 @@ export class HorsesController {
   }
 
   @Get()
+  @RequirePermission('horses', 'read')
   findAll(@GetUser() user: User) {
     return this.horsesService.findAll(user);
   }
 
   @Get(':id')
+  @RequirePermission('horses', 'read')
   findOne(@Param('id') id: string, @GetUser() user: User) {
     return this.horsesService.findOne(id, user);
   }
 
   @Patch(':id')
+  @RequirePermission('horses', 'update')
   update(
     @Param('id') id: string,
     @Body(ValidationPipe) dto: UpdateHorseDto,
@@ -51,6 +57,7 @@ export class HorsesController {
   }
 
   @Delete(':id')
+  @RequirePermission('horses', 'delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @GetUser() user: User) {
     return this.horsesService.remove(id, user);
