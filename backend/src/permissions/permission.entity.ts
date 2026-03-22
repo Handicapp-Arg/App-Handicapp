@@ -2,18 +2,24 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  ManyToOne,
+  JoinColumn,
   Unique,
 } from 'typeorm';
-import { UserRole } from '../auth/user.entity';
+import { Role } from '../roles/role.entity';
 
 @Entity('permissions')
-@Unique(['role', 'resource', 'action'])
+@Unique(['role_id', 'resource', 'action'])
 export class Permission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: UserRole })
-  role: UserRole;
+  @ManyToOne(() => Role, { eager: true })
+  @JoinColumn({ name: 'role_id' })
+  role: Role;
+
+  @Column({ name: 'role_id' })
+  role_id: string;
 
   @Column()
   resource: string;

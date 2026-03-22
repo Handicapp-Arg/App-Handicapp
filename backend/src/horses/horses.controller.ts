@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   ValidationPipe,
+  ParseUUIDPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -42,14 +43,14 @@ export class HorsesController {
 
   @Get(':id')
   @RequirePermission('horses', 'read')
-  findOne(@Param('id') id: string, @GetUser() user: User) {
+  findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     return this.horsesService.findOne(id, user);
   }
 
   @Patch(':id')
   @RequirePermission('horses', 'update')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) dto: UpdateHorseDto,
     @GetUser() user: User,
   ) {
@@ -59,7 +60,7 @@ export class HorsesController {
   @Delete(':id')
   @RequirePermission('horses', 'delete')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @GetUser() user: User) {
+  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     return this.horsesService.remove(id, user);
   }
 }

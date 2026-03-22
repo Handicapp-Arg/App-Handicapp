@@ -34,12 +34,12 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async me(@GetUser() user: User) {
-    const perms = await this.permissionsService.findByRole(user.role);
+    const perms = await this.permissionsService.findByRoleName(user.role.name);
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: user.role.name,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
   }

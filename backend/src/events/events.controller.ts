@@ -6,6 +6,7 @@ import {
   Body,
   UseGuards,
   ValidationPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionGuard } from '../common/guards/permission.guard';
@@ -32,7 +33,7 @@ export class EventsController {
   @Get('horse/:horseId')
   @RequirePermission('events', 'read')
   findByHorse(
-    @Param('horseId') horseId: string,
+    @Param('horseId', ParseUUIDPipe) horseId: string,
     @GetUser() user: User,
   ) {
     return this.eventsService.findByHorse(horseId, user);
@@ -41,7 +42,7 @@ export class EventsController {
   @Get(':id')
   @RequirePermission('events', 'read')
   findOne(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
   ) {
     return this.eventsService.findOne(id, user);

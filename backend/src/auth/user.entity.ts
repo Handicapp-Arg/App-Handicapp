@@ -5,14 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Horse } from '../horses/horse.entity';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  PROPIETARIO = 'propietario',
-  ESTABLECIMIENTO = 'establecimiento',
-}
+import { Role } from '../roles/role.entity';
 
 @Entity('users')
 export class User {
@@ -28,8 +25,12 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ type: 'enum', enum: UserRole })
-  role: UserRole;
+  @ManyToOne(() => Role, { eager: true })
+  @JoinColumn({ name: 'role_id' })
+  role: Role;
+
+  @Column({ name: 'role_id' })
+  role_id: string;
 
   @OneToMany(() => Horse, (horse) => horse.owner)
   horses: Horse[];

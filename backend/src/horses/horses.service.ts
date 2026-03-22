@@ -9,7 +9,8 @@ import { Repository } from 'typeorm';
 import { Horse } from './horse.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
-import { User, UserRole } from '../auth/user.entity';
+import { User } from '../auth/user.entity';
+import { RoleName } from '../roles/role.entity';
 
 @Injectable()
 export class HorsesService {
@@ -22,10 +23,10 @@ export class HorsesService {
     let owner_id: string;
     let establishment_id: string | null = null;
 
-    if (user.role === UserRole.PROPIETARIO) {
+    if (user.role.name === RoleName.PROPIETARIO) {
       owner_id = user.id;
       establishment_id = dto.establishment_id ?? null;
-    } else if (user.role === UserRole.ESTABLECIMIENTO) {
+    } else if (user.role.name === RoleName.ESTABLECIMIENTO) {
       if (!dto.owner_id) {
         throw new BadRequestException(
           'El establecimiento debe indicar el owner_id del propietario',
@@ -53,13 +54,13 @@ export class HorsesService {
   }
 
   async findAll(user: User): Promise<Horse[]> {
-    if (user.role === UserRole.ADMIN) {
+    if (user.role.name === RoleName.ADMIN) {
       return this.horseRepository.find({
         relations: ['owner', 'establishment'],
       });
     }
 
-    if (user.role === UserRole.PROPIETARIO) {
+    if (user.role.name === RoleName.PROPIETARIO) {
       return this.horseRepository.find({
         where: { owner_id: user.id },
         relations: ['establishment'],
@@ -113,15 +114,15 @@ export class HorsesService {
   }
 
   private assertAccess(horse: Horse, user: User): void {
-    if (user.role === UserRole.ADMIN) return;
+    if (user.role.name === RoleName.ADMIN) return;
 
     if (
-      user.role === UserRole.PROPIETARIO &&
+      user.role.name === RoleName.PROPIETARIO &&
       horse.owner_id === user.id
     ) return;
 
     if (
-      user.role === UserRole.ESTABLECIMIENTO &&
+      user.role.name === RoleName.ESTABLECIMIENTO &&
       horse.establishment_id === user.id
     ) return;
 

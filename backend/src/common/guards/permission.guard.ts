@@ -30,7 +30,7 @@ export class PermissionGuard implements CanActivate {
     if (!user) throw new ForbiddenException();
 
     const allowed = this.permissionsService.hasPermission(
-      user.role,
+      user.role.name,
       meta.resource,
       meta.action,
     );
