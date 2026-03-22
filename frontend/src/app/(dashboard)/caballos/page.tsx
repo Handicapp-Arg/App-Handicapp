@@ -12,7 +12,7 @@ import type { Horse } from '@/types';
 
 export default function CaballosPage() {
   const { data: horses, isLoading, error } = useHorses();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const createHorse = useCreateHorse();
   const updateHorse = useUpdateHorse();
   const deleteHorse = useDeleteHorse();
@@ -78,12 +78,14 @@ export default function CaballosPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mis Caballos</h1>
-        <button
-          onClick={() => { setShowForm(!showForm); setEditingId(null); }}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition"
-        >
-          {showForm ? 'Cancelar' : '+ Nuevo'}
-        </button>
+        {can('horses', 'create') && (
+          <button
+            onClick={() => { setShowForm(!showForm); setEditingId(null); }}
+            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition"
+          >
+            {showForm ? 'Cancelar' : '+ Nuevo'}
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -216,21 +218,27 @@ export default function CaballosPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { startEdit(horse); setShowForm(false); }}
-                    className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(horse.id, horse.name)}
-                    disabled={deleteHorse.isPending}
-                    className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 transition"
-                  >
-                    Eliminar
-                  </button>
-                </div>
+                {(can('horses', 'update') || can('horses', 'delete')) && (
+                  <div className="flex gap-2">
+                    {can('horses', 'update') && (
+                      <button
+                        onClick={() => { startEdit(horse); setShowForm(false); }}
+                        className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        Editar
+                      </button>
+                    )}
+                    {can('horses', 'delete') && (
+                      <button
+                        onClick={() => handleDelete(horse.id, horse.name)}
+                        disabled={deleteHorse.isPending}
+                        className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 transition"
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ),
           )}

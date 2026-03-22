@@ -8,12 +8,14 @@ import {
   useCallback,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { User } from '@/types';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  can: (resource: string, action: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
     email: string,
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const fetchUser = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -75,14 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/caballos');
   };
 
+  const can = useCallback(
+    (resource: string, action: string): boolean => {
+      if (!user?.permissions) return false;
+      return user.permissions.includes(`${resource}:${action}`);
+    },
+    [user],
+  );
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    queryClient.clear();
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, can, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

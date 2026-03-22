@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useHorses } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent } from '@/hooks/use-events';
+import { useAuth } from '@/lib/auth-context';
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   salud: { label: 'Salud', color: 'bg-red-50 text-red-700' },
@@ -19,6 +20,7 @@ const eventTypes = [
 ];
 
 export default function EventosPage() {
+  const { can } = useAuth();
   const { data: horses, isLoading: loadingHorses } = useHorses();
   const [selectedHorseId, setSelectedHorseId] = useState('');
   const { data: events, isLoading: loadingEvents } = useEventsByHorse(selectedHorseId);
@@ -55,7 +57,7 @@ export default function EventosPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Eventos</h1>
-        {selectedHorseId && (
+        {selectedHorseId && can('events', 'create') && (
           <button
             onClick={() => setShowForm(!showForm)}
             className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition"

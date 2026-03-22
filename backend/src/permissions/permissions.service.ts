@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Permission } from './permission.entity';
 import { UserRole } from '../auth/user.entity';
 
@@ -11,6 +11,7 @@ export class PermissionsService implements OnModuleInit {
   constructor(
     @InjectRepository(Permission)
     private readonly permissionRepository: Repository<Permission>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async onModuleInit() {
@@ -42,13 +43,16 @@ export class PermissionsService implements OnModuleInit {
     role: UserRole,
     permissions: { resource: string; action: string }[],
   ): Promise<Permission[]> {
-    await this.permissionRepository.delete({ role });
+    const saved = await this.dataSource.transaction(async (manager) => {
+      await manager.delete(Permission, { role });
 
-    const entities = permissions.map((p) =>
-      this.permissionRepository.create({ role, ...p }),
-    );
+      const entities = permissions.map((p) =>
+        manager.create(Permission, { role, ...p }),
+      );
 
-    const saved = await this.permissionRepository.save(entities);
+      return manager.save(entities);
+    });
+
     await this.reloadCache();
     return saved;
   }

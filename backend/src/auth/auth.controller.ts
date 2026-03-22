@@ -12,10 +12,14 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
+import { PermissionsService } from '../permissions/permissions.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly permissionsService: PermissionsService,
+  ) {}
 
   @Post('register')
   register(@Body(ValidationPipe) dto: RegisterDto) {
@@ -29,12 +33,14 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  me(@GetUser() user: User) {
+  async me(@GetUser() user: User) {
+    const perms = await this.permissionsService.findByRole(user.role);
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
+      permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
   }
 }
