@@ -22,6 +22,21 @@ export class NotificationsService {
     return this.repo.save(notification);
   }
 
+  async createMany(
+    data: Array<{
+      type: NotificationType;
+      title: string;
+      message: string;
+      recipient_id: string;
+      event_id?: string;
+      actor_id?: string;
+    }>,
+  ): Promise<Notification[]> {
+    if (!data.length) return [];
+    const entities = data.map((d) => this.repo.create(d));
+    return this.repo.save(entities);
+  }
+
   async findByUser(userId: string): Promise<Notification[]> {
     return this.repo.find({
       where: { recipient_id: userId },
