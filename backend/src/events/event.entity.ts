@@ -4,9 +4,11 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Horse } from '../horses/horse.entity';
+import { EventPhoto } from './event-photo.entity';
 
 export enum EventType {
   SALUD = 'salud',
@@ -35,6 +37,9 @@ export class Event {
   @ManyToOne(() => Horse, (horse) => horse.events, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'horse_id' })
   horse: Horse;
+
+  @OneToMany(() => EventPhoto, (photo) => photo.event, { cascade: true })
+  photos: EventPhoto[];
 
   @CreateDateColumn()
   created_at: Date;

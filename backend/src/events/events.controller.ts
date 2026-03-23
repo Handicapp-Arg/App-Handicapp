@@ -5,8 +5,11 @@ import {
   Param,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
   ValidationPipe,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionGuard } from '../common/guards/permission.guard';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
@@ -22,11 +25,13 @@ export class EventsController {
 
   @Post()
   @RequirePermission('events', 'create')
+  @UseInterceptors(FilesInterceptor('photos', 10))
   create(
     @Body(ValidationPipe) dto: CreateEventDto,
+    @UploadedFiles() files: Express.Multer.File[],
     @GetUser() user: User,
   ) {
-    return this.eventsService.create(dto, user);
+    return this.eventsService.create(dto, user, files);
   }
 
   @Get('horse/:horseId')

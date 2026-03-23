@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Event } from './event.entity';
+import { EventPhoto } from './event-photo.entity';
 import { Horse } from '../horses/horse.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { User } from '../auth/user.entity';
@@ -15,11 +16,17 @@ export class EventsService {
   constructor(
     @InjectRepository(Event)
     private readonly eventRepository: Repository<Event>,
+    @InjectRepository(EventPhoto)
+    private readonly photoRepository: Repository<EventPhoto>,
     @InjectRepository(Horse)
     private readonly horseRepository: Repository<Horse>,
   ) {}
 
-  async create(dto: CreateEventDto, user: User): Promise<Event> {
+  async create(
+    dto: CreateEventDto,
+    user: User,
+    files?: Express.Multer.File[],
+  ): Promise<Event> {
     const horse = await this.horseRepository.findOne({
       where: { id: dto.horse_id },
     });
@@ -31,6 +38,13 @@ export class EventsService {
     this.assertAccess(horse, user);
 
     const event = this.eventRepository.create(dto);
+
+    if (files?.length) {
+      event.photos = files.map((file) =>
+        this.photoRepository.create({ filename: file.filename }),
+      );
+    }
+
     return this.eventRepository.save(event);
   }
 
@@ -47,6 +61,7 @@ export class EventsService {
 
     return this.eventRepository.find({
       where: { horse_id: horseId },
+      relations: ['photos'],
       order: { date: 'DESC' },
     });
   }
@@ -54,7 +69,7 @@ export class EventsService {
   async findOne(id: string, user: User): Promise<Event> {
     const event = await this.eventRepository.findOne({
       where: { id },
-      relations: ['horse'],
+      relations: ['horse', 'photos'],
     });
 
     if (!event) {

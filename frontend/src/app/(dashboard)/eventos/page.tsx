@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useHorses } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent } from '@/hooks/use-events';
 import { useAuth } from '@/lib/auth-context';
+import PhotoCapture from '@/components/photo-capture';
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api$/, '');
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   salud: { label: 'Salud', color: 'bg-red-50 text-red-700' },
@@ -30,6 +33,7 @@ export default function EventosPage() {
   const [type, setType] = useState('salud');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [photos, setPhotos] = useState<File[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +42,12 @@ export default function EventosPage() {
       description,
       date,
       horse_id: selectedHorseId,
+      photos,
     });
     setDescription('');
     setType('salud');
     setDate(new Date().toISOString().split('T')[0]);
+    setPhotos([]);
     setShowForm(false);
   };
 
@@ -144,6 +150,8 @@ export default function EventosPage() {
               />
             </div>
 
+            <PhotoCapture photos={photos} onChange={setPhotos} />
+
             {createEvent.isError && (
               <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
                 Error al crear el evento
@@ -201,6 +209,24 @@ export default function EventosPage() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-700">{event.description}</p>
+                {event.photos && event.photos.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {event.photos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={`${API_URL}/uploads/events/${photo.filename}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={`${API_URL}/uploads/events/${photo.filename}`}
+                          alt="Foto del evento"
+                          className="h-20 w-20 rounded-md object-cover border border-gray-200 hover:opacity-80 transition"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

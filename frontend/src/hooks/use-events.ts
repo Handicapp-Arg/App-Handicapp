@@ -17,13 +17,26 @@ export function useCreateEvent(horseId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (dto: {
+    mutationFn: async (payload: {
       type: string;
       description: string;
       date: string;
       horse_id: string;
+      photos?: File[];
     }) => {
-      const { data } = await api.post('/events', dto);
+      const formData = new FormData();
+      formData.append('type', payload.type);
+      formData.append('description', payload.description);
+      formData.append('date', payload.date);
+      formData.append('horse_id', payload.horse_id);
+
+      if (payload.photos) {
+        payload.photos.forEach((file) => formData.append('photos', file));
+      }
+
+      const { data } = await api.post('/events', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       return data;
     },
     onSuccess: () => {

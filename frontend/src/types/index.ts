@@ -33,6 +33,13 @@ export enum EventType {
   NOTA = 'nota',
 }
 
+export interface EventPhoto {
+  id: string;
+  filename: string;
+  event_id: string;
+  created_at: string;
+}
+
 export interface Event {
   id: string;
   type: EventType;
@@ -40,5 +47,6 @@ export interface Event {
   date: string;
   horse_id: string;
   horse?: Horse;
+  photos?: EventPhoto[];
   created_at: string;
 }
