@@ -22,9 +22,8 @@ export default function RegistroPage() {
 
   useEffect(() => {
     api.get('/roles').then(({ data }) => {
-      const filtered = data.filter((r: RoleOption) => r.name !== 'admin');
-      setRoles(filtered);
-      if (filtered.length > 0) setRole(filtered[0].name);
+      setRoles(data);
+      if (data.length > 0) setRole(data[0].name);
     });
   }, []);
 
