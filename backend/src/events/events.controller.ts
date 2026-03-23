@@ -34,6 +34,12 @@ export class EventsController {
     return this.eventsService.create(dto, user, files);
   }
 
+  @Get('all')
+  @RequirePermission('events', 'read')
+  findAll(@GetUser() user: User) {
+    return this.eventsService.findAllByUser(user);
+  }
+
   @Get('horse/:horseId')
   @RequirePermission('events', 'read')
   findByHorse(

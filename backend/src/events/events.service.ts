@@ -48,6 +48,23 @@ export class EventsService {
     return this.eventRepository.save(event);
   }
 
+  async findAllByUser(user: User): Promise<Event[]> {
+    const qb = this.eventRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.photos', 'photos')
+      .leftJoin('event.horse', 'horse')
+      .addSelect(['horse.id', 'horse.name', 'horse.owner_id', 'horse.establishment_id'])
+      .orderBy('event.date', 'DESC');
+
+    if (user.role === 'propietario') {
+      qb.where('horse.owner_id = :uid', { uid: user.id });
+    } else if (user.role === 'establecimiento') {
+      qb.where('horse.establishment_id = :uid', { uid: user.id });
+    }
+
+    return qb.getMany();
+  }
+
   async findByHorse(horseId: string, user: User): Promise<Event[]> {
     const horse = await this.horseRepository.findOne({
       where: { id: horseId },
