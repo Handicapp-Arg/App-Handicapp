@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { Event } from './event.entity';
 import { Horse } from '../horses/horse.entity';
 import { CreateEventDto } from './dto/create-event.dto';
-import { User, UserRole } from '../auth/user.entity';
+import { User } from '../auth/user.entity';
 
 @Injectable()
 export class EventsService {
@@ -67,15 +67,15 @@ export class EventsService {
   }
 
   private assertAccess(horse: Horse, user: User): void {
-    if (user.role === UserRole.ADMIN) return;
+    if (user.role === 'admin') return;
 
     if (
-      user.role === UserRole.PROPIETARIO &&
+      user.role === 'propietario' &&
       horse.owner_id === user.id
     ) return;
 
     if (
-      user.role === UserRole.ESTABLECIMIENTO &&
+      user.role === 'establecimiento' &&
       horse.establishment_id === user.id
     ) return;
 

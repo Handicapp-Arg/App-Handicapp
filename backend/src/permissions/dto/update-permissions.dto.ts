@@ -1,6 +1,5 @@
-import { IsArray, IsEnum, IsNotEmpty, ValidateNested } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { UserRole } from '../../auth/user.entity';
 
 class PermissionItemDto {
   @IsNotEmpty()
@@ -11,8 +10,9 @@ class PermissionItemDto {
 }
 
 export class UpdatePermissionsDto {
-  @IsEnum(UserRole)
-  role: UserRole;
+  @IsString()
+  @IsNotEmpty()
+  role: string;
 
   @IsArray()
   @ValidateNested({ each: true })

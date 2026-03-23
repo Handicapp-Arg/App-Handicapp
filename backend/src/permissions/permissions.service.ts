@@ -2,7 +2,6 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Permission } from './permission.entity';
-import { UserRole } from '../auth/user.entity';
 
 @Injectable()
 export class PermissionsService implements OnModuleInit {
@@ -19,9 +18,8 @@ export class PermissionsService implements OnModuleInit {
     await this.reloadCache();
   }
 
-  hasPermission(role: UserRole, resource: string, action: string): boolean {
-    const key = role;
-    const perms = this.cache.get(key);
+  hasPermission(role: string, resource: string, action: string): boolean {
+    const perms = this.cache.get(role);
     if (!perms) return false;
     return perms.has(`${resource}:${action}`);
   }
@@ -32,7 +30,7 @@ export class PermissionsService implements OnModuleInit {
     });
   }
 
-  async findByRole(role: UserRole): Promise<Permission[]> {
+  async findByRole(role: string): Promise<Permission[]> {
     return this.permissionRepository.find({
       where: { role },
       order: { resource: 'ASC', action: 'ASC' },
@@ -40,7 +38,7 @@ export class PermissionsService implements OnModuleInit {
   }
 
   async updateRolePermissions(
-    role: UserRole,
+    role: string,
     permissions: { resource: string; action: string }[],
   ): Promise<Permission[]> {
     const saved = await this.dataSource.transaction(async (manager) => {
@@ -69,6 +67,11 @@ export class PermissionsService implements OnModuleInit {
     }
   }
 
+  async deleteByRole(role: string): Promise<void> {
+    await this.permissionRepository.delete({ role });
+    await this.reloadCache();
+  }
+
   private async seed(): Promise<void> {
     const count = await this.permissionRepository.count();
     if (count > 0) return;
@@ -81,21 +84,21 @@ export class PermissionsService implements OnModuleInit {
     // Admin: todo
     for (const resource of resources) {
       for (const action of actions) {
-        permissions.push({ role: UserRole.ADMIN, resource, action });
+        permissions.push({ role: 'admin', resource, action });
       }
     }
 
     // Propietario: CRUD horses + create/read events
     for (const action of actions) {
-      permissions.push({ role: UserRole.PROPIETARIO, resource: 'horses', action });
+      permissions.push({ role: 'propietario', resource: 'horses', action });
     }
-    permissions.push({ role: UserRole.PROPIETARIO, resource: 'events', action: 'create' });
-    permissions.push({ role: UserRole.PROPIETARIO, resource: 'events', action: 'read' });
+    permissions.push({ role: 'propietario', resource: 'events', action: 'create' });
+    permissions.push({ role: 'propietario', resource: 'events', action: 'read' });
 
     // Establecimiento: read horses + create/read events
-    permissions.push({ role: UserRole.ESTABLECIMIENTO, resource: 'horses', action: 'read' });
-    permissions.push({ role: UserRole.ESTABLECIMIENTO, resource: 'events', action: 'create' });
-    permissions.push({ role: UserRole.ESTABLECIMIENTO, resource: 'events', action: 'read' });
+    permissions.push({ role: 'establecimiento', resource: 'horses', action: 'read' });
+    permissions.push({ role: 'establecimiento', resource: 'events', action: 'create' });
+    permissions.push({ role: 'establecimiento', resource: 'events', action: 'read' });
 
     await this.permissionRepository.save(
       permissions.map((p) => this.permissionRepository.create(p)),

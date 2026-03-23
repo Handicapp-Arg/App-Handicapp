@@ -1,17 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import api from '@/lib/api';
+
+interface RoleOption {
+  id: string;
+  name: string;
+}
 
 export default function RegistroPage() {
   const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('propietario');
+  const [role, setRole] = useState('');
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get('/roles').then(({ data }) => {
+      const filtered = data.filter((r: RoleOption) => r.name !== 'admin');
+      setRoles(filtered);
+      if (filtered.length > 0) setRole(filtered[0].name);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,34 +101,26 @@ export default function RegistroPage() {
         <div>
           <label className="block text-sm font-medium mb-2">Tipo de cuenta</label>
           <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setRole('propietario')}
-              className={`rounded-md border px-3 py-2.5 text-sm font-medium transition ${
-                role === 'propietario'
-                  ? 'border-black bg-black text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Propietario
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('establecimiento')}
-              className={`rounded-md border px-3 py-2.5 text-sm font-medium transition ${
-                role === 'establecimiento'
-                  ? 'border-black bg-black text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Establecimiento
-            </button>
+            {roles.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setRole(r.name)}
+                className={`rounded-md border px-3 py-2.5 text-sm font-medium capitalize transition ${
+                  role === r.name
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {r.name}
+              </button>
+            ))}
           </div>
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !role}
           className="w-full rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition"
         >
           {loading ? 'Creando cuenta...' : 'Crear cuenta'}

@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class AuthService {
@@ -17,9 +19,15 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly rolesService: RolesService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
+    const roleExists = await this.rolesService.exists(dto.role);
+    if (!roleExists) {
+      throw new BadRequestException(`El rol "${dto.role}" no existe`);
+    }
+
     const exists = await this.userRepository.findOne({
       where: { email: dto.email },
     });

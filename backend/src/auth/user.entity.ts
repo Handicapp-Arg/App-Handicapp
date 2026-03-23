@@ -8,12 +8,6 @@ import {
 } from 'typeorm';
 import { Horse } from '../horses/horse.entity';
 
-export enum UserRole {
-  ADMIN = 'admin',
-  PROPIETARIO = 'propietario',
-  ESTABLECIMIENTO = 'establecimiento',
-}
-
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -28,8 +22,8 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ type: 'enum', enum: UserRole })
-  role: UserRole;
+  @Column()
+  role: string;
 
   @OneToMany(() => Horse, (horse) => horse.owner)
   horses: Horse[];

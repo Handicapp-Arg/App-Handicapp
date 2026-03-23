@@ -5,13 +5,13 @@ import {
   Body,
   UseGuards,
   ValidationPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsService } from './permissions.service';
 import { UpdatePermissionsDto } from './dto/update-permissions.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
-import { User, UserRole } from '../auth/user.entity';
-import { ForbiddenException } from '@nestjs/common';
+import { User } from '../auth/user.entity';
 
 @Controller('permissions')
 @UseGuards(AuthGuard('jwt'))
@@ -37,7 +37,7 @@ export class PermissionsController {
   }
 
   private assertAdmin(user: User): void {
-    if (user.role !== UserRole.ADMIN) {
+    if (user.role !== 'admin') {
       throw new ForbiddenException('Solo el admin puede gestionar permisos');
     }
   }
