@@ -8,6 +8,7 @@ import {
   useDeleteHorse,
   useUploadHorseImage,
   useRemoveHorseImage,
+  useEstablishments,
 } from '@/hooks/use-horses';
 import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
@@ -22,20 +23,25 @@ export default function CaballosPage() {
   const uploadImage = useUploadHorseImage();
   const removeImage = useRemoveHorseImage();
 
+  const { data: establishments } = useEstablishments();
+
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [establishmentId, setEstablishmentId] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
+  const [editEstablishmentId, setEditEstablishmentId] = useState('');
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const horse = await createHorse.mutateAsync({
       name,
       birth_date: birthDate || undefined,
+      establishment_id: establishmentId || undefined,
     });
     if (imageFiles.length > 0) {
       await uploadImage.mutateAsync({ id: horse.id, file: imageFiles[0] });
@@ -43,6 +49,7 @@ export default function CaballosPage() {
     setName('');
     setBirthDate('');
     setImageFiles([]);
+    setEstablishmentId('');
     setShowForm(false);
   };
 
@@ -50,6 +57,7 @@ export default function CaballosPage() {
     setEditingId(horse.id);
     setEditName(horse.name);
     setEditBirthDate(horse.birth_date ?? '');
+    setEditEstablishmentId(horse.establishment_id ?? '');
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -59,6 +67,7 @@ export default function CaballosPage() {
       id: editingId,
       name: editName,
       birth_date: editBirthDate || null,
+      establishment_id: editEstablishmentId || null,
     });
     setEditingId(null);
   };
@@ -144,6 +153,26 @@ export default function CaballosPage() {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               />
             </div>
+            {establishments && establishments.length > 0 && (
+              <div>
+                <label htmlFor="establishment" className="block text-sm font-medium mb-1">
+                  Establecimiento (opcional)
+                </label>
+                <select
+                  id="establishment"
+                  value={establishmentId}
+                  onChange={(e) => setEstablishmentId(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                >
+                  <option value="">Sin establecimiento</option>
+                  {establishments.map((est) => (
+                    <option key={est.id} value={est.id}>
+                      {est.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <ImagePicker
               files={imageFiles}
               onChange={setImageFiles}
@@ -210,6 +239,23 @@ export default function CaballosPage() {
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                     />
                   </div>
+                  {establishments && establishments.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Establecimiento</label>
+                      <select
+                        value={editEstablishmentId}
+                        onChange={(e) => setEditEstablishmentId(e.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                      >
+                        <option value="">Sin establecimiento</option>
+                        {establishments.map((est) => (
+                          <option key={est.id} value={est.id}>
+                            {est.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {updateHorse.isError && (
                     <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
                       Error al actualizar

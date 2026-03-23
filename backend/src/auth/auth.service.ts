@@ -84,6 +84,14 @@ export class AuthService {
     return this.userRepository.save(user);
   }
 
+  async findByRole(role: string): Promise<Pick<User, 'id' | 'name'>[]> {
+    return this.userRepository.find({
+      where: { role },
+      select: ['id', 'name'],
+      order: { name: 'ASC' },
+    });
+  }
+
   async changePassword(user: User, dto: ChangePasswordDto): Promise<void> {
     const fullUser = await this.userRepository
       .createQueryBuilder('user')

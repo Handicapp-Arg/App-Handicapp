@@ -50,7 +50,7 @@ export function useCreateEvent(horseId: string) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events', horseId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     },
   });
 }

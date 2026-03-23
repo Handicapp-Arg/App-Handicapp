@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Query,
   Body,
   UseGuards,
   ValidationPipe,
@@ -44,6 +45,12 @@ export class AuthController {
       role: user.role,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
+  }
+
+  @Get('users')
+  @UseGuards(AuthGuard('jwt'))
+  findUsersByRole(@Query('role') role: string) {
+    return this.authService.findByRole(role);
   }
 
   @Patch('profile')

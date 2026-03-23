@@ -2,6 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Horse } from '@/types';
 
+export function useEstablishments() {
+  return useQuery<{ id: string; name: string }[]>({
+    queryKey: ['establishments'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/users?role=establecimiento');
+      return data;
+    },
+  });
+}
+
 export function useHorses() {
   return useQuery<Horse[]>({
     queryKey: ['horses'],
@@ -31,6 +41,7 @@ export function useCreateHorse() {
       name: string;
       birth_date?: string;
       owner_id?: string;
+      establishment_id?: string;
     }) => {
       const { data } = await api.post('/horses', dto);
       return data;
@@ -52,6 +63,7 @@ export function useUpdateHorse() {
       id: string;
       name?: string;
       birth_date?: string | null;
+      establishment_id?: string | null;
     }) => {
       const { data } = await api.patch(`/horses/${id}`, dto);
       return data;
