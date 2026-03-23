@@ -22,6 +22,12 @@ export class Horse {
   @Column({ type: 'date', nullable: true })
   birth_date: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  image_url: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  image_public_id: string | null;
+
   @Column('uuid')
   owner_id: string;
 

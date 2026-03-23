@@ -62,6 +62,36 @@ export function useUpdateHorse() {
   });
 }
 
+export function useUploadHorseImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const { data } = await api.post(`/horses/${id}/image`, formData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}
+
+export function useRemoveHorseImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/horses/${id}/image`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}
+
 export function useDeleteHorse() {
   const queryClient = useQueryClient();
 

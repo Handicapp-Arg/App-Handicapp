@@ -17,6 +17,7 @@ export interface Horse {
   id: string;
   name: string;
   birth_date: string | null;
+  image_url: string | null;
   owner_id: string;
   establishment_id: string | null;
   owner?: User;

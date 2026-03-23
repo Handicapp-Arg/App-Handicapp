@@ -10,12 +10,14 @@ import { Horse } from './horse.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { User } from '../auth/user.entity';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class HorsesService {
   constructor(
     @InjectRepository(Horse)
     private readonly horseRepository: Repository<Horse>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(dto: CreateHorseDto, user: User): Promise<Horse> {
@@ -100,6 +102,42 @@ export class HorsesService {
     return this.horseRepository.save(horse);
   }
 
+  async uploadImage(
+    id: string,
+    file: Express.Multer.File,
+    user: User,
+  ): Promise<Horse> {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    this.assertAccess(horse, user);
+
+    // Eliminar imagen anterior si existe
+    if (horse.image_public_id) {
+      await this.cloudinaryService.delete(horse.image_public_id);
+    }
+
+    const result = await this.cloudinaryService.upload(file);
+    horse.image_url = result.secure_url;
+    horse.image_public_id = result.public_id;
+
+    return this.horseRepository.save(horse);
+  }
+
+  async removeImage(id: string, user: User): Promise<Horse> {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    this.assertAccess(horse, user);
+
+    if (horse.image_public_id) {
+      await this.cloudinaryService.delete(horse.image_public_id);
+    }
+
+    horse.image_url = null;
+    horse.image_public_id = null;
+
+    return this.horseRepository.save(horse);
+  }
+
   async remove(id: string, user: User): Promise<void> {
     const horse = await this.horseRepository.findOne({ where: { id } });
 
@@ -108,6 +146,10 @@ export class HorsesService {
     }
 
     this.assertAccess(horse, user);
+
+    if (horse.image_public_id) {
+      await this.cloudinaryService.delete(horse.image_public_id);
+    }
 
     await this.horseRepository.remove(horse);
   }

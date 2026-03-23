@@ -7,10 +7,14 @@ import {
   Param,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   ValidationPipe,
   HttpCode,
   HttpStatus,
+  ParseFilePipeBuilder,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionGuard } from '../common/guards/permission.guard';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
@@ -54,6 +58,28 @@ export class HorsesController {
     @GetUser() user: User,
   ) {
     return this.horsesService.update(id, dto, user);
+  }
+
+  @Post(':id/image')
+  @RequirePermission('horses', 'update')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/i })
+        .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
+    )
+    file: Express.Multer.File,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.uploadImage(id, file, user);
+  }
+
+  @Delete(':id/image')
+  @RequirePermission('horses', 'update')
+  removeImage(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.removeImage(id, user);
   }
 
   @Delete(':id')
