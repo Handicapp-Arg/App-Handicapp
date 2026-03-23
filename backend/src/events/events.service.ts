@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { Horse } from '../horses/horse.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { User } from '../auth/user.entity';
+import { EventCreatedEvent } from '../notifications/events/event-created.event';
 
 @Injectable()
 export class EventsService {
@@ -20,6 +22,7 @@ export class EventsService {
     private readonly photoRepository: Repository<EventPhoto>,
     @InjectRepository(Horse)
     private readonly horseRepository: Repository<Horse>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(
@@ -45,7 +48,14 @@ export class EventsService {
       );
     }
 
-    return this.eventRepository.save(event);
+    const savedEvent = await this.eventRepository.save(event);
+
+    this.eventEmitter.emit(
+      'event.created',
+      new EventCreatedEvent(savedEvent, horse, user),
+    );
+
+    return savedEvent;
   }
 
   async findAllByUser(user: User): Promise<Event[]> {

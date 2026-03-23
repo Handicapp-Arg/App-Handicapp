@@ -5,6 +5,7 @@ import { Event } from '../events/event.entity';
 import { EventPhoto } from '../events/event-photo.entity';
 import { Permission } from '../permissions/permission.entity';
 import { Role } from '../roles/role.entity';
+import { Notification } from '../notifications/notification.entity';
 
 export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -13,7 +14,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, Horse, Event, EventPhoto, Permission, Role],
+  entities: [User, Horse, Event, EventPhoto, Permission, Role, Notification],
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,

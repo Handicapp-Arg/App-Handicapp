@@ -50,3 +50,15 @@ export interface Event {
   photos?: EventPhoto[];
   created_at: string;
 }
+
+export interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  recipient_id: string;
+  event_id: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
