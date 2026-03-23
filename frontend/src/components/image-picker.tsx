@@ -2,12 +2,28 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-interface PhotoCaptureProps {
-  photos: File[];
-  onChange: (photos: File[]) => void;
+interface ImagePickerProps {
+  /** Already-selected files (controlled) */
+  files: File[];
+  onChange: (files: File[]) => void;
+  /** Single image or multiple (default: false = multiple) */
+  single?: boolean;
+  /** Label text */
+  label?: string;
+  /** Existing remote image URL to display (for edit mode) */
+  existingUrl?: string | null;
+  /** Called when user removes the existing remote image */
+  onRemoveExisting?: () => void;
 }
 
-export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
+export default function ImagePicker({
+  files,
+  onChange,
+  single = false,
+  label = 'Fotos',
+  existingUrl,
+  onRemoveExisting,
+}: ImagePickerProps) {
   const [previews, setPreviews] = useState<string[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
@@ -17,12 +33,16 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- Camera ---
+
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
   }, []);
+
+  useEffect(() => () => stopCamera(), [stopCamera]);
 
   const openCamera = async () => {
     setCameraError('');
@@ -34,11 +54,8 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
       });
       streamRef.current = stream;
       setCameraOpen(true);
-      // Wait for video element to mount
       setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        if (videoRef.current) videoRef.current.srcObject = stream;
       }, 50);
     } catch {
       setCameraError('No se pudo acceder a la cámara. Verificá los permisos.');
@@ -60,7 +77,14 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
       if (!blob) return;
       const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' });
       const preview = URL.createObjectURL(blob);
-      setTempShots((prev) => [...prev, { file, preview }]);
+
+      if (single) {
+        // In single mode, replace any previous temp shot
+        tempShots.forEach((s) => URL.revokeObjectURL(s.preview));
+        setTempShots([{ file, preview }]);
+      } else {
+        setTempShots((prev) => [...prev, { file, preview }]);
+      }
     }, 'image/jpeg', 0.85);
   };
 
@@ -74,8 +98,17 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
   const acceptPhotos = () => {
     const newFiles = tempShots.map((s) => s.file);
     const newPreviews = tempShots.map((s) => s.preview);
-    onChange([...photos, ...newFiles]);
-    setPreviews((prev) => [...prev, ...newPreviews]);
+
+    if (single) {
+      // Replace everything
+      previews.forEach((p) => URL.revokeObjectURL(p));
+      onChange(newFiles);
+      setPreviews(newPreviews);
+    } else {
+      onChange([...files, ...newFiles]);
+      setPreviews((prev) => [...prev, ...newPreviews]);
+    }
+
     setTempShots([]);
     stopCamera();
     setCameraOpen(false);
@@ -88,34 +121,65 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
     setCameraOpen(false);
   };
 
+  // --- File upload ---
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
+    const selected = e.target.files;
+    if (!selected?.length) return;
 
-    const newFiles = Array.from(files);
-    onChange([...photos, ...newFiles]);
+    const newFiles = Array.from(selected);
+    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
 
-    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-    setPreviews((prev) => [...prev, ...newPreviews]);
+    if (single) {
+      previews.forEach((p) => URL.revokeObjectURL(p));
+      onChange([newFiles[0]]);
+      setPreviews([newPreviews[0]]);
+    } else {
+      onChange([...files, ...newFiles]);
+      setPreviews((prev) => [...prev, ...newPreviews]);
+    }
 
     e.target.value = '';
   };
 
-  const removePhoto = (index: number) => {
+  // --- Remove ---
+
+  const removeFile = (index: number) => {
     URL.revokeObjectURL(previews[index]);
-    onChange(photos.filter((_, i) => i !== index));
+    onChange(files.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  useEffect(() => {
-    return () => stopCamera();
-  }, [stopCamera]);
+  // --- Derived state ---
+
+  const hasExisting = !!existingUrl && files.length === 0;
+  const showButtons = !cameraOpen && (!single || (files.length === 0 && !hasExisting));
 
   return (
     <div>
-      <label className="block text-sm font-medium mb-1">Fotos</label>
+      <label className="block text-sm font-medium mb-1">{label}</label>
 
-      {/* Fotos ya aceptadas */}
+      {/* Existing remote image (edit mode) */}
+      {hasExisting && (
+        <div className="relative mb-2 inline-block">
+          <img
+            src={existingUrl!}
+            alt="Imagen actual"
+            className="h-20 w-20 rounded-md object-cover border border-gray-200"
+          />
+          {onRemoveExisting && (
+            <button
+              type="button"
+              onClick={onRemoveExisting}
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
+            >
+              x
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Selected file previews */}
       {previews.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {previews.map((src, i) => (
@@ -127,7 +191,7 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
               />
               <button
                 type="button"
-                onClick={() => removePhoto(i)}
+                onClick={() => removeFile(i)}
                 className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
               >
                 x
@@ -137,8 +201,28 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
         </div>
       )}
 
-      {/* Botones: cámara y subir archivo */}
-      {!cameraOpen && (
+      {/* Single mode: change button when file already selected */}
+      {single && files.length > 0 && !cameraOpen && (
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            onClick={openCamera}
+            className="text-xs text-gray-500 hover:text-gray-700 underline"
+          >
+            Cambiar (cámara)
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="text-xs text-gray-500 hover:text-gray-700 underline"
+          >
+            Cambiar (archivo)
+          </button>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {showButtons && (
         <div className="flex gap-2">
           <button
             type="button"
@@ -161,22 +245,23 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
             </svg>
             Subir imagen
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileUpload}
-            className="hidden"
-          />
         </div>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple={!single}
+        onChange={handleFileUpload}
+        className="hidden"
+      />
 
       {cameraError && (
         <p className="mt-1 text-sm text-red-600">{cameraError}</p>
       )}
 
-      {/* Vista de cámara */}
+      {/* Camera viewfinder */}
       {cameraOpen && (
         <div className="mt-2 rounded-lg border border-gray-200 bg-black overflow-hidden">
           <video
@@ -187,7 +272,6 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
             className="w-full max-h-64 object-contain"
           />
 
-          {/* Fotos sacadas (temporales) */}
           {tempShots.length > 0 && (
             <div className="flex flex-wrap gap-2 bg-gray-900 p-2">
               {tempShots.map((shot, i) => (
@@ -209,7 +293,6 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
             </div>
           )}
 
-          {/* Controles */}
           <div className="flex items-center justify-center gap-3 bg-gray-900 p-3">
             <button
               type="button"
@@ -231,7 +314,7 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
                 onClick={acceptPhotos}
                 className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 transition"
               >
-                Aceptar ({tempShots.length})
+                Aceptar{!single && ` (${tempShots.length})`}
               </button>
             )}
           </div>
@@ -240,9 +323,9 @@ export default function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {photos.length > 0 && !cameraOpen && (
+      {files.length > 0 && !cameraOpen && !single && (
         <p className="mt-1 text-xs text-gray-500">
-          {photos.length} foto{photos.length !== 1 ? 's' : ''} lista{photos.length !== 1 ? 's' : ''}
+          {files.length} foto{files.length !== 1 ? 's' : ''} lista{files.length !== 1 ? 's' : ''}
         </p>
       )}
     </div>

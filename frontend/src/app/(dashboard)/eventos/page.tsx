@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useHorses } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent } from '@/hooks/use-events';
 import { useAuth } from '@/lib/auth-context';
-import PhotoCapture from '@/components/photo-capture';
+import ImagePicker from '@/components/image-picker';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api$/, '');
 
@@ -150,7 +150,7 @@ export default function EventosPage() {
               />
             </div>
 
-            <PhotoCapture photos={photos} onChange={setPhotos} />
+            <ImagePicker files={photos} onChange={setPhotos} label="Fotos" />
 
             {createEvent.isError && (
               <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
