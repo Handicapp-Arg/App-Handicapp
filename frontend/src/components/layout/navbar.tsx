@@ -50,9 +50,12 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-gray-600 sm:block">
+          <Link
+            href="/perfil"
+            className="hidden text-sm text-gray-600 hover:text-black transition sm:block"
+          >
             {user?.name}
-          </span>
+          </Link>
           <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
             {user?.role}
           </span>

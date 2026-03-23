@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
 import { RolesService } from '../roles/roles.service';
 
 @Injectable()
@@ -67,5 +68,35 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
 
     return { accessToken };
+  }
+
+  async updateProfile(user: User, dto: UpdateProfileDto): Promise<User> {
+    if (dto.email && dto.email !== user.email) {
+      const exists = await this.userRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (exists) {
+        throw new ConflictException('El email ya está registrado');
+      }
+    }
+
+    Object.assign(user, dto);
+    return this.userRepository.save(user);
+  }
+
+  async changePassword(user: User, dto: ChangePasswordDto): Promise<void> {
+    const fullUser = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :id', { id: user.id })
+      .getOne();
+
+    if (!fullUser || !(await bcrypt.compare(dto.currentPassword, fullUser.password))) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
+    }
+
+    const salt = await bcrypt.genSalt();
+    fullUser.password = await bcrypt.hash(dto.newPassword, salt);
+    await this.userRepository.save(fullUser);
   }
 }

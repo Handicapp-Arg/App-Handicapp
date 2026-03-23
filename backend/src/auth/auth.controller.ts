@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   UseGuards,
   ValidationPipe,
@@ -10,6 +11,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
 import { PermissionsService } from '../permissions/permissions.service';
@@ -42,5 +44,24 @@ export class AuthController {
       role: user.role,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
+  }
+
+  @Patch('profile')
+  @UseGuards(AuthGuard('jwt'))
+  async updateProfile(
+    @Body(ValidationPipe) dto: UpdateProfileDto,
+    @GetUser() user: User,
+  ) {
+    const updated = await this.authService.updateProfile(user, dto);
+    return { id: updated.id, email: updated.email, name: updated.name };
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  changePassword(
+    @Body(ValidationPipe) dto: ChangePasswordDto,
+    @GetUser() user: User,
+  ) {
+    return this.authService.changePassword(user, dto);
   }
 }
