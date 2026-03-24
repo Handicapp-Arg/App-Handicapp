@@ -74,6 +74,21 @@ export function useUpdateHorse() {
   });
 }
 
+function optimisticImageUpdate(
+  queryClient: ReturnType<typeof useQueryClient>,
+  horseId: string,
+  imageUrl: string | null,
+) {
+  const prev = queryClient.getQueryData<Horse[]>(['horses']);
+  if (prev) {
+    queryClient.setQueryData<Horse[]>(
+      ['horses'],
+      prev.map((h) => (h.id === horseId ? { ...h, image_url: imageUrl } : h)),
+    );
+  }
+  return prev;
+}
+
 export function useUploadHorseImage() {
   const queryClient = useQueryClient();
 
@@ -84,7 +99,15 @@ export function useUploadHorseImage() {
       const { data } = await api.post(`/horses/${id}/image`, formData);
       return data;
     },
-    onSuccess: () => {
+    onMutate: async ({ id, file }) => {
+      await queryClient.cancelQueries({ queryKey: ['horses'] });
+      const prev = optimisticImageUpdate(queryClient, id, URL.createObjectURL(file));
+      return { prev };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['horses'], context.prev);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
     },
   });
@@ -98,7 +121,15 @@ export function useRemoveHorseImage() {
       const { data } = await api.delete(`/horses/${id}/image`);
       return data;
     },
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['horses'] });
+      const prev = optimisticImageUpdate(queryClient, id, null);
+      return { prev };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['horses'], context.prev);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
     },
   });

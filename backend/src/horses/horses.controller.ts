@@ -62,7 +62,7 @@ export class HorsesController {
 
   @Post(':id/image')
   @RequirePermission('horses', 'update')
-  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 15 * 1024 * 1024 } }))
   uploadImage(
     @Param('id') id: string,
     @UploadedFile(

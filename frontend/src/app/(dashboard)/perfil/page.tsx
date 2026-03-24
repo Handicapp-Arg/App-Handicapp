@@ -4,6 +4,40 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
 
+const roleLabel: Record<string, string> = {
+  admin: 'Administrador',
+  propietario: 'Propietario',
+  establecimiento: 'Establecimiento',
+};
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#1a1a2e] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/10 disabled:opacity-50 sm:max-w-sm"
+    />
+  );
+}
+
+function Alert({ type, message }: { type: 'success' | 'error'; message: string }) {
+  const styles =
+    type === 'success'
+      ? 'bg-green-50 border-green-200 text-green-700'
+      : 'bg-red-50 border-red-200 text-red-600';
+  return (
+    <div className={`rounded-lg border px-4 py-3 text-sm ${styles}`}>{message}</div>
+  );
+}
+
 export default function PerfilPage() {
   const { user, refreshUser } = useAuth();
 
@@ -25,16 +59,15 @@ export default function PerfilPage() {
     setProfileMsg('');
     setProfileError('');
     setSavingProfile(true);
-
     try {
       await api.patch('/auth/profile', { name, email });
       await refreshUser();
-      setProfileMsg('Datos actualizados');
+      setProfileMsg('Datos actualizados correctamente');
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response: { data: { message: string } } }).response?.data?.message
-          : 'Error al actualizar';
+          : null;
       setProfileError(msg || 'Error al actualizar');
     } finally {
       setSavingProfile(false);
@@ -45,20 +78,14 @@ export default function PerfilPage() {
     e.preventDefault();
     setPasswordMsg('');
     setPasswordError('');
-
     if (newPassword !== confirmPassword) {
       setPasswordError('Las contraseñas nuevas no coinciden');
       return;
     }
-
     setSavingPassword(true);
-
     try {
-      await api.post('/auth/change-password', {
-        currentPassword,
-        newPassword,
-      });
-      setPasswordMsg('Contraseña actualizada');
+      await api.post('/auth/change-password', { currentPassword, newPassword });
+      setPasswordMsg('Contraseña actualizada correctamente');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -66,153 +93,120 @@ export default function PerfilPage() {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response: { data: { message: string } } }).response?.data?.message
-          : 'Error al cambiar contraseña';
+          : null;
       setPasswordError(msg || 'Error al cambiar contraseña');
     } finally {
       setSavingPassword(false);
     }
   };
 
+  const initials = user?.name
+    ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+    : '?';
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Mi perfil</h1>
+    <div className="max-w-2xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1a1a2e] text-lg font-bold text-white">
+          {initials}
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">{user?.name}</h1>
+          <span className="inline-block mt-0.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+            {roleLabel[user?.role || ''] || user?.role}
+          </span>
+        </div>
+      </div>
 
       {/* Datos personales */}
-      <form
-        onSubmit={handleProfileSubmit}
-        className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-      >
-        <h2 className="mb-4 text-lg font-semibold">Datos personales</h2>
-
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">
-              Nombre
-            </label>
-            <input
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-5 text-base font-semibold text-gray-900">Datos personales</h2>
+        <form onSubmit={handleProfileSubmit} className="space-y-4">
+          <Field label="Nombre">
+            <Input
               id="name"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:max-w-md"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
-            </label>
-            <input
+          <Field label="Email">
+            <Input
               id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:max-w-md"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Rol</label>
-            <p className="rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-600 sm:max-w-md">
-              {user?.role}
-            </p>
-          </div>
-
-          {profileMsg && (
-            <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
-              {profileMsg}
-            </div>
-          )}
-          {profileError && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-              {profileError}
-            </div>
-          )}
+          {profileMsg && <Alert type="success" message={profileMsg} />}
+          {profileError && <Alert type="error" message={profileError} />}
 
           <button
             type="submit"
             disabled={savingProfile}
-            className="rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition"
+            className="rounded-lg bg-[#1a1a2e] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2d2d4e] disabled:opacity-50 cursor-pointer"
           >
             {savingProfile ? 'Guardando...' : 'Guardar cambios'}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
 
       {/* Cambiar contraseña */}
-      <form
-        onSubmit={handlePasswordSubmit}
-        className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-      >
-        <h2 className="mb-4 text-lg font-semibold">Cambiar contraseña</h2>
-
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="current-password" className="block text-sm font-medium mb-1">
-              Contraseña actual
-            </label>
-            <input
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-5 text-base font-semibold text-gray-900">Cambiar contraseña</h2>
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <Field label="Contraseña actual">
+            <Input
               id="current-password"
               type="password"
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:max-w-md"
+              placeholder="••••••••"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label htmlFor="new-password" className="block text-sm font-medium mb-1">
-              Nueva contraseña
-            </label>
-            <input
+          <Field label="Nueva contraseña">
+            <Input
               id="new-password"
               type="password"
               required
               minLength={6}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:max-w-md"
+              placeholder="••••••••"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label htmlFor="confirm-password" className="block text-sm font-medium mb-1">
-              Confirmar nueva contraseña
-            </label>
-            <input
+          <Field label="Confirmar nueva contraseña">
+            <Input
               id="confirm-password"
               type="password"
               required
               minLength={6}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:max-w-md"
+              placeholder="••••••••"
             />
-          </div>
+          </Field>
 
-          {passwordMsg && (
-            <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
-              {passwordMsg}
-            </div>
-          )}
-          {passwordError && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-              {passwordError}
-            </div>
-          )}
+          {passwordMsg && <Alert type="success" message={passwordMsg} />}
+          {passwordError && <Alert type="error" message={passwordError} />}
 
           <button
             type="submit"
             disabled={savingPassword}
-            className="rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition"
+            className="rounded-lg bg-[#1a1a2e] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2d2d4e] disabled:opacity-50 cursor-pointer"
           >
             {savingPassword ? 'Cambiando...' : 'Cambiar contraseña'}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

@@ -105,7 +105,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-gray-100" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs text-gray-400">Acceso rápido (dev)</span>
+            <span className="bg-white px-3 text-xs text-gray-400">Acceso rápido</span>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
