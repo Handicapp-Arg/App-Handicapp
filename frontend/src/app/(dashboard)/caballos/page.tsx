@@ -277,9 +277,13 @@ export default function CaballosPage() {
         {can('horses', 'create') && (
           <button
             onClick={() => setShowForm(!showForm)}
-            className="rounded-lg bg-[#0f1f3d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1a2f5a] cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+            style={{ backgroundColor: '#0f1f3d' }}
           >
-            + Nuevo caballo
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Nuevo caballo
           </button>
         )}
       </div>

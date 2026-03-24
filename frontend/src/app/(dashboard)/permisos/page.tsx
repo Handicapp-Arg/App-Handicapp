@@ -165,33 +165,34 @@ export default function PermisosPage() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Roles y Permisos</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">Roles y Permisos</h1>
+      </div>
 
       {/* Crear rol */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Nuevo rol</h2>
-        <form onSubmit={handleCreateRole} className="space-y-1.5">
-          <label className="block text-xs font-medium text-gray-500">Nombre del rol</label>
-          <div className="flex gap-2">
+        <form onSubmit={handleCreateRole} className="flex gap-2 items-end">
+          <div className="flex-1 space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Nuevo rol</label>
             <input
               type="text"
               value={newRoleName}
               onChange={(e) => setNewRoleName(e.target.value)}
               placeholder="ej: veterinario"
-              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
             />
-            <button
-              type="submit"
-              disabled={createRole.isPending || !newRoleName.trim()}
-              style={BTN_GREEN}
-              onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
-              className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
-            >
-              {createRole.isPending ? 'Creando...' : 'Crear rol'}
-            </button>
           </div>
+          <button
+            type="submit"
+            disabled={createRole.isPending || !newRoleName.trim()}
+            style={BTN_GREEN}
+            onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
+            className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
+          >
+            {createRole.isPending ? 'Creando...' : 'Crear rol'}
+          </button>
         </form>
         {createRole.isError && <p className="mt-2 text-xs text-red-600">Error al crear el rol</p>}
       </div>
