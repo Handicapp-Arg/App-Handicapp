@@ -28,6 +28,9 @@ export class Event {
   @Column('text')
   description: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  amount: number | null;
+
   @Column({ type: 'date' })
   date: string;
 

@@ -32,6 +32,7 @@ export function useCreateEvent(horseId: string) {
       description: string;
       date: string;
       horse_id: string;
+      amount?: string;
       photos?: File[];
     }) => {
       const formData = new FormData();
@@ -39,6 +40,7 @@ export function useCreateEvent(horseId: string) {
       formData.append('description', payload.description);
       formData.append('date', payload.date);
       formData.append('horse_id', payload.horse_id);
+      if (payload.amount) formData.append('amount', payload.amount);
 
       if (payload.photos) {
         payload.photos.forEach((file) => formData.append('photos', file));

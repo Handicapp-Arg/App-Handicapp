@@ -44,6 +44,7 @@ export interface Event {
   id: string;
   type: EventType;
   description: string;
+  amount: number | null;
   date: string;
   horse_id: string;
   horse?: Horse;

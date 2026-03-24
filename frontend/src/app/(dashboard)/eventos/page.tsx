@@ -31,13 +31,17 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
   const [type, setType] = useState('salud');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [amount, setAmount] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const createEvent = useCreateEvent(horseId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!horseId) return;
-    await createEvent.mutateAsync({ type, description, date, horse_id: horseId, photos });
+    await createEvent.mutateAsync({
+      type, description, date, horse_id: horseId, photos,
+      amount: type === 'gasto' && amount ? amount : undefined,
+    });
     onClose();
   };
 
@@ -57,7 +61,8 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
           <ModalForm
             horses={horses} horseId={horseId} setHorseId={setHorseId}
             type={type} setType={setType} description={description} setDescription={setDescription}
-            date={date} setDate={setDate} photos={photos} setPhotos={setPhotos}
+            date={date} setDate={setDate} amount={amount} setAmount={setAmount}
+            photos={photos} setPhotos={setPhotos}
             onSubmit={handleSubmit} isPending={createEvent.isPending} isError={createEvent.isError}
             onCancel={onClose}
           />
@@ -79,7 +84,8 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
             <ModalForm
               horses={horses} horseId={horseId} setHorseId={setHorseId}
               type={type} setType={setType} description={description} setDescription={setDescription}
-              date={date} setDate={setDate} photos={photos} setPhotos={setPhotos}
+              date={date} setDate={setDate} amount={amount} setAmount={setAmount}
+              photos={photos} setPhotos={setPhotos}
               onSubmit={handleSubmit} isPending={createEvent.isPending} isError={createEvent.isError}
               onCancel={onClose}
             />
@@ -94,13 +100,14 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
 
 function ModalForm({
   horses, horseId, setHorseId, type, setType, description, setDescription,
-  date, setDate, photos, setPhotos, onSubmit, isPending, isError, onCancel,
+  date, setDate, amount, setAmount, photos, setPhotos, onSubmit, isPending, isError, onCancel,
 }: {
   horses: { id: string; name: string }[];
   horseId: string; setHorseId: (v: string) => void;
   type: string; setType: (v: string) => void;
   description: string; setDescription: (v: string) => void;
   date: string; setDate: (v: string) => void;
+  amount: string; setAmount: (v: string) => void;
   photos: File[]; setPhotos: (v: File[]) => void;
   onSubmit: (e: React.FormEvent) => void;
   isPending: boolean; isError: boolean; onCancel: () => void;
@@ -153,6 +160,23 @@ function ModalForm({
           className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
         />
       </div>
+
+      {/* Monto (solo gasto) */}
+      {type === 'gasto' && (
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Monto ($)</label>
+          <input
+            type="number"
+            required
+            min="0"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+          />
+        </div>
+      )}
 
       {/* Descripción */}
       <div className="space-y-1.5">
@@ -331,6 +355,11 @@ export default function EventosPage() {
                     {new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
+                {event.amount != null && (
+                  <p className="text-sm font-semibold text-purple-700 mb-1">
+                    ${Number(event.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  </p>
+                )}
                 <p className="text-sm text-gray-700 leading-relaxed">{event.description}</p>
                 {event.photos && event.photos.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">

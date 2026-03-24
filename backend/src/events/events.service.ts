@@ -40,7 +40,10 @@ export class EventsService {
 
     this.assertAccess(horse, user);
 
-    const event = this.eventRepository.create(dto);
+    const event = this.eventRepository.create({
+      ...dto,
+      amount: dto.amount ? parseFloat(dto.amount) : null,
+    });
 
     if (files?.length) {
       event.photos = files.map((file) =>

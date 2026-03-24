@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsDateString, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsDateString, IsUUID, IsOptional, IsNumberString } from 'class-validator';
 import { EventType } from '../event.entity';
 
 export class CreateEventDto {
@@ -13,4 +13,8 @@ export class CreateEventDto {
 
   @IsUUID()
   horse_id: string;
+
+  @IsOptional()
+  @IsNumberString()
+  amount?: string;
 }
