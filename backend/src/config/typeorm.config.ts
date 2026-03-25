@@ -15,7 +15,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
   entities: [User, Horse, Event, EventPhoto, Permission, Role, Notification],
-  synchronize: process.env.NODE_ENV !== 'production',
+  synchronize: process.env.NODE_ENV == 'production',
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,
 
