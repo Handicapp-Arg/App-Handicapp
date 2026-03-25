@@ -3,8 +3,8 @@ services:
     name: handicapp-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node dist/main
     envVars:
       - key: NODE_ENV
         value: production
