@@ -8,6 +8,7 @@ import api from '@/lib/api';
 const roleLabels: Record<string, string> = {
   propietario: 'Propietario',
   establecimiento: 'Establecimiento',
+  admin: 'Administrador',
 };
 
 interface RoleOption {
@@ -28,9 +29,8 @@ export default function RegistroPage() {
 
   useEffect(() => {
     api.get('/roles').then(({ data }) => {
-      const filtered = data.filter((r: RoleOption) => r.name !== 'admin');
-      setRoles(filtered);
-      if (filtered.length > 0) setRole(filtered[0].name);
+      setRoles(data);
+      if (data.length > 0) setRole(data[0].name);
     });
   }, []);
 
@@ -133,7 +133,7 @@ export default function RegistroPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1.5">Tipo de cuenta</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {roles.map((r) => (
               <button
                 key={r.id}
