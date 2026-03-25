@@ -18,4 +18,9 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,
+
+  // 👇🔥 ESTO ES LO QUE TE FALTABA
+  ssl: process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: false }
+    : false,
 });
