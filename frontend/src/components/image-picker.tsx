@@ -28,7 +28,8 @@ export default function ImagePicker({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [tempShots, setTempShots] = useState<{ file: File; preview: string }[]>([]);
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [cameraIndex, setCameraIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,32 +46,50 @@ export default function ImagePicker({
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
-  const startStream = useCallback(async (facing: 'environment' | 'user') => {
+  const startStreamByDeviceId = useCallback(async (deviceId?: string) => {
     stopCamera();
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 960 } },
+    const constraints: MediaStreamConstraints = {
+      video: deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 960 } }
+        : { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
       audio: false,
-    });
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     streamRef.current = stream;
     if (videoRef.current) videoRef.current.srcObject = stream;
+    return stream;
   }, [stopCamera]);
 
   const openCamera = async () => {
     setCameraError('');
     setTempShots([]);
     try {
-      await startStream(facingMode);
+      // Get initial stream (back camera by default)
+      const stream = await startStreamByDeviceId();
       setCameraOpen(true);
+      requestAnimationFrame(() => {
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      });
+      // Enumerate all video cameras (needs permission first)
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+      setCameras(videoDevices);
+      // Find which camera is currently active
+      const activeTrack = stream.getVideoTracks()[0];
+      const activeDeviceId = activeTrack?.getSettings().deviceId;
+      const idx = videoDevices.findIndex((d) => d.deviceId === activeDeviceId);
+      setCameraIndex(idx >= 0 ? idx : 0);
     } catch {
       setCameraError('No se pudo acceder a la cámara. Verificá los permisos.');
     }
   };
 
   const switchCamera = async () => {
-    const next = facingMode === 'environment' ? 'user' : 'environment';
+    if (cameras.length < 2) return;
+    const nextIndex = (cameraIndex + 1) % cameras.length;
     try {
-      await startStream(next);
-      setFacingMode(next);
+      await startStreamByDeviceId(cameras[nextIndex].deviceId);
+      setCameraIndex(nextIndex);
     } catch {
       setCameraError('No se pudo cambiar de cámara.');
     }
@@ -277,32 +296,33 @@ export default function ImagePicker({
 
       {/* Camera viewfinder — fullscreen overlay */}
       {cameraOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black">
-          {/* Video fills available space */}
-          <div className="relative flex-1 min-h-0">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="h-full w-full object-cover"
-            />
-            {/* Switch camera button */}
+        <div className="fixed inset-0 z-50 bg-black">
+          {/* Video covers the entire screen */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+
+          {/* Switch camera button — top right (hidden if only 1 camera) */}
+          {cameras.length > 1 && (
             <button
               type="button"
               onClick={switchCamera}
-              className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white active:bg-black/70 transition"
+              className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white active:bg-black/70 transition"
               aria-label="Cambiar cámara"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182M2.985 14.652" />
               </svg>
             </button>
-          </div>
+          )}
 
-          {/* Temp shots strip */}
+          {/* Temp shots strip — above controls */}
           {tempShots.length > 0 && (
-            <div className="flex gap-2 bg-black/80 px-3 py-2">
+            <div className="absolute bottom-28 left-0 right-0 z-10 flex gap-2 px-3 py-2">
               {tempShots.map((shot, i) => (
                 <div key={i} className="relative h-14 w-14 shrink-0">
                   <img
@@ -322,12 +342,12 @@ export default function ImagePicker({
             </div>
           )}
 
-          {/* Controls bar */}
-          <div className="flex items-center justify-between bg-black/80 px-6 py-5 safe-bottom">
+          {/* Controls bar — bottom, overlaid on video */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between bg-black/40 px-6 py-5 safe-bottom">
             <button
               type="button"
               onClick={cancelCamera}
-              className="rounded-full bg-gray-700/80 px-5 py-2.5 text-sm font-medium text-white active:bg-gray-600 transition"
+              className="rounded-full bg-black/50 px-5 py-2.5 text-sm font-medium text-white active:bg-black/70 transition"
             >
               Cancelar
             </button>
@@ -341,7 +361,7 @@ export default function ImagePicker({
               <div className="h-11 w-11 rounded-full bg-red-500" />
             </button>
 
-            {/* Accept button — visible only when shots taken, otherwise invisible placeholder */}
+            {/* Accept button */}
             {tempShots.length > 0 ? (
               <button
                 type="button"
