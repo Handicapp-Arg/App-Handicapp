@@ -23,7 +23,10 @@ export function Navbar() {
 
   const links = [
     ...navLinks,
-    ...(user?.role === 'admin' ? [{ href: '/permisos', label: 'Permisos' }] : []),
+    ...(user?.role === 'admin' ? [
+      { href: '/permisos', label: 'Permisos' },
+      { href: '/notificaciones-config', label: 'Notificaciones' },
+    ] : []),
   ];
 
   return (
