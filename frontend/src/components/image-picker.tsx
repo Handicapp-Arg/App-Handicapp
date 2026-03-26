@@ -28,6 +28,7 @@ export default function ImagePicker({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [tempShots, setTempShots] = useState<{ file: File; preview: string }[]>([]);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,21 +45,34 @@ export default function ImagePicker({
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
+  const startStream = useCallback(async (facing: 'environment' | 'user') => {
+    stopCamera();
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false,
+    });
+    streamRef.current = stream;
+    if (videoRef.current) videoRef.current.srcObject = stream;
+  }, [stopCamera]);
+
   const openCamera = async () => {
     setCameraError('');
     setTempShots([]);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
-        audio: false,
-      });
-      streamRef.current = stream;
+      await startStream(facingMode);
       setCameraOpen(true);
-      setTimeout(() => {
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      }, 50);
     } catch {
       setCameraError('No se pudo acceder a la cámara. Verificá los permisos.');
+    }
+  };
+
+  const switchCamera = async () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    try {
+      await startStream(next);
+      setFacingMode(next);
+    } catch {
+      setCameraError('No se pudo cambiar de cámara.');
     }
   };
 
@@ -273,6 +287,17 @@ export default function ImagePicker({
               muted
               className="h-full w-full object-cover"
             />
+            {/* Switch camera button */}
+            <button
+              type="button"
+              onClick={switchCamera}
+              className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white active:bg-black/70 transition"
+              aria-label="Cambiar cámara"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182M2.985 14.652" />
+              </svg>
+            </button>
           </div>
 
           {/* Temp shots strip */}
