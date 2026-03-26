@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { NotificationsService } from '../notifications.service';
 import { NotificationSettingsService } from '../notification-settings.service';
 import { NotificationsGateway } from '../notifications.gateway';
 import { EventCreatedEvent } from '../events/event-created.event';
 import { NotificationType } from '../notification.entity';
-import { resolveRecipients } from '../resolvers/recipient-resolver';
-import { User } from '../../auth/user.entity';
+import { HorseUser } from '../../horses/horse-user.entity';
 import { EVENT_TYPE_LABEL_MAP } from '../../events/event-type.constants';
 
 @Injectable()
@@ -17,36 +16,35 @@ export class EventCreatedListener {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: NotificationSettingsService,
     private readonly gateway: NotificationsGateway,
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    @InjectRepository(HorseUser)
+    private readonly horseUserRepo: Repository<HorseUser>,
   ) {}
 
   @OnEvent('event.created')
   async handle(payload: EventCreatedEvent): Promise<void> {
     const { event, horse, creator } = payload;
-    const recipientIds = resolveRecipients(horse, creator.id);
 
-    if (!recipientIds.length) return;
-
-    const recipients = await this.userRepo.find({
-      where: { id: In(recipientIds) },
-      select: ['id', 'role'],
+    // Get all users linked to this horse with their roles
+    const horseUsers = await this.horseUserRepo.find({
+      where: { horse_id: horse.id },
+      relations: ['user'],
     });
 
-    const allowedIds = recipients
-      .filter((u) => this.settingsService.shouldNotify(u.role, event.type))
-      .map((u) => u.id);
+    // Filter: exclude the creator, and check notification settings by role
+    const recipients = horseUsers
+      .filter((hu) => hu.user_id !== creator.id)
+      .filter((hu) => this.settingsService.shouldNotify(hu.user.role, event.type));
 
-    if (!allowedIds.length) return;
+    if (!recipients.length) return;
 
     const typeLabel = EVENT_TYPE_LABEL_MAP[event.type] || event.type;
 
     const notifications = await this.notificationsService.createMany(
-      allowedIds.map((recipientId) => ({
+      recipients.map((hu) => ({
         type: NotificationType.EVENT_CREATED,
         title: `Nuevo evento de ${typeLabel}`,
         message: `${creator.name} registró un evento para ${horse.name}: ${event.description}`,
-        recipient_id: recipientId,
+        recipient_id: hu.user_id,
         event_id: event.id,
         actor_id: creator.id,
       })),

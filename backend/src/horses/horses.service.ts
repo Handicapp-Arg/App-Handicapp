@@ -1,5 +1,6 @@
 import {
   Injectable,
+  OnModuleInit,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -7,18 +8,36 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Horse } from './horse.entity';
+import { HorseUser } from './horse-user.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
-export class HorsesService {
+export class HorsesService implements OnModuleInit {
   constructor(
     @InjectRepository(Horse)
     private readonly horseRepository: Repository<Horse>,
+    @InjectRepository(HorseUser)
+    private readonly horseUserRepository: Repository<HorseUser>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  async onModuleInit() {
+    await this.backfillHorseUsers();
+  }
+
+  /**
+   * One-time backfill: ensures every existing horse has its
+   * owner and establishment in horse_users.
+   */
+  private async backfillHorseUsers(): Promise<void> {
+    const horses = await this.horseRepository.find();
+    for (const horse of horses) {
+      await this.syncHorseUsers(horse);
+    }
+  }
 
   async create(dto: CreateHorseDto, user: User): Promise<Horse> {
     let owner_id: string;
@@ -51,7 +70,9 @@ export class HorsesService {
       establishment_id,
     });
 
-    return this.horseRepository.save(horse);
+    const saved = await this.horseRepository.save(horse);
+    await this.syncHorseUsers(saved);
+    return saved;
   }
 
   async findAll(user: User): Promise<Horse[]> {
@@ -99,7 +120,14 @@ export class HorsesService {
     this.assertAccess(horse, user);
 
     Object.assign(horse, dto);
-    return this.horseRepository.save(horse);
+    const saved = await this.horseRepository.save(horse);
+
+    // Re-sync if owner or establishment changed
+    if (dto.establishment_id !== undefined) {
+      await this.syncHorseUsers(saved);
+    }
+
+    return saved;
   }
 
   async uploadImage(
@@ -152,6 +180,34 @@ export class HorsesService {
     }
 
     await this.horseRepository.remove(horse);
+    // horse_users se borran por CASCADE
+  }
+
+  /**
+   * Syncs the horse_users table with owner_id and establishment_id.
+   * Keeps manually-added users (other roles) intact.
+   */
+  private async syncHorseUsers(horse: Horse): Promise<void> {
+    // Get current auto-linked user IDs (owner + establishment)
+    const autoIds = [horse.owner_id];
+    if (horse.establishment_id) autoIds.push(horse.establishment_id);
+
+    // Get existing horse_users for this horse
+    const existing = await this.horseUserRepository.find({
+      where: { horse_id: horse.id },
+    });
+
+    const existingUserIds = new Set(existing.map((hu) => hu.user_id));
+
+    // Add missing auto-linked users
+    const toAdd = autoIds.filter((id) => !existingUserIds.has(id));
+    if (toAdd.length) {
+      await this.horseUserRepository.save(
+        toAdd.map((user_id) =>
+          this.horseUserRepository.create({ horse_id: horse.id, user_id }),
+        ),
+      );
+    }
   }
 
   private assertAccess(horse: Horse, user: User): void {

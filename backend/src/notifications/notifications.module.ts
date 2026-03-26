@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { Notification } from './notification.entity';
 import { NotificationSetting } from './notification-setting.entity';
 import { User } from '../auth/user.entity';
+import { HorseUser } from '../horses/horse-user.entity';
 import { NotificationsService } from './notifications.service';
 import { NotificationSettingsService } from './notification-settings.service';
 import { NotificationsController } from './notifications.controller';
@@ -14,7 +15,7 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Notification, NotificationSetting, User]),
+    TypeOrmModule.forFeature([Notification, NotificationSetting, User, HorseUser]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'handicapp-secret-dev',
       signOptions: { expiresIn: '7d' },

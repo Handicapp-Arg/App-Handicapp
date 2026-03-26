@@ -5,11 +5,12 @@ import * as multer from 'multer';
 import { HorsesController } from './horses.controller';
 import { HorsesService } from './horses.service';
 import { Horse } from './horse.entity';
+import { HorseUser } from './horse-user.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Horse]),
+    TypeOrmModule.forFeature([Horse, HorseUser]),
     MulterModule.register({ storage: multer.memoryStorage() }),
     AuthModule,
   ],
