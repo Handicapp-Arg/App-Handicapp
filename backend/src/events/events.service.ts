@@ -4,12 +4,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { Horse } from '../horses/horse.entity';
 import { CreateEventDto } from './dto/create-event.dto';
+import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
 import { User } from '../auth/user.entity';
 import { EventCreatedEvent } from '../notifications/events/event-created.event';
 
@@ -59,6 +60,44 @@ export class EventsService {
     );
 
     return savedEvent;
+  }
+
+  async createBulk(dto: CreateBulkEventDto, user: User): Promise<Event[]> {
+    const horses = await this.horseRepository.find({
+      where: { id: In(dto.horse_ids) },
+    });
+
+    if (horses.length !== dto.horse_ids.length) {
+      throw new NotFoundException('Uno o más caballos no encontrados');
+    }
+
+    for (const horse of horses) {
+      this.assertAccess(horse, user);
+    }
+
+    const amount = dto.amount ? parseFloat(dto.amount) : null;
+    const saved: Event[] = [];
+
+    for (const horse of horses) {
+      const event = this.eventRepository.create({
+        type: dto.type,
+        description: dto.description,
+        date: dto.date,
+        horse_id: horse.id,
+        amount,
+      });
+
+      const persisted = await this.eventRepository.save(event);
+
+      this.eventEmitter.emit(
+        'event.created',
+        new EventCreatedEvent(persisted, horse, user),
+      );
+
+      saved.push(persisted);
+    }
+
+    return saved;
   }
 
   async findAllByUser(user: User): Promise<Event[]> {

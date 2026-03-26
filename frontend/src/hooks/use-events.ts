@@ -23,6 +23,26 @@ export function useEventsByHorse(horseId: string) {
   });
 }
 
+export function useCreateBulkEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      type: string;
+      description: string;
+      date: string;
+      horse_ids: string[];
+      amount?: string;
+    }) => {
+      const { data } = await api.post('/events/bulk', payload);
+      return data as Event[];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+}
+
 export function useCreateEvent(horseId: string) {
   const queryClient = useQueryClient();
 

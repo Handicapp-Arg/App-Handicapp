@@ -15,6 +15,7 @@ import { PermissionGuard } from '../common/guards/permission.guard';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
+import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
 
@@ -32,6 +33,15 @@ export class EventsController {
     @GetUser() user: User,
   ) {
     return this.eventsService.create(dto, user, files);
+  }
+
+  @Post('bulk')
+  @RequirePermission('events', 'create')
+  createBulk(
+    @Body(ValidationPipe) dto: CreateBulkEventDto,
+    @GetUser() user: User,
+  ) {
+    return this.eventsService.createBulk(dto, user);
   }
 
   @Get('all')
