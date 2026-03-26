@@ -261,21 +261,25 @@ export default function ImagePicker({
         <p className="mt-1 text-sm text-red-600">{cameraError}</p>
       )}
 
-      {/* Camera viewfinder */}
+      {/* Camera viewfinder — fullscreen overlay */}
       {cameraOpen && (
-        <div className="mt-2 rounded-lg border border-gray-200 bg-black overflow-hidden">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full max-h-64 object-contain"
-          />
+        <div className="fixed inset-0 z-50 flex flex-col bg-black">
+          {/* Video fills available space */}
+          <div className="relative flex-1 min-h-0">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="h-full w-full object-cover"
+            />
+          </div>
 
+          {/* Temp shots strip */}
           {tempShots.length > 0 && (
-            <div className="flex flex-wrap gap-2 bg-gray-900 p-2">
+            <div className="flex gap-2 bg-black/80 px-3 py-2">
               {tempShots.map((shot, i) => (
-                <div key={i} className="relative h-16 w-16">
+                <div key={i} className="relative h-14 w-14 shrink-0">
                   <img
                     src={shot.preview}
                     alt={`Captura ${i + 1}`}
@@ -293,29 +297,36 @@ export default function ImagePicker({
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-3 bg-gray-900 p-3">
+          {/* Controls bar */}
+          <div className="flex items-center justify-between bg-black/80 px-6 py-5 safe-bottom">
             <button
               type="button"
               onClick={cancelCamera}
-              className="rounded-md bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600 transition"
+              className="rounded-full bg-gray-700/80 px-5 py-2.5 text-sm font-medium text-white active:bg-gray-600 transition"
             >
               Cancelar
             </button>
+
+            {/* Shutter button */}
             <button
               type="button"
               onClick={takePhoto}
-              className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-white hover:bg-gray-200 transition"
+              className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white active:bg-gray-200 transition"
             >
-              <div className="h-8 w-8 rounded-full bg-red-500" />
+              <div className="h-11 w-11 rounded-full bg-red-500" />
             </button>
-            {tempShots.length > 0 && (
+
+            {/* Accept button — visible only when shots taken, otherwise invisible placeholder */}
+            {tempShots.length > 0 ? (
               <button
                 type="button"
                 onClick={acceptPhotos}
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 transition"
+                className="rounded-full bg-green-600 px-5 py-2.5 text-sm font-medium text-white active:bg-green-500 transition"
               >
                 Aceptar{!single && ` (${tempShots.length})`}
               </button>
+            ) : (
+              <div className="w-[88px]" />
             )}
           </div>
         </div>
