@@ -13,7 +13,7 @@ export class EventPhoto {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ nullable: true })
   url: string;
 
   @Column({ nullable: true })
