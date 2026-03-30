@@ -35,7 +35,8 @@ export enum EventType {
 
 export interface EventPhoto {
   id: string;
-  filename: string;
+  url: string;
+  public_id: string;
   event_id: string;
   created_at: string;
 }

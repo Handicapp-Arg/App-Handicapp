@@ -12,11 +12,11 @@ export class CloudinaryService {
     });
   }
 
-  async upload(file: Express.Multer.File): Promise<UploadApiResponse> {
+  async upload(file: Express.Multer.File, folder = 'handicapp/horses'): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
         {
-          folder: 'handicapp/horses',
+          folder,
           transformation: [
             { width: 800, height: 800, crop: 'limit', quality: 'auto' },
           ],

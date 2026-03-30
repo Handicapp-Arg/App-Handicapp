@@ -14,7 +14,10 @@ export class EventPhoto {
   id: string;
 
   @Column()
-  filename: string;
+  url: string;
+
+  @Column({ nullable: true })
+  public_id: string;
 
   @Column('uuid')
   event_id: string;

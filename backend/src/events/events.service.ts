@@ -13,6 +13,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
 import { User } from '../auth/user.entity';
 import { EventCreatedEvent } from '../notifications/events/event-created.event';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class EventsService {
@@ -24,6 +25,7 @@ export class EventsService {
     @InjectRepository(Horse)
     private readonly horseRepository: Repository<Horse>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(
@@ -47,8 +49,11 @@ export class EventsService {
     });
 
     if (files?.length) {
-      event.photos = files.map((file) =>
-        this.photoRepository.create({ filename: file.filename }),
+      const uploaded = await Promise.all(
+        files.map((file) => this.cloudinaryService.upload(file, 'handicapp/events')),
+      );
+      event.photos = uploaded.map((result) =>
+        this.photoRepository.create({ url: result.secure_url, public_id: result.public_id }),
       );
     }
 

@@ -496,12 +496,12 @@ export default function EventosPage() {
                     {event.photos.map((photo) => (
                       <a
                         key={photo.id}
-                        href={`${API_URL}/uploads/events/${photo.filename}`}
+                        href={photo.url}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         <img
-                          src={`${API_URL}/uploads/events/${photo.filename}`}
+                          src={photo.url}
                           alt="Foto del evento"
                           className="h-16 w-16 rounded-lg object-cover border border-gray-100 hover:opacity-80 transition sm:h-20 sm:w-20"
                         />

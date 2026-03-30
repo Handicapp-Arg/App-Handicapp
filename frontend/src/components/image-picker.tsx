@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import ImageCropModal from './image-crop-modal';
 
 interface ImagePickerProps {
   /** Already-selected files (controlled) */
@@ -25,6 +26,7 @@ export default function ImagePicker({
   onRemoveExisting,
 }: ImagePickerProps) {
   const [previews, setPreviews] = useState<string[]>([]);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [tempShots, setTempShots] = useState<{ file: File; preview: string }[]>([]);
@@ -108,17 +110,11 @@ export default function ImagePicker({
     ctx.drawImage(video, 0, 0);
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      const preview = URL.createObjectURL(blob);
-
-      if (single) {
-        // In single mode, replace any previous temp shot
-        tempShots.forEach((s) => URL.revokeObjectURL(s.preview));
-        setTempShots([{ file, preview }]);
-      } else {
-        setTempShots((prev) => [...prev, { file, preview }]);
-      }
-    }, 'image/jpeg', 0.85);
+      const src = URL.createObjectURL(blob);
+      stopCamera();
+      setCameraOpen(false);
+      setCropSrc(src);
+    }, 'image/jpeg', 0.92);
   };
 
   const removeTempShot = (index: number) => {
@@ -159,20 +155,28 @@ export default function ImagePicker({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
     if (!selected?.length) return;
+    const src = URL.createObjectURL(selected[0]);
+    setCropSrc(src);
+    e.target.value = '';
+  };
 
-    const newFiles = Array.from(selected);
-    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
-
+  const handleCropSave = (croppedFile: File) => {
+    const preview = URL.createObjectURL(croppedFile);
     if (single) {
       previews.forEach((p) => URL.revokeObjectURL(p));
-      onChange([newFiles[0]]);
-      setPreviews([newPreviews[0]]);
+      onChange([croppedFile]);
+      setPreviews([preview]);
     } else {
-      onChange([...files, ...newFiles]);
-      setPreviews((prev) => [...prev, ...newPreviews]);
+      onChange([...files, croppedFile]);
+      setPreviews((prev) => [...prev, preview]);
     }
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  };
 
-    e.target.value = '';
+  const handleCropCancel = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
   };
 
   // --- Remove ---
@@ -187,6 +191,21 @@ export default function ImagePicker({
 
   const hasExisting = !!existingUrl && files.length === 0;
   const showButtons = !cameraOpen && (!single || (files.length === 0 && !hasExisting));
+
+  // Mientras hay crop activo, mostrar solo el editor inline
+  if (cropSrc) {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-1">{label}</label>
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={single ? 4 / 3 : undefined}
+          onCancel={handleCropCancel}
+          onSave={handleCropSave}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -384,6 +403,7 @@ export default function ImagePicker({
           {files.length} foto{files.length !== 1 ? 's' : ''} lista{files.length !== 1 ? 's' : ''}
         </p>
       )}
+
     </div>
   );
 }

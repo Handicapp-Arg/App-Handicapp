@@ -246,12 +246,12 @@ export default function EventCalendar({ events }: EventCalendarProps) {
                     {selectedEvent.photos.map((photo) => (
                       <a
                         key={photo.id}
-                        href={`${API_URL}/uploads/events/${photo.filename}`}
+                        href={photo.url}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         <img
-                          src={`${API_URL}/uploads/events/${photo.filename}`}
+                          src={photo.url}
                           alt="Foto del evento"
                           className="h-24 w-24 rounded-lg object-cover border border-gray-200 hover:opacity-80 transition"
                         />
