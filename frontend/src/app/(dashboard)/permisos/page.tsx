@@ -88,27 +88,17 @@ function RoleCard({
         </div>
       </div>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-gray-100 bg-gray-50">
-            <th className="px-5 py-2.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Recurso</th>
-            {actions.map((a) => (
-              <th key={a} className="px-4 py-2.5 text-center text-xs font-medium text-gray-400 uppercase tracking-wide">
-                {actionLabels[a]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {resources.map((resource) => (
-            <tr key={resource} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
-              <td className="px-5 py-3 text-sm font-medium" style={{ color: '#374151' }}>
-                {resourceLabels[resource]}
-              </td>
+      <div className="divide-y divide-gray-50">
+        {resources.map((resource) => (
+          <div key={resource} className="px-5 py-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              {resourceLabels[resource]}
+            </p>
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
               {actions.map((action) => {
                 const key = `${resource}:${action}`;
                 return (
-                  <td key={action} className="px-4 py-3 text-center">
+                  <label key={action} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={state[key] || false}
@@ -116,13 +106,14 @@ function RoleCard({
                       className="h-4 w-4 cursor-pointer"
                       style={{ accentColor: '#0f1f3d' }}
                     />
-                  </td>
+                    <span className="text-sm text-gray-700">{actionLabels[action]}</span>
+                  </label>
                 );
               })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -205,6 +196,8 @@ function RoleNotifCard({
   );
 }
 
+type Tab = 'permisos' | 'notificaciones';
+
 export default function PermisosPage() {
   const { user } = useAuth();
   const { data: permissions, isLoading: loadingPerms } = usePermissions();
@@ -214,6 +207,7 @@ export default function PermisosPage() {
   const createRole = useCreateRole();
   const deleteRole = useDeleteRole();
   const [newRoleName, setNewRoleName] = useState('');
+  const [tab, setTab] = useState<Tab>('permisos');
 
   if (user?.role !== 'admin') return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
@@ -259,43 +253,59 @@ export default function PermisosPage() {
     await deleteRole.mutateAsync(roleId);
   };
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'permisos', label: 'Roles y Permisos' },
+    { id: 'notificaciones', label: 'Notificaciones' },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
 
-      {/* ── Sección 1: Roles y Permisos ── */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Roles y Permisos</h1>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className="flex-1 rounded-lg py-2 text-sm font-medium transition-colors cursor-pointer"
+            style={tab === t.id
+              ? { backgroundColor: '#0f1f3d', color: '#fff' }
+              : { color: '#6b7280' }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Crear rol */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <form onSubmit={handleCreateRole} className="flex gap-2 items-end">
-            <div className="flex-1 space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Nuevo rol</label>
-              <input
-                type="text"
-                value={newRoleName}
-                onChange={(e) => setNewRoleName(e.target.value)}
-                placeholder="ej: veterinario"
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={createRole.isPending || !newRoleName.trim()}
-              style={BTN_GREEN}
-              onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
-              className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
-            >
-              {createRole.isPending ? 'Creando...' : 'Crear rol'}
-            </button>
-          </form>
-          {createRole.isError && <p className="mt-2 text-xs text-red-600">Error al crear el rol</p>}
-        </div>
-
+      {/* Sección: Roles y Permisos */}
+      {tab === 'permisos' && (
         <div className="space-y-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <form onSubmit={handleCreateRole} className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">Nuevo rol</label>
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  placeholder="ej: veterinario"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={createRole.isPending || !newRoleName.trim()}
+                style={BTN_GREEN}
+                onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
+                className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
+              >
+                {createRole.isPending ? 'Creando...' : 'Crear rol'}
+              </button>
+            </form>
+            {createRole.isError && <p className="mt-2 text-xs text-red-600">Error al crear el rol</p>}
+          </div>
+
           {roleNames.map((roleName) => {
             const roleObj = roles!.find((r) => r.name === roleName)!;
             return (
@@ -309,29 +319,24 @@ export default function PermisosPage() {
             );
           })}
         </div>
-      </div>
+      )}
 
-      {/* ── Separador ── */}
-      <div className="border-t border-gray-200" />
-
-      {/* ── Sección 2: Notificaciones por evento ── */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Notificaciones por evento</h2>
-          <p className="mt-0.5 text-sm text-gray-500">
+      {/* Sección: Notificaciones */}
+      {tab === 'notificaciones' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
             Qué roles reciben notificaciones según el tipo de evento creado.
           </p>
+          {roleNames.map((roleName) => (
+            <RoleNotifCard
+              key={roleName}
+              role={roleName}
+              enabledTypes={settingsByRole[roleName] || []}
+              eventTypes={types}
+            />
+          ))}
         </div>
-
-        {roleNames.map((roleName) => (
-          <RoleNotifCard
-            key={roleName}
-            role={roleName}
-            enabledTypes={settingsByRole[roleName] || []}
-            eventTypes={types}
-          />
-        ))}
-      </div>
+      )}
 
     </div>
   );
