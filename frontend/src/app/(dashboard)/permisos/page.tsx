@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { usePermissions, useUpdatePermissions } from '@/hooks/use-permissions';
 import { useRoles, useCreateRole, useDeleteRole } from '@/hooks/use-roles';
+import {
+  useNotificationSettings,
+  useUpdateNotificationSettings,
+  useEventTypes,
+  type EventTypeMeta,
+} from '@/hooks/use-notification-settings';
 
 const resources = ['horses', 'events'];
 const actions = ['create', 'read', 'update', 'delete'];
@@ -55,7 +61,6 @@ function RoleCard({
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <p className="font-semibold text-gray-900">{roleLabels[role] || role}</p>
         <div className="flex items-center gap-2">
@@ -83,7 +88,6 @@ function RoleCard({
         </div>
       </div>
 
-      {/* Tabla */}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50">
@@ -123,10 +127,90 @@ function RoleCard({
   );
 }
 
+function RoleNotifCard({
+  role,
+  enabledTypes,
+  eventTypes,
+}: {
+  role: string;
+  enabledTypes: string[];
+  eventTypes: EventTypeMeta[];
+}) {
+  const updateSettings = useUpdateNotificationSettings();
+  const [state, setState] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    const map: Record<string, boolean> = {};
+    for (const et of eventTypes) map[et.value] = false;
+    for (const et of enabledTypes) map[et] = true;
+    setState(map);
+    setDirty(false);
+  }, [enabledTypes, eventTypes]);
+
+  const toggle = (key: string) => {
+    setState((prev) => ({ ...prev, [key]: !prev[key] }));
+    setDirty(true);
+    setSaved(false);
+  };
+
+  const handleSave = async () => {
+    const types = eventTypes.map((et) => et.value).filter((v) => state[v]);
+    await updateSettings.mutateAsync({ role, eventTypes: types });
+    setSaved(true);
+    setDirty(false);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+        <p className="font-semibold text-gray-900">{roleLabels[role] || role}</p>
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-xs text-emerald-600 font-medium">Guardado</span>}
+          <button
+            onClick={handleSave}
+            disabled={updateSettings.isPending || !dirty}
+            style={BTN_NAVY}
+            onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_NAVY_HOVER)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = BTN_NAVY.backgroundColor)}
+            className="rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40 cursor-pointer transition"
+          >
+            {updateSettings.isPending ? 'Guardando...' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+
+      <div className="px-5 py-3">
+        <div className="grid grid-cols-2 gap-1">
+          {eventTypes.map((et) => (
+            <label
+              key={et.value}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={state[et.value] || false}
+                onChange={() => toggle(et.value)}
+                className="h-4 w-4 cursor-pointer"
+                style={{ accentColor: '#0f1f3d' }}
+              />
+              <span className="text-sm text-gray-700">{et.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PermisosPage() {
   const { user } = useAuth();
   const { data: permissions, isLoading: loadingPerms } = usePermissions();
   const { data: roles, isLoading: loadingRoles } = useRoles();
+  const { data: settings, isLoading: loadingSettings } = useNotificationSettings();
+  const { data: eventTypes, isLoading: loadingTypes } = useEventTypes();
   const createRole = useCreateRole();
   const deleteRole = useDeleteRole();
   const [newRoleName, setNewRoleName] = useState('');
@@ -137,18 +221,29 @@ export default function PermisosPage() {
     </div>
   );
 
-  if (loadingPerms || loadingRoles) return (
+  if (loadingPerms || loadingRoles || loadingSettings || loadingTypes) return (
     <div className="flex justify-center py-20">
       <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
     </div>
   );
 
   const roleNames = roles?.map((r) => r.name) || [];
+  const types = eventTypes || [];
+
   const permsByRole: Record<string, { resource: string; action: string }[]> = {};
   for (const name of roleNames) permsByRole[name] = [];
   if (permissions) {
     for (const p of permissions) {
       if (permsByRole[p.role]) permsByRole[p.role].push({ resource: p.resource, action: p.action });
+    }
+  }
+
+  const settingsByRole: Record<string, string[]> = {};
+  for (const name of roleNames) settingsByRole[name] = [];
+  if (settings) {
+    for (const s of settings) {
+      if (!settingsByRole[s.role]) settingsByRole[s.role] = [];
+      settingsByRole[s.role].push(s.event_type);
     }
   }
 
@@ -165,53 +260,79 @@ export default function PermisosPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Roles y Permisos</h1>
-      </div>
+    <div className="space-y-8">
 
-      {/* Crear rol */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <form onSubmit={handleCreateRole} className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Nuevo rol</label>
-            <input
-              type="text"
-              value={newRoleName}
-              onChange={(e) => setNewRoleName(e.target.value)}
-              placeholder="ej: veterinario"
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={createRole.isPending || !newRoleName.trim()}
-            style={BTN_GREEN}
-            onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
-            className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
-          >
-            {createRole.isPending ? 'Creando...' : 'Crear rol'}
-          </button>
-        </form>
-        {createRole.isError && <p className="mt-2 text-xs text-red-600">Error al crear el rol</p>}
-      </div>
-
-      {/* Cards */}
+      {/* ── Sección 1: Roles y Permisos ── */}
       <div className="space-y-4">
-        {roleNames.map((roleName) => {
-          const roleObj = roles!.find((r) => r.name === roleName)!;
-          return (
-            <RoleCard
-              key={roleName}
-              role={roleName}
-              permissions={permsByRole[roleName]}
-              canDelete={roleName !== 'admin'}
-              onDelete={() => handleDeleteRole(roleObj.id, roleObj.name)}
-            />
-          );
-        })}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-gray-900">Roles y Permisos</h1>
+        </div>
+
+        {/* Crear rol */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <form onSubmit={handleCreateRole} className="flex gap-2 items-end">
+            <div className="flex-1 space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Nuevo rol</label>
+              <input
+                type="text"
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                placeholder="ej: veterinario"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={createRole.isPending || !newRoleName.trim()}
+              style={BTN_GREEN}
+              onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
+              className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
+            >
+              {createRole.isPending ? 'Creando...' : 'Crear rol'}
+            </button>
+          </form>
+          {createRole.isError && <p className="mt-2 text-xs text-red-600">Error al crear el rol</p>}
+        </div>
+
+        <div className="space-y-4">
+          {roleNames.map((roleName) => {
+            const roleObj = roles!.find((r) => r.name === roleName)!;
+            return (
+              <RoleCard
+                key={roleName}
+                role={roleName}
+                permissions={permsByRole[roleName]}
+                canDelete={roleName !== 'admin'}
+                onDelete={() => handleDeleteRole(roleObj.id, roleObj.name)}
+              />
+            );
+          })}
+        </div>
       </div>
+
+      {/* ── Separador ── */}
+      <div className="border-t border-gray-200" />
+
+      {/* ── Sección 2: Notificaciones por evento ── */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Notificaciones por evento</h2>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Qué roles reciben notificaciones según el tipo de evento creado.
+          </p>
+        </div>
+
+        {roleNames.map((roleName) => (
+          <RoleNotifCard
+            key={roleName}
+            role={roleName}
+            enabledTypes={settingsByRole[roleName] || []}
+            eventTypes={types}
+          />
+        ))}
+      </div>
+
     </div>
   );
 }

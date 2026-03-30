@@ -25,7 +25,6 @@ export function Navbar() {
     ...navLinks,
     ...(user?.role === 'admin' ? [
       { href: '/permisos', label: 'Permisos' },
-      { href: '/notificaciones-config', label: 'Notificaciones' },
     ] : []),
   ];
 
