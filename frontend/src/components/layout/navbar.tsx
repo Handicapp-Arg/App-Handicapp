@@ -24,6 +24,7 @@ export function Navbar() {
   const links = [
     ...navLinks,
     ...(user?.role === 'admin' ? [
+      { href: '/panel', label: 'Panel' },
       { href: '/permisos', label: 'Permisos' },
     ] : []),
   ];

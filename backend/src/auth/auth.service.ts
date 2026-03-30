@@ -92,6 +92,38 @@ export class AuthService {
     });
   }
 
+  async getAdminOverview() {
+    const users = await this.userRepository
+      .createQueryBuilder('u')
+      .select(['u.id', 'u.name', 'u.email', 'u.role', 'u.created_at'])
+      .where('u.role != :role', { role: 'admin' })
+      .orderBy('u.role', 'ASC')
+      .addOrderBy('u.name', 'ASC')
+      .getMany();
+
+    const horseCounts: { owner_id: string; count: string }[] =
+      await this.userRepository.query(
+        `SELECT owner_id, COUNT(*)::text as count FROM horses GROUP BY owner_id`,
+      );
+
+    const establishmentCounts: { establishment_id: string; count: string }[] =
+      await this.userRepository.query(
+        `SELECT establishment_id, COUNT(*)::text as count FROM horses WHERE establishment_id IS NOT NULL GROUP BY establishment_id`,
+      );
+
+    const horseMap = new Map(horseCounts.map((r) => [r.owner_id, +r.count]));
+    const estMap = new Map(establishmentCounts.map((r) => [r.establishment_id, +r.count]));
+
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      created_at: u.created_at,
+      horse_count: u.role === 'propietario' ? (horseMap.get(u.id) ?? 0) : (estMap.get(u.id) ?? 0),
+    }));
+  }
+
   async changePassword(user: User, dto: ChangePasswordDto): Promise<void> {
     const fullUser = await this.userRepository
       .createQueryBuilder('user')

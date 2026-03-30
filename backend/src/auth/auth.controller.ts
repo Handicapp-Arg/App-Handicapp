@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   ValidationPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -45,6 +46,13 @@ export class AuthController {
       role: user.role,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
+  }
+
+  @Get('admin/overview')
+  @UseGuards(AuthGuard('jwt'))
+  getAdminOverview(@GetUser() user: User) {
+    if (user.role !== 'admin') throw new ForbiddenException();
+    return this.authService.getAdminOverview();
   }
 
   @Get('users')
