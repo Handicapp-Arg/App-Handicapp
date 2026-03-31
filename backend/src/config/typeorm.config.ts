@@ -19,7 +19,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   entities: [User, Horse, HorseUser, Event, EventPhoto, Permission, Role, Notification, NotificationSetting],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
-  dropSchema: false,
+  dropSchema: true,
 
   // 👇🔥 ESTO ES LO QUE TE FALTABA
   ssl: process.env.NODE_ENV === 'production'
