@@ -13,6 +13,7 @@ import {
 } from '@/hooks/use-horses';
 import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
+import ConfirmDialog from '@/components/confirm-dialog';
 import type { Horse } from '@/types';
 
 const inputClass =
@@ -205,6 +206,8 @@ export default function CaballosPage() {
   const [establishmentId, setEstablishmentId] = useState('');
 
   const [editingHorse, setEditingHorse] = useState<Horse | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [confirmRemoveImage, setConfirmRemoveImage] = useState(false);
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -226,9 +229,8 @@ export default function CaballosPage() {
     setEditingHorse(null);
   };
 
-  const handleDelete = async (id: string, horseName: string) => {
-    if (!confirm(`¿Eliminar a ${horseName}? Esta acción no se puede deshacer.`)) return;
-    await deleteHorse.mutateAsync(id);
+  const handleDelete = (id: string, horseName: string) => {
+    setConfirmDelete({ id, name: horseName });
   };
 
   if (isLoading) {
@@ -250,6 +252,36 @@ export default function CaballosPage() {
   return (
     <div className="space-y-6">
 
+      {/* Confirmación eliminar caballo */}
+      {confirmDelete && (
+        <ConfirmDialog
+          title={`¿Eliminar a ${confirmDelete.name}?`}
+          message="Esta accion no se puede deshacer. Se eliminaran todos los eventos asociados."
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={async () => {
+            await deleteHorse.mutateAsync(confirmDelete.id);
+            setConfirmDelete(null);
+          }}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {/* Confirmación eliminar foto */}
+      {confirmRemoveImage && editingHorse && (
+        <ConfirmDialog
+          title="¿Eliminar la foto?"
+          message="Se quitara la imagen del caballo."
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={() => {
+            removeImage.mutate(editingHorse.id);
+            setConfirmRemoveImage(false);
+          }}
+          onCancel={() => setConfirmRemoveImage(false)}
+        />
+      )}
+
       {/* Modal edición */}
       {editingHorse && (
         <EditModal
@@ -258,9 +290,7 @@ export default function CaballosPage() {
           onClose={() => setEditingHorse(null)}
           onSave={handleSaveEdit}
           onImageUpload={(file) => uploadImage.mutate({ id: editingHorse.id, file })}
-          onRemoveImage={() => {
-            if (confirm('¿Eliminar la foto?')) removeImage.mutate(editingHorse.id);
-          }}
+          onRemoveImage={() => setConfirmRemoveImage(true)}
           isPending={updateHorse.isPending}
           isError={updateHorse.isError}
         />

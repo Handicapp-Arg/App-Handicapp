@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { usePermissions, useUpdatePermissions } from '@/hooks/use-permissions';
+import ConfirmDialog from '@/components/confirm-dialog';
 import { useRoles, useCreateRole, useDeleteRole } from '@/hooks/use-roles';
 import {
   useNotificationSettings,
@@ -208,6 +209,7 @@ export default function PermisosPage() {
   const deleteRole = useDeleteRole();
   const [newRoleName, setNewRoleName] = useState('');
   const [tab, setTab] = useState<Tab>('permisos');
+  const [confirmDeleteRole, setConfirmDeleteRole] = useState<{ id: string; name: string } | null>(null);
 
   if (user?.role !== 'admin') return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
@@ -248,9 +250,8 @@ export default function PermisosPage() {
     setNewRoleName('');
   };
 
-  const handleDeleteRole = async (roleId: string, roleName: string) => {
-    if (!confirm(`¿Eliminar el rol "${roleName}"? Se eliminarán todos sus permisos.`)) return;
-    await deleteRole.mutateAsync(roleId);
+  const handleDeleteRole = (roleId: string, roleName: string) => {
+    setConfirmDeleteRole({ id: roleId, name: roleName });
   };
 
   const tabs: { id: Tab; label: string }[] = [
@@ -338,6 +339,20 @@ export default function PermisosPage() {
         </div>
       )}
 
+      {/* Confirmación eliminar rol */}
+      {confirmDeleteRole && (
+        <ConfirmDialog
+          title={`¿Eliminar el rol "${confirmDeleteRole.name}"?`}
+          message="Se eliminaran todos los permisos asociados a este rol."
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={async () => {
+            await deleteRole.mutateAsync(confirmDeleteRole.id);
+            setConfirmDeleteRole(null);
+          }}
+          onCancel={() => setConfirmDeleteRole(null)}
+        />
+      )}
     </div>
   );
 }
