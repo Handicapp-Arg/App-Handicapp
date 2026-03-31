@@ -18,14 +18,20 @@ export class HorseUser {
   @Column('uuid')
   horse_id: string;
 
-  @ManyToOne(() => Horse, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Horse, (horse) => horse.horseUsers, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'horse_id' })
   horse: Horse;
 
   @Column('uuid')
   user_id: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE', eager: true })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @Column({ type: 'decimal', nullable: true, default: null })
+  percentage: number | null;
+
+  @Column({ type: 'varchar', default: 'access' })
+  role: 'owner' | 'access';
 }

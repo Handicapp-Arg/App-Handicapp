@@ -13,6 +13,13 @@ export interface User {
   created_at: string;
 }
 
+export interface HorseOwnership {
+  id: string;
+  user_id: string;
+  percentage: number | null;
+  user?: Pick<User, 'id' | 'name' | 'email'>;
+}
+
 export interface Horse {
   id: string;
   name: string;
@@ -23,6 +30,7 @@ export interface Horse {
   owner?: User;
   establishment?: User;
   events?: Event[];
+  co_owners?: HorseOwnership[];
   created_at: string;
 }
 

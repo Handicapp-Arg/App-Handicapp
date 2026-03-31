@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { Horse } from '@/types';
+import type { Horse, HorseOwnership } from '@/types';
 
 export function useEstablishments() {
   return useQuery<{ id: string; name: string }[]>({
@@ -131,6 +131,52 @@ export function useRemoveHorseImage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}
+
+export function usePropietarios() {
+  return useQuery<{ id: string; name: string; email: string }[]>({
+    queryKey: ['propietarios'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/users?role=propietario');
+      return data;
+    },
+  });
+}
+
+export function useHorseOwnership(horseId: string | null) {
+  return useQuery<HorseOwnership[]>({
+    queryKey: ['horses', horseId, 'ownership'],
+    queryFn: async () => {
+      const { data } = await api.get(`/horses/${horseId}/ownership`);
+      return data;
+    },
+    enabled: !!horseId,
+  });
+}
+
+export function useUpdateOwnership() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      horseId,
+      owners,
+    }: {
+      horseId: string;
+      owners: { user_id: string; percentage: number }[];
+    }) => {
+      const { data } = await api.put(`/horses/${horseId}/ownership`, {
+        owners,
+      });
+      return data;
+    },
+    onSuccess: (_data, { horseId }) => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+      queryClient.invalidateQueries({
+        queryKey: ['horses', horseId, 'ownership'],
+      });
     },
   });
 }

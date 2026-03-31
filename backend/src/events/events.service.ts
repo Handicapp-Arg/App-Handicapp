@@ -9,6 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { Horse } from '../horses/horse.entity';
+import { HorseUser } from '../horses/horse-user.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
 import { User } from '../auth/user.entity';
@@ -24,6 +25,8 @@ export class EventsService {
     private readonly photoRepository: Repository<EventPhoto>,
     @InjectRepository(Horse)
     private readonly horseRepository: Repository<Horse>,
+    @InjectRepository(HorseUser)
+    private readonly horseUserRepository: Repository<HorseUser>,
     private readonly eventEmitter: EventEmitter2,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -41,7 +44,7 @@ export class EventsService {
       throw new NotFoundException('Caballo no encontrado');
     }
 
-    this.assertAccess(horse, user);
+    await this.assertAccess(horse, user);
 
     const event = this.eventRepository.create({
       ...dto,
@@ -77,7 +80,7 @@ export class EventsService {
     }
 
     for (const horse of horses) {
-      this.assertAccess(horse, user);
+      await this.assertAccess(horse, user);
     }
 
     const amount = dto.amount ? parseFloat(dto.amount) : null;
@@ -114,7 +117,12 @@ export class EventsService {
       .orderBy('event.date', 'DESC');
 
     if (user.role === 'propietario') {
-      qb.where('horse.owner_id = :uid', { uid: user.id });
+      // Include events from owned horses and co-owned horses
+      qb.leftJoin('horse.horseUsers', 'hu')
+        .where('horse.owner_id = :uid OR (hu.user_id = :uid AND hu.role = :ownerRole)', {
+          uid: user.id,
+          ownerRole: 'owner',
+        });
     } else if (user.role === 'establecimiento') {
       qb.where('horse.establishment_id = :uid', { uid: user.id });
     }
@@ -131,7 +139,7 @@ export class EventsService {
       throw new NotFoundException('Caballo no encontrado');
     }
 
-    this.assertAccess(horse, user);
+    await this.assertAccess(horse, user);
 
     return this.eventRepository.find({
       where: { horse_id: horseId },
@@ -150,12 +158,12 @@ export class EventsService {
       throw new NotFoundException('Evento no encontrado');
     }
 
-    this.assertAccess(event.horse, user);
+    await this.assertAccess(event.horse, user);
 
     return event;
   }
 
-  private assertAccess(horse: Horse, user: User): void {
+  private async assertAccess(horse: Horse, user: User): Promise<void> {
     if (user.role === 'admin') return;
 
     if (
@@ -167,6 +175,12 @@ export class EventsService {
       user.role === 'establecimiento' &&
       horse.establishment_id === user.id
     ) return;
+
+    // Check if user is a co-owner
+    const coOwner = await this.horseUserRepository.findOne({
+      where: { horse_id: horse.id, user_id: user.id, role: 'owner' },
+    });
+    if (coOwner) return;
 
     throw new ForbiddenException('No tenés acceso a este caballo');
   }

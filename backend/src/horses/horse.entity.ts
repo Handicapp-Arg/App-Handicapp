@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../auth/user.entity';
 import { Event } from '../events/event.entity';
+import { HorseUser } from './horse-user.entity';
 
 @Entity('horses')
 export class Horse {
@@ -44,6 +45,9 @@ export class Horse {
 
   @OneToMany(() => Event, (event) => event.horse)
   events: Event[];
+
+  @OneToMany(() => HorseUser, (hu) => hu.horse)
+  horseUsers: HorseUser[];
 
   @CreateDateColumn()
   created_at: Date;

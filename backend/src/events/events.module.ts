@@ -7,11 +7,12 @@ import { EventsService } from './events.service';
 import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { Horse } from '../horses/horse.entity';
+import { HorseUser } from '../horses/horse-user.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Event, EventPhoto, Horse]),
+    TypeOrmModule.forFeature([Event, EventPhoto, Horse, HorseUser]),
     MulterModule.register({
       storage: multer.memoryStorage(),
       fileFilter: (_req, file, cb) => {

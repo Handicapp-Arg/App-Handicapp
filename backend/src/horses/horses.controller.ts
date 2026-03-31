@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Param,
@@ -21,6 +22,7 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { HorsesService } from './horses.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
+import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
 
@@ -44,20 +46,20 @@ export class HorsesController {
     return this.horsesService.findAll(user);
   }
 
-  @Get(':id')
+  @Get(':id/ownership')
   @RequirePermission('horses', 'read')
-  findOne(@Param('id') id: string, @GetUser() user: User) {
-    return this.horsesService.findOne(id, user);
+  getOwnership(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getOwnership(id, user);
   }
 
-  @Patch(':id')
+  @Put(':id/ownership')
   @RequirePermission('horses', 'update')
-  update(
+  updateOwnership(
     @Param('id') id: string,
-    @Body(ValidationPipe) dto: UpdateHorseDto,
+    @Body(ValidationPipe) dto: UpdateOwnershipDto,
     @GetUser() user: User,
   ) {
-    return this.horsesService.update(id, dto, user);
+    return this.horsesService.updateOwnership(id, dto, user);
   }
 
   @Post(':id/image')
@@ -80,6 +82,22 @@ export class HorsesController {
   @RequirePermission('horses', 'update')
   removeImage(@Param('id') id: string, @GetUser() user: User) {
     return this.horsesService.removeImage(id, user);
+  }
+
+  @Get(':id')
+  @RequirePermission('horses', 'read')
+  findOne(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.findOne(id, user);
+  }
+
+  @Patch(':id')
+  @RequirePermission('horses', 'update')
+  update(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: UpdateHorseDto,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.update(id, dto, user);
   }
 
   @Delete(':id')

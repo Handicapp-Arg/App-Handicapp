@@ -10,11 +10,14 @@ import {
   useUploadHorseImage,
   useRemoveHorseImage,
   useEstablishments,
+  useHorseOwnership,
+  useUpdateOwnership,
+  usePropietarios,
 } from '@/hooks/use-horses';
 import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
-import type { Horse } from '@/types';
+import type { Horse, HorseOwnership } from '@/types';
 
 const inputClass =
   'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#0f1f3d] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/10';
@@ -34,6 +37,175 @@ function calcAge(birthDate: string): string {
   return years === 1 ? '1 año' : `${years} años`;
 }
 
+function OwnershipSection({
+  horseId,
+  ownerId,
+  canManage,
+}: {
+  horseId: string;
+  ownerId: string;
+  canManage: boolean;
+}) {
+  const { data: ownership, isLoading } = useHorseOwnership(horseId);
+  const { data: propietarios } = usePropietarios();
+  const updateOwnership = useUpdateOwnership();
+  const [editing, setEditing] = useState(false);
+  const [entries, setEntries] = useState<{ user_id: string; percentage: number }[]>([]);
+  const [error, setError] = useState('');
+
+  const startEditing = () => {
+    if (ownership?.length) {
+      setEntries(ownership.map((o) => ({ user_id: o.user_id, percentage: Number(o.percentage) || 0 })));
+    } else {
+      setEntries([{ user_id: ownerId, percentage: 100 }]);
+    }
+    setError('');
+    setEditing(true);
+  };
+
+  const total = entries.reduce((s, e) => s + (e.percentage || 0), 0);
+
+  const addEntry = () => {
+    setEntries([...entries, { user_id: '', percentage: 0 }]);
+  };
+
+  const removeEntry = (idx: number) => {
+    if (entries[idx].user_id === ownerId) return;
+    setEntries(entries.filter((_, i) => i !== idx));
+  };
+
+  const save = async () => {
+    if (total !== 100) {
+      setError(`Los porcentajes deben sumar 100% (actual: ${total}%)`);
+      return;
+    }
+    if (entries.some((e) => !e.user_id)) {
+      setError('Seleccioná un propietario para cada entrada');
+      return;
+    }
+    setError('');
+    await updateOwnership.mutateAsync({ horseId, owners: entries });
+    setEditing(false);
+  };
+
+  const usedUserIds = new Set(entries.map((e) => e.user_id));
+  const availablePropietarios = propietarios?.filter((p) => !usedUserIds.has(p.id)) ?? [];
+
+  if (isLoading) return <div className="text-xs text-gray-400">Cargando tenencia...</div>;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-gray-700">Tenencia</p>
+        {canManage && !editing && (
+          <button type="button" onClick={startEditing}
+            className="text-xs font-medium text-[#0f1f3d] hover:underline cursor-pointer">
+            Editar
+          </button>
+        )}
+      </div>
+
+      {!editing ? (
+        <div className="space-y-1.5">
+          {ownership?.length ? ownership.map((o) => (
+            <div key={o.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+              <span className="text-sm text-gray-700">{o.user?.name ?? 'Sin nombre'}</span>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                {o.percentage != null ? `${Number(o.percentage)}%` : '—'}
+              </span>
+            </div>
+          )) : (
+            <p className="text-xs text-gray-400">Propietario único (100%)</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {entries.map((entry, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <select
+                value={entry.user_id}
+                onChange={(e) => {
+                  const updated = [...entries];
+                  updated[idx].user_id = e.target.value;
+                  setEntries(updated);
+                }}
+                disabled={entry.user_id === ownerId}
+                className={`${inputClass} flex-1 ${entry.user_id === ownerId ? 'opacity-60' : ''}`}
+              >
+                <option value="">Seleccionar...</option>
+                {propietarios?.map((p) => (
+                  (p.id === entry.user_id || !usedUserIds.has(p.id) || p.id === entry.user_id) && (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  )
+                ))}
+              </select>
+              <div className="relative w-20">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={entry.percentage || ''}
+                  onChange={(e) => {
+                    const updated = [...entries];
+                    updated[idx].percentage = parseInt(e.target.value) || 0;
+                    setEntries(updated);
+                  }}
+                  className={`${inputClass} pr-6 text-right`}
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+              </div>
+              {entry.user_id !== ownerId && (
+                <button type="button" onClick={() => removeEntry(idx)}
+                  className="p-1 text-red-400 hover:text-red-600 cursor-pointer">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ))}
+
+          {/* Barra de progreso */}
+          <div className="space-y-1">
+            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${total === 100 ? 'bg-emerald-500' : total > 100 ? 'bg-red-500' : 'bg-amber-500'}`}
+                style={{ width: `${Math.min(total, 100)}%` }}
+              />
+            </div>
+            <p className={`text-xs font-medium ${total === 100 ? 'text-emerald-600' : 'text-red-500'}`}>
+              Total: {total}%
+            </p>
+          </div>
+
+          {availablePropietarios.length > 0 && (
+            <button type="button" onClick={addEntry}
+              className="flex items-center gap-1 text-xs font-medium text-[#0f1f3d] hover:underline cursor-pointer">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Agregar co-propietario
+            </button>
+          )}
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <div className="flex gap-2">
+            <button type="button" onClick={save} disabled={updateOwnership.isPending}
+              className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer">
+              {updateOwnership.isPending ? 'Guardando...' : 'Guardar tenencia'}
+            </button>
+            <button type="button" onClick={() => setEditing(false)}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 cursor-pointer">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EditModal({
   horse,
   establishments,
@@ -43,6 +215,7 @@ function EditModal({
   onRemoveImage,
   isPending,
   isError,
+  canManageOwnership,
 }: {
   horse: Horse;
   establishments?: { id: string; name: string }[];
@@ -52,6 +225,7 @@ function EditModal({
   onRemoveImage: () => void;
   isPending: boolean;
   isError: boolean;
+  canManageOwnership: boolean;
 }) {
   const [name, setName] = useState(horse.name);
   const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
@@ -122,6 +296,15 @@ function EditModal({
         </Field>
       )}
       {isError && <p className="text-sm text-red-600">Error al actualizar el caballo</p>}
+
+      {/* Tenencia */}
+      <div className="border-t border-gray-100 pt-4">
+        <OwnershipSection
+          horseId={horse.id}
+          ownerId={horse.owner_id}
+          canManage={canManageOwnership}
+        />
+      </div>
     </div>
   );
 
@@ -293,6 +476,7 @@ export default function CaballosPage() {
           onRemoveImage={() => setConfirmRemoveImage(true)}
           isPending={updateHorse.isPending}
           isError={updateHorse.isError}
+          canManageOwnership={user?.role === 'admin' || editingHorse.owner_id === user?.id}
         />
       )}
 
@@ -441,10 +625,18 @@ export default function CaballosPage() {
                         {horse.establishment.name}
                       </span>
                     )}
-                    {horse.owner && user?.role !== 'propietario' && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                        {horse.owner.name}
-                      </span>
+                    {horse.co_owners && horse.co_owners.length > 0 ? (
+                      horse.co_owners.map((co) => (
+                        <span key={co.id} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                          {co.user?.name ?? 'Sin nombre'}{co.percentage != null ? ` ${Number(co.percentage)}%` : ''}
+                        </span>
+                      ))
+                    ) : (
+                      horse.owner && user?.role !== 'propietario' && (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                          {horse.owner.name}
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
