@@ -9,9 +9,11 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
+import { Horse } from '../horses/horse.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
+import { AdminQueryDto } from './dto/admin-query.dto';
 import { RolesService } from '../roles/roles.service';
 
 @Injectable()
@@ -92,13 +94,30 @@ export class AuthService {
     });
   }
 
-  async getAdminOverview() {
-    const users = await this.userRepository
+  async getAdminOverview(query: AdminQueryDto) {
+    const { search, role, page = 1, limit = 10 } = query;
+
+    const qb = this.userRepository
       .createQueryBuilder('u')
       .select(['u.id', 'u.name', 'u.email', 'u.role', 'u.created_at'])
-      .where('u.role != :role', { role: 'admin' })
-      .orderBy('u.role', 'ASC')
-      .addOrderBy('u.name', 'ASC')
+      .where('u.role != :adminRole', { adminRole: 'admin' });
+
+    if (role) {
+      qb.andWhere('u.role = :role', { role });
+    }
+
+    if (search) {
+      qb.andWhere('(u.name ILIKE :s OR u.email ILIKE :s)', {
+        s: `%${search}%`,
+      });
+    }
+
+    qb.orderBy('u.role', 'ASC').addOrderBy('u.name', 'ASC');
+
+    const total = await qb.getCount();
+    const users = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
       .getMany();
 
     const horseCounts: { owner_id: string; count: string }[] =
@@ -112,16 +131,59 @@ export class AuthService {
       );
 
     const horseMap = new Map(horseCounts.map((r) => [r.owner_id, +r.count]));
-    const estMap = new Map(establishmentCounts.map((r) => [r.establishment_id, +r.count]));
+    const estMap = new Map(
+      establishmentCounts.map((r) => [r.establishment_id, +r.count]),
+    );
 
-    return users.map((u) => ({
+    const data = users.map((u) => ({
       id: u.id,
       name: u.name,
       email: u.email,
       role: u.role,
       created_at: u.created_at,
-      horse_count: u.role === 'propietario' ? (horseMap.get(u.id) ?? 0) : (estMap.get(u.id) ?? 0),
+      horse_count:
+        u.role === 'propietario'
+          ? (horseMap.get(u.id) ?? 0)
+          : (estMap.get(u.id) ?? 0),
     }));
+
+    return { data, total, page, limit };
+  }
+
+  async getAdminHorses(query: AdminQueryDto) {
+    const { search, page = 1, limit = 10 } = query;
+
+    const qb = this.userRepository.manager
+      .getRepository(Horse)
+      .createQueryBuilder('h')
+      .leftJoinAndSelect('h.owner', 'owner')
+      .leftJoinAndSelect('h.establishment', 'establishment');
+
+    if (search) {
+      qb.where(
+        '(h.name ILIKE :s OR owner.name ILIKE :s OR establishment.name ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+
+    qb.orderBy('h.created_at', 'DESC');
+
+    const total = await qb.getCount();
+    const data = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return { data, total, page, limit };
+  }
+
+  async getAdminStats() {
+    const [propietarios, establecimientos, caballos] = await Promise.all([
+      this.userRepository.count({ where: { role: 'propietario' } }),
+      this.userRepository.count({ where: { role: 'establecimiento' } }),
+      this.userRepository.manager.getRepository(Horse).count(),
+    ]);
+    return { propietarios, establecimientos, caballos };
   }
 
   async changePassword(user: User, dto: ChangePasswordDto): Promise<void> {

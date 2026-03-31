@@ -14,6 +14,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
+import { AdminQueryDto } from './dto/admin-query.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
 import { PermissionsService } from '../permissions/permissions.service';
@@ -50,9 +51,29 @@ export class AuthController {
 
   @Get('admin/overview')
   @UseGuards(AuthGuard('jwt'))
-  getAdminOverview(@GetUser() user: User) {
+  getAdminOverview(
+    @GetUser() user: User,
+    @Query(new ValidationPipe({ transform: true })) query: AdminQueryDto,
+  ) {
     if (user.role !== 'admin') throw new ForbiddenException();
-    return this.authService.getAdminOverview();
+    return this.authService.getAdminOverview(query);
+  }
+
+  @Get('admin/horses')
+  @UseGuards(AuthGuard('jwt'))
+  getAdminHorses(
+    @GetUser() user: User,
+    @Query(new ValidationPipe({ transform: true })) query: AdminQueryDto,
+  ) {
+    if (user.role !== 'admin') throw new ForbiddenException();
+    return this.authService.getAdminHorses(query);
+  }
+
+  @Get('admin/stats')
+  @UseGuards(AuthGuard('jwt'))
+  getAdminStats(@GetUser() user: User) {
+    if (user.role !== 'admin') throw new ForbiddenException();
+    return this.authService.getAdminStats();
   }
 
   @Get('users')
