@@ -69,6 +69,9 @@ export class HorsesService implements OnModuleInit {
       birth_date: dto.birth_date ?? null,
       owner_id,
       establishment_id,
+      microchip: dto.microchip ?? null,
+      breed_id: dto.breed_id ?? null,
+      activity_id: dto.activity_id ?? null,
     });
 
     const saved = await this.horseRepository.save(horse);
@@ -79,7 +82,7 @@ export class HorsesService implements OnModuleInit {
   async findAll(user: User): Promise<Horse[]> {
     if (user.role === 'admin') {
       const horses = await this.horseRepository.find({
-        relations: ['owner', 'establishment', 'horseUsers'],
+        relations: ['owner', 'establishment', 'horseUsers', 'breed', 'activity'],
       });
       return horses.map((h) => this.attachCoOwners(h));
     }
@@ -88,7 +91,7 @@ export class HorsesService implements OnModuleInit {
       // Caballos donde es owner principal
       const ownedHorses = await this.horseRepository.find({
         where: { owner_id: user.id },
-        relations: ['owner', 'establishment', 'horseUsers'],
+        relations: ['owner', 'establishment', 'horseUsers', 'breed', 'activity'],
       });
 
       // Caballos donde es co-propietario (pero no owner principal)
@@ -103,7 +106,7 @@ export class HorsesService implements OnModuleInit {
       if (coOwnedHorseIds.length) {
         coOwnedHorses = await this.horseRepository.find({
           where: { id: In(coOwnedHorseIds) },
-          relations: ['owner', 'establishment', 'horseUsers'],
+          relations: ['owner', 'establishment', 'horseUsers', 'breed', 'activity'],
         });
       }
 
@@ -115,7 +118,7 @@ export class HorsesService implements OnModuleInit {
     // establecimiento
     const horses = await this.horseRepository.find({
       where: { establishment_id: user.id },
-      relations: ['owner', 'horseUsers'],
+      relations: ['owner', 'horseUsers', 'breed', 'activity'],
     });
     return horses.map((h) => this.attachCoOwners(h));
   }
@@ -123,7 +126,7 @@ export class HorsesService implements OnModuleInit {
   async findOne(id: string, user: User): Promise<Horse> {
     const horse = await this.horseRepository.findOne({
       where: { id },
-      relations: ['owner', 'establishment', 'events', 'horseUsers'],
+      relations: ['owner', 'establishment', 'events', 'horseUsers', 'breed', 'activity'],
     });
 
     if (!horse) {

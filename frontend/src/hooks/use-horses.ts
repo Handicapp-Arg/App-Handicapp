@@ -42,6 +42,9 @@ export function useCreateHorse() {
       birth_date?: string;
       owner_id?: string;
       establishment_id?: string;
+      microchip?: string;
+      breed_id?: string;
+      activity_id?: string;
     }) => {
       const { data } = await api.post('/horses', dto);
       return data;
@@ -64,6 +67,9 @@ export function useUpdateHorse() {
       name?: string;
       birth_date?: string | null;
       establishment_id?: string | null;
+      microchip?: string | null;
+      breed_id?: string | null;
+      activity_id?: string | null;
     }) => {
       const { data } = await api.patch(`/horses/${id}`, dto);
       return data;

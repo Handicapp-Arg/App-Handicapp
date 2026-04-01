@@ -11,6 +11,12 @@ import {
   useEventTypes,
   type EventTypeMeta,
 } from '@/hooks/use-notification-settings';
+import {
+  useBreeds,
+  useActivities,
+  useCreateCatalogItem,
+  useDeleteCatalogItem,
+} from '@/hooks/use-catalog-items';
 
 const resources = ['horses', 'events'];
 const actions = ['create', 'read', 'update', 'delete'];
@@ -197,7 +203,91 @@ function RoleNotifCard({
   );
 }
 
-type Tab = 'permisos' | 'notificaciones';
+function CatalogList({
+  title,
+  type,
+  items,
+}: {
+  title: string;
+  type: string;
+  items: { id: string; name: string }[];
+}) {
+  const createItem = useCreateCatalogItem();
+  const deleteItem = useDeleteCatalogItem();
+  const [name, setName] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    await createItem.mutateAsync({ type, name: name.trim() });
+    setName('');
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-gray-100">
+        <p className="font-semibold text-gray-900">{title}</p>
+      </div>
+      <div className="p-5 space-y-3">
+        <form onSubmit={handleCreate} className="flex gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={`Nueva ${title.toLowerCase().slice(0, -1)}...`}
+            className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={createItem.isPending || !name.trim()}
+            style={BTN_GREEN}
+            onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = BTN_GREEN_HOVER)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = BTN_GREEN.backgroundColor)}
+            className="rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition"
+          >
+            Agregar
+          </button>
+        </form>
+        {createItem.isError && <p className="text-xs text-red-600">Error al crear</p>}
+
+        {items.length === 0 ? (
+          <p className="text-xs text-gray-400">No hay elementos</p>
+        ) : (
+          <div className="space-y-1">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                <span className="text-sm text-gray-700">{item.name}</span>
+                <button
+                  onClick={() => setConfirmDelete({ id: item.id, name: item.name })}
+                  className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-500 hover:border-red-300 hover:text-red-500 transition cursor-pointer"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title={`¿Eliminar "${confirmDelete.name}"?`}
+          message="Los caballos que tengan este valor asignado quedarán sin él."
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={async () => {
+            await deleteItem.mutateAsync(confirmDelete.id);
+            setConfirmDelete(null);
+          }}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+type Tab = 'permisos' | 'notificaciones' | 'catalogos';
 
 export default function PermisosPage() {
   const { user } = useAuth();
@@ -205,6 +295,8 @@ export default function PermisosPage() {
   const { data: roles, isLoading: loadingRoles } = useRoles();
   const { data: settings, isLoading: loadingSettings } = useNotificationSettings();
   const { data: eventTypes, isLoading: loadingTypes } = useEventTypes();
+  const { data: breedItems } = useBreeds();
+  const { data: activityItems } = useActivities();
   const createRole = useCreateRole();
   const deleteRole = useDeleteRole();
   const [newRoleName, setNewRoleName] = useState('');
@@ -257,6 +349,7 @@ export default function PermisosPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'permisos', label: 'Roles y Permisos' },
     { id: 'notificaciones', label: 'Notificaciones' },
+    { id: 'catalogos', label: 'Catálogos' },
   ];
 
   return (
@@ -336,6 +429,17 @@ export default function PermisosPage() {
               eventTypes={types}
             />
           ))}
+        </div>
+      )}
+
+      {/* Sección: Catálogos */}
+      {tab === 'catalogos' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Administrá las opciones de razas y actividades que aparecen en los formularios de caballos.
+          </p>
+          <CatalogList title="Razas" type="breed" items={breedItems || []} />
+          <CatalogList title="Actividades" type="activity" items={activityItems || []} />
         </div>
       )}
 

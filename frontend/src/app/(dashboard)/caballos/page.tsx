@@ -14,6 +14,7 @@ import {
   useUpdateOwnership,
   usePropietarios,
 } from '@/hooks/use-horses';
+import { useBreeds, useActivities } from '@/hooks/use-catalog-items';
 import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -209,6 +210,8 @@ function OwnershipSection({
 function EditModal({
   horse,
   establishments,
+  breeds,
+  activities,
   onClose,
   onSave,
   onImageUpload,
@@ -219,8 +222,17 @@ function EditModal({
 }: {
   horse: Horse;
   establishments?: { id: string; name: string }[];
+  breeds?: { id: string; name: string }[];
+  activities?: { id: string; name: string }[];
   onClose: () => void;
-  onSave: (data: { name: string; birth_date: string | null; establishment_id: string | null }) => Promise<void>;
+  onSave: (data: {
+    name: string;
+    birth_date: string | null;
+    establishment_id: string | null;
+    microchip: string | null;
+    breed_id: string | null;
+    activity_id: string | null;
+  }) => Promise<void>;
   onImageUpload: (file: File) => void;
   onRemoveImage: () => void;
   isPending: boolean;
@@ -230,13 +242,23 @@ function EditModal({
   const [name, setName] = useState(horse.name);
   const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
   const [establishmentId, setEstablishmentId] = useState(horse.establishment_id ?? '');
+  const [microchip, setMicrochip] = useState(horse.microchip ?? '');
+  const [breedId, setBreedId] = useState(horse.breed_id ?? '');
+  const [activityId, setActivityId] = useState(horse.activity_id ?? '');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    await onSave({ name, birth_date: birthDate || null, establishment_id: establishmentId || null });
+    await onSave({
+      name,
+      birth_date: birthDate || null,
+      establishment_id: establishmentId || null,
+      microchip: microchip || null,
+      breed_id: breedId || null,
+      activity_id: activityId || null,
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,6 +314,36 @@ function EditModal({
           <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
             <option value="">Sin establecimiento</option>
             {establishments.map((est) => <option key={est.id} value={est.id}>{est.name}</option>)}
+          </select>
+        </Field>
+      )}
+      <Field label="Microchip">
+        <input
+          type="text"
+          value={microchip}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '').slice(0, 15);
+            setMicrochip(v);
+          }}
+          inputMode="numeric"
+          maxLength={15}
+          placeholder="15 dígitos numéricos"
+          className={inputClass}
+        />
+      </Field>
+      {breeds && breeds.length > 0 && (
+        <Field label="Raza">
+          <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
+            <option value="">Sin raza</option>
+            {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </Field>
+      )}
+      {activities && activities.length > 0 && (
+        <Field label="Actividad">
+          <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
+            <option value="">Sin actividad</option>
+            {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </Field>
       )}
@@ -381,12 +433,17 @@ export default function CaballosPage() {
   const uploadImage = useUploadHorseImage();
   const removeImage = useRemoveHorseImage();
   const { data: establishments } = useEstablishments();
+  const { data: breeds } = useBreeds();
+  const { data: activities } = useActivities();
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [establishmentId, setEstablishmentId] = useState('');
+  const [microchip, setMicrochip] = useState('');
+  const [breedId, setBreedId] = useState('');
+  const [activityId, setActivityId] = useState('');
 
   const [editingHorse, setEditingHorse] = useState<Horse | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
@@ -398,15 +455,26 @@ export default function CaballosPage() {
       name,
       birth_date: birthDate || undefined,
       establishment_id: establishmentId || undefined,
+      microchip: microchip || undefined,
+      breed_id: breedId || undefined,
+      activity_id: activityId || undefined,
     });
     if (imageFiles.length > 0) {
       await uploadImage.mutateAsync({ id: horse.id, file: imageFiles[0] });
     }
     setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId('');
+    setMicrochip(''); setBreedId(''); setActivityId('');
     setShowForm(false);
   };
 
-  const handleSaveEdit = async (data: { name: string; birth_date: string | null; establishment_id: string | null }) => {
+  const handleSaveEdit = async (data: {
+    name: string;
+    birth_date: string | null;
+    establishment_id: string | null;
+    microchip: string | null;
+    breed_id: string | null;
+    activity_id: string | null;
+  }) => {
     if (!editingHorse) return;
     await updateHorse.mutateAsync({ id: editingHorse.id, ...data });
     setEditingHorse(null);
@@ -470,6 +538,8 @@ export default function CaballosPage() {
         <EditModal
           horse={editingHorse}
           establishments={establishments}
+          breeds={breeds}
+          activities={activities}
           onClose={() => setEditingHorse(null)}
           onSave={handleSaveEdit}
           onImageUpload={(file) => uploadImage.mutate({ id: editingHorse.id, file })}
@@ -527,6 +597,25 @@ export default function CaballosPage() {
                     </select>
                   </Field>
                 )}
+                <Field label="Microchip (opcional)">
+                  <input type="text" value={microchip} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 15); setMicrochip(v); }} inputMode="numeric" maxLength={15} placeholder="15 dígitos numéricos" className={inputClass} />
+                </Field>
+                {breeds && breeds.length > 0 && (
+                  <Field label="Raza (opcional)">
+                    <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
+                      <option value="">Sin raza</option>
+                      {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                  </Field>
+                )}
+                {activities && activities.length > 0 && (
+                  <Field label="Actividad (opcional)">
+                    <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
+                      <option value="">Sin actividad</option>
+                      {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </Field>
+                )}
                 <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
                 {createHorse.isError && <p className="text-sm text-red-600">Error al crear el caballo</p>}
               </div>
@@ -567,7 +656,26 @@ export default function CaballosPage() {
                       </select>
                     </Field>
                   )}
-                  <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
+                  <Field label="Microchip (opcional)">
+                  <input type="text" value={microchip} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 15); setMicrochip(v); }} inputMode="numeric" maxLength={15} placeholder="15 dígitos numéricos" className={inputClass} />
+                </Field>
+                {breeds && breeds.length > 0 && (
+                  <Field label="Raza (opcional)">
+                    <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
+                      <option value="">Sin raza</option>
+                      {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                  </Field>
+                )}
+                {activities && activities.length > 0 && (
+                  <Field label="Actividad (opcional)">
+                    <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
+                      <option value="">Sin actividad</option>
+                      {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </Field>
+                )}
+                <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
                   {createHorse.isError && <p className="text-sm text-red-600">Error al crear el caballo</p>}
                 </div>
                 <div className="flex gap-2 border-t border-gray-100 p-4">
@@ -641,8 +749,25 @@ export default function CaballosPage() {
                   </div>
                 </div>
 
+                {/* Badges raza/actividad */}
+                {(horse.breed || horse.activity) && (
+                  <div className="mb-2 flex flex-wrap gap-1">
+                    {horse.breed && (
+                      <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                        {horse.breed.name}
+                      </span>
+                    )}
+                    {horse.activity && (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                        {horse.activity.name}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Datos */}
                 <div className="mb-4 space-y-0.5 text-xs text-gray-500">
+                  {horse.microchip && <p>Microchip: {horse.microchip}</p>}
                   {horse.birth_date && (
                     <p>
                       {new Date(horse.birth_date + 'T12:00:00').toLocaleDateString('es-AR')}

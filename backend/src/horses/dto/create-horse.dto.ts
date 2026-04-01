@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsDateString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsDateString, IsUUID, IsString, Matches } from 'class-validator';
 
 export class CreateHorseDto {
   @IsNotEmpty()
@@ -15,4 +15,17 @@ export class CreateHorseDto {
   @IsOptional()
   @IsUUID()
   establishment_id?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{15}$/, { message: 'El microchip debe tener exactamente 15 dígitos numéricos' })
+  microchip?: string;
+
+  @IsOptional()
+  @IsUUID()
+  breed_id?: string;
+
+  @IsOptional()
+  @IsUUID()
+  activity_id?: string;
 }

@@ -101,6 +101,24 @@ export function HorseTable({ horses }: HorseTableProps) {
                     <span className="font-medium text-gray-500">Establecimiento: </span>
                     {h.establishment?.name ?? '-'}
                   </p>
+                  {h.microchip && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-500">Microchip: </span>
+                      {h.microchip}
+                    </p>
+                  )}
+                  {h.breed && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-500">Raza: </span>
+                      {h.breed.name}
+                    </p>
+                  )}
+                  {h.activity && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-500">Actividad: </span>
+                      {h.activity.name}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-400">
                     Registrado el {dateFormatter.format(new Date(h.created_at))}
                   </p>

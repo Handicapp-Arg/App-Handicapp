@@ -13,6 +13,13 @@ export interface User {
   created_at: string;
 }
 
+export interface CatalogItem {
+  id: string;
+  type: string;
+  name: string;
+  created_at: string;
+}
+
 export interface HorseOwnership {
   id: string;
   user_id: string;
@@ -27,8 +34,13 @@ export interface Horse {
   image_url: string | null;
   owner_id: string;
   establishment_id: string | null;
+  microchip: string | null;
+  breed_id: string | null;
+  activity_id: string | null;
   owner?: User;
   establishment?: User;
+  breed?: CatalogItem;
+  activity?: CatalogItem;
   events?: Event[];
   co_owners?: HorseOwnership[];
   created_at: string;

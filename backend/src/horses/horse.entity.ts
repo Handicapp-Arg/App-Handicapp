@@ -11,6 +11,7 @@ import {
 import { User } from '../auth/user.entity';
 import { Event } from '../events/event.entity';
 import { HorseUser } from './horse-user.entity';
+import { CatalogItem } from '../catalog-items/catalog-item.entity';
 
 @Entity('horses')
 export class Horse {
@@ -42,6 +43,23 @@ export class Horse {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'establishment_id' })
   establishment: User;
+
+  @Column({ type: 'varchar', length: 15, nullable: true, unique: true })
+  microchip: string | null;
+
+  @Column('uuid', { nullable: true })
+  breed_id: string | null;
+
+  @ManyToOne(() => CatalogItem, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'breed_id' })
+  breed: CatalogItem;
+
+  @Column('uuid', { nullable: true })
+  activity_id: string | null;
+
+  @ManyToOne(() => CatalogItem, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'activity_id' })
+  activity: CatalogItem;
 
   @OneToMany(() => Event, (event) => event.horse)
   events: Event[];
