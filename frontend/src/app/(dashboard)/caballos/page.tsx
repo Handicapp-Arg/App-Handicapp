@@ -147,8 +147,36 @@ function OwnershipSection({
                   max={100}
                   value={entry.percentage || ''}
                   onChange={(e) => {
+                    const newVal = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
                     const updated = [...entries];
-                    updated[idx].percentage = parseInt(e.target.value) || 0;
+                    updated[idx].percentage = newVal;
+
+                    if (entries.length > 1) {
+                      const ownerIdx = updated.findIndex((en) => en.user_id === ownerId);
+                      if (entry.user_id !== ownerId && ownerIdx !== -1) {
+                        // Ajustar el porcentaje del propietario principal
+                        const otherSum = updated.reduce((s, en, i) => i !== ownerIdx && i !== idx ? s + (en.percentage || 0) : s, 0);
+                        updated[ownerIdx].percentage = Math.max(0, 100 - newVal - otherSum);
+                      } else {
+                        // Si se cambia el principal, distribuir el resto proporcionalmente entre los demás
+                        const others = updated.filter((_, i) => i !== idx);
+                        const oldOtherSum = others.reduce((s, en) => s + (en.percentage || 0), 0);
+                        const remaining = 100 - newVal;
+                        if (oldOtherSum > 0) {
+                          others.forEach((en) => {
+                            en.percentage = Math.round((en.percentage / oldOtherSum) * remaining);
+                          });
+                          // Ajustar redondeo en el último otro
+                          const newOtherSum = others.reduce((s, en) => s + en.percentage, 0);
+                          if (newOtherSum !== remaining && others.length > 0) {
+                            others[others.length - 1].percentage += remaining - newOtherSum;
+                          }
+                        } else if (others.length > 0) {
+                          others[0].percentage = remaining;
+                        }
+                      }
+                    }
+
                     setEntries(updated);
                   }}
                   className={`${inputClass} pr-6 text-right`}
