@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import {
   useHorses,
@@ -453,6 +454,7 @@ function EditModal({
 
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function CaballosPage() {
+  const router = useRouter();
   const { data: horses, isLoading, error } = useHorses();
   const { user, can } = useAuth();
   const createHorse = useCreateHorse();
@@ -758,7 +760,8 @@ export default function CaballosPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {horses.map((horse) => (
             <div key={horse.id}
-              className="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md overflow-hidden">
+              onClick={() => router.push(`/caballos/${horse.id}`)}
+              className="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md overflow-hidden cursor-pointer">
 
               {/* Imagen */}
               <div className="aspect-[4/3] bg-gray-100">
@@ -829,7 +832,7 @@ export default function CaballosPage() {
 
                 {/* Acciones */}
                 {(can('horses', 'update') || can('horses', 'delete')) && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     {can('horses', 'update') && (
                       <button onClick={() => setEditingHorse(horse)}
                         className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-[#0f1f3d] hover:text-[#0f1f3d] cursor-pointer">
