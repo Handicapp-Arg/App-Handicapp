@@ -436,11 +436,14 @@ export default function CaballosPage() {
   const { data: breeds } = useBreeds();
   const { data: activities } = useActivities();
 
+  const { data: propietarios } = usePropietarios();
+
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [establishmentId, setEstablishmentId] = useState('');
+  const [ownerId, setOwnerId] = useState('');
   const [microchip, setMicrochip] = useState('');
   const [breedId, setBreedId] = useState('');
   const [activityId, setActivityId] = useState('');
@@ -454,6 +457,7 @@ export default function CaballosPage() {
     const horse = await createHorse.mutateAsync({
       name,
       birth_date: birthDate || undefined,
+      owner_id: ownerId || undefined,
       establishment_id: establishmentId || undefined,
       microchip: microchip || undefined,
       breed_id: breedId || undefined,
@@ -462,7 +466,7 @@ export default function CaballosPage() {
     if (imageFiles.length > 0) {
       await uploadImage.mutateAsync({ id: horse.id, file: imageFiles[0] });
     }
-    setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId('');
+    setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId(''); setOwnerId('');
     setMicrochip(''); setBreedId(''); setActivityId('');
     setShowForm(false);
   };
@@ -589,6 +593,14 @@ export default function CaballosPage() {
                 <Field label="Fecha de nacimiento (opcional)">
                   <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
                 </Field>
+                {user?.role === 'admin' && propietarios && propietarios.length > 0 && (
+                  <Field label="Propietario">
+                    <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className={inputClass} required>
+                      <option value="">Seleccionar propietario</option>
+                      {propietarios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </Field>
+                )}
                 {establishments && establishments.length > 0 && (
                   <Field label="Establecimiento (opcional)">
                     <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
@@ -648,6 +660,14 @@ export default function CaballosPage() {
                   <Field label="Fecha de nacimiento (opcional)">
                     <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
                   </Field>
+                  {user?.role === 'admin' && propietarios && propietarios.length > 0 && (
+                    <Field label="Propietario">
+                      <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className={inputClass} required>
+                        <option value="">Seleccionar propietario</option>
+                        {propietarios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </Field>
+                  )}
                   {establishments && establishments.length > 0 && (
                     <Field label="Establecimiento (opcional)">
                       <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
@@ -657,25 +677,25 @@ export default function CaballosPage() {
                     </Field>
                   )}
                   <Field label="Microchip (opcional)">
-                  <input type="text" value={microchip} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 15); setMicrochip(v); }} inputMode="numeric" maxLength={15} placeholder="15 dígitos numéricos" className={inputClass} />
-                </Field>
-                {breeds && breeds.length > 0 && (
-                  <Field label="Raza (opcional)">
-                    <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
-                      <option value="">Sin raza</option>
-                      {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
+                    <input type="text" value={microchip} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 15); setMicrochip(v); }} inputMode="numeric" maxLength={15} placeholder="15 dígitos numéricos" className={inputClass} />
                   </Field>
-                )}
-                {activities && activities.length > 0 && (
-                  <Field label="Actividad (opcional)">
-                    <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
-                      <option value="">Sin actividad</option>
-                      {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
-                  </Field>
-                )}
-                <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
+                  {breeds && breeds.length > 0 && (
+                    <Field label="Raza (opcional)">
+                      <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
+                        <option value="">Sin raza</option>
+                        {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                    </Field>
+                  )}
+                  {activities && activities.length > 0 && (
+                    <Field label="Actividad (opcional)">
+                      <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
+                        <option value="">Sin actividad</option>
+                        {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                    </Field>
+                  )}
+                  <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
                   {createHorse.isError && <p className="text-sm text-red-600">Error al crear el caballo</p>}
                 </div>
                 <div className="flex gap-2 border-t border-gray-100 p-4">
@@ -698,8 +718,10 @@ export default function CaballosPage() {
       {/* Lista vacía */}
       {!horses?.length ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-2xl">
-            🐴
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <p className="text-sm font-medium text-gray-600">No hay caballos registrados</p>
           <p className="mt-1 text-xs text-gray-400">Creá el primero con el botón de arriba</p>
