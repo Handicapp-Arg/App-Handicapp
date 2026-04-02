@@ -46,18 +46,13 @@ function formatDate(date: string): string {
   });
 }
 
-/* ─── Info Row ─── */
+/* ─── Info Item ─── */
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 py-2.5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="truncate text-sm font-medium text-gray-900">{value}</p>
-      </div>
+    <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-900 truncate">{value}</p>
     </div>
   );
 }
@@ -309,8 +304,17 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
     ? [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [];
 
+  const infoItems: { label: string; value: string }[] = [];
+  if (horse.birth_date) infoItems.push({ label: 'Nacimiento', value: `${formatDate(horse.birth_date)} (${calcAge(horse.birth_date)})` });
+  if (horse.microchip) infoItems.push({ label: 'Microchip', value: horse.microchip });
+  if (horse.owner) infoItems.push({ label: 'Propietario', value: horse.owner.name });
+  if (horse.establishment) infoItems.push({ label: 'Establecimiento', value: horse.establishment.name });
+  if (horse.breed) infoItems.push({ label: 'Raza', value: horse.breed.name });
+  if (horse.activity) infoItems.push({ label: 'Actividad', value: horse.activity.name });
+  infoItems.push({ label: 'Registrado', value: new Date(horse.created_at).toLocaleDateString('es-AR') });
+
   return (
-    <div className="space-y-6 pb-8">
+    <div className="pb-8">
 
       {/* Confirmacion eliminar */}
       {confirmDelete && (
@@ -336,165 +340,153 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         />
       )}
 
-      {/* ─── Back + Actions ─── */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/caballos"
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Caballos
-        </Link>
-        <div className="flex gap-2">
-          {canEdit && (
-            <Link
-              href="/caballos"
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
-            >
-              Editar
-            </Link>
-          )}
-          {canDelete && (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="rounded-lg border border-red-100 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:border-red-300 hover:bg-red-50 cursor-pointer"
-            >
-              Eliminar
-            </button>
-          )}
-        </div>
-      </div>
+      {/* ─── Back link ─── */}
+      <Link
+        href="/caballos"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Caballos
+      </Link>
 
-      {/* ─── Header: Image + Name ─── */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        {/* Image */}
-        <div className="aspect-[16/9] bg-gray-100">
-          {horse.image_url ? (
-            <img
-              src={horse.image_url}
-              alt={horse.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-gray-300">
-              <svg className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+      {/* ─── Two-column layout ─── */}
+      <div className="lg:grid lg:grid-cols-[380px_1fr] lg:gap-6 lg:items-start">
+
+        {/* ─── Col izquierda: imagen + info ─── */}
+        <div className="lg:sticky lg:top-6 space-y-4 mb-6 lg:mb-0">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+
+            {/* Imagen con overlay mobile */}
+            <div className="relative aspect-[4/3] bg-gray-100">
+              {horse.image_url ? (
+                <img src={horse.image_url} alt={horse.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-300">
+                  <svg className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+              {/* Gradient overlay + nombre (mobile) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 lg:hidden">
+                <h1 className="text-lg font-bold text-white">{horse.name}</h1>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {horse.breed && (
+                    <span className="rounded-full bg-white/20 backdrop-blur-sm px-2 py-0.5 text-[11px] font-medium text-white">
+                      {horse.breed.name}
+                    </span>
+                  )}
+                  {horse.activity && (
+                    <span className="rounded-full bg-white/20 backdrop-blur-sm px-2 py-0.5 text-[11px] font-medium text-white">
+                      {horse.activity.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Nombre + badges (desktop only) */}
+            <div className="hidden lg:block p-4 pb-2">
+              <h1 className="text-lg font-bold text-gray-900">{horse.name}</h1>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {horse.breed && (
+                  <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                    {horse.breed.name}
+                  </span>
+                )}
+                {horse.activity && (
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                    {horse.activity.name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Info grid */}
+            <div className="p-4 pt-3">
+              <div className="grid grid-cols-2 gap-2">
+                {infoItems.map((item) => (
+                  <InfoItem key={item.label} label={item.label} value={item.value} />
+                ))}
+              </div>
+            </div>
+
+            {/* Acciones */}
+            {(canEdit || canDelete) && (
+              <div className="flex gap-2 border-t border-gray-100 px-4 py-3">
+                {canEdit && (
+                  <Link
+                    href="/caballos"
+                    className="flex-1 rounded-lg border border-gray-200 py-2 text-center text-xs font-medium text-gray-700 transition hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
+                  >
+                    Editar
+                  </Link>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex-1 rounded-lg border border-red-100 py-2 text-xs font-medium text-red-500 transition hover:border-red-300 hover:bg-red-50 cursor-pointer"
+                  >
+                    Eliminar
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ─── Tenencia ─── */}
+          {ownership && ownership.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="mb-2.5 text-sm font-semibold text-gray-900">Tenencia</h2>
+              <div className="space-y-1.5">
+                {ownership.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                    <span className="text-sm text-gray-700">{o.user?.name ?? 'Sin nombre'}</span>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                      {o.percentage != null ? `${Number(o.percentage)}%` : '--'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Name + badges */}
-        <div className="p-5">
-          <h1 className="text-xl font-bold text-gray-900">{horse.name}</h1>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {horse.establishment && (
-              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                {horse.establishment.name}
-              </span>
-            )}
-            {horse.breed && (
-              <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700">
-                {horse.breed.name}
-              </span>
-            )}
-            {horse.activity && (
-              <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-                {horse.activity.name}
-              </span>
+        {/* ─── Col derecha: eventos ─── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Eventos
+              {sortedEvents.length > 0 && (
+                <span className="ml-1.5 text-xs font-normal text-gray-400">({sortedEvents.length})</span>
+              )}
+            </h2>
+            {canCreateEvent && (
+              <button
+                onClick={() => setShowCreateEvent(true)}
+                className="flex items-center gap-1 rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0f1f3d]/90 cursor-pointer"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Nuevo evento
+              </button>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* ─── Info Section ─── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-1 text-sm font-semibold text-gray-900">Informacion</h2>
-        <div className="divide-y divide-gray-100">
-          {horse.birth_date && (
-            <InfoRow
-              icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>}
-              label="Nacimiento"
-              value={`${formatDate(horse.birth_date)} (${calcAge(horse.birth_date)})`}
-            />
-          )}
-          {horse.microchip && (
-            <InfoRow
-              icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg>}
-              label="Microchip"
-              value={horse.microchip}
-            />
-          )}
-          {horse.owner && (
-            <InfoRow
-              icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>}
-              label="Propietario"
-              value={horse.owner.name}
-            />
-          )}
-          <InfoRow
-            icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-            label="Registrado"
-            value={new Date(horse.created_at).toLocaleDateString('es-AR')}
-          />
-        </div>
-      </div>
-
-      {/* ─── Ownership Section ─── */}
-      {ownership && ownership.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">Tenencia</h2>
-          <div className="space-y-2">
-            {ownership.map((o) => (
-              <div key={o.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2.5">
-                <span className="text-sm text-gray-700">{o.user?.name ?? 'Sin nombre'}</span>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                  {o.percentage != null ? `${Number(o.percentage)}%` : '--'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ─── Events Section ─── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Eventos
-            {sortedEvents.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-gray-400">({sortedEvents.length})</span>
-            )}
-          </h2>
-          {canCreateEvent && (
-            <button
-              onClick={() => setShowCreateEvent(true)}
-              className="flex items-center gap-1 rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0f1f3d]/90 cursor-pointer"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Nuevo evento
-            </button>
+          {sortedEvents.length === 0 ? (
+            <p className="py-6 text-center text-xs text-gray-400">Sin eventos registrados</p>
+          ) : (
+            <div className="space-y-2.5">
+              {sortedEvents.map((ev) => (
+                <EventCard key={ev.id} event={ev} />
+              ))}
+            </div>
           )}
         </div>
-
-        {sortedEvents.length === 0 ? (
-          <p className="py-6 text-center text-xs text-gray-400">Sin eventos registrados</p>
-        ) : (
-          <div className="space-y-2.5">
-            {sortedEvents.map((ev) => (
-              <EventCard key={ev.id} event={ev} />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

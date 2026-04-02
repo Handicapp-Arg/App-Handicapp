@@ -247,7 +247,6 @@ function EditModal({
   onRemoveImage,
   isPending,
   isError,
-  canManageOwnership,
 }: {
   horse: Horse;
   establishments?: { id: string; name: string }[];
@@ -266,7 +265,6 @@ function EditModal({
   onRemoveImage: () => void;
   isPending: boolean;
   isError: boolean;
-  canManageOwnership: boolean;
 }) {
   const [name, setName] = useState(horse.name);
   const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
@@ -302,90 +300,104 @@ function EditModal({
     ? URL.createObjectURL(imageFiles[0])
     : horse.image_url;
 
-  const imageSection = (
-    <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
-      {currentImage ? (
-        <img src={currentImage} alt={horse.name} className="h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full items-center justify-center text-gray-300">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+  /* ── Sección: foto compacta + nombre ── */
+  const headerSection = (
+    <div className="flex items-center gap-4 p-5 pb-0">
+      <div className="relative h-16 w-16 shrink-0">
+        <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100">
+          {currentImage ? (
+            <img src={currentImage} alt={horse.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-gray-300">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
         </div>
-      )}
-      {/* Overlay de acciones */}
-      <div className="absolute bottom-0 left-0 right-0 flex gap-2 bg-gradient-to-t from-black/60 to-transparent p-3">
-        <button type="button" onClick={() => fileInputRef.current?.click()}
-          className="flex-1 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 py-2 text-xs font-semibold text-white hover:bg-white/30 cursor-pointer">
-          Cambiar foto
-        </button>
-        {currentImage && (
-          <button type="button" onClick={onRemoveImage}
-            className="rounded-lg bg-red-500/70 backdrop-blur-sm border border-red-400/30 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 cursor-pointer">
-            Eliminar
-          </button>
-        )}
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <div className="min-w-0 flex-1">
+        <Field label="Nombre">
+          <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+        </Field>
+      </div>
     </div>
   );
 
+  /* ── Acciones de foto ── */
+  const photoActions = (
+    <div className="flex gap-2 px-5 pt-2">
+      <button type="button" onClick={() => fileInputRef.current?.click()}
+        className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 cursor-pointer">
+        {currentImage ? 'Cambiar foto' : 'Subir foto'}
+      </button>
+      {currentImage && (
+        <button type="button" onClick={onRemoveImage}
+          className="rounded-lg border border-red-100 px-3 py-1.5 text-xs font-medium text-red-500 hover:border-red-300 hover:bg-red-50 cursor-pointer">
+          Quitar foto
+        </button>
+      )}
+    </div>
+  );
+
+  /* ── Campos del formulario agrupados ── */
   const formFields = (
     <div className="p-5 space-y-5">
-      <Field label="Nombre">
-        <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-      </Field>
-      <Field label="Fecha de nacimiento">
-        <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
-      </Field>
-      {establishments && establishments.length > 0 && (
-        <Field label="Establecimiento">
-          <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
-            <option value="">Sin establecimiento</option>
-            {establishments.map((est) => <option key={est.id} value={est.id}>{est.name}</option>)}
-          </select>
+      {/* Datos básicos */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos basicos</p>
+        <Field label="Fecha de nacimiento">
+          <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
         </Field>
-      )}
-      <Field label="Microchip">
-        <input
-          type="text"
-          value={microchip}
-          onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, '').slice(0, 15);
-            setMicrochip(v);
-          }}
-          inputMode="numeric"
-          maxLength={15}
-          placeholder="15 dígitos numéricos"
-          className={inputClass}
-        />
-      </Field>
-      {breeds && breeds.length > 0 && (
-        <Field label="Raza">
-          <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
-            <option value="">Sin raza</option>
-            {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        </Field>
-      )}
-      {activities && activities.length > 0 && (
-        <Field label="Actividad">
-          <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
-            <option value="">Sin actividad</option>
-            {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-        </Field>
-      )}
-      {isError && <p className="text-sm text-red-600">Error al actualizar el caballo</p>}
-
-      {/* Tenencia */}
-      <div className="border-t border-gray-100 pt-4">
-        <OwnershipSection
-          horseId={horse.id}
-          ownerId={horse.owner_id}
-          canManage={canManageOwnership}
-        />
+        {establishments && establishments.length > 0 && (
+          <Field label="Establecimiento">
+            <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
+              <option value="">Sin establecimiento</option>
+              {establishments.map((est) => <option key={est.id} value={est.id}>{est.name}</option>)}
+            </select>
+          </Field>
+        )}
       </div>
+
+      {/* Clasificación */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Clasificacion</p>
+        <div className="grid grid-cols-2 gap-3">
+          {breeds && breeds.length > 0 && (
+            <Field label="Raza">
+              <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
+                <option value="">Sin raza</option>
+                {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </Field>
+          )}
+          {activities && activities.length > 0 && (
+            <Field label="Actividad">
+              <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
+                <option value="">Sin actividad</option>
+                {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </Field>
+          )}
+        </div>
+        <Field label="Microchip">
+          <input
+            type="text"
+            value={microchip}
+            onChange={(e) => {
+              const v = e.target.value.replace(/\D/g, '').slice(0, 15);
+              setMicrochip(v);
+            }}
+            inputMode="numeric"
+            maxLength={15}
+            placeholder="15 digitos numericos"
+            className={inputClass}
+          />
+        </Field>
+      </div>
+
+      {isError && <p className="text-sm text-red-600">Error al actualizar el caballo</p>}
     </div>
   );
 
@@ -393,21 +405,16 @@ function EditModal({
     <>
       {/* ── MOBILE: pantalla completa ── */}
       <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
-        {/* header */}
         <div className="flex items-center justify-between bg-[#0f1f3d] px-5 py-4">
-          <div>
-            <p className="font-bold text-white">Editar caballo</p>
-            <p className="text-xs text-white/50">{horse.name}</p>
-          </div>
+          <p className="font-bold text-white">Editar caballo</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
         </div>
-        {/* body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-5 space-y-5">
-            {imageSection}
+          <div className="flex-1 overflow-y-auto">
+            {headerSection}
+            {photoActions}
             {formFields}
           </div>
-          {/* footer */}
           <div className="border-t border-gray-100 p-5 space-y-3">
             <button type="submit" disabled={isPending}
               className="w-full rounded-xl bg-[#0f1f3d] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
@@ -424,16 +431,17 @@ function EditModal({
       {/* ── DESKTOP: backdrop + modal ── */}
       <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-        <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-white shadow-2xl" style={{ maxHeight: '88dvh' }}>
+        <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
           <div className="flex items-center justify-between bg-[#0f1f3d] rounded-t-2xl px-6 py-4">
-            <div>
-              <p className="font-bold text-white">Editar caballo</p>
-              <p className="text-xs text-white/50">{horse.name}</p>
-            </div>
+            <p className="font-bold text-white">Editar caballo</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
-            <div className="overflow-y-auto">{imageSection}{formFields}</div>
+            <div className="overflow-y-auto">
+              {headerSection}
+              {photoActions}
+              {formFields}
+            </div>
             <div className="flex gap-2 border-t border-gray-100 p-4">
               <button type="submit" disabled={isPending}
                 className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
@@ -830,23 +838,6 @@ export default function CaballosPage() {
                   <p>Registrado {new Date(horse.created_at).toLocaleDateString('es-AR')}</p>
                 </div>
 
-                {/* Acciones */}
-                {(can('horses', 'update') || can('horses', 'delete')) && (
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    {can('horses', 'update') && (
-                      <button onClick={() => setEditingHorse(horse)}
-                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-[#0f1f3d] hover:text-[#0f1f3d] cursor-pointer">
-                        Editar
-                      </button>
-                    )}
-                    {can('horses', 'delete') && (
-                      <button onClick={() => handleDelete(horse.id, horse.name)} disabled={deleteHorse.isPending}
-                        className="rounded-lg border border-red-100 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:border-red-300 hover:bg-red-50 disabled:opacity-50 cursor-pointer">
-                        Eliminar
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           ))}
