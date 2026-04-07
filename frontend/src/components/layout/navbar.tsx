@@ -30,7 +30,7 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-20 bg-[#0f1f3d] shadow-lg">
+    <header className="md:hidden sticky top-0 z-20 bg-[#0f1f3d] shadow-lg">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
 
         {/* Izquierda: logo + sección activa */}
