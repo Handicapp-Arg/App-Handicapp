@@ -37,15 +37,6 @@ export function Sidebar() {
         </svg>
       ),
     },
-    {
-      href: '/notificaciones',
-      label: 'Notificaciones',
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-        </svg>
-      ),
-    },
     ...(user?.role === 'admin'
       ? [
           {
@@ -72,10 +63,24 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex sticky top-0 h-screen w-64 flex-col bg-[#0f1f3d] text-white">
-      {/* Brand */}
-      <div className="px-6 pt-7 pb-8">
+      {/* Brand + campanita */}
+      <div className="flex items-center justify-between px-6 pt-7 pb-8">
         <Link href="/caballos" className="text-xl font-bold tracking-tight">
           HandicApp
+        </Link>
+        <Link
+          href="/notificaciones"
+          className="relative rounded-xl p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+          aria-label="Notificaciones"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.7} stroke="currentColor" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+          </svg>
+          {(unread?.count ?? 0) > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+              {unread!.count > 9 ? '9+' : unread!.count}
+            </span>
+          )}
         </Link>
       </div>
 
@@ -83,8 +88,6 @@ export function Sidebar() {
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
-          const isNotifications = link.href === '/notificaciones';
-          const count = unread?.count ?? 0;
           return (
             <Link
               key={link.href}
@@ -99,11 +102,6 @@ export function Sidebar() {
                 {link.icon}
               </span>
               <span className="flex-1">{link.label}</span>
-              {isNotifications && count > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                  {count > 9 ? '9+' : count}
-                </span>
-              )}
             </Link>
           );
         })}
