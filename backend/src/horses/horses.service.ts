@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, QueryFailedError } from 'typeorm';
 import { Horse } from './horse.entity';
 import { HorseUser } from './horse-user.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
@@ -64,6 +64,18 @@ export class HorsesService implements OnModuleInit {
       establishment_id = dto.establishment_id ?? null;
     }
 
+    if (dto.microchip) {
+      const exists = await this.horseRepository.findOne({
+        where: { microchip: dto.microchip },
+        select: ['id'],
+      });
+      if (exists) {
+        throw new BadRequestException(
+          'Ya existe un caballo con ese microchip',
+        );
+      }
+    }
+
     const horse = this.horseRepository.create({
       name: dto.name,
       birth_date: dto.birth_date ?? null,
@@ -74,7 +86,18 @@ export class HorsesService implements OnModuleInit {
       activity_id: dto.activity_id ?? null,
     });
 
-    const saved = await this.horseRepository.save(horse);
+    let saved: Horse;
+    try {
+      saved = await this.horseRepository.save(horse);
+    } catch (err) {
+      // Race condition: unique violation slipped past the pre-check
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new BadRequestException(
+          'Ya existe un caballo con ese microchip',
+        );
+      }
+      throw err;
+    }
     await this.syncHorseUsers(saved);
     return saved;
   }
@@ -147,8 +170,30 @@ export class HorsesService implements OnModuleInit {
 
     await this.assertAccess(horse, user);
 
+    if (dto.microchip && dto.microchip !== horse.microchip) {
+      const exists = await this.horseRepository.findOne({
+        where: { microchip: dto.microchip },
+        select: ['id'],
+      });
+      if (exists && exists.id !== horse.id) {
+        throw new BadRequestException(
+          'Ya existe un caballo con ese microchip',
+        );
+      }
+    }
+
     Object.assign(horse, dto);
-    const saved = await this.horseRepository.save(horse);
+    let saved: Horse;
+    try {
+      saved = await this.horseRepository.save(horse);
+    } catch (err) {
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new BadRequestException(
+          'Ya existe un caballo con ese microchip',
+        );
+      }
+      throw err;
+    }
 
     // Re-sync if owner or establishment changed
     if (dto.establishment_id !== undefined) {

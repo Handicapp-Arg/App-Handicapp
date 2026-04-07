@@ -17,6 +17,8 @@ import {
 } from '@/hooks/use-horses';
 import { useBreeds, useActivities } from '@/hooks/use-catalog-items';
 import { useAuth } from '@/lib/auth-context';
+import { getErrorMessage } from '@/lib/errors';
+import { cldTransform } from '@/lib/cloudinary';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
 import type { Horse, HorseOwnership } from '@/types';
@@ -489,24 +491,47 @@ export default function CaballosPage() {
   const [editingHorse, setEditingHorse] = useState<Horse | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [confirmRemoveImage, setConfirmRemoveImage] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    const horse = await createHorse.mutateAsync({
-      name,
-      birth_date: birthDate || undefined,
-      owner_id: ownerId || undefined,
-      establishment_id: establishmentId || undefined,
-      microchip: microchip || undefined,
-      breed_id: breedId || undefined,
-      activity_id: activityId || undefined,
-    });
-    if (imageFiles.length > 0) {
-      await uploadImage.mutateAsync({ id: horse.id, file: imageFiles[0] });
+    setCreateError(null);
+
+    // Validación cliente: microchip debe ser exactamente 15 dígitos
+    if (microchip && !/^\d{15}$/.test(microchip)) {
+      setCreateError('El microchip debe tener exactamente 15 dígitos numéricos');
+      return;
     }
-    setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId(''); setOwnerId('');
-    setMicrochip(''); setBreedId(''); setActivityId('');
+
+    try {
+      const horse = await createHorse.mutateAsync({
+        name,
+        birth_date: birthDate || undefined,
+        owner_id: ownerId || undefined,
+        establishment_id: establishmentId || undefined,
+        microchip: microchip || undefined,
+        breed_id: breedId || undefined,
+        activity_id: activityId || undefined,
+      });
+      if (imageFiles.length > 0) {
+        try {
+          await uploadImage.mutateAsync({ id: horse.id, file: imageFiles[0] });
+        } catch (imgErr) {
+          setCreateError(getErrorMessage(imgErr, 'El caballo se creó pero falló la subida de la foto'));
+          return;
+        }
+      }
+      setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId(''); setOwnerId('');
+      setMicrochip(''); setBreedId(''); setActivityId('');
+      setShowForm(false);
+    } catch (err) {
+      setCreateError(getErrorMessage(err, 'No se pudo crear el caballo'));
+    }
+  };
+
+  const closeCreateForm = () => {
     setShowForm(false);
+    setCreateError(null);
   };
 
   const handleSaveEdit = async (data: {
@@ -593,26 +618,50 @@ export default function CaballosPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Caballos</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900">Caballos</h1>
           {horses && horses.length > 0 && (
-            <p className="mt-0.5 text-sm text-gray-500">{horses.length} registrado{horses.length !== 1 ? 's' : ''}</p>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs md:text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {horses.length} en total
+            </span>
           )}
         </div>
         {can('horses', 'create') && (
           <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+            onClick={() => { setCreateError(null); setShowForm(!showForm); }}
+            className="hidden md:flex items-center gap-2.5 rounded-2xl py-2.5 pl-2.5 pr-5 text-sm font-semibold text-white shadow-sm cursor-pointer"
             style={{ backgroundColor: '#0f1f3d' }}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </span>
             Nuevo caballo
           </button>
         )}
       </div>
+
+      {/* FAB mobile: arriba del bottom-nav */}
+      {can('horses', 'create') && (
+        <button
+          onClick={() => { setCreateError(null); setShowForm(!showForm); }}
+          className="md:hidden fixed right-4 z-40 flex items-center gap-2 rounded-full py-2 pl-2 pr-4 text-xs font-semibold text-white shadow-xl cursor-pointer"
+          style={{
+            backgroundColor: '#0f1f3d',
+            bottom: 'calc(env(safe-area-inset-bottom) + 4.5rem)',
+          }}
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
+          Nuevo caballo
+        </button>
+      )}
 
       {/* Modal crear */}
       {showForm && createPortal(
@@ -621,7 +670,7 @@ export default function CaballosPage() {
           <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
             <div className="flex items-center justify-between bg-[#0f1f3d] px-5 py-4">
               <p className="font-bold text-white">Nuevo caballo</p>
-              <button onClick={() => setShowForm(false)} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+              <button onClick={closeCreateForm} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
             </div>
             <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -667,14 +716,21 @@ export default function CaballosPage() {
                   </Field>
                 )}
                 <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
-                {createHorse.isError && <p className="text-sm text-red-600">Error al crear el caballo</p>}
+                {createError && (
+                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                    <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <span className="leading-snug">{createError}</span>
+                  </div>
+                )}
               </div>
               <div className="border-t border-gray-100 p-5 space-y-3">
                 <button type="submit" disabled={createHorse.isPending || uploadImage.isPending}
                   className="w-full rounded-xl bg-[#0f1f3d] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
                   {createHorse.isPending || uploadImage.isPending ? 'Creando...' : 'Crear caballo'}
                 </button>
-                <button type="button" onClick={() => setShowForm(false)}
+                <button type="button" onClick={closeCreateForm}
                   className="w-full rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 cursor-pointer">
                   Cancelar
                 </button>
@@ -683,12 +739,12 @@ export default function CaballosPage() {
           </div>
 
           {/* Desktop */}
-          <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={() => setShowForm(false)} />
+          <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={closeCreateForm} />
           <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
             <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
               <div className="flex items-center justify-between bg-[#0f1f3d] rounded-t-2xl px-6 py-4">
                 <p className="font-bold text-white">Nuevo caballo</p>
-                <button onClick={() => setShowForm(false)} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+                <button onClick={closeCreateForm} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
               </div>
               <form onSubmit={handleCreate} className="flex flex-col overflow-hidden">
                 <div className="overflow-y-auto p-6 space-y-4">
@@ -734,14 +790,21 @@ export default function CaballosPage() {
                     </Field>
                   )}
                   <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
-                  {createHorse.isError && <p className="text-sm text-red-600">Error al crear el caballo</p>}
+                  {createError && (
+                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                    <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <span className="leading-snug">{createError}</span>
+                  </div>
+                )}
                 </div>
                 <div className="flex gap-2 border-t border-gray-100 p-4">
                   <button type="submit" disabled={createHorse.isPending || uploadImage.isPending}
                     className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
                     {createHorse.isPending || uploadImage.isPending ? 'Creando...' : 'Crear caballo'}
                   </button>
-                  <button type="button" onClick={() => setShowForm(false)}
+                  <button type="button" onClick={closeCreateForm}
                     className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 cursor-pointer">
                     Cancelar
                   </button>
@@ -763,6 +826,76 @@ export default function CaballosPage() {
           </div>
           <p className="text-sm font-medium text-gray-600">No hay caballos registrados</p>
           <p className="mt-1 text-xs text-gray-400">Creá el primero con el botón de arriba</p>
+        </div>
+      ) : user?.role === 'propietario' ? (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+          {horses.map((horse) => (
+            <div key={horse.id}
+              onClick={() => router.push(`/caballos/${horse.id}`)}
+              className="group relative aspect-[4/3] sm:aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl bg-gray-900 shadow-md ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:ring-emerald-500/30">
+
+              {/* Imagen recortada por Cloudinary al ratio exacto de la card */}
+              {horse.image_url ? (
+                <picture>
+                  {/* Desktop: 4/5 */}
+                  <source
+                    media="(min-width: 640px)"
+                    srcSet={cldTransform(horse.image_url, { width: 600, ar: '4:5' })}
+                  />
+                  {/* Mobile: 4/3 */}
+                  <img
+                    src={cldTransform(horse.image_url, { width: 700, ar: '4:3' })}
+                    alt={horse.name}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                </picture>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900 text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+
+              {/* Gradiente para legibilidad */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 sm:via-black/30 sm:to-transparent" />
+
+              {/* Raza arriba izquierda + actividad arriba derecha */}
+              <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4 sm:p-3">
+                {horse.breed ? (
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm ring-1 ring-white/25 backdrop-blur-md">
+                    {horse.breed.name}
+                  </span>
+                ) : <span />}
+                {horse.activity && (
+                  <span className="rounded-full bg-amber-400/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-100 shadow-sm ring-1 ring-amber-300/30 backdrop-blur-md">
+                    {horse.activity.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Nombre + tenencia abajo */}
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-4">
+                <h2 className="truncate text-2xl sm:text-lg font-bold leading-tight text-white drop-shadow-sm">
+                  {horse.name}
+                </h2>
+                <div className="mt-3 sm:mt-2.5 flex flex-wrap gap-1.5 sm:gap-1">
+                  {(() => {
+                    const myCo = horse.co_owners?.find((co) => co.user?.id === user?.id);
+                    const myPct = myCo?.percentage != null
+                      ? Number(myCo.percentage)
+                      : (horse.owner?.id === user?.id && (!horse.co_owners || horse.co_owners.length === 0)) ? 100 : null;
+                    if (myPct == null) return null;
+                    return (
+                      <span className="rounded-full bg-emerald-400/20 px-2.5 py-1 sm:px-2 sm:py-0.5 text-[11px] sm:text-[10px] font-semibold text-emerald-200 ring-1 ring-emerald-300/30 backdrop-blur-sm">
+                        Mi tenencia · {myPct}%
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -801,7 +934,7 @@ export default function CaballosPage() {
                         </span>
                       ))
                     ) : (
-                      horse.owner && user?.role !== 'propietario' && (
+                      horse.owner && (
                         <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                           {horse.owner.name}
                         </span>
