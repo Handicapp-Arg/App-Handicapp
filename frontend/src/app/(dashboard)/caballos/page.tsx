@@ -613,7 +613,6 @@ export default function CaballosPage() {
           onRemoveImage={() => setConfirmRemoveImage(true)}
           isPending={updateHorse.isPending}
           isError={updateHorse.isError}
-          canManageOwnership={user?.role === 'admin' || editingHorse.owner_id === user?.id}
         />
       )}
 
