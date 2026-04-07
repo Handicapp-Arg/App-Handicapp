@@ -9,6 +9,7 @@ import { useEventsByHorse, useCreateEvent } from '@/hooks/use-events';
 import { useAuth } from '@/lib/auth-context';
 import ConfirmDialog from '@/components/confirm-dialog';
 import ImagePicker from '@/components/image-picker';
+import { cldTransform } from '@/lib/cloudinary';
 import type { Event } from '@/types';
 
 /* ─── Constants ─── */
@@ -351,8 +352,145 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         Caballos
       </Link>
 
-      {/* ─── Two-column layout ─── */}
-      <div className="lg:grid lg:grid-cols-[380px_1fr] lg:gap-6 lg:items-start">
+      {/* ─── MOBILE LAYOUT (lg:hidden) ─── */}
+      <div className="lg:hidden space-y-5">
+
+        {/* Imagen panorámica top */}
+        <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-gray-900">
+          {horse.image_url ? (
+            <img
+              src={cldTransform(horse.image_url, { width: 800, ar: '4:3' })}
+              alt={horse.name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-gray-600">
+              <svg className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        </div>
+
+        {/* Card flotante con datos del caballo (overlap con la imagen) */}
+        <div className="relative -mt-12 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">{horse.name}</h1>
+          {(horse.breed || horse.activity) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {horse.breed && (
+                <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-100">
+                  {horse.breed.name}
+                </span>
+              )}
+              {horse.activity && (
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-100">
+                  {horse.activity.name}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {infoItems.map((item) => (
+              <InfoItem key={item.label} label={item.label} value={item.value} />
+            ))}
+          </div>
+
+          {(canEdit || canDelete) && (
+            <div className="mt-4 flex gap-2 border-t border-gray-100 pt-4">
+              {canEdit && (
+                <Link
+                  href="/caballos"
+                  className="flex-1 rounded-xl border border-gray-200 py-2.5 text-center text-xs font-semibold text-gray-700 transition hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
+                >
+                  Editar
+                </Link>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex-1 rounded-xl border border-red-100 py-2.5 text-xs font-semibold text-red-500 transition hover:border-red-300 hover:bg-red-50 cursor-pointer"
+                >
+                  Eliminar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Tenencia */}
+        {ownership && ownership.length > 0 && (
+          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                </svg>
+              </span>
+              <h2 className="text-base font-bold text-gray-900">Tenencia</h2>
+            </div>
+            <div className="space-y-1.5">
+              {ownership.map((o) => (
+                <div key={o.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
+                  <span className="text-sm font-medium text-gray-700">{o.user?.name ?? 'Sin nombre'}</span>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                    {o.percentage != null ? `${Number(o.percentage)}%` : '--'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Historial de eventos */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </span>
+              <h2 className="text-base font-bold text-gray-900">Historial</h2>
+              {sortedEvents.length > 0 && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                  {sortedEvents.length}
+                </span>
+              )}
+            </div>
+            {canCreateEvent && (
+              <button
+                onClick={() => setShowCreateEvent(true)}
+                className="flex items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-3 text-xs font-semibold text-white shadow-sm cursor-pointer"
+                style={{ backgroundColor: '#0f1f3d' }}
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </span>
+                Nuevo
+              </button>
+            )}
+          </div>
+
+          {sortedEvents.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200 py-10 text-center">
+              <p className="text-sm font-medium text-gray-500">Sin eventos registrados</p>
+              <p className="mt-1 text-xs text-gray-400">Creá el primer evento del caballo</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {sortedEvents.map((ev) => (
+                <EventCard key={ev.id} event={ev} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── DESKTOP LAYOUT (lg+) ─── */}
+      <div className="hidden lg:grid lg:grid-cols-[380px_1fr] lg:gap-6 lg:items-start">
 
         {/* ─── Col izquierda: imagen + info ─── */}
         <div className="lg:sticky lg:top-6 space-y-4 mb-6 lg:mb-0">
