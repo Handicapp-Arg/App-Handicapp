@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import api, { saveToken, clearToken, getToken } from './api';
+import { registerForPushNotifications, savePushToken } from './push-notifications';
 import type { User } from '../../packages/shared/src';
 
 interface AuthContextType {
@@ -26,6 +27,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data } = await api.get('/auth/me');
       setUser(data);
+      // Registrar push token en background al cargar el usuario
+      registerForPushNotifications()
+        .then((pushToken) => { if (pushToken) savePushToken(pushToken); })
+        .catch(() => {});
     } catch {
       await clearToken();
     } finally {

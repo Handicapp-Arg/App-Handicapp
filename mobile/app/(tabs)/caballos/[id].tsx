@@ -1,15 +1,98 @@
-import { use } from 'react';
+import { use, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
+  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorse, useFinancialSummary } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse } from '../../../hooks/use-horses';
 import { useEventsByHorse } from '../../../hooks/use-events';
+import { useAuth } from '../../../lib/auth';
 import { Spinner } from '../../../components/Spinner';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
 import { colors } from '../../../lib/colors';
-import type { Event } from '../../../../packages/shared/src';
+import type { Event, Horse } from '../../../../packages/shared/src';
+
+function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void }) {
+  const updateHorse = useUpdateHorse();
+  const [name, setName] = useState(horse.name);
+  const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
+  const [microchip, setMicrochip] = useState(horse.microchip ?? '');
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError('El nombre es obligatorio'); return; }
+    setError('');
+    await updateHorse.mutateAsync({
+      id: horse.id,
+      name: name.trim(),
+      birth_date: birthDate || null,
+      microchip: microchip || null,
+    });
+    onClose();
+  };
+
+  return (
+    <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={styles.modalCard}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Editar {horse.name}</Text>
+          <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+        </View>
+
+        <View style={styles.modalBody}>
+          <Text style={styles.fieldLabel}>Nombre *</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Nombre del caballo"
+            placeholderTextColor={colors.gray400}
+            autoCapitalize="words"
+          />
+
+          <Text style={styles.fieldLabel}>Fecha de nacimiento (YYYY-MM-DD)</Text>
+          <TextInput
+            style={styles.input}
+            value={birthDate}
+            onChangeText={setBirthDate}
+            placeholder="2020-05-15"
+            placeholderTextColor={colors.gray400}
+          />
+
+          <Text style={styles.fieldLabel}>Microchip (15 dígitos)</Text>
+          <TextInput
+            style={styles.input}
+            value={microchip}
+            onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))}
+            placeholder="123456789012345"
+            placeholderTextColor={colors.gray400}
+            keyboardType="numeric"
+          />
+
+          {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+          {updateHorse.isError ? <Text style={styles.fieldError}>Error al guardar. Intentá de nuevo.</Text> : null}
+        </View>
+
+        <View style={styles.modalFooter}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.submitBtn, updateHorse.isPending && { opacity: 0.6 }]}
+            onPress={handleSave}
+            disabled={updateHorse.isPending}
+          >
+            {updateHorse.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={styles.submitBtnText}>Guardar</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
@@ -45,9 +128,29 @@ export default function HorseDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const { can } = useAuth();
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
   const { data: financial } = useFinancialSummary(id);
+  const deleteHorse = useDeleteHorse();
+  const [showEdit, setShowEdit] = useState(false);
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar caballo',
+      `¿Eliminás a ${horse?.name}? Esta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar', style: 'destructive',
+          onPress: async () => {
+            await deleteHorse.mutateAsync(id);
+            router.back();
+          },
+        },
+      ],
+    );
+  };
 
   if (isLoading) return <Spinner />;
   if (!horse) {
@@ -102,6 +205,22 @@ export default function HorseDetailScreen() {
         >
           <Text style={styles.backBtnText}>‹</Text>
         </TouchableOpacity>
+
+        {/* Acciones (editar / eliminar) */}
+        {(can('horses', 'update') || can('horses', 'delete')) && (
+          <View style={[styles.heroActions, { top: insets.top + 12 }]}>
+            {can('horses', 'update') && (
+              <TouchableOpacity style={styles.heroActionBtn} onPress={() => setShowEdit(true)} activeOpacity={0.8}>
+                <Text style={styles.heroActionText}>✎</Text>
+              </TouchableOpacity>
+            )}
+            {can('horses', 'delete') && (
+              <TouchableOpacity style={[styles.heroActionBtn, styles.heroActionDanger]} onPress={handleDelete} activeOpacity={0.8}>
+                <Text style={styles.heroActionText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Nombre */}
         <View style={[styles.heroContent, { paddingBottom: insets.top > 0 ? 16 : 20 }]}>
@@ -189,6 +308,13 @@ export default function HorseDetailScreen() {
           </View>
         )}
       </View>
+
+      {/* Modal editar */}
+      <Modal visible={showEdit} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <EditHorseModal horse={horse} onClose={() => setShowEdit(false)} />
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -208,6 +334,29 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center',
   },
   backBtnText: { fontSize: 24, color: colors.white, lineHeight: 28, marginTop: -2 },
+  heroActions: { position: 'absolute', right: 16, flexDirection: 'row', gap: 8 },
+  heroActionBtn: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center',
+  },
+  heroActionDanger: { backgroundColor: 'rgba(220,38,38,0.5)' },
+  heroActionText: { fontSize: 16, color: colors.white },
+  // Modal editar
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.gray900 },
+  modalClose: { fontSize: 18, color: colors.gray400 },
+  modalBody: { padding: 20, gap: 10 },
+  modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: colors.gray100 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
+  fieldError: { fontSize: 13, color: colors.red500 },
+  cancelBtn: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, paddingVertical: 13, alignItems: 'center' },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
+  submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 13, alignItems: 'center' },
+  submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
   heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16 },
   horseName: { fontSize: 26, fontWeight: '800', color: colors.white, marginBottom: 8 },
   heroBadges: { flexDirection: 'row', gap: 6 },

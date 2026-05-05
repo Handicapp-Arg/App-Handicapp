@@ -28,6 +28,20 @@ export function useCreateHorse() {
   });
 }
 
+export function useUpdateHorse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...dto }: { id: string; name?: string; birth_date?: string | null; microchip?: string | null }) => {
+      const { data } = await api.patch(`/horses/${id}`, dto);
+      return data as Horse;
+    },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['horses'] });
+      qc.invalidateQueries({ queryKey: ['horses', id] });
+    },
+  });
+}
+
 export function useDeleteHorse() {
   const qc = useQueryClient();
   return useMutation({
