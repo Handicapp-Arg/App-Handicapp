@@ -7,6 +7,8 @@ import {
   Delete,
   Param,
   Body,
+  Query,
+  Res,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -15,6 +17,7 @@ import {
   HttpStatus,
   ParseFilePipeBuilder,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionGuard } from '../common/guards/permission.guard';
@@ -23,9 +26,14 @@ import { HorsesService } from './horses.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { UpdateOwnershipDto } from './dto/update-ownership.dto';
+import { HorsesQueryDto } from './dto/horses-query.dto';
+import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('horses')
+@ApiBearerAuth()
 @Controller('horses')
 @UseGuards(AuthGuard('jwt'), PermissionGuard)
 export class HorsesController {
@@ -42,8 +50,40 @@ export class HorsesController {
 
   @Get()
   @RequirePermission('horses', 'read')
-  findAll(@GetUser() user: User) {
-    return this.horsesService.findAll(user);
+  findAll(
+    @GetUser() user: User,
+    @Query(new ValidationPipe({ transform: true })) query: HorsesQueryDto,
+  ) {
+    return this.horsesService.findAll(user, query);
+  }
+
+  @Post(':id/transfer')
+  @RequirePermission('horses', 'update')
+  transfer(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: TransferHorseDto,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.transfer(id, dto, user);
+  }
+
+  @Get(':id/expenses/export')
+  @RequirePermission('horses', 'read')
+  async exportExpenses(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Res() res: Response,
+  ) {
+    const csv = await this.horsesService.exportExpenses(id, user);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="gastos-${id}.csv"`);
+    res.send('﻿' + csv);
+  }
+
+  @Get(':id/financial-summary')
+  @RequirePermission('horses', 'read')
+  getFinancialSummary(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getFinancialSummary(id, user);
   }
 
   @Get(':id/ownership')

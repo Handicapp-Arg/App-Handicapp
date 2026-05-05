@@ -8,6 +8,7 @@ import api from '@/lib/api';
 const roleLabels: Record<string, string> = {
   propietario: 'Propietario',
   establecimiento: 'Establecimiento',
+  veterinario: 'Veterinario',
   admin: 'Administrador',
 };
 
@@ -133,7 +134,7 @@ export default function RegistroPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1.5">Tipo de cuenta</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {roles.map((r) => (
               <button
                 key={r.id}

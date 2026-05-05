@@ -199,3 +199,17 @@ export function useDeleteHorse() {
     },
   });
 }
+
+export function useTransferHorse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, new_owner_id }: { id: string; new_owner_id: string }) => {
+      const { data } = await api.post(`/horses/${id}/transfer`, { new_owner_id });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+    },
+  });
+}

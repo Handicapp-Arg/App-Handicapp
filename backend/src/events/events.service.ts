@@ -12,6 +12,8 @@ import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
+import { EventsQueryDto } from './dto/events-query.dto';
 import { User } from '../auth/user.entity';
 import { EventCreatedEvent } from '../notifications/events/event-created.event';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -53,10 +55,19 @@ export class EventsService {
 
     if (files?.length) {
       const uploaded = await Promise.all(
-        files.map((file) => this.cloudinaryService.upload(file, 'handicapp/events')),
+        files.map((file) => {
+          const isPdf = file.mimetype === 'application/pdf';
+          return this.cloudinaryService
+            .upload(file, 'handicapp/events', { isPdf })
+            .then((result) => ({ result, isPdf }));
+        }),
       );
-      event.photos = uploaded.map((result) =>
-        this.photoRepository.create({ url: result.secure_url, public_id: result.public_id }),
+      event.photos = uploaded.map(({ result, isPdf }) =>
+        this.photoRepository.create({
+          url: result.secure_url,
+          public_id: result.public_id,
+          file_type: isPdf ? 'pdf' : 'image',
+        }),
       );
     }
 
@@ -108,7 +119,9 @@ export class EventsService {
     return saved;
   }
 
-  async findAllByUser(user: User): Promise<Event[]> {
+  async findAllByUser(user: User, query: EventsQueryDto = {}): Promise<Event[]> {
+    const { type, date_from, date_to, horse_id } = query;
+
     const qb = this.eventRepository
       .createQueryBuilder('event')
       .leftJoinAndSelect('event.photos', 'photos')
@@ -117,7 +130,6 @@ export class EventsService {
       .orderBy('event.date', 'DESC');
 
     if (user.role === 'propietario') {
-      // Include events from owned horses and co-owned horses
       qb.leftJoin('horse.horseUsers', 'hu')
         .where('horse.owner_id = :uid OR (hu.user_id = :uid AND hu.role = :ownerRole)', {
           uid: user.id,
@@ -125,7 +137,15 @@ export class EventsService {
         });
     } else if (user.role === 'establecimiento') {
       qb.where('horse.establishment_id = :uid', { uid: user.id });
+    } else if (user.role === 'veterinario') {
+      qb.innerJoin('horse.horseUsers', 'hu2')
+        .where('hu2.user_id = :uid', { uid: user.id });
     }
+
+    if (type) qb.andWhere('event.type = :type', { type });
+    if (date_from) qb.andWhere('event.date >= :date_from', { date_from });
+    if (date_to) qb.andWhere('event.date <= :date_to', { date_to });
+    if (horse_id) qb.andWhere('event.horse_id = :horse_id', { horse_id });
 
     return qb.getMany();
   }
@@ -163,24 +183,53 @@ export class EventsService {
     return event;
   }
 
+  async update(id: string, dto: UpdateEventDto, user: User): Promise<Event> {
+    const event = await this.eventRepository.findOne({
+      where: { id },
+      relations: ['horse'],
+    });
+
+    if (!event) {
+      throw new NotFoundException('Evento no encontrado');
+    }
+
+    await this.assertAccess(event.horse, user);
+
+    if (dto.type !== undefined) event.type = dto.type;
+    if (dto.description !== undefined) event.description = dto.description;
+    if (dto.date !== undefined) event.date = dto.date;
+    if (dto.amount !== undefined) {
+      event.amount = dto.amount ? parseFloat(dto.amount) : null;
+    }
+
+    return this.eventRepository.save(event);
+  }
+
+  async remove(id: string, user: User): Promise<void> {
+    const event = await this.eventRepository.findOne({
+      where: { id },
+      relations: ['horse'],
+    });
+
+    if (!event) {
+      throw new NotFoundException('Evento no encontrado');
+    }
+
+    await this.assertAccess(event.horse, user);
+
+    await this.eventRepository.softDelete(id);
+  }
+
   private async assertAccess(horse: Horse, user: User): Promise<void> {
     if (user.role === 'admin') return;
+    if (user.role === 'propietario' && horse.owner_id === user.id) return;
+    if (user.role === 'establecimiento' && horse.establishment_id === user.id) return;
 
-    if (
-      user.role === 'propietario' &&
-      horse.owner_id === user.id
-    ) return;
-
-    if (
-      user.role === 'establecimiento' &&
-      horse.establishment_id === user.id
-    ) return;
-
-    // Check if user is a co-owner
-    const coOwner = await this.horseUserRepository.findOne({
-      where: { horse_id: horse.id, user_id: user.id, role: 'owner' },
+    // co-owner o veterinario asignado
+    const entry = await this.horseUserRepository.findOne({
+      where: { horse_id: horse.id, user_id: user.id },
     });
-    if (coOwner) return;
+    if (entry) return;
 
     throw new ForbiddenException('No tenés acceso a este caballo');
   }

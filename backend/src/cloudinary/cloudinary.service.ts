@@ -12,15 +12,24 @@ export class CloudinaryService {
     });
   }
 
-  async upload(file: Express.Multer.File, folder = 'handicapp/horses'): Promise<UploadApiResponse> {
+  async upload(
+    file: Express.Multer.File,
+    folder = 'handicapp/horses',
+    opts: { isPdf?: boolean } = {},
+  ): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
+      const uploadOpts: Record<string, unknown> = { folder };
+
+      if (opts.isPdf) {
+        uploadOpts.resource_type = 'raw';
+      } else {
+        uploadOpts.transformation = [
+          { width: 800, height: 800, crop: 'limit', quality: 'auto' },
+        ];
+      }
+
       const upload = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          transformation: [
-            { width: 800, height: 800, crop: 'limit', quality: 'auto' },
-          ],
-        },
+        uploadOpts,
         (error, result) => {
           if (error || !result) return reject(error);
           resolve(result);

@@ -492,6 +492,7 @@ export default function CaballosPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [confirmRemoveImage, setConfirmRemoveImage] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -815,8 +816,42 @@ export default function CaballosPage() {
         document.body
       )}
 
+      {/* Búsqueda */}
+      {horses && horses.length > 0 && (
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, raza o microchip..."
+            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-gray-400 focus:outline-none"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Lista vacía */}
-      {!horses?.length ? (
+      {(() => {
+        const q = search.toLowerCase();
+        const filteredHorses = search
+          ? (horses ?? []).filter((h) =>
+              h.name.toLowerCase().includes(q) ||
+              h.breed?.name.toLowerCase().includes(q) ||
+              h.microchip?.includes(q) ||
+              h.owner?.name.toLowerCase().includes(q)
+            )
+          : (horses ?? []);
+
+        return !filteredHorses.length ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -826,9 +861,9 @@ export default function CaballosPage() {
           <p className="text-sm font-medium text-gray-600">No hay caballos registrados</p>
           <p className="mt-1 text-xs text-gray-400">Creá el primero con el botón de arriba</p>
         </div>
-      ) : user?.role === 'propietario' ? (
+        ) : user?.role === 'propietario' ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
-          {horses.map((horse) => (
+          {filteredHorses.map((horse) => (
             <div key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
               className="group relative aspect-[4/3] sm:aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl bg-gray-900 shadow-md ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:ring-emerald-500/30">
@@ -896,9 +931,9 @@ export default function CaballosPage() {
             </div>
           ))}
         </div>
-      ) : (
+        ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {horses.map((horse) => (
+          {filteredHorses.map((horse) => (
             <div key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
               className="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md overflow-hidden cursor-pointer">
@@ -974,7 +1009,8 @@ export default function CaballosPage() {
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

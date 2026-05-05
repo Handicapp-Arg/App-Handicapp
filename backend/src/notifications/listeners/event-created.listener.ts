@@ -9,6 +9,7 @@ import { EventCreatedEvent } from '../events/event-created.event';
 import { NotificationType } from '../notification.entity';
 import { HorseUser } from '../../horses/horse-user.entity';
 import { EVENT_TYPE_LABEL_MAP } from '../../events/event-type.constants';
+import { EmailService } from '../../email/email.service';
 
 @Injectable()
 export class EventCreatedListener {
@@ -16,6 +17,7 @@ export class EventCreatedListener {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: NotificationSettingsService,
     private readonly gateway: NotificationsGateway,
+    private readonly emailService: EmailService,
     @InjectRepository(HorseUser)
     private readonly horseUserRepo: Repository<HorseUser>,
   ) {}
@@ -52,6 +54,20 @@ export class EventCreatedListener {
 
     for (const notification of notifications) {
       this.gateway.sendToUser(notification.recipient_id, notification);
+    }
+
+    // Email: disparar en background, sin bloquear
+    for (const hu of recipients) {
+      if (hu.user?.email) {
+        this.emailService.sendEventNotification({
+          to: hu.user.email,
+          recipientName: hu.user.name,
+          actorName: creator.name,
+          horseName: horse.name,
+          eventType: typeLabel,
+          description: event.description,
+        }).catch(() => {});
+      }
     }
   }
 }

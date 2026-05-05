@@ -19,6 +19,9 @@ export class EventPhoto {
   @Column({ nullable: true })
   public_id: string;
 
+  @Column({ type: 'varchar', default: 'image' })
+  file_type: 'image' | 'pdf';
+
   @Column('uuid')
   event_id: string;
 

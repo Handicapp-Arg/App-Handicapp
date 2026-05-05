@@ -12,6 +12,7 @@ import { NotificationSettingsController } from './notification-settings.controll
 import { NotificationsGateway } from './notifications.gateway';
 import { EventCreatedListener } from './listeners/event-created.listener';
 import { AuthModule } from '../auth/auth.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
       signOptions: { expiresIn: '7d' },
     }),
     AuthModule,
+    EmailModule,
   ],
   controllers: [NotificationsController, NotificationSettingsController],
   providers: [

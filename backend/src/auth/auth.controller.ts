@@ -10,6 +10,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -19,6 +21,7 @@ import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
 import { PermissionsService } from '../permissions/permissions.service';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -32,6 +35,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   login(@Body(ValidationPipe) dto: LoginDto) {
     return this.authService.login(dto);
   }

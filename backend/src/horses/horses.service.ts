@@ -12,6 +12,8 @@ import { HorseUser } from './horse-user.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { UpdateOwnershipDto } from './dto/update-ownership.dto';
+import { HorsesQueryDto } from './dto/horses-query.dto';
+import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -102,22 +104,38 @@ export class HorsesService implements OnModuleInit {
     return saved;
   }
 
-  async findAll(user: User): Promise<Horse[]> {
+  async findAll(user: User, query: HorsesQueryDto = {}): Promise<Horse[]> {
+    const { search } = query;
+
+    const buildQb = (baseAlias: string) =>
+      this.horseRepository
+        .createQueryBuilder(baseAlias)
+        .leftJoinAndSelect(`${baseAlias}.owner`, 'owner')
+        .leftJoinAndSelect(`${baseAlias}.establishment`, 'establishment')
+        .leftJoinAndSelect(`${baseAlias}.horseUsers`, 'horseUsers')
+        .leftJoinAndSelect(`${baseAlias}.breed`, 'breed')
+        .leftJoinAndSelect(`${baseAlias}.activity`, 'activity');
+
+    const applySearch = (qb: ReturnType<typeof buildQb>, alias: string) => {
+      if (search) {
+        qb.andWhere(
+          `(${alias}.name ILIKE :s OR owner.name ILIKE :s OR ${alias}.microchip ILIKE :s)`,
+          { s: `%${search}%` },
+        );
+      }
+      return qb;
+    };
+
     if (user.role === 'admin') {
-      const horses = await this.horseRepository.find({
-        relations: ['owner', 'establishment', 'horseUsers', 'breed', 'activity'],
-      });
+      const qb = applySearch(buildQb('h'), 'h');
+      const horses = await qb.getMany();
       return horses.map((h) => this.attachCoOwners(h));
     }
 
     if (user.role === 'propietario') {
-      // Caballos donde es owner principal
-      const ownedHorses = await this.horseRepository.find({
-        where: { owner_id: user.id },
-        relations: ['owner', 'establishment', 'horseUsers', 'breed', 'activity'],
-      });
+      const ownedQb = applySearch(buildQb('h'), 'h').andWhere('h.owner_id = :uid', { uid: user.id });
+      const ownedHorses = await ownedQb.getMany();
 
-      // Caballos donde es co-propietario (pero no owner principal)
       const coOwnerEntries = await this.horseUserRepository.find({
         where: { user_id: user.id, role: 'owner' },
       });
@@ -127,23 +145,127 @@ export class HorsesService implements OnModuleInit {
 
       let coOwnedHorses: Horse[] = [];
       if (coOwnedHorseIds.length) {
-        coOwnedHorses = await this.horseRepository.find({
-          where: { id: In(coOwnedHorseIds) },
-          relations: ['owner', 'establishment', 'horseUsers', 'breed', 'activity'],
-        });
+        const coQb = applySearch(buildQb('h'), 'h').andWhere('h.id IN (:...ids)', { ids: coOwnedHorseIds });
+        coOwnedHorses = await coQb.getMany();
       }
 
-      return [...ownedHorses, ...coOwnedHorses].map((h) =>
-        this.attachCoOwners(h),
-      );
+      return [...ownedHorses, ...coOwnedHorses].map((h) => this.attachCoOwners(h));
     }
 
-    // establecimiento
-    const horses = await this.horseRepository.find({
-      where: { establishment_id: user.id },
-      relations: ['owner', 'horseUsers', 'breed', 'activity'],
+    if (user.role === 'establecimiento') {
+      const qb = applySearch(buildQb('h'), 'h').andWhere('h.establishment_id = :uid', { uid: user.id });
+      const horses = await qb.getMany();
+      return horses.map((h) => this.attachCoOwners(h));
+    }
+
+    // veterinario: caballos donde está asignado en horse_users
+    const assignments = await this.horseUserRepository.find({
+      where: { user_id: user.id },
     });
+    if (!assignments.length) return [];
+    const assignedIds = assignments.map((a) => a.horse_id);
+    const qb = applySearch(buildQb('h'), 'h').andWhere('h.id IN (:...ids)', { ids: assignedIds });
+    const horses = await qb.getMany();
     return horses.map((h) => this.attachCoOwners(h));
+  }
+
+  async transfer(id: string, dto: TransferHorseDto, user: User): Promise<Horse> {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+
+    if (user.role !== 'admin' && horse.owner_id !== user.id) {
+      throw new ForbiddenException('Solo el propietario principal puede transferir el caballo');
+    }
+
+    if (dto.new_owner_id === horse.owner_id) {
+      throw new BadRequestException('El nuevo propietario es el mismo que el actual');
+    }
+
+    // Registrar al dueño anterior como horse_user con role='prev_owner' para historial
+    const prevOwnerEntry = await this.horseUserRepository.findOne({
+      where: { horse_id: id, user_id: horse.owner_id, role: 'owner' },
+    });
+    if (prevOwnerEntry) {
+      prevOwnerEntry.role = 'prev_owner';
+      prevOwnerEntry.percentage = null;
+      await this.horseUserRepository.save(prevOwnerEntry);
+    }
+
+    horse.owner_id = dto.new_owner_id;
+    const saved = await this.horseRepository.save(horse);
+    await this.syncHorseUsers(saved);
+    return saved;
+  }
+
+  async exportExpenses(id: string, user: User): Promise<string> {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const rows: { date: string; type: string; description: string; amount: string | null }[] =
+      await this.horseRepository.query(
+        `SELECT date, type, description, amount::text
+         FROM events
+         WHERE horse_id = $1 AND deleted_at IS NULL
+         ORDER BY date DESC`,
+        [id],
+      );
+
+    const typeLabels: Record<string, string> = {
+      salud: 'Salud',
+      entrenamiento: 'Entrenamiento',
+      gasto: 'Gasto',
+      nota: 'Nota',
+    };
+
+    const escapeCell = (v: string) => `"${v.replace(/"/g, '""')}"`;
+
+    const header = ['Fecha', 'Tipo', 'Descripción', 'Monto'].map(escapeCell).join(',');
+    const lines = rows.map((r) =>
+      [
+        escapeCell(r.date),
+        escapeCell(typeLabels[r.type] ?? r.type),
+        escapeCell(r.description),
+        r.amount != null ? escapeCell(parseFloat(r.amount).toFixed(2)) : '""',
+      ].join(','),
+    );
+
+    return [header, ...lines].join('\n');
+  }
+
+  async getFinancialSummary(id: string, user: User) {
+    const horse = await this.horseRepository.findOne({ where: { id } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const rows: { month: string; total: string }[] = await this.horseRepository.query(
+      `SELECT TO_CHAR(date, 'YYYY-MM') AS month, SUM(amount)::text AS total
+       FROM events
+       WHERE horse_id = $1 AND type = 'gasto' AND amount IS NOT NULL AND deleted_at IS NULL
+       GROUP BY month
+       ORDER BY month DESC
+       LIMIT 24`,
+      [id],
+    );
+
+    const byType: { type: string; total: string }[] = await this.horseRepository.query(
+      `SELECT type, SUM(amount)::text AS total
+       FROM events
+       WHERE horse_id = $1 AND amount IS NOT NULL AND deleted_at IS NULL
+       GROUP BY type`,
+      [id],
+    );
+
+    const total = rows.reduce((acc, r) => acc + parseFloat(r.total), 0);
+    const months = rows.length;
+    const average_monthly = months > 0 ? total / months : 0;
+
+    return {
+      total: parseFloat(total.toFixed(2)),
+      average_monthly: parseFloat(average_monthly.toFixed(2)),
+      by_type: byType.map((r) => ({ type: r.type, total: parseFloat(r.total) })),
+      monthly: rows.map((r) => ({ month: r.month, total: parseFloat(r.total) })),
+    };
   }
 
   async findOne(id: string, user: User): Promise<Horse> {
@@ -392,21 +514,15 @@ export class HorsesService implements OnModuleInit {
   private async assertAccess(horse: Horse, user: User): Promise<void> {
     if (user.role === 'admin') return;
 
-    if (
-      user.role === 'propietario' &&
-      horse.owner_id === user.id
-    ) return;
+    if (user.role === 'propietario' && horse.owner_id === user.id) return;
 
-    if (
-      user.role === 'establecimiento' &&
-      horse.establishment_id === user.id
-    ) return;
+    if (user.role === 'establecimiento' && horse.establishment_id === user.id) return;
 
-    // Check if user is a co-owner
-    const coOwner = await this.horseUserRepository.findOne({
-      where: { horse_id: horse.id, user_id: user.id, role: 'owner' },
+    // Co-owner o veterinario asignado
+    const entry = await this.horseUserRepository.findOne({
+      where: { horse_id: horse.id, user_id: user.id },
     });
-    if (coOwner) return;
+    if (entry) return;
 
     throw new ForbiddenException('No tenés acceso a este caballo');
   }

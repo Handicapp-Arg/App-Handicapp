@@ -57,6 +57,7 @@ export interface EventPhoto {
   id: string;
   url: string;
   public_id: string;
+  file_type: 'image' | 'pdf';
   event_id: string;
   created_at: string;
 }

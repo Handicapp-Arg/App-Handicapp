@@ -73,35 +73,49 @@ export class PermissionsService implements OnModuleInit {
   }
 
   private async seed(): Promise<void> {
-    const count = await this.permissionRepository.count();
-    if (count > 0) return;
+    const desired: Partial<Permission>[] = [
+      // Admin: CRUD completo
+      ...['horses', 'events'].flatMap((resource) =>
+        ['create', 'read', 'update', 'delete'].map((action) => ({
+          role: 'admin',
+          resource,
+          action,
+        })),
+      ),
+      // Propietario: CRUD horses + CRUD events propios
+      ...['create', 'read', 'update', 'delete'].map((action) => ({
+        role: 'propietario',
+        resource: 'horses',
+        action,
+      })),
+      ...['create', 'read', 'update', 'delete'].map((action) => ({
+        role: 'propietario',
+        resource: 'events',
+        action,
+      })),
+      // Establecimiento: read horses + CRUD events propios
+      { role: 'establecimiento', resource: 'horses', action: 'read' },
+      ...['create', 'read', 'update', 'delete'].map((action) => ({
+        role: 'establecimiento',
+        resource: 'events',
+        action,
+      })),
+      // Veterinario: read horses + create/read eventos de salud (sin update/delete)
+      { role: 'veterinario', resource: 'horses', action: 'read' },
+      { role: 'veterinario', resource: 'events', action: 'create' },
+      { role: 'veterinario', resource: 'events', action: 'read' },
+    ];
 
-    const resources = ['horses', 'events'];
-    const actions = ['create', 'read', 'update', 'delete'];
-
-    const permissions: Partial<Permission>[] = [];
-
-    // Admin: todo
-    for (const resource of resources) {
-      for (const action of actions) {
-        permissions.push({ role: 'admin', resource, action });
+    // Upsert idempotente: inserta solo los que no existen
+    for (const perm of desired) {
+      const exists = await this.permissionRepository.findOne({
+        where: { role: perm.role, resource: perm.resource, action: perm.action },
+      });
+      if (!exists) {
+        await this.permissionRepository.save(
+          this.permissionRepository.create(perm),
+        );
       }
     }
-
-    // Propietario: CRUD horses + create/read events
-    for (const action of actions) {
-      permissions.push({ role: 'propietario', resource: 'horses', action });
-    }
-    permissions.push({ role: 'propietario', resource: 'events', action: 'create' });
-    permissions.push({ role: 'propietario', resource: 'events', action: 'read' });
-
-    // Establecimiento: read horses + create/read events
-    permissions.push({ role: 'establecimiento', resource: 'horses', action: 'read' });
-    permissions.push({ role: 'establecimiento', resource: 'events', action: 'create' });
-    permissions.push({ role: 'establecimiento', resource: 'events', action: 'read' });
-
-    await this.permissionRepository.save(
-      permissions.map((p) => this.permissionRepository.create(p)),
-    );
   }
 }

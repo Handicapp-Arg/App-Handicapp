@@ -52,12 +52,12 @@ export class RolesService implements OnModuleInit {
   }
 
   private async seed(): Promise<void> {
-    const count = await this.roleRepository.count();
-    if (count > 0) return;
-
-    const defaults = ['admin', 'propietario', 'establecimiento'];
+    const defaults = ['admin', 'propietario', 'establecimiento', 'veterinario'];
     for (const name of defaults) {
-      await this.roleRepository.save(this.roleRepository.create({ name }));
+      const exists = await this.roleRepository.findOne({ where: { name } });
+      if (!exists) {
+        await this.roleRepository.save(this.roleRepository.create({ name }));
+      }
     }
   }
 }

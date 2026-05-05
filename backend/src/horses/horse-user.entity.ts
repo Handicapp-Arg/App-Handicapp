@@ -33,5 +33,5 @@ export class HorseUser {
   percentage: number | null;
 
   @Column({ type: 'varchar', default: 'access' })
-  role: 'owner' | 'access';
+  role: 'owner' | 'access' | 'prev_owner' | 'vet';
 }
