@@ -1,4 +1,5 @@
-import { IsOptional, IsEnum, IsDateString, IsUUID } from 'class-validator';
+import { IsOptional, IsEnum, IsDateString, IsUUID, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { EventType } from '../event.entity';
 
 export class EventsQueryDto {
@@ -17,4 +18,16 @@ export class EventsQueryDto {
   @IsOptional()
   @IsUUID()
   horse_id?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 20;
 }

@@ -50,6 +50,28 @@ export function useDeleteHorse() {
   });
 }
 
+export function useUploadHorseImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, uri }: { id: string; uri: string }) => {
+      const formData = new FormData();
+      formData.append('image', {
+        uri,
+        name: 'horse.jpg',
+        type: 'image/jpeg',
+      } as unknown as Blob);
+      const { data } = await api.post(`/horses/${id}/image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data as Horse;
+    },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['horses'] });
+      qc.invalidateQueries({ queryKey: ['horses', id] });
+    },
+  });
+}
+
 export function useFinancialSummary(horseId: string) {
   return useQuery<{ total: number; average_monthly: number; monthly: { month: string; total: number }[] }>({
     queryKey: ['horses', horseId, 'financial-summary'],

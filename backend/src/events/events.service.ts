@@ -119,15 +119,19 @@ export class EventsService {
     return saved;
   }
 
-  async findAllByUser(user: User, query: EventsQueryDto = {}): Promise<Event[]> {
-    const { type, date_from, date_to, horse_id } = query;
+  async findAllByUser(
+    user: User,
+    query: EventsQueryDto = {},
+  ): Promise<{ data: Event[]; total: number; page: number; limit: number }> {
+    const { type, date_from, date_to, horse_id, page = 1, limit = 20 } = query;
 
     const qb = this.eventRepository
       .createQueryBuilder('event')
       .leftJoinAndSelect('event.photos', 'photos')
       .leftJoin('event.horse', 'horse')
       .addSelect(['horse.id', 'horse.name', 'horse.owner_id', 'horse.establishment_id'])
-      .orderBy('event.date', 'DESC');
+      .orderBy('event.date', 'DESC')
+      .addOrderBy('event.created_at', 'DESC');
 
     if (user.role === 'propietario') {
       qb.leftJoin('horse.horseUsers', 'hu')
@@ -147,7 +151,10 @@ export class EventsService {
     if (date_to) qb.andWhere('event.date <= :date_to', { date_to });
     if (horse_id) qb.andWhere('event.horse_id = :horse_id', { horse_id });
 
-    return qb.getMany();
+    const total = await qb.getCount();
+    const data = await qb.skip((page - 1) * limit).take(limit).getMany();
+
+    return { data, total, page, limit };
   }
 
   async findByHorse(horseId: string, user: User): Promise<Event[]> {

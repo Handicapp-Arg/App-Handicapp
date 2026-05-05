@@ -18,9 +18,10 @@ export function useAllEvents(filters?: EventFilters) {
       if (filters?.date_from) qs.set('date_from', filters.date_from);
       if (filters?.date_to) qs.set('date_to', filters.date_to);
       if (filters?.horse_id) qs.set('horse_id', filters.horse_id);
+      qs.set('limit', '200'); // web trae todos de una (paginación solo en mobile)
       const url = '/events/all' + (qs.toString() ? `?${qs}` : '');
       const { data } = await api.get(url);
-      return data;
+      return data.data ?? data; // soporta respuesta paginada y plana
     },
   });
 }

@@ -7,6 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorses, useCreateHorse } from '../../../hooks/use-horses';
+import { DatePicker } from '../../../components/DatePicker';
 import { useAuth } from '../../../lib/auth';
 import { Spinner } from '../../../components/Spinner';
 import { colors } from '../../../lib/colors';
@@ -85,13 +86,11 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
             placeholderTextColor={colors.gray400}
             autoCapitalize="words"
           />
-          <Text style={styles.fieldLabel}>Fecha de nacimiento (YYYY-MM-DD)</Text>
-          <TextInput
-            style={styles.input}
+          <DatePicker
+            label="Fecha de nacimiento (opcional)"
             value={birthDate}
-            onChangeText={setBirthDate}
-            placeholder="2020-05-15"
-            placeholderTextColor={colors.gray400}
+            onChange={setBirthDate}
+            maxDate={new Date()}
           />
           <Text style={styles.fieldLabel}>Microchip (15 dígitos, opcional)</Text>
           <TextInput

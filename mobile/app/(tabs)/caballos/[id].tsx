@@ -3,9 +3,11 @@ import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage } from '../../../hooks/use-horses';
+import { DatePicker } from '../../../components/DatePicker';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { useAuth } from '../../../lib/auth';
 import { Spinner } from '../../../components/Spinner';
@@ -51,13 +53,11 @@ function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void 
             autoCapitalize="words"
           />
 
-          <Text style={styles.fieldLabel}>Fecha de nacimiento (YYYY-MM-DD)</Text>
-          <TextInput
-            style={styles.input}
+          <DatePicker
+            label="Fecha de nacimiento"
             value={birthDate}
-            onChangeText={setBirthDate}
-            placeholder="2020-05-15"
-            placeholderTextColor={colors.gray400}
+            onChange={setBirthDate}
+            maxDate={new Date()}
           />
 
           <Text style={styles.fieldLabel}>Microchip (15 dígitos)</Text>
@@ -133,7 +133,25 @@ export default function HorseDetailScreen() {
   const { data: events } = useEventsByHorse(id);
   const { data: financial } = useFinancialSummary(id);
   const deleteHorse = useDeleteHorse();
+  const uploadImage = useUploadHorseImage();
   const [showEdit, setShowEdit] = useState(false);
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería para subir la foto.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+    }
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -206,9 +224,19 @@ export default function HorseDetailScreen() {
           <Text style={styles.backBtnText}>‹</Text>
         </TouchableOpacity>
 
-        {/* Acciones (editar / eliminar) */}
+        {/* Acciones (cámara / editar / eliminar) */}
         {(can('horses', 'update') || can('horses', 'delete')) && (
           <View style={[styles.heroActions, { top: insets.top + 12 }]}>
+            {can('horses', 'update') && (
+              <TouchableOpacity
+                style={[styles.heroActionBtn, uploadImage.isPending && { opacity: 0.6 }]}
+                onPress={handlePickImage}
+                disabled={uploadImage.isPending}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.heroActionText}>📷</Text>
+              </TouchableOpacity>
+            )}
             {can('horses', 'update') && (
               <TouchableOpacity style={styles.heroActionBtn} onPress={() => setShowEdit(true)} activeOpacity={0.8}>
                 <Text style={styles.heroActionText}>✎</Text>

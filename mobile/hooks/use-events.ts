@@ -1,20 +1,71 @@
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import type { Event } from '../../packages/shared/src';
 
-export function useAllEvents(params?: { type?: string; horse_id?: string; date_from?: string; date_to?: string }) {
-  return useQuery<Event[]>({
-    queryKey: ['events', 'all', params],
+const PAGE_SIZE = 20;
+
+interface EventsPage {
+  data: Event[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export function useAllEvents(params?: { type?: string; horse_id?: string }) {
+  const [page, setPage] = useState(1);
+  const [allItems, setAllItems] = useState<Event[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+
+  const buildUrl = (p: number) => {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set('type', params.type);
+    if (params?.horse_id) qs.set('horse_id', params.horse_id);
+    qs.set('page', String(p));
+    qs.set('limit', String(PAGE_SIZE));
+    return '/events/all?' + qs.toString();
+  };
+
+  const query = useQuery<EventsPage>({
+    queryKey: ['events', 'all', params, page],
     queryFn: async () => {
-      const qs = new URLSearchParams();
-      if (params?.type) qs.set('type', params.type);
-      if (params?.horse_id) qs.set('horse_id', params.horse_id);
-      if (params?.date_from) qs.set('date_from', params.date_from);
-      if (params?.date_to) qs.set('date_to', params.date_to);
-      const url = '/events/all' + (qs.toString() ? `?${qs}` : '');
-      return (await api.get(url)).data;
+      const { data } = await api.get(buildUrl(page));
+      return data;
     },
+    staleTime: 15_000,
   });
+
+  // Acumular páginas cuando llegan
+  const prevData = query.data;
+  if (prevData) {
+    const ids = new Set(allItems.map((e) => e.id));
+    const newItems = prevData.data.filter((e) => !ids.has(e.id));
+    if (newItems.length > 0) {
+      setAllItems((prev) => [...prev, ...newItems]);
+      setHasMore(allItems.length + newItems.length < prevData.total);
+    }
+  }
+
+  const loadMore = useCallback(() => {
+    if (!query.isFetching && hasMore) setPage((p) => p + 1);
+  }, [query.isFetching, hasMore]);
+
+  const reset = useCallback(() => {
+    setPage(1);
+    setAllItems([]);
+    setHasMore(true);
+  }, []);
+
+  return {
+    events: allItems,
+    isLoading: query.isLoading && allItems.length === 0,
+    isFetchingMore: query.isFetching && allItems.length > 0,
+    hasMore,
+    loadMore,
+    reset,
+    refetch: () => { reset(); query.refetch(); },
+    total: query.data?.total ?? 0,
+  };
 }
 
 export function useEventsByHorse(horseId: string) {

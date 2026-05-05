@@ -31,6 +31,12 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "HandicApp necesita acceso a tu galería para subir fotos de caballos."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",

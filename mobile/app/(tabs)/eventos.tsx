@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal,
   TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
+import { DatePicker } from '../../components/DatePicker';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
 import { Spinner } from '../../components/Spinner';
@@ -116,13 +117,11 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
           </View>
 
           {/* Fecha */}
-          <Text style={styles.fieldLabel}>Fecha (YYYY-MM-DD)</Text>
-          <TextInput
-            style={styles.input}
+          <DatePicker
+            label="Fecha"
             value={date}
-            onChangeText={setDate}
-            placeholder="2025-01-15"
-            placeholderTextColor={colors.gray400}
+            onChange={setDate}
+            maxDate={new Date()}
           />
 
           {/* Monto */}
@@ -181,10 +180,13 @@ export default function EventosScreen() {
   const [filterType, setFilterType] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  const { data: events, isLoading, refetch, isRefetching } = useAllEvents(
+  const { events, isLoading, isFetchingMore, hasMore, loadMore, reset, refetch, total } = useAllEvents(
     filterType ? { type: filterType } : undefined,
   );
   const deleteEvent = useDeleteEvent();
+
+  // Resetear al cambiar filtro
+  useEffect(() => { reset(); }, [filterType]);
 
   const canCreate = can('events', 'create');
   const canDelete = can('events', 'delete');
@@ -218,8 +220,17 @@ export default function EventosScreen() {
         ))}
       </ScrollView>
 
+      {/* Contador */}
+      {total > 0 && (
+        <View style={styles.countRow}>
+          <Text style={styles.countText}>{events.length} de {total} eventos</Text>
+        </View>
+      )}
+
       {/* Lista */}
-      {!events?.length ? (
+      {isLoading ? (
+        <Spinner />
+      ) : !events.length ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>No hay eventos{filterType ? ` de tipo ${eventTypeColors[filterType]?.label}` : ''}</Text>
         </View>
@@ -235,8 +246,21 @@ export default function EventosScreen() {
               onDelete={(id) => deleteEvent.mutate(id)}
             />
           )}
+          onEndReached={() => { if (hasMore) loadMore(); }}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View style={styles.footer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : hasMore ? null : (
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>— {total} eventos en total —</Text>
+              </View>
+            )
+          }
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+            <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.primary} />
           }
           showsVerticalScrollIndicator={false}
         />
@@ -276,6 +300,10 @@ const styles = StyleSheet.create({
   desc: { fontSize: 14, color: colors.gray700, lineHeight: 20 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   emptyText: { fontSize: 14, color: colors.gray400, textAlign: 'center' },
+  countRow: { paddingHorizontal: 16, paddingBottom: 4 },
+  countText: { fontSize: 12, color: colors.gray400 },
+  footer: { padding: 20, alignItems: 'center' },
+  footerText: { fontSize: 12, color: colors.gray400 },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
