@@ -28,6 +28,7 @@ import { UpdateHorseDto } from './dto/update-horse.dto';
 import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
+import { AssignVetDto } from './dto/assign-vet.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -84,6 +85,33 @@ export class HorsesController {
   @RequirePermission('horses', 'read')
   getFinancialSummary(@Param('id') id: string, @GetUser() user: User) {
     return this.horsesService.getFinancialSummary(id, user);
+  }
+
+  @Get(':id/vets')
+  @RequirePermission('horses', 'read')
+  getVets(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getVets(id, user);
+  }
+
+  @Post(':id/vets')
+  @RequirePermission('horses', 'update')
+  assignVet(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: AssignVetDto,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.assignVet(id, dto, user);
+  }
+
+  @Delete(':id/vets/:vetUserId')
+  @RequirePermission('horses', 'update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeVet(
+    @Param('id') id: string,
+    @Param('vetUserId') vetUserId: string,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.removeVet(id, vetUserId, user);
   }
 
   @Get(':id/ownership')

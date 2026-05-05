@@ -151,6 +151,52 @@ export function usePropietarios() {
   });
 }
 
+export function useVeterinarios() {
+  return useQuery<{ id: string; name: string }[]>({
+    queryKey: ['veterinarios'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/users?role=veterinario');
+      return data;
+    },
+  });
+}
+
+export function useHorseVets(horseId: string) {
+  return useQuery<{ id: string; user_id: string; user: { id: string; name: string; email: string } }[]>({
+    queryKey: ['horses', horseId, 'vets'],
+    queryFn: async () => {
+      const { data } = await api.get(`/horses/${horseId}/vets`);
+      return data;
+    },
+    enabled: !!horseId,
+  });
+}
+
+export function useAssignVet(horseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (user_id: string) => {
+      const { data } = await api.post(`/horses/${horseId}/vets`, { user_id });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'vets'] });
+    },
+  });
+}
+
+export function useRemoveVet(horseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vetUserId: string) => {
+      await api.delete(`/horses/${horseId}/vets/${vetUserId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'vets'] });
+    },
+  });
+}
+
 export function useHorseOwnership(horseId: string | null) {
   return useQuery<HorseOwnership[]>({
     queryKey: ['horses', horseId, 'ownership'],

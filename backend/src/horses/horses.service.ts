@@ -14,6 +14,7 @@ import { UpdateHorseDto } from './dto/update-horse.dto';
 import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
+import { AssignVetDto } from './dto/assign-vet.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -457,6 +458,63 @@ export class HorsesService implements OnModuleInit {
     return this.horseUserRepository.find({
       where: { horse_id: horseId, role: 'owner' },
     });
+  }
+
+  // ── Veterinarios ─────────────────────────────────────────
+
+  async getVets(horseId: string, user: User): Promise<HorseUser[]> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    return this.horseUserRepository.find({
+      where: { horse_id: horseId, role: 'vet' },
+      relations: ['user'],
+    });
+  }
+
+  async assignVet(horseId: string, dto: AssignVetDto, user: User): Promise<HorseUser> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+
+    if (user.role !== 'admin' && horse.owner_id !== user.id) {
+      throw new ForbiddenException('Solo el propietario o admin puede asignar veterinarios');
+    }
+
+    const existing = await this.horseUserRepository.findOne({
+      where: { horse_id: horseId, user_id: dto.user_id },
+    });
+    if (existing) {
+      if (existing.role === 'vet') {
+        throw new BadRequestException('El veterinario ya está asignado a este caballo');
+      }
+      existing.role = 'vet';
+      return this.horseUserRepository.save(existing);
+    }
+
+    const entry = this.horseUserRepository.create({
+      horse_id: horseId,
+      user_id: dto.user_id,
+      role: 'vet',
+      percentage: null,
+    });
+    return this.horseUserRepository.save(entry);
+  }
+
+  async removeVet(horseId: string, vetUserId: string, user: User): Promise<void> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+
+    if (user.role !== 'admin' && horse.owner_id !== user.id) {
+      throw new ForbiddenException('Solo el propietario o admin puede remover veterinarios');
+    }
+
+    const entry = await this.horseUserRepository.findOne({
+      where: { horse_id: horseId, user_id: vetUserId, role: 'vet' },
+    });
+    if (!entry) throw new NotFoundException('Veterinario no asignado a este caballo');
+
+    await this.horseUserRepository.remove(entry);
   }
 
   // ── Private helpers ───────────────────────────────────────

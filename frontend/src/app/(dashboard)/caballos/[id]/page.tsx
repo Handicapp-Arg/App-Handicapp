@@ -4,7 +4,7 @@ import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios } from '@/hooks/use-horses';
+import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import api from '@/lib/api';
@@ -390,6 +390,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: events } = useEventsByHorse(id);
   const { data: financial } = useFinancialSummary(id);
   const { data: propietarios } = usePropietarios();
+  const { data: vets } = useHorseVets(id);
+  const { data: veterinarios } = useVeterinarios();
+  const assignVet = useAssignVet(id);
+  const removeVet = useRemoveVet(id);
   const deleteHorse = useDeleteHorse();
   const deleteEvent = useDeleteEvent();
   const transferHorse = useTransferHorse();
@@ -401,6 +405,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [showTransfer, setShowTransfer] = useState(false);
   const [transferOwnerId, setTransferOwnerId] = useState('');
   const [transferError, setTransferError] = useState('');
+  const [showAssignVet, setShowAssignVet] = useState(false);
+  const [selectedVetId, setSelectedVetId] = useState('');
 
   const canEdit = can('horses', 'update');
   const canDelete = can('horses', 'delete');
@@ -513,6 +519,71 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           }}
           onCancel={() => setDeletingEventId(null)}
         />
+      )}
+
+      {/* Modal asignar veterinario */}
+      {showAssignVet && createPortal(
+        <>
+          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setShowAssignVet(false)} />
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between bg-teal-600 px-5 py-4">
+                <p className="font-bold text-white">Asignar veterinario</p>
+                <button onClick={() => setShowAssignVet(false)} className="text-white/70 hover:text-white cursor-pointer">✕</button>
+              </div>
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-gray-600">
+                  Seleccioná el veterinario que tendrá acceso a los registros de <strong>{horse?.name}</strong>.
+                </p>
+                {!veterinarios?.length ? (
+                  <p className="text-sm text-gray-400 text-center py-4">
+                    No hay veterinarios registrados en el sistema.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedVetId}
+                    onChange={(e) => setSelectedVetId(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                  >
+                    <option value="">Seleccionar veterinario...</option>
+                    {veterinarios
+                      .filter((v) => !vets?.some((assigned) => assigned.user_id === v.id))
+                      .map((v) => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))
+                    }
+                  </select>
+                )}
+                {assignVet.isError && (
+                  <p className="text-xs text-red-500">No se pudo asignar el veterinario.</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignVet(false)}
+                    className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!selectedVetId) return;
+                      await assignVet.mutateAsync(selectedVetId);
+                      setShowAssignVet(false);
+                      setSelectedVetId('');
+                    }}
+                    disabled={!selectedVetId || assignVet.isPending}
+                    className="flex-1 rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-teal-700 transition"
+                  >
+                    {assignVet.isPending ? 'Asignando...' : 'Confirmar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body,
       )}
 
       {/* Modal transferir propiedad */}
@@ -665,6 +736,57 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Veterinarios (mobile) */}
+        {(isOwner || user?.role === 'admin') && (
+          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                  </svg>
+                </span>
+                <h2 className="text-base font-bold text-gray-900">Veterinarios</h2>
+                {vets && vets.length > 0 && (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{vets.length}</span>
+                )}
+              </div>
+              <button
+                onClick={() => { setSelectedVetId(''); setShowAssignVet(true); }}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Asignar
+              </button>
+            </div>
+            {!vets?.length ? (
+              <p className="text-xs text-gray-400">Sin veterinarios asignados</p>
+            ) : (
+              <div className="space-y-1.5">
+                {vets.map((v) => (
+                  <div key={v.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">{v.user?.name}</p>
+                      <p className="text-xs text-gray-400">{v.user?.email}</p>
+                    </div>
+                    <button
+                      onClick={() => removeVet.mutate(v.user_id)}
+                      className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                      title="Quitar veterinario"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -882,6 +1004,47 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ─── Veterinarios (desktop) ─── */}
+          {(isOwner || user?.role === 'admin') && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-2.5 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-900">Veterinarios</h2>
+                <button
+                  onClick={() => { setSelectedVetId(''); setShowAssignVet(true); }}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Asignar
+                </button>
+              </div>
+              {!vets?.length ? (
+                <p className="text-xs text-gray-400">Sin veterinarios asignados</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {vets.map((v) => (
+                    <div key={v.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                      <div>
+                        <p className="text-sm text-gray-700">{v.user?.name}</p>
+                        <p className="text-xs text-gray-400">{v.user?.email}</p>
+                      </div>
+                      <button
+                        onClick={() => removeVet.mutate(v.user_id)}
+                        className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                        title="Quitar"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
