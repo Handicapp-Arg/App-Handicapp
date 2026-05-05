@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, TextInput, RefreshControl,
+  Image, TextInput, RefreshControl, Modal, KeyboardAvoidingView,
+  Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorses } from '../../../hooks/use-horses';
+import { useHorses, useCreateHorse } from '../../../hooks/use-horses';
+import { useAuth } from '../../../lib/auth';
 import { Spinner } from '../../../components/Spinner';
 import { colors } from '../../../lib/colors';
 import type { Horse } from '../../../../packages/shared/src';
@@ -48,9 +50,86 @@ function HorseCard({ horse }: { horse: Horse }) {
   );
 }
 
+function CreateHorseModal({ onClose }: { onClose: () => void }) {
+  const createHorse = useCreateHorse();
+  const [name, setName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [microchip, setMicrochip] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!name.trim()) { setError('El nombre es obligatorio'); return; }
+    setError('');
+    await createHorse.mutateAsync({
+      name: name.trim(),
+      birth_date: birthDate || undefined,
+      microchip: microchip || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={styles.modalCard}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Nuevo caballo</Text>
+          <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+        </View>
+        <ScrollView contentContainerStyle={styles.modalBody}>
+          <Text style={styles.fieldLabel}>Nombre *</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Nombre del caballo"
+            placeholderTextColor={colors.gray400}
+            autoCapitalize="words"
+          />
+          <Text style={styles.fieldLabel}>Fecha de nacimiento (YYYY-MM-DD)</Text>
+          <TextInput
+            style={styles.input}
+            value={birthDate}
+            onChangeText={setBirthDate}
+            placeholder="2020-05-15"
+            placeholderTextColor={colors.gray400}
+          />
+          <Text style={styles.fieldLabel}>Microchip (15 dígitos, opcional)</Text>
+          <TextInput
+            style={styles.input}
+            value={microchip}
+            onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))}
+            placeholder="123456789012345"
+            placeholderTextColor={colors.gray400}
+            keyboardType="numeric"
+          />
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {createHorse.isError ? <Text style={styles.errorText}>No se pudo crear el caballo.</Text> : null}
+        </ScrollView>
+        <View style={styles.modalFooter}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.submitBtn, createHorse.isPending && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={createHorse.isPending}
+          >
+            {createHorse.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={styles.submitBtnText}>Crear</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
 export default function CaballosScreen() {
+  const { can } = useAuth();
   const { data: horses, isLoading, refetch, isRefetching } = useHorses();
   const [search, setSearch] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
   const insets = useSafeAreaInsets();
 
   const filtered = search
@@ -67,11 +146,18 @@ export default function CaballosScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Caballos</Text>
-        {horses && horses.length > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{horses.length}</Text>
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.title}>Caballos</Text>
+          {horses && horses.length > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countText}>{horses.length}</Text>
+            </View>
+          )}
+        </View>
+        {can('horses', 'create') && (
+          <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreate(true)}>
+            <Text style={styles.newBtnText}>+ Nuevo</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -108,6 +194,12 @@ export default function CaballosScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <Modal visible={showCreate} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <CreateHorseModal onClose={() => setShowCreate(false)} />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -152,4 +244,22 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 11, color: colors.gray400 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   emptyText: { fontSize: 14, color: colors.gray400, textAlign: 'center' },
+  newBtn: { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  newBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.gray900 },
+  modalClose: { fontSize: 18, color: colors.gray400 },
+  modalBody: { padding: 20, gap: 10 },
+  modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: colors.gray100 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
+  errorText: { fontSize: 13, color: colors.red500 },
+  cancelBtn: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, paddingVertical: 13, alignItems: 'center' },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
+  submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 13, alignItems: 'center' },
+  submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 });

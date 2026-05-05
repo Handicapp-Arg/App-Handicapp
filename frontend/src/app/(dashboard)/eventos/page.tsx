@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useHorses } from '@/hooks/use-horses';
-import { useEventsByHorse, useCreateEvent, useAllEvents, useCreateBulkEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
+import { useCreateEvent, useAllEvents, useCreateBulkEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
 import EventCalendar from '@/components/event-calendar';
@@ -462,16 +462,25 @@ export default function EventosPage() {
   const { data: horses, isLoading: loadingHorses } = useHorses();
   const [view, setView] = useState<ViewMode>('list');
   const [filterHorseId, setFilterHorseId] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const deleteEvent = useDeleteEvent();
 
-  const { data: events, isLoading: loadingEvents } = useEventsByHorse(filterHorseId);
-  const { data: allEvents, isLoading: loadingAll } = useAllEvents();
+  const activeFilters = {
+    type: filterType || undefined,
+    date_from: filterDateFrom || undefined,
+    date_to: filterDateTo || undefined,
+    horse_id: filterHorseId || undefined,
+  };
+  const hasFilters = !!(filterType || filterDateFrom || filterDateTo || filterHorseId);
 
-  const displayEvents = filterHorseId ? events : allEvents;
-  const isLoading = filterHorseId ? loadingEvents : loadingAll;
+  const { data: allEvents, isLoading: loadingAll } = useAllEvents(activeFilters);
+  const displayEvents = allEvents;
+  const isLoading = loadingAll;
 
   if (loadingHorses) return (
     <div className="flex justify-center py-20">
@@ -520,8 +529,8 @@ export default function EventosPage() {
         </div>
       </div>
 
-      {/* Filtro por caballo */}
-      <div className="flex items-center gap-3">
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-2">
         <select
           value={filterHorseId}
           onChange={(e) => setFilterHorseId(e.target.value)}
@@ -532,12 +541,42 @@ export default function EventosPage() {
             <option key={h.id} value={h.id}>{h.name}</option>
           ))}
         </select>
-        {filterHorseId && (
+
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none"
+        >
+          <option value="">Todos los tipos</option>
+          {typeOptions.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
+
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setFilterDateFrom(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none"
+            title="Desde"
+          />
+          <span className="text-xs text-gray-400">—</span>
+          <input
+            type="date"
+            value={filterDateTo}
+            onChange={(e) => setFilterDateTo(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none"
+            title="Hasta"
+          />
+        </div>
+
+        {hasFilters && (
           <button
-            onClick={() => setFilterHorseId('')}
+            onClick={() => { setFilterHorseId(''); setFilterType(''); setFilterDateFrom(''); setFilterDateTo(''); }}
             className="text-xs text-gray-400 hover:text-gray-600 transition cursor-pointer"
           >
-            Limpiar
+            Limpiar filtros
           </button>
         )}
       </div>
@@ -549,11 +588,7 @@ export default function EventosPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
           </div>
         ) : (
-          <EventCalendar
-            events={filterHorseId
-              ? (allEvents || []).filter((e) => e.horse_id === filterHorseId)
-              : (allEvents || [])}
-          />
+          <EventCalendar events={displayEvents || []} />
         )
       )}
 

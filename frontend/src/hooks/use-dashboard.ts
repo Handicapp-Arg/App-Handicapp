@@ -22,7 +22,14 @@ export interface EstablecimientoDashboard {
   monthly_events_count: number;
 }
 
-export type DashboardData = AdminDashboard | PropietarioDashboard | EstablecimientoDashboard;
+export interface VeterinarioDashboard {
+  role: 'veterinario';
+  horses: import('@/types').Horse[];
+  recent_events: import('@/types').Event[];
+  total_salud_events: number;
+}
+
+export type DashboardData = AdminDashboard | PropietarioDashboard | EstablecimientoDashboard | VeterinarioDashboard;
 
 export function useDashboard() {
   return useQuery<DashboardData>({

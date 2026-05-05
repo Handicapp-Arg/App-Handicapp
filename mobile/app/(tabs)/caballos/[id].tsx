@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorse } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary } from '../../../hooks/use-horses';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { Spinner } from '../../../components/Spinner';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
@@ -47,6 +47,7 @@ export default function HorseDetailScreen() {
 
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
+  const { data: financial } = useFinancialSummary(id);
 
   if (isLoading) return <Spinner />;
   if (!horse) {
@@ -131,6 +132,44 @@ export default function HorseDetailScreen() {
         </View>
       )}
 
+      {/* Resumen financiero */}
+      {financial && financial.total > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Resumen financiero</Text>
+          <View style={styles.financialCard}>
+            <View style={styles.financialGrid}>
+              <View style={[styles.financialStat, { backgroundColor: '#faf5ff' }]}>
+                <Text style={[styles.financialStatValue, { color: colors.purple700 }]}>
+                  ${financial.total.toLocaleString('es-AR')}
+                </Text>
+                <Text style={[styles.financialStatLabel, { color: colors.purple700 }]}>Total gastos</Text>
+              </View>
+              <View style={[styles.financialStat, { backgroundColor: colors.gray50 }]}>
+                <Text style={styles.financialStatValue}>
+                  ${financial.average_monthly.toLocaleString('es-AR')}
+                </Text>
+                <Text style={styles.financialStatLabel}>Promedio/mes</Text>
+              </View>
+            </View>
+            {financial.monthly.slice(0, 5).map((m) => {
+              const [year, month] = m.month.split('-');
+              const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+              const maxVal = Math.max(...financial.monthly.slice(0, 5).map((x) => x.total));
+              const pct = maxVal > 0 ? (m.total / maxVal) * 100 : 0;
+              return (
+                <View key={m.month} style={styles.barRow}>
+                  <Text style={styles.barLabel}>{label}</Text>
+                  <View style={styles.barTrack}>
+                    <View style={[styles.barFill, { width: `${pct}%` }]} />
+                  </View>
+                  <Text style={styles.barValue}>${m.total.toLocaleString('es-AR')}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       {/* Historial */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -202,4 +241,14 @@ const styles = StyleSheet.create({
   eventDate: { fontSize: 11, color: colors.gray400 },
   eventDesc: { fontSize: 14, color: colors.gray700, lineHeight: 20 },
   eventAmount: { fontSize: 14, fontWeight: '700', color: colors.purple700 },
+  financialCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, padding: 14, gap: 10 },
+  financialGrid: { flexDirection: 'row', gap: 10 },
+  financialStat: { flex: 1, borderRadius: 12, padding: 12 },
+  financialStatValue: { fontSize: 18, fontWeight: '800', color: colors.gray900 },
+  financialStatLabel: { fontSize: 10, fontWeight: '600', color: colors.gray500, marginTop: 2, textTransform: 'uppercase' },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  barLabel: { width: 36, fontSize: 10, color: colors.gray400, textAlign: 'right' },
+  barTrack: { flex: 1, height: 6, backgroundColor: colors.gray100, borderRadius: 999, overflow: 'hidden' },
+  barFill: { height: '100%', backgroundColor: '#a855f7', borderRadius: 999 },
+  barValue: { width: 64, fontSize: 10, fontWeight: '600', color: colors.gray700, textAlign: 'right' },
 });

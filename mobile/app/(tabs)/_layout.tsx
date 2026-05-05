@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../lib/colors';
+import { useNotifications } from '../../lib/notifications';
 
 function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
   return (
@@ -22,10 +23,11 @@ const icons: Record<string, string> = {
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { unread } = useNotifications();
 
   return (
     <Tabs
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray400,
@@ -36,12 +38,19 @@ export default function TabsLayout() {
           height: 56 + insets.bottom,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: -2 },
-      })}
+      }}
     >
       <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
       <Tabs.Screen name="caballos" options={{ title: 'Caballos' }} />
       <Tabs.Screen name="eventos" options={{ title: 'Eventos' }} />
-      <Tabs.Screen name="perfil" options={{ title: 'Perfil' }} />
+      <Tabs.Screen
+        name="perfil"
+        options={{
+          title: 'Perfil',
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.red500, fontSize: 10 },
+        }}
+      />
     </Tabs>
   );
 }

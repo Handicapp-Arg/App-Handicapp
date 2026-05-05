@@ -2,11 +2,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Event } from '@/types';
 
-export function useAllEvents() {
+interface EventFilters {
+  type?: string;
+  date_from?: string;
+  date_to?: string;
+  horse_id?: string;
+}
+
+export function useAllEvents(filters?: EventFilters) {
   return useQuery<Event[]>({
-    queryKey: ['events', 'all'],
+    queryKey: ['events', 'all', filters],
     queryFn: async () => {
-      const { data } = await api.get('/events/all');
+      const qs = new URLSearchParams();
+      if (filters?.type) qs.set('type', filters.type);
+      if (filters?.date_from) qs.set('date_from', filters.date_from);
+      if (filters?.date_to) qs.set('date_to', filters.date_to);
+      if (filters?.horse_id) qs.set('horse_id', filters.horse_id);
+      const url = '/events/all' + (qs.toString() ? `?${qs}` : '');
+      const { data } = await api.get(url);
       return data;
     },
   });

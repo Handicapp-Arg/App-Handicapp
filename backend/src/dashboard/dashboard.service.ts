@@ -20,6 +20,7 @@ export class DashboardService {
     if (user.role === 'admin') return this.getAdminDashboard();
     if (user.role === 'propietario') return this.getPropietarioDashboard(user.id);
     if (user.role === 'establecimiento') return this.getEstablecimientoDashboard(user.id);
+    if (user.role === 'veterinario') return this.getVeterinarioDashboard(user.id);
     return {};
   }
 
@@ -112,6 +113,48 @@ export class DashboardService {
       horses,
       recent_events: recentEvents,
       monthly_events_count: monthlyEvents,
+    };
+  }
+
+  private async getVeterinarioDashboard(userId: string) {
+    // Caballos asignados via horse_users
+    const assignments: { horse_id: string }[] = await this.userRepository.query(
+      `SELECT horse_id FROM horse_users WHERE user_id = $1 AND role = 'vet'`,
+      [userId],
+    );
+    const horseIds = assignments.map((a) => a.horse_id);
+
+    if (!horseIds.length) {
+      return { role: 'veterinario', horses: [], recent_events: [], total_salud_events: 0 };
+    }
+
+    const [horses, recentEvents, totalSalud] = await Promise.all([
+      this.horseRepository.find({
+        where: horseIds.map((id) => ({ id })),
+        relations: ['owner', 'breed', 'activity'],
+        order: { name: 'ASC' },
+      }),
+      this.eventRepository
+        .createQueryBuilder('e')
+        .leftJoin('e.horse', 'horse')
+        .addSelect(['horse.id', 'horse.name'])
+        .where('e.horse_id IN (:...ids)', { ids: horseIds })
+        .andWhere("e.type = 'salud'")
+        .orderBy('e.date', 'DESC')
+        .limit(10)
+        .getMany(),
+      this.eventRepository
+        .createQueryBuilder('e')
+        .where('e.horse_id IN (:...ids)', { ids: horseIds })
+        .andWhere("e.type = 'salud'")
+        .getCount(),
+    ]);
+
+    return {
+      role: 'veterinario',
+      horses,
+      recent_events: recentEvents,
+      total_salud_events: totalSalud,
     };
   }
 }

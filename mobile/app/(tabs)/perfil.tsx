@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/auth';
+import { useNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/colors';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -12,6 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
+  const { notifications, unread, markAllRead } = useNotifications();
   const insets = useSafeAreaInsets();
 
   const handleLogout = () => {
@@ -57,6 +59,31 @@ export default function PerfilScreen() {
         </View>
       )}
 
+      {/* Notificaciones recientes */}
+      {notifications.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.notifHeader}>
+            <Text style={styles.sectionTitle}>Notificaciones</Text>
+            {unread > 0 && (
+              <TouchableOpacity onPress={markAllRead}>
+                <Text style={styles.markRead}>Marcar todas como leídas</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={styles.notifList}>
+            {notifications.slice(0, 8).map((n) => (
+              <View key={n.id} style={[styles.notifItem, !n.read && styles.notifUnread]}>
+                {!n.read && <View style={styles.notifDot} />}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.notifTitle}>{n.title}</Text>
+                  <Text style={styles.notifMsg} numberOfLines={2}>{n.message}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Cerrar sesión */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
         <Text style={styles.logoutText}>Cerrar sesión</Text>
@@ -96,4 +123,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14, alignItems: 'center',
   },
   logoutText: { fontSize: 15, fontWeight: '700', color: colors.red700 },
+  notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  markRead: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  notifList: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
+  notifItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.gray50 },
+  notifUnread: { backgroundColor: '#f0f4ff' },
+  notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 5, flexShrink: 0 },
+  notifTitle: { fontSize: 13, fontWeight: '700', color: colors.gray900 },
+  notifMsg: { fontSize: 12, color: colors.gray500, marginTop: 2 },
 });
