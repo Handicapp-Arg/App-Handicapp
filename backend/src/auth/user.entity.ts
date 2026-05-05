@@ -28,6 +28,12 @@ export class User {
   @OneToMany(() => Horse, (horse) => horse.owner)
   horses: Horse[];
 
+  @Column({ type: 'varchar', nullable: true, select: false })
+  reset_token: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  reset_token_expires: Date | null;
+
   @CreateDateColumn()
   created_at: Date;
 

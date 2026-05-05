@@ -89,6 +89,12 @@ export default function LoginScreen() {
             }
           </TouchableOpacity>
 
+          <Link href="/(auth)/olvide-contrasena" asChild>
+            <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: -4 }}>
+              <Text style={[styles.link, { fontSize: 12 }]}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+          </Link>
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>¿No tenés cuenta? </Text>
             <Link href="/(auth)/registro" asChild>

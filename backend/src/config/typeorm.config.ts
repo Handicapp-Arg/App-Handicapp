@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { User } from '../auth/user.entity';
+import { RefreshToken } from '../auth/refresh-token.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
 import { HorseDocument } from '../horses/horse-document.entity';
@@ -18,7 +19,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, Horse, HorseUser, HorseDocument, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem],
+  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,

@@ -8,6 +8,8 @@ import {
   UseGuards,
   ValidationPipe,
   ForbiddenException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
@@ -16,6 +18,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
@@ -38,6 +42,29 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   login(@Body(ValidationPipe) dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Body('refreshToken') token: string) {
+    return this.authService.refreshTokens(token);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  logout(@Body('refreshToken') token: string) {
+    return this.authService.revokeRefreshToken(token);
+  }
+
+  @Post('forgot-password')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  forgotPassword(@Body(ValidationPipe) dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body(ValidationPipe) dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
   }
 
   @Get('me')

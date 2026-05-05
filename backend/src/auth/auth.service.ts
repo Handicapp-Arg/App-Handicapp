@@ -3,7 +3,9 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -15,15 +17,33 @@ import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
 import { RolesService } from '../roles/roles.service';
+import { EmailService } from '../email/email.service';
+import { RefreshToken } from './refresh-token.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
     private readonly rolesService: RolesService,
+    private readonly emailService: EmailService,
   ) {}
+
+  private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = this.jwtService.sign({ sub: user.id, role: user.role });
+
+    const token = randomBytes(40).toString('hex');
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
+
+    await this.refreshTokenRepository.save(
+      this.refreshTokenRepository.create({ token, user_id: user.id, expires_at: expires }),
+    );
+
+    return { accessToken, refreshToken: token };
+  }
 
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
     const roleExists = await this.rolesService.exists(dto.role);
@@ -48,14 +68,10 @@ export class AuthService {
     });
 
     await this.userRepository.save(user);
-
-    const payload = { sub: user.id, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
-
-    return { accessToken };
+    return this.generateTokens(user);
   }
 
-  async login(dto: LoginDto): Promise<{ accessToken: string }> {
+  async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await this.userRepository
       .createQueryBuilder('user')
       .addSelect('user.password')
@@ -66,10 +82,27 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const payload = { sub: user.id, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
+    return this.generateTokens(user);
+  }
 
-    return { accessToken };
+  async refreshTokens(token: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const record = await this.refreshTokenRepository.findOne({
+      where: { token },
+      relations: ['user'],
+    });
+
+    if (!record || record.expires_at < new Date()) {
+      if (record) await this.refreshTokenRepository.remove(record);
+      throw new UnauthorizedException('Sesión expirada. Iniciá sesión nuevamente.');
+    }
+
+    // Rotación: invalidar el token usado y emitir uno nuevo
+    await this.refreshTokenRepository.remove(record);
+    return this.generateTokens(record.user);
+  }
+
+  async revokeRefreshToken(token: string): Promise<void> {
+    await this.refreshTokenRepository.delete({ token });
   }
 
   async updateProfile(user: User, dto: UpdateProfileDto): Promise<User> {
@@ -184,6 +217,47 @@ export class AuthService {
       this.userRepository.manager.getRepository(Horse).count(),
     ]);
     return { propietarios, establecimientos, caballos };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    // Respuesta genérica — no revelar si el email existe
+    if (!user) return;
+
+    const token = randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await this.userRepository.update(user.id, {
+      reset_token: token,
+      reset_token_expires: expires,
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+    await this.emailService.sendPasswordReset({ to: user.email, name: user.name, resetLink });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.reset_token')
+      .addSelect('user.reset_token_expires')
+      .where('user.reset_token = :token', { token })
+      .getOne();
+
+    if (!user || !user.reset_token_expires || user.reset_token_expires < new Date()) {
+      throw new BadRequestException('El enlace de recuperación es inválido o expiró');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await this.userRepository.update(user.id, {
+      password: hashedPassword,
+      reset_token: null,
+      reset_token_expires: null,
+    });
   }
 
   async changePassword(user: User, dto: ChangePasswordDto): Promise<void> {

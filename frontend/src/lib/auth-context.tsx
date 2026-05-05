@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('token', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
     await fetchUser();
     router.push('/caballos');
   };
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role,
     });
     localStorage.setItem('token', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
     await fetchUser();
     router.push('/caballos');
   };
@@ -88,7 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = () => {
+    const rt = localStorage.getItem('refreshToken');
+    if (rt) api.post('/auth/logout', { refreshToken: rt }).catch(() => {});
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     setUser(null);
     queryClient.clear();
     router.push('/login');
