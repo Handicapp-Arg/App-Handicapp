@@ -1,0 +1,205 @@
+import { use } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHorse } from '../../../hooks/use-horses';
+import { useEventsByHorse } from '../../../hooks/use-events';
+import { Spinner } from '../../../components/Spinner';
+import { EventTypeBadge } from '../../../components/EventTypeBadge';
+import { colors } from '../../../lib/colors';
+import type { Event } from '../../../../packages/shared/src';
+
+function InfoItem({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoItem}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+function EventCard({ event }: { event: Event }) {
+  const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
+  return (
+    <View style={styles.eventCard}>
+      <View style={styles.eventHeader}>
+        <EventTypeBadge type={event.type} />
+        <Text style={styles.eventDate}>{date}</Text>
+      </View>
+      <Text style={styles.eventDesc}>{event.description}</Text>
+      {event.amount != null && (
+        <Text style={styles.eventAmount}>
+          ${Number(event.amount).toLocaleString('es-AR')}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+export default function HorseDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
+  const { data: events } = useEventsByHorse(id);
+
+  if (isLoading) return <Spinner />;
+  if (!horse) {
+    return (
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <Text style={styles.errorText}>Caballo no encontrado</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backLink}>← Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const sortedEvents = [...(events ?? [])].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+
+  const infoItems: { label: string; value: string }[] = [];
+  if (horse.birth_date) {
+    const diff = Date.now() - new Date(horse.birth_date + 'T12:00:00').getTime();
+    const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    infoItems.push({ label: 'Nacimiento', value: `${new Date(horse.birth_date + 'T12:00:00').toLocaleDateString('es-AR')} (${years} años)` });
+  }
+  if (horse.microchip) infoItems.push({ label: 'Microchip', value: horse.microchip });
+  if (horse.owner) infoItems.push({ label: 'Propietario', value: horse.owner.name });
+  if (horse.establishment) infoItems.push({ label: 'Establecimiento', value: horse.establishment.name });
+  if (horse.breed) infoItems.push({ label: 'Raza', value: horse.breed.name });
+  if (horse.activity) infoItems.push({ label: 'Actividad', value: horse.activity.name });
+
+  return (
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={{ paddingBottom: 32 }}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+      }
+    >
+      {/* Imagen hero */}
+      <View style={styles.heroWrap}>
+        {horse.image_url
+          ? <Image source={{ uri: horse.image_url }} style={styles.heroImg} resizeMode="cover" />
+          : <View style={[styles.heroImg, styles.heroPlaceholder]} />
+        }
+        <View style={styles.heroOverlay} />
+
+        {/* Back button */}
+        <TouchableOpacity
+          style={[styles.backBtn, { top: insets.top + 12 }]}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.backBtnText}>‹</Text>
+        </TouchableOpacity>
+
+        {/* Nombre */}
+        <View style={[styles.heroContent, { paddingBottom: insets.top > 0 ? 16 : 20 }]}>
+          <Text style={styles.horseName}>{horse.name}</Text>
+          <View style={styles.heroBadges}>
+            {horse.breed && (
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>{horse.breed.name}</Text>
+              </View>
+            )}
+            {horse.activity && (
+              <View style={[styles.heroBadge, styles.heroBadgeAmber]}>
+                <Text style={styles.heroBadgeText}>{horse.activity.name}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Info */}
+      {infoItems.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.infoGrid}>
+            {infoItems.map((item) => (
+              <InfoItem key={item.label} label={item.label} value={item.value} />
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Historial */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Historial</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{sortedEvents.length}</Text>
+          </View>
+        </View>
+
+        {sortedEvents.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>Sin eventos registrados</Text>
+          </View>
+        ) : (
+          <View style={styles.eventsList}>
+            {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} />)}
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.gray50 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  errorText: { fontSize: 15, color: colors.gray500 },
+  backLink: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  heroWrap: { position: 'relative', height: 260 },
+  heroImg: { width: '100%', height: '100%' },
+  heroPlaceholder: { backgroundColor: colors.gray200 },
+  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  backBtn: {
+    position: 'absolute', left: 16,
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center',
+  },
+  backBtnText: { fontSize: 24, color: colors.white, lineHeight: 28, marginTop: -2 },
+  heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16 },
+  horseName: { fontSize: 26, fontWeight: '800', color: colors.white, marginBottom: 8 },
+  heroBadges: { flexDirection: 'row', gap: 6 },
+  heroBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
+  heroBadgeAmber: { backgroundColor: 'rgba(245,158,11,0.3)' },
+  heroBadgeText: { fontSize: 11, fontWeight: '600', color: colors.white },
+  section: { margin: 16, gap: 10 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.gray900 },
+  countBadge: { backgroundColor: colors.gray200, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  countText: { fontSize: 11, fontWeight: '700', color: colors.gray600 },
+  infoGrid: {
+    backgroundColor: colors.white, borderRadius: 16,
+    borderWidth: 1, borderColor: colors.gray100, padding: 12,
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+  },
+  infoItem: { width: '47%', backgroundColor: colors.gray50, borderRadius: 10, padding: 10 },
+  infoLabel: { fontSize: 10, fontWeight: '600', color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5 },
+  infoValue: { fontSize: 13, fontWeight: '600', color: colors.gray900, marginTop: 2 },
+  empty: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, padding: 24, alignItems: 'center' },
+  emptyText: { fontSize: 13, color: colors.gray400 },
+  eventsList: { gap: 8 },
+  eventCard: {
+    backgroundColor: colors.white, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.gray100, padding: 14, gap: 6,
+  },
+  eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  eventDate: { fontSize: 11, color: colors.gray400 },
+  eventDesc: { fontSize: 14, color: colors.gray700, lineHeight: 20 },
+  eventAmount: { fontSize: 14, fontWeight: '700', color: colors.purple700 },
+});
