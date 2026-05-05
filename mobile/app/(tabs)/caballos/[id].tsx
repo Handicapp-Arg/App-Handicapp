@@ -1,12 +1,12 @@
 import { use, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
-  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert,
+  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments } from '../../../hooks/use-horses';
 import { DatePicker } from '../../../components/DatePicker';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { useAuth } from '../../../lib/auth';
@@ -132,6 +132,7 @@ export default function HorseDetailScreen() {
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
   const { data: financial } = useFinancialSummary(id);
+  const { data: documents } = useHorseDocuments(id);
   const deleteHorse = useDeleteHorse();
   const uploadImage = useUploadHorseImage();
   const [showEdit, setShowEdit] = useState(false);
@@ -317,6 +318,31 @@ export default function HorseDetailScreen() {
         </View>
       )}
 
+      {/* Documentos */}
+      {documents && documents.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Documentos</Text>
+          <View style={styles.docsCard}>
+            {documents.map((doc, i) => (
+              <View key={doc.id}>
+                {i > 0 && <View style={styles.docDivider} />}
+                <TouchableOpacity
+                  style={styles.docRow}
+                  onPress={() => Linking.openURL(doc.url)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.docIcon}>
+                    <Text style={styles.docIconText}>📄</Text>
+                  </View>
+                  <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+                  <Text style={styles.docArrow}>›</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Historial */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -381,6 +407,13 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
   input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
   fieldError: { fontSize: 13, color: colors.red500 },
+  docsCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
+  docRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
+  docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center' },
+  docIconText: { fontSize: 16 },
+  docName: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.gray700 },
+  docArrow: { fontSize: 20, color: colors.gray300 },
+  docDivider: { height: 1, backgroundColor: colors.gray50, marginHorizontal: 12 },
   cancelBtn: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, paddingVertical: 13, alignItems: 'center' },
   cancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
   submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 13, alignItems: 'center' },

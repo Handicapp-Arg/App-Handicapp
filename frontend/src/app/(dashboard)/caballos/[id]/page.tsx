@@ -1,10 +1,10 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios } from '@/hooks/use-horses';
+import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import api from '@/lib/api';
@@ -394,6 +394,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: veterinarios } = useVeterinarios();
   const assignVet = useAssignVet(id);
   const removeVet = useRemoveVet(id);
+  const { data: documents } = useHorseDocuments(id);
+  const uploadDoc = useUploadDocument(id);
+  const deleteDoc = useDeleteDocument(id);
   const deleteHorse = useDeleteHorse();
   const deleteEvent = useDeleteEvent();
   const transferHorse = useTransferHorse();
@@ -407,6 +410,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [transferError, setTransferError] = useState('');
   const [showAssignVet, setShowAssignVet] = useState(false);
   const [selectedVetId, setSelectedVetId] = useState('');
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   const canEdit = can('horses', 'update');
   const canDelete = can('horses', 'delete');
@@ -790,6 +794,70 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
+        {/* Documentos (mobile) */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+              </span>
+              <h2 className="text-base font-bold text-gray-900">Documentos</h2>
+              {documents && documents.length > 0 && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{documents.length}</span>
+              )}
+            </div>
+            {canEdit && (
+              <>
+                <input ref={docInputRef} type="file" accept=".pdf,image/*" className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    await uploadDoc.mutateAsync({ file, name: file.name });
+                    e.target.value = '';
+                  }}
+                />
+                <button onClick={() => docInputRef.current?.click()}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Subir
+                </button>
+              </>
+            )}
+          </div>
+          {!documents?.length ? (
+            <p className="text-xs text-gray-400">Sin documentos adjuntos</p>
+          ) : (
+            <div className="space-y-2">
+              {documents.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5">
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 min-w-0 flex-1 hover:opacity-70 transition"
+                  >
+                    <svg className="h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700 truncate">{doc.name}</span>
+                  </a>
+                  {canEdit && (
+                    <button onClick={() => deleteDoc.mutate(doc.id)}
+                      className="ml-2 shrink-0 rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Resumen financiero (mobile) */}
         {financial && (financial.total > 0 || financial.monthly.length > 0) && (
           <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -1047,6 +1115,55 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
           )}
+
+          {/* ─── Documentos (desktop) ─── */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2.5 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Documentos
+                {documents && documents.length > 0 && (
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">({documents.length})</span>
+                )}
+              </h2>
+              {canEdit && (
+                <button onClick={() => docInputRef.current?.click()}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Subir
+                </button>
+              )}
+            </div>
+            {!documents?.length ? (
+              <p className="text-xs text-gray-400">Sin documentos adjuntos</p>
+            ) : (
+              <div className="space-y-1.5">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                    <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 min-w-0 flex-1 hover:opacity-70 transition"
+                    >
+                      <svg className="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                      <span className="text-sm text-gray-700 truncate">{doc.name}</span>
+                    </a>
+                    {canEdit && (
+                      <button onClick={() => deleteDoc.mutate(doc.id)}
+                        className="ml-1 shrink-0 rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* ─── Resumen financiero (desktop) ─── */}
           {financial && (financial.total > 0 || financial.monthly.length > 0) && (

@@ -246,6 +246,56 @@ export function useDeleteHorse() {
   });
 }
 
+export interface HorseDocument {
+  id: string;
+  horse_id: string;
+  name: string;
+  url: string;
+  file_type: 'pdf' | 'image';
+  created_at: string;
+}
+
+export function useHorseDocuments(horseId: string) {
+  return useQuery<HorseDocument[]>({
+    queryKey: ['horses', horseId, 'documents'],
+    queryFn: async () => {
+      const { data } = await api.get(`/horses/${horseId}/documents`);
+      return data;
+    },
+    enabled: !!horseId,
+  });
+}
+
+export function useUploadDocument(horseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ file, name }: { file: File; name: string }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('name', name);
+      const { data } = await api.post(`/horses/${horseId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data as HorseDocument;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'documents'] });
+    },
+  });
+}
+
+export function useDeleteDocument(horseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (docId: string) => {
+      await api.delete(`/horses/${horseId}/documents/${docId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'documents'] });
+    },
+  });
+}
+
 export function useTransferHorse() {
   const queryClient = useQueryClient();
 

@@ -11,6 +11,7 @@ import { Event } from '../events/event.entity';
 
 export enum NotificationType {
   EVENT_CREATED = 'event_created',
+  HEALTH_REMINDER = 'health_reminder',
 }
 
 @Entity('notifications')

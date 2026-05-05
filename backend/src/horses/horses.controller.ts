@@ -87,6 +87,35 @@ export class HorsesController {
     return this.horsesService.getFinancialSummary(id, user);
   }
 
+  @Get(':id/documents')
+  @RequirePermission('horses', 'read')
+  getDocuments(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getDocuments(id, user);
+  }
+
+  @Post(':id/documents')
+  @RequirePermission('horses', 'update')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  uploadDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('name') name: string,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.uploadDocument(id, file, name, user);
+  }
+
+  @Delete(':id/documents/:docId')
+  @RequirePermission('horses', 'update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteDocument(
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.deleteDocument(id, docId, user);
+  }
+
   @Get(':id/vets')
   @RequirePermission('horses', 'read')
   getVets(@Param('id') id: string, @GetUser() user: User) {

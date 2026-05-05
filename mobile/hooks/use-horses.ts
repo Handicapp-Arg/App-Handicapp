@@ -72,6 +72,22 @@ export function useUploadHorseImage() {
   });
 }
 
+export interface HorseDocument {
+  id: string;
+  name: string;
+  url: string;
+  file_type: 'pdf' | 'image';
+  created_at: string;
+}
+
+export function useHorseDocuments(horseId: string) {
+  return useQuery<HorseDocument[]>({
+    queryKey: ['horses', horseId, 'documents'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/documents`)).data,
+    enabled: !!horseId,
+  });
+}
+
 export function useFinancialSummary(horseId: string) {
   return useQuery<{ total: number; average_monthly: number; monthly: { month: string; total: number }[] }>({
     queryKey: ['horses', horseId, 'financial-summary'],

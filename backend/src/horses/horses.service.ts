@@ -15,6 +15,7 @@ import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { AssignVetDto } from './dto/assign-vet.dto';
+import { HorseDocument } from './horse-document.entity';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -25,6 +26,8 @@ export class HorsesService implements OnModuleInit {
     private readonly horseRepository: Repository<Horse>,
     @InjectRepository(HorseUser)
     private readonly horseUserRepository: Repository<HorseUser>,
+    @InjectRepository(HorseDocument)
+    private readonly documentRepository: Repository<HorseDocument>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -458,6 +461,62 @@ export class HorsesService implements OnModuleInit {
     return this.horseUserRepository.find({
       where: { horse_id: horseId, role: 'owner' },
     });
+  }
+
+  // ── Documentos ───────────────────────────────────────────
+
+  async getDocuments(horseId: string, user: User): Promise<HorseDocument[]> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+    return this.documentRepository.find({
+      where: { horse_id: horseId },
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async uploadDocument(
+    horseId: string,
+    file: Express.Multer.File,
+    name: string,
+    user: User,
+  ): Promise<HorseDocument> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const isPdf = file.mimetype === 'application/pdf';
+    const result = await this.cloudinaryService.upload(
+      file,
+      'handicapp/documents',
+      { isPdf },
+    );
+
+    const doc = this.documentRepository.create({
+      horse_id: horseId,
+      name: name || file.originalname,
+      url: result.secure_url,
+      public_id: result.public_id,
+      file_type: isPdf ? 'pdf' : 'image',
+    });
+    return this.documentRepository.save(doc);
+  }
+
+  async deleteDocument(horseId: string, docId: string, user: User): Promise<void> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const doc = await this.documentRepository.findOne({
+      where: { id: docId, horse_id: horseId },
+    });
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+
+    await this.cloudinaryService.delete(
+      doc.public_id,
+      doc.file_type === 'pdf' ? 'raw' : 'image',
+    );
+    await this.documentRepository.remove(doc);
   }
 
   // ── Veterinarios ─────────────────────────────────────────
