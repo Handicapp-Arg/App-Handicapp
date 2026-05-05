@@ -6,6 +6,8 @@ import { useDashboard } from '../../hooks/use-dashboard';
 import { Spinner } from '../../components/Spinner';
 import { EventTypeBadge } from '../../components/EventTypeBadge';
 import { colors } from '../../lib/colors';
+import { space, text, radius, weight } from '../../styles/tokens';
+import { layout, typography, card, divider } from '../../styles/common';
 import type { Horse, Event } from '../../../packages/shared/src';
 
 function StatCard({ label, value }: { label: string; value: number }) {
@@ -69,7 +71,7 @@ export default function InicioScreen() {
 
   return (
     <ScrollView
-      style={styles.root}
+      style={layout.root}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
       showsVerticalScrollIndicator={false}
     >
@@ -122,10 +124,10 @@ export default function InicioScreen() {
               <Text style={styles.seeAll}>Ver todos</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.card}>
+          <View style={card.overflow}>
             {data.horses.slice(0, 5).map((h, i) => (
               <View key={h.id}>
-                {i > 0 && <View style={styles.divider} />}
+                {i > 0 && <View style={divider.hIndented} />}
                 <HorseRow horse={h} />
               </View>
             ))}
@@ -142,10 +144,10 @@ export default function InicioScreen() {
               <Text style={styles.seeAll}>Ver todos</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.card}>
+          <View style={card.overflow}>
             {data.recent_events.map((ev, i) => (
               <View key={ev.id}>
-                {i > 0 && <View style={styles.divider} />}
+                {i > 0 && <View style={divider.hIndented} />}
                 <EventRow event={ev} />
               </View>
             ))}
@@ -158,36 +160,33 @@ export default function InicioScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
-  content: { padding: 16, paddingBottom: 32, gap: 20 },
-  greeting: { gap: 2 },
-  greetingText: { fontSize: 22, fontWeight: '800', color: colors.gray900 },
-  greetingSub: { fontSize: 14, color: colors.gray500 },
-  statsGrid: { flexDirection: 'row', gap: 12 },
+  content: { padding: space[4], paddingBottom: space[8], gap: space[5] },
+  greeting: { gap: space[1] },
+  greetingText: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
+  greetingSub: { fontSize: text.sm, color: colors.gray500 },
+  statsGrid: { flexDirection: 'row', gap: space[3] },
   statCard: {
-    flex: 1, backgroundColor: colors.white, borderRadius: 16,
-    padding: 16, borderWidth: 1, borderColor: colors.gray100,
+    flex: 1, backgroundColor: colors.white, borderRadius: radius.lg,
+    padding: space[4], borderWidth: 1, borderColor: colors.gray100,
   },
-  statValue: { fontSize: 24, fontWeight: '800', color: colors.gray900 },
-  statLabel: { fontSize: 11, fontWeight: '600', color: colors.gray500, marginTop: 2 },
-  section: { gap: 10 },
+  statValue: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.gray900 },
+  statLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500, marginTop: 2 },
+  section: { gap: space[2] + 2 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.gray900 },
-  seeAll: { fontSize: 13, fontWeight: '600', color: colors.primary },
-  card: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
-  eventRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
+  sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
+  seeAll: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.primary },
+  row: { flexDirection: 'row', alignItems: 'center', padding: space[3], gap: space[2] + 2 },
+  eventRow: { flexDirection: 'row', alignItems: 'center', padding: space[3], gap: space[2] + 2 },
   horseAvatar: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: radius.md,
     backgroundColor: colors.gray100, overflow: 'hidden',
     justifyContent: 'center', alignItems: 'center',
   },
   horseImg: { width: '100%', height: '100%' },
-  horseAvatarText: { fontSize: 16, fontWeight: '700', color: colors.gray500 },
+  horseAvatarText: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray500 },
   rowInfo: { flex: 1 },
-  rowTitle: { fontSize: 14, fontWeight: '600', color: colors.gray900 },
-  rowSub: { fontSize: 12, color: colors.gray400, marginTop: 1 },
-  chevron: { fontSize: 20, color: colors.gray300, fontWeight: '300' },
-  dateText: { fontSize: 11, color: colors.gray400, minWidth: 40, textAlign: 'right' },
-  divider: { height: 1, backgroundColor: colors.gray100, marginHorizontal: 12 },
+  rowTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
+  rowSub: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  chevron: { fontSize: text.lg, color: colors.gray300 },
+  dateText: { fontSize: text.xs, color: colors.gray400, minWidth: 40, textAlign: 'right' },
 });

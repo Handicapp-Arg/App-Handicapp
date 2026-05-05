@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal,
@@ -5,52 +6,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
-import { DatePicker } from '../../components/DatePicker';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
+import { DatePicker } from '../../components/DatePicker';
+import { EventCard } from '../../components/EventCard';
 import { Spinner } from '../../components/Spinner';
-import { EventTypeBadge } from '../../components/EventTypeBadge';
 import { colors, eventTypeColors } from '../../lib/colors';
-import type { Event } from '../../../packages/shared/src';
+import { space, text, radius, weight } from '../../styles/tokens';
+import { layout, typography, input as inputStyle, modal as modalStyle, button } from '../../styles/common';
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'gasto', 'nota'] as const;
 
-function EventCard({
-  event,
-  canDelete,
-  onDelete,
-}: {
-  event: Event;
-  canDelete: boolean;
-  onDelete: (id: string) => void;
-}) {
-  const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.cardLeft}>
-          <EventTypeBadge type={event.type} />
-          {event.horse && <Text style={styles.horseName}>{event.horse.name}</Text>}
-        </View>
-        <View style={styles.cardRight}>
-          <Text style={styles.dateText}>{date}</Text>
-          {canDelete && (
-            <TouchableOpacity onPress={() => onDelete(event.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={styles.deleteBtn}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-      {event.amount != null && (
-        <Text style={styles.amount}>${Number(event.amount).toLocaleString('es-AR')}</Text>
-      )}
-      <Text style={styles.desc}>{event.description}</Text>
-    </View>
-  );
-}
+/* ─── Modal crear evento ─── */
 
 function CreateEventModal({ onClose }: { onClose: () => void }) {
   const { data: horses } = useHorses();
@@ -74,98 +41,100 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.modalCard}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Nuevo evento</Text>
+    <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={modalStyle.sheet}>
+        {/* Header */}
+        <View style={modalStyle.header}>
+          <Text style={modalStyle.title}>Nuevo evento</Text>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.modalClose}>✕</Text>
+            <Text style={modalStyle.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.modalBody}>
+        <ScrollView contentContainerStyle={[modalStyle.body, { gap: space[4] }]}>
           {/* Caballo */}
-          <Text style={styles.fieldLabel}>Caballo</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            {horses?.map((h) => (
-              <TouchableOpacity
-                key={h.id}
-                style={[styles.chip, horseId === h.id && styles.chipActive]}
-                onPress={() => setHorseId(h.id)}
-              >
-                <Text style={[styles.chipText, horseId === h.id && styles.chipTextActive]}>{h.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <View style={{ gap: space[2] }}>
+            <Text style={typography.label}>Caballo</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
+              {horses?.map((h) => (
+                <TouchableOpacity
+                  key={h.id}
+                  style={[styles.chip, horseId === h.id && styles.chipActive]}
+                  onPress={() => setHorseId(h.id)}
+                >
+                  <Text style={[styles.chipText, horseId === h.id && styles.chipTextActive]}>{h.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Tipo */}
-          <Text style={styles.fieldLabel}>Tipo</Text>
-          <View style={styles.typeGrid}>
-            {TYPE_OPTIONS.map((t) => {
-              const c = eventTypeColors[t];
-              const active = type === t;
-              return (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.typeBtn, active && { backgroundColor: c.bg }]}
-                  onPress={() => setType(t)}
-                >
-                  <Text style={[styles.typeBtnText, active && { color: c.text }]}>{c.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={{ gap: space[2] }}>
+            <Text style={typography.label}>Tipo</Text>
+            <View style={styles.typeGrid}>
+              {TYPE_OPTIONS.map((t) => {
+                const c = eventTypeColors[t];
+                const active = type === t;
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.typeBtn, active && { backgroundColor: c.bg }]}
+                    onPress={() => setType(t)}
+                  >
+                    <Text style={[styles.typeBtnText, active && { color: c.text }]}>{c.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Fecha */}
-          <DatePicker
-            label="Fecha"
-            value={date}
-            onChange={setDate}
-            maxDate={new Date()}
-          />
+          <DatePicker label="Fecha" value={date} onChange={setDate} maxDate={new Date()} />
 
           {/* Monto */}
           {type === 'gasto' && (
-            <>
-              <Text style={styles.fieldLabel}>Monto ($)</Text>
+            <View style={{ gap: space[2] }}>
+              <Text style={typography.label}>Monto ($)</Text>
               <TextInput
-                style={styles.input}
+                style={inputStyle.base}
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0.00"
                 placeholderTextColor={colors.gray400}
                 keyboardType="decimal-pad"
               />
-            </>
+            </View>
           )}
 
           {/* Descripción */}
-          <Text style={styles.fieldLabel}>Descripción</Text>
-          <TextInput
-            style={[styles.input, styles.textarea]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Detalle del evento..."
-            placeholderTextColor={colors.gray400}
-            multiline
-            numberOfLines={3}
-          />
+          <View style={{ gap: space[2] }}>
+            <Text style={typography.label}>Descripción</Text>
+            <TextInput
+              style={inputStyle.multiline}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Detalle del evento..."
+              placeholderTextColor={colors.gray400}
+              multiline
+            />
+          </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
-        <View style={styles.modalFooter}>
-          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelBtnText}>Cancelar</Text>
+        {/* Footer */}
+        <View style={modalStyle.footer}>
+          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={onClose}>
+            <Text style={button.secondaryText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitBtn, createEvent.isPending && styles.btnDisabled]}
+            style={[button.primary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
             onPress={handleSubmit}
             disabled={createEvent.isPending}
           >
             {createEvent.isPending
               ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={styles.submitBtnText}>Crear evento</Text>
+              : <Text style={button.primaryText}>Crear evento</Text>
             }
           </TouchableOpacity>
         </View>
@@ -173,6 +142,8 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
     </KeyboardAvoidingView>
   );
 }
+
+/* ─── Pantalla principal ─── */
 
 export default function EventosScreen() {
   const { can } = useAuth();
@@ -184,20 +155,17 @@ export default function EventosScreen() {
     filterType ? { type: filterType } : undefined,
   );
   const deleteEvent = useDeleteEvent();
-
-  // Resetear al cambiar filtro
-  useEffect(() => { reset(); }, [filterType]);
-
   const canCreate = can('events', 'create');
   const canDelete = can('events', 'delete');
 
-  if (isLoading) return <Spinner />;
+  useEffect(() => { reset(); }, [filterType]);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[layout.screen, { paddingTop: insets.top }]}>
+
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Eventos</Text>
+        <Text style={typography.pageTitle}>Eventos</Text>
         {canCreate && (
           <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreate(true)}>
             <Text style={styles.newBtnText}>+ Nuevo</Text>
@@ -205,8 +173,13 @@ export default function EventosScreen() {
         )}
       </View>
 
-      {/* Filtro tipo */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterContent}>
+      {/* Filtros */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+        style={{ maxHeight: 48 }}
+      >
         {(['', ...TYPE_OPTIONS] as string[]).map((t) => (
           <TouchableOpacity
             key={t}
@@ -222,28 +195,27 @@ export default function EventosScreen() {
 
       {/* Contador */}
       {total > 0 && (
-        <View style={styles.countRow}>
-          <Text style={styles.countText}>{events.length} de {total} eventos</Text>
-        </View>
+        <Text style={styles.counter}>{events.length} de {total}</Text>
       )}
 
       {/* Lista */}
-      {isLoading ? (
-        <Spinner />
-      ) : !events.length ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No hay eventos{filterType ? ` de tipo ${eventTypeColors[filterType]?.label}` : ''}</Text>
+      {isLoading ? <Spinner /> : !events.length ? (
+        <View style={layout.center}>
+          <Text style={typography.caption}>
+            No hay eventos{filterType ? ` de tipo ${eventTypeColors[filterType]?.label}` : ''}
+          </Text>
         </View>
       ) : (
         <FlatList
           data={events}
           keyExtractor={(e) => e.id}
           contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
           renderItem={({ item }) => (
             <EventCard
               event={item}
-              canDelete={canDelete}
-              onDelete={(id) => deleteEvent.mutate(id)}
+              showHorse
+              onDelete={canDelete ? (id) => deleteEvent.mutate(id) : undefined}
             />
           )}
           onEndReached={() => { if (hasMore) loadMore(); }}
@@ -253,81 +225,55 @@ export default function EventosScreen() {
               <View style={styles.footer}>
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
-            ) : hasMore ? null : (
+            ) : !hasMore && total > 0 ? (
               <View style={styles.footer}>
-                <Text style={styles.footerText}>— {total} eventos en total —</Text>
+                <Text style={typography.caption}>— {total} eventos en total —</Text>
               </View>
-            )
+            ) : null
           }
-          refreshControl={
-            <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.primary} />
-          }
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
         />
       )}
 
-      {/* Modal crear */}
       <Modal visible={showCreate} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <CreateEventModal onClose={() => setShowCreate(false)} />
-        </View>
+        <CreateEventModal onClose={() => setShowCreate(false)} />
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
-  title: { fontSize: 22, fontWeight: '800', color: colors.gray900 },
-  newBtn: { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
-  newBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  filterBar: { maxHeight: 44 },
-  filterContent: { paddingHorizontal: 16, gap: 8, paddingVertical: 8 },
-  filterChip: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 5, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[1],
+  },
+  newBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] },
+  newBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  filterRow: { paddingHorizontal: space[4], paddingVertical: space[2], gap: space[2] },
+  filterChip: {
+    borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[1] + 2,
+    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200,
+  },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { fontSize: 12, fontWeight: '600', color: colors.gray600 },
+  filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
   filterChipTextActive: { color: colors.white },
-  list: { padding: 16, gap: 10, paddingBottom: 32 },
-  card: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.gray100, padding: 14, gap: 6 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  horseName: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
-  dateText: { fontSize: 11, color: colors.gray400 },
-  deleteBtn: { fontSize: 14, color: colors.gray300 },
-  amount: { fontSize: 14, fontWeight: '700', color: colors.purple700 },
-  desc: { fontSize: 14, color: colors.gray700, lineHeight: 20 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  emptyText: { fontSize: 14, color: colors.gray400, textAlign: 'center' },
-  countRow: { paddingHorizontal: 16, paddingBottom: 4 },
-  countText: { fontSize: 12, color: colors.gray400 },
-  footer: { padding: 20, alignItems: 'center' },
-  footerText: { fontSize: 12, color: colors.gray400 },
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.gray900 },
-  modalClose: { fontSize: 18, color: colors.gray400 },
-  modalBody: { padding: 20, gap: 12 },
-  modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: colors.gray100 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
-  horizontalScroll: { maxHeight: 40 },
-  chip: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: colors.gray100, marginRight: 8 },
+  counter: { fontSize: text.xs, color: colors.gray400, paddingHorizontal: space[4], paddingBottom: space[1] },
+  list: { padding: space[4], paddingBottom: space[8] },
+  footer: { padding: space[5], alignItems: 'center' },
+  // Modal form
+  chip: {
+    borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2],
+    backgroundColor: colors.gray100,
+  },
   chipActive: { backgroundColor: colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
   chipTextActive: { color: colors.white },
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  typeBtn: { flex: 1, minWidth: '45%', borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: colors.gray100 },
-  typeBtnText: { fontSize: 13, fontWeight: '600', color: colors.gray600 },
-  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
-  textarea: { height: 80, textAlignVertical: 'top' },
-  errorText: { fontSize: 13, color: colors.red500 },
-  cancelBtn: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, paddingVertical: 13, alignItems: 'center' },
-  cancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
-  submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 13, alignItems: 'center' },
-  submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
-  btnDisabled: { opacity: 0.6 },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  typeBtn: {
+    flex: 1, minWidth: '45%', borderRadius: radius.md,
+    paddingVertical: space[2] + 2, alignItems: 'center', backgroundColor: colors.gray100,
+  },
+  typeBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  errorText: { fontSize: text.sm, color: colors.red500 },
 });

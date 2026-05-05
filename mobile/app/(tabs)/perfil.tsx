@@ -3,6 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/auth';
 import { useNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/colors';
+import { space, text, radius, weight } from '../../styles/tokens';
+import { layout, typography, card, button } from '../../styles/common';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -29,7 +31,7 @@ export default function PerfilScreen() {
 
   return (
     <ScrollView
-      style={styles.root}
+      style={layout.root}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
       showsVerticalScrollIndicator={false}
     >
@@ -93,42 +95,41 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
-  content: { padding: 20, gap: 24, paddingBottom: 40 },
-  avatarSection: { alignItems: 'center', gap: 8 },
+  content: { padding: space[5], gap: space[6], paddingBottom: space[10] },
+  avatarSection: { alignItems: 'center', gap: space[2] },
   avatar: {
-    width: 80, height: 80, borderRadius: 24,
+    width: 80, height: 80, borderRadius: radius.xl,
     backgroundColor: colors.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarText: { fontSize: 28, fontWeight: '800', color: colors.white },
-  userName: { fontSize: 20, fontWeight: '800', color: colors.gray900 },
+  avatarText: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.white },
+  userName: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
   roleBadge: {
-    backgroundColor: colors.primary, borderRadius: 999,
-    paddingHorizontal: 14, paddingVertical: 5,
+    backgroundColor: colors.primary, borderRadius: radius.full,
+    paddingHorizontal: space[4], paddingVertical: space[1] + 2,
   },
-  roleText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  userEmail: { fontSize: 14, color: colors.gray500 },
-  section: { gap: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.gray900 },
-  permGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  roleText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  userEmail: { fontSize: text.sm, color: colors.gray500 },
+  section: { gap: space[2] + 2 },
+  sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
+  permGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   permBadge: {
-    backgroundColor: colors.white, borderRadius: 8,
+    backgroundColor: colors.white, borderRadius: radius.sm,
     borderWidth: 1, borderColor: colors.gray200,
-    paddingHorizontal: 10, paddingVertical: 5,
+    paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 2,
   },
-  permText: { fontSize: 12, fontWeight: '500', color: colors.gray700 },
+  permText: { fontSize: text.xs, fontWeight: weight.medium, color: colors.gray700 },
   logoutBtn: {
-    backgroundColor: '#fef2f2', borderRadius: 14, borderWidth: 1, borderColor: '#fecaca',
-    paddingVertical: 14, alignItems: 'center',
+    backgroundColor: '#fef2f2', borderRadius: radius.md, borderWidth: 1, borderColor: '#fecaca',
+    paddingVertical: space[4], alignItems: 'center',
   },
-  logoutText: { fontSize: 15, fontWeight: '700', color: colors.red700 },
+  logoutText: { fontSize: text.base, fontWeight: weight.bold, color: colors.red700 },
   notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  markRead: { fontSize: 12, fontWeight: '600', color: colors.primary },
-  notifList: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
-  notifItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.gray50 },
+  markRead: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.primary },
+  notifList: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
+  notifItem: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] + 2, padding: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray50 },
   notifUnread: { backgroundColor: '#f0f4ff' },
-  notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 5, flexShrink: 0 },
-  notifTitle: { fontSize: 13, fontWeight: '700', color: colors.gray900 },
-  notifMsg: { fontSize: 12, color: colors.gray500, marginTop: 2 },
+  notifDot: { width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.primary, marginTop: 5, flexShrink: 0 },
+  notifTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
+  notifMsg: { fontSize: text.xs, color: colors.gray500, marginTop: 2 },
 });
