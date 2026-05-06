@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Horse } from '@/types';
 
@@ -8,6 +8,18 @@ export interface AdminUser {
   email: string;
   role: string;
   created_at: string;
+  horse_count: number;
+  plan?: string;
+  plan_expires_at?: string | null;
+}
+
+export interface AdminPlanUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  plan: string;
+  plan_expires_at: string | null;
   horse_count: number;
 }
 
@@ -66,6 +78,24 @@ export function useAdminStats() {
     queryFn: async () => {
       const { data } = await api.get('/auth/admin/stats');
       return data;
+    },
+  });
+}
+
+export function useAdminPlanUsers() {
+  return useQuery<AdminPlanUser[]>({
+    queryKey: ['admin', 'plan-users'],
+    queryFn: async () => (await api.get('/plans/admin/users')).data,
+  });
+}
+
+export function useAdminSetPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, plan, months }: { userId: string; plan: 'free' | 'pro'; months?: number }) =>
+      (await api.patch(`/plans/admin/${userId}`, { plan, months })).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'plan-users'] });
     },
   });
 }

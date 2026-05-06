@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { useAdminUsers, useAdminHorses, useAdminStats } from '@/hooks/use-admin';
+import { useAdminUsers, useAdminHorses, useAdminStats, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '@/hooks/use-admin';
 import { useHorses } from '@/hooks/use-horses';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useDashboard } from '@/hooks/use-dashboard';
@@ -19,18 +19,20 @@ import { PlanBanner } from '@/components/plan-banner';
 
 /* ─── tipos ─── */
 
-type Tab = 'propietarios' | 'establecimientos' | 'caballos';
+type Tab = 'propietarios' | 'establecimientos' | 'caballos' | 'planes';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'propietarios', label: 'Propietarios' },
   { key: 'establecimientos', label: 'Establecimientos' },
   { key: 'caballos', label: 'Caballos' },
+  { key: 'planes', label: 'Planes' },
 ];
 
 const roleForTab: Record<Tab, string | undefined> = {
   propietarios: 'propietario',
   establecimientos: 'establecimiento',
   caballos: undefined,
+  planes: undefined,
 };
 
 const typeBadge: Record<string, string> = {
@@ -59,10 +61,11 @@ function AdminPanel() {
   const [horsePage, setHorsePage] = useState(1);
 
   const isHorsesTab = tab === 'caballos';
+  const isPlanesTab = tab === 'planes';
 
   const { data: stats, isLoading: loadingStats } = useAdminStats();
   const { data: usersResult, isLoading: loadingUsers } = useAdminUsers({
-    search: isHorsesTab ? undefined : search,
+    search: (isHorsesTab || isPlanesTab) ? undefined : search,
     role: roleForTab[tab],
     page: userPage,
     limit,
@@ -72,7 +75,9 @@ function AdminPanel() {
     page: horsePage,
     limit,
   });
+  const { data: planUsers, isLoading: loadingPlans } = useAdminPlanUsers();
   const { data: allHorses } = useHorses();
+  const setPlan = useAdminSetPlan();
 
   const handleTabChange = (t: Tab) => {
     setTab(t);
@@ -87,7 +92,11 @@ function AdminPanel() {
     setHorsePage(1);
   };
 
-  const loading = loadingStats || (isHorsesTab ? loadingHorses : loadingUsers);
+  const loading = loadingStats || (isPlanesTab ? loadingPlans : isHorsesTab ? loadingHorses : loadingUsers);
+
+  const filteredPlanUsers = planUsers?.filter((u) =>
+    search ? u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) : true,
+  );
 
   return (
     <div className="space-y-4">
@@ -97,10 +106,10 @@ function AdminPanel() {
         <StatCard label="Caballos" value={stats?.caballos ?? 0} />
       </div>
 
-      <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+      <div className="flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
         {tabs.map((t) => (
           <button key={t.key} onClick={() => handleTabChange(t.key)}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition cursor-pointer ${
+            className={`flex-1 rounded-md px-2 py-2 text-sm font-medium transition cursor-pointer whitespace-nowrap ${
               tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -109,9 +118,14 @@ function AdminPanel() {
         ))}
       </div>
 
-      <SearchInput value={search} onChange={handleSearch}
-        placeholder={isHorsesTab ? 'Buscar por nombre, propietario o establecimiento...' : 'Buscar por nombre o correo...'}
-      />
+      {!isPlanesTab && (
+        <SearchInput value={search} onChange={handleSearch}
+          placeholder={isHorsesTab ? 'Buscar por nombre, propietario o establecimiento...' : 'Buscar por nombre o correo...'}
+        />
+      )}
+      {isPlanesTab && (
+        <SearchInput value={search} onChange={handleSearch} placeholder="Buscar usuario..." />
+      )}
 
       {loading && (
         <div className="flex justify-center py-12">
@@ -119,7 +133,7 @@ function AdminPanel() {
         </div>
       )}
 
-      {!loading && !isHorsesTab && usersResult?.data && (
+      {!loading && !isHorsesTab && !isPlanesTab && usersResult?.data && (
         <div className="space-y-3">
           <UserTable
             users={usersResult.data}
@@ -137,6 +151,159 @@ function AdminPanel() {
           <Pagination page={horsesResult.page} total={horsesResult.total} limit={horsesResult.limit} onPageChange={setHorsePage} />
         </div>
       )}
+
+      {!loading && isPlanesTab && (
+        <PlansAdminTable
+          users={filteredPlanUsers ?? []}
+          onSetPlan={(userId, plan, months) => setPlan.mutate({ userId, plan, months })}
+          isPending={setPlan.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Plans Admin Table ─── */
+
+function PlansAdminTable({
+  users,
+  onSetPlan,
+  isPending,
+}: {
+  users: AdminPlanUser[];
+  onSetPlan: (userId: string, plan: 'free' | 'pro', months?: number) => void;
+  isPending: boolean;
+}) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [months, setMonths] = useState<Record<string, number>>({});
+
+  if (!users.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-200 py-12 text-center">
+        <p className="text-sm text-gray-400">No hay usuarios para gestionar</p>
+      </div>
+    );
+  }
+
+  const ROLE_LABELS: Record<string, string> = {
+    propietario: 'Propietario', establecimiento: 'Establecimiento',
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Header desktop */}
+      <div className="hidden sm:grid grid-cols-[1fr_1fr_90px_100px_180px] gap-0 border-b border-gray-100 bg-gray-50 px-4 py-2.5">
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Usuario</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Email</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Rol</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Plan actual</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Acción</span>
+      </div>
+
+      <div className="divide-y divide-gray-50">
+        {users.map((u) => {
+          const isPro = u.plan === 'pro';
+          const expiresStr = u.plan_expires_at
+            ? new Date(u.plan_expires_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
+            : null;
+          const m = months[u.id] ?? 1;
+
+          return (
+            <div key={u.id}>
+              {/* Desktop */}
+              <div className="hidden sm:grid grid-cols-[1fr_1fr_90px_100px_180px] items-center px-4 py-3">
+                <div className="min-w-0 pr-2">
+                  <p className="font-medium text-gray-900 truncate">{u.name}</p>
+                  <p className="text-xs text-gray-400">{u.horse_count} caballos</p>
+                </div>
+                <span className="text-sm text-gray-600 truncate pr-2">{u.email}</span>
+                <span className="text-xs text-gray-500">{ROLE_LABELS[u.role] ?? u.role}</span>
+                <div>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {isPro ? '⭐ Pro' : 'Gratis'}
+                  </span>
+                  {isPro && expiresStr && <p className="text-[10px] text-gray-400 mt-0.5">vence {expiresStr}</p>}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {!isPro ? (
+                    <>
+                      <select
+                        value={m}
+                        onChange={(e) => setMonths((prev) => ({ ...prev, [u.id]: Number(e.target.value) }))}
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs focus:outline-none"
+                      >
+                        {[1, 3, 6, 12].map((mo) => (
+                          <option key={mo} value={mo}>{mo} {mo === 1 ? 'mes' : 'meses'}</option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={isPending && pendingId === u.id}
+                        onClick={() => { setPendingId(u.id); onSetPlan(u.id, 'pro', m); }}
+                        className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition cursor-pointer disabled:opacity-50"
+                      >
+                        {isPending && pendingId === u.id ? '...' : 'Activar Pro'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      disabled={isPending && pendingId === u.id}
+                      onClick={() => { setPendingId(u.id); onSetPlan(u.id, 'free'); }}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer disabled:opacity-50"
+                    >
+                      {isPending && pendingId === u.id ? '...' : 'Revocar Pro'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile */}
+              <div className="sm:hidden p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900">{u.name}</p>
+                    <p className="text-xs text-gray-500">{u.email}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{ROLE_LABELS[u.role]} · {u.horse_count} caballos</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {isPro ? '⭐ Pro' : 'Gratis'}
+                  </span>
+                </div>
+                {isPro && expiresStr && <p className="text-xs text-gray-400">Vence: {expiresStr}</p>}
+                <div className="flex items-center gap-2">
+                  {!isPro ? (
+                    <>
+                      <select
+                        value={m}
+                        onChange={(e) => setMonths((prev) => ({ ...prev, [u.id]: Number(e.target.value) }))}
+                        className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none"
+                      >
+                        {[1, 3, 6, 12].map((mo) => (
+                          <option key={mo} value={mo}>{mo} {mo === 1 ? 'mes' : 'meses'}</option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={isPending && pendingId === u.id}
+                        onClick={() => { setPendingId(u.id); onSetPlan(u.id, 'pro', m); }}
+                        className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition cursor-pointer disabled:opacity-50"
+                      >
+                        {isPending && pendingId === u.id ? '...' : 'Activar Pro'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      disabled={isPending && pendingId === u.id}
+                      onClick={() => { setPendingId(u.id); onSetPlan(u.id, 'free'); }}
+                      className="w-full rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer disabled:opacity-50"
+                    >
+                      {isPending && pendingId === u.id ? '...' : 'Revocar Pro'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

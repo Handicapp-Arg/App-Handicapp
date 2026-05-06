@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PlansService } from './plans.service';
@@ -23,5 +23,22 @@ export class PlansController {
     @Body('months') months?: number,
   ) {
     return this.plansService.activatePro(user.id, months ?? 1);
+  }
+
+  @Patch('admin/:userId')
+  adminSetPlan(
+    @Param('userId') userId: string,
+    @Body('plan') plan: string,
+    @Body('months') months: number,
+    @GetUser() user: User,
+  ) {
+    if (user.role !== 'admin') throw new ForbiddenException();
+    return this.plansService.adminSetPlan(userId, plan, months);
+  }
+
+  @Get('admin/users')
+  adminGetUsers(@GetUser() user: User) {
+    if (user.role !== 'admin') throw new ForbiddenException();
+    return this.plansService.getUsersWithPlan();
   }
 }

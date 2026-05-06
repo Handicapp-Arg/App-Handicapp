@@ -42,6 +42,42 @@ export class PlansService {
     return this.userRepo.save(user);
   }
 
+  async adminSetPlan(userId: string, plan: string, months = 1): Promise<{ id: string; name: string; plan: string; plan_expires_at: Date | null }> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new ForbiddenException('Usuario no encontrado');
+    if (plan === 'pro') {
+      const expiry = new Date();
+      expiry.setMonth(expiry.getMonth() + (months ?? 1));
+      user.plan = 'pro';
+      user.plan_expires_at = expiry;
+    } else {
+      user.plan = 'free';
+      user.plan_expires_at = null;
+    }
+    const saved = await this.userRepo.save(user);
+    return { id: saved.id, name: saved.name, plan: saved.plan, plan_expires_at: saved.plan_expires_at };
+  }
+
+  async getUsersWithPlan(): Promise<Array<{ id: string; name: string; email: string; role: string; plan: string; plan_expires_at: Date | null; horse_count: number }>> {
+    const users = await this.userRepo.find({
+      where: [{ role: 'propietario' }, { role: 'establecimiento' }],
+      order: { name: 'ASC' },
+    });
+    return Promise.all(users.map(async (u) => {
+      const horseCount = await this.horseRepo.count({ where: { owner_id: u.id } });
+      const isExpired = u.plan !== 'free' && u.plan_expires_at && u.plan_expires_at < new Date();
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        plan: isExpired ? 'free' : u.plan,
+        plan_expires_at: u.plan_expires_at,
+        horse_count: horseCount,
+      };
+    }));
+  }
+
   async assertCanAddHorse(user: User): Promise<void> {
     const status = await this.getPlanStatus(user);
     if (status.is_limited) {
