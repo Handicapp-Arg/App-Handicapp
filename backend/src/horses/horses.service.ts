@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, QueryFailedError } from 'typeorm';
 import { Horse } from './horse.entity';
 import { HorseUser } from './horse-user.entity';
+import { HorseMovement, MovementType } from './horse-movement.entity';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { UpdateOwnershipDto } from './dto/update-ownership.dto';
@@ -37,9 +38,32 @@ export class HorsesService implements OnModuleInit {
     private readonly weightRepository: Repository<WeightRecord>,
     @InjectRepository(ShareToken)
     private readonly shareTokenRepository: Repository<ShareToken>,
+    @InjectRepository(HorseMovement)
+    private readonly movementRepository: Repository<HorseMovement>,
     private readonly cloudinaryService: CloudinaryService,
     private readonly plansService: PlansService,
   ) {}
+
+  private async logMovement(horseId: string, type: MovementType, description: string, actorId?: string): Promise<void> {
+    const movement = this.movementRepository.create({
+      horse_id: horseId,
+      type,
+      description,
+      actor_id: actorId ?? null,
+    });
+    await this.movementRepository.save(movement);
+  }
+
+  async getMovements(horseId: string, user: User): Promise<HorseMovement[]> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+    return this.movementRepository.find({
+      where: { horse_id: horseId },
+      order: { created_at: 'DESC' },
+      take: 50,
+    });
+  }
 
   async onModuleInit() {
     await this.backfillHorseUsers();
@@ -118,6 +142,7 @@ export class HorsesService implements OnModuleInit {
       throw err;
     }
     await this.syncHorseUsers(saved);
+    await this.logMovement(saved.id, 'created', 'Caballo registrado en HandicApp', user.id);
     return saved;
   }
 
@@ -208,9 +233,12 @@ export class HorsesService implements OnModuleInit {
       await this.horseUserRepository.save(prevOwnerEntry);
     }
 
+    const prevOwnerId = horse.owner_id;
     horse.owner_id = dto.new_owner_id;
     const saved = await this.horseRepository.save(horse);
     await this.syncHorseUsers(saved);
+    await this.logMovement(id, 'transfer_ownership',
+      `Propiedad transferida del propietario anterior al nuevo propietario`, user.id);
     return saved;
   }
 
@@ -721,7 +749,9 @@ export class HorsesService implements OnModuleInit {
       role: 'vet',
       percentage: null,
     });
-    return this.horseUserRepository.save(entry);
+    const saved = await this.horseUserRepository.save(entry);
+    await this.logMovement(horseId, 'vet_assigned', 'Veterinario asignado al caballo', user.id);
+    return saved;
   }
 
   async removeVet(horseId: string, vetUserId: string, user: User): Promise<void> {
@@ -738,6 +768,7 @@ export class HorsesService implements OnModuleInit {
     if (!entry) throw new NotFoundException('Veterinario no asignado a este caballo');
 
     await this.horseUserRepository.remove(entry);
+    await this.logMovement(horseId, 'vet_removed', 'Veterinario desasignado del caballo', user.id);
   }
 
   // ── Private helpers ───────────────────────────────────────

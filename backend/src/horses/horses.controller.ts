@@ -226,6 +226,12 @@ export class HorsesController {
     return this.horsesService.findOne(id, user);
   }
 
+  @Get(':id/movements')
+  @RequirePermission('horses', 'read')
+  getMovements(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getMovements(id, user);
+  }
+
   @Patch(':id')
   @RequirePermission('horses', 'update')
   update(

@@ -349,3 +349,21 @@ export function useTransferHorse() {
     },
   });
 }
+
+export interface HorseMovement {
+  id: string;
+  horse_id: string;
+  type: string;
+  description: string;
+  actor: { id: string; name: string; role: string } | null;
+  created_at: string;
+}
+
+export function useHorseMovements(horseId: string) {
+  return useQuery<HorseMovement[]>({
+    queryKey: ['horses', horseId, 'movements'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/movements`)).data,
+    enabled: !!horseId,
+  });
+}
+

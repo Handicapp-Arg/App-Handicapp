@@ -4,7 +4,7 @@ import { use, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord } from '@/hooks/use-horses';
+import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord, useHorseMovements, type HorseMovement } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
@@ -456,6 +456,33 @@ function CreateEventModal({
   );
 }
 
+/* ─── Movement Row ─── */
+
+const MOVEMENT_ICONS: Record<string, string> = {
+  created: '🐎', transfer_ownership: '🔄', establishment_in: '🏡', establishment_out: '🚪',
+  vet_assigned: '💉', vet_removed: '❌',
+};
+
+function MovementRow({ movement }: { movement: HorseMovement }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm">
+        {MOVEMENT_ICONS[movement.type] ?? '📋'}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-gray-800">{movement.description}</p>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {movement.actor && <span className="text-[10px] text-gray-400">{movement.actor.name}</span>}
+          <span className="text-[10px] text-gray-300">·</span>
+          <span className="text-[10px] text-gray-400">
+            {new Date(movement.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Medical Labels ─── */
 
 const medicalTypeLabel: Record<string, string> = {
@@ -632,6 +659,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const upsertRoutine = useUpsertRoutine(id);
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
+  const { data: movements } = useHorseMovements(id);
   const deleteActivityPhoto = useDeleteActivityPhoto(id);
   const { data: medicalRecords } = useMedicalRecords(id);
   const addMedical = useAddMedicalRecord(id);
@@ -1804,6 +1832,17 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   })}
                 </div>
               )}
+            </div>
+          )}
+        {/* ─── Movimientos ─── */}
+          {movements && movements.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="mb-2.5 text-sm font-semibold text-gray-900">Historial de movimientos</h2>
+              <div className="space-y-2">
+                {movements.map((m) => (
+                  <MovementRow key={m.id} movement={m} />
+                ))}
+              </div>
             </div>
           )}
         </div>
