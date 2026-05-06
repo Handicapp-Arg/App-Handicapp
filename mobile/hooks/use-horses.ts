@@ -95,3 +95,39 @@ export function useFinancialSummary(horseId: string) {
     enabled: !!horseId,
   });
 }
+
+export interface WeightRecord {
+  id: string;
+  weight_kg: number;
+  body_condition: number | null;
+  date: string;
+  notes: string | null;
+  recorder?: { id: string; name: string };
+}
+
+export function useWeightRecords(horseId: string) {
+  return useQuery<WeightRecord[]>({
+    queryKey: ['horses', horseId, 'weight'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/weight`)).data,
+    enabled: !!horseId,
+  });
+}
+
+export function useAddWeightRecord(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: { weight_kg: string; body_condition?: number; date: string; notes?: string }) => {
+      const { data } = await api.post(`/horses/${horseId}/weight`, dto);
+      return data as WeightRecord;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'weight'] }),
+  });
+}
+
+export function useDeleteWeightRecord(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (recordId: string) => api.delete(`/horses/${horseId}/weight/${recordId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'weight'] }),
+  });
+}

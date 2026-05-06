@@ -6,7 +6,9 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord } from '../../../hooks/use-horses';
+import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
+import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
 import { DatePicker } from '../../../components/DatePicker';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { useAuth } from '../../../lib/auth';
@@ -133,6 +135,18 @@ export default function HorseDetailScreen() {
   const { data: events } = useEventsByHorse(id);
   const { data: financial } = useFinancialSummary(id);
   const { data: documents } = useHorseDocuments(id);
+  const { data: weightRecords } = useWeightRecords(id);
+  const addWeight = useAddWeightRecord(id);
+  const { data: routines } = useRoutines(id);
+  const upsertRoutine = useUpsertRoutine(id);
+  const { data: activityPhotos } = useActivityPhotos(id);
+  const uploadActivityPhoto = useUploadActivityPhoto(id);
+  const todayISO = new Date().toISOString().split('T')[0];
+  const todayRoutine = routines?.find((r) => r.date === todayISO);
+  const [showAddWeight, setShowAddWeight] = useState(false);
+  const [newWeight, setNewWeight] = useState('');
+  const [newWeightDate, setNewWeightDate] = useState(todayISO);
+  const [activityType, setActivityType] = useState('otro');
   const deleteHorse = useDeleteHorse();
   const uploadImage = useUploadHorseImage();
   const [showEdit, setShowEdit] = useState(false);
@@ -343,6 +357,159 @@ export default function HorseDetailScreen() {
         </View>
       )}
 
+      {/* ─── Peso y condición ─── */}
+      <View style={styles.section}>
+        <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
+          <Text style={styles.sectionTitle}>Peso y condición</Text>
+          {can('horses', 'update') && (
+            <TouchableOpacity onPress={() => setShowAddWeight(true)} style={styles.smallBtn}>
+              <Text style={styles.smallBtnText}>+ Registrar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {!weightRecords?.length ? (
+          <Text style={styles.emptyText}>Sin registros de peso</Text>
+        ) : (
+          <View style={styles.weightCard}>
+            <View style={[styles.weightLatest]}>
+              <Text style={styles.weightValue}>{Number(weightRecords[0].weight_kg)} kg</Text>
+              {weightRecords[0].body_condition && (
+                <Text style={styles.weightCC}>CC: {weightRecords[0].body_condition}/9</Text>
+              )}
+              <Text style={styles.weightDate}>
+                {new Date(weightRecords[0].date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </Text>
+            </View>
+            {weightRecords.slice(1, 4).map((r) => (
+              <View key={r.id} style={styles.weightRow}>
+                <Text style={styles.weightRowValue}>{Number(r.weight_kg)} kg</Text>
+                <Text style={styles.weightRowDate}>
+                  {new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* ─── Rutina de hoy ─── */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Rutina de hoy</Text>
+        <View style={styles.routineGrid}>
+          {ROUTINE_ITEMS.map(({ key, label, emoji }) => {
+            const checked = todayRoutine?.[key] ?? false;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.routineItem, checked && styles.routineItemChecked]}
+                onPress={() => upsertRoutine.mutate({ date: todayISO, [key]: !checked })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.routineEmoji}>{emoji}</Text>
+                <Text style={[styles.routineLabel, checked && styles.routineLabelChecked]}>{label}</Text>
+                {checked && <Text style={styles.routineCheck}>✓</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ─── Fotos verificadas ─── */}
+      <View style={styles.section}>
+        <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
+          <Text style={styles.sectionTitle}>Fotos verificadas</Text>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <TouchableOpacity
+              style={styles.smallBtn}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+                const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
+                if (!result.canceled && result.assets[0]) {
+                  await uploadActivityPhoto.mutateAsync({ uri: result.assets[0].uri, activity_type: activityType });
+                }
+              }}
+            >
+              <Text style={styles.smallBtnText}>📷 Foto</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Selector de tipo */}
+        <View style={styles.activityTypeRow}>
+          {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
+            <TouchableOpacity
+              key={v}
+              style={[styles.activityTypeChip, activityType === v && { backgroundColor: m.bg }]}
+              onPress={() => setActivityType(v)}
+            >
+              <Text style={[styles.activityTypeText, activityType === v && { color: m.color }]}>{m.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {!activityPhotos?.length ? (
+          <Text style={styles.emptyText}>Las fotos tomadas desde aquí tienen sello de fecha y autor.</Text>
+        ) : (
+          <View style={styles.photosGrid}>
+            {activityPhotos.slice(0, 9).map((p) => {
+              const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
+              return (
+                <TouchableOpacity key={p.id} style={styles.photoWrap} onPress={() => Linking.openURL(p.url)}>
+                  <Image source={{ uri: p.url }} style={styles.photoThumb} />
+                  <View style={[styles.photoBadge, { backgroundColor: meta.bg }]}>
+                    <Text style={[styles.photoBadgeText, { color: meta.color }]}>{meta.label}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* ─── Modal agregar peso ─── */}
+      <Modal visible={showAddWeight} animationType="slide" transparent>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Registrar peso</Text>
+              <TouchableOpacity onPress={() => setShowAddWeight(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={styles.fieldLabel}>Peso (kg) *</Text>
+              <TextInput
+                style={styles.input}
+                value={newWeight}
+                onChangeText={setNewWeight}
+                placeholder="450.0"
+                placeholderTextColor={styles.fieldLabel.color}
+                keyboardType="decimal-pad"
+              />
+              <DatePicker label="Fecha" value={newWeightDate} onChange={setNewWeightDate} maxDate={new Date()} />
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowAddWeight(false)}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.submitBtn, { flex: 1 }, (!newWeight || addWeight.isPending) && { opacity: 0.6 }]}
+                disabled={!newWeight || addWeight.isPending}
+                onPress={async () => {
+                  await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate });
+                  setNewWeight('');
+                  setShowAddWeight(false);
+                }}
+              >
+                {addWeight.isPending
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.submitBtnText}>Guardar</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Historial */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -407,6 +574,34 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
   input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
   fieldError: { fontSize: 13, color: colors.red500 },
+  // Peso
+  weightLatest: { backgroundColor: '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
+  weightValue: { fontSize: 28, fontWeight: '800', color: '#c2410c' },
+  weightCC: { fontSize: 12, color: '#ea580c', marginTop: 2 },
+  weightDate: { fontSize: 11, color: '#9a3412', marginTop: 2 },
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: colors.gray50 },
+  weightRowValue: { fontSize: 14, fontWeight: '600', color: colors.gray700 },
+  weightRowDate: { fontSize: 12, color: colors.gray400 },
+  // Rutina
+  routineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
+  routineItemChecked: { borderColor: '#86efac', backgroundColor: '#f0fdf4' },
+  routineEmoji: { fontSize: 16 },
+  routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: colors.gray600 },
+  routineLabelChecked: { color: '#15803d' },
+  routineCheck: { fontSize: 12, color: '#16a34a', fontWeight: '700' },
+  // Fotos verificadas
+  activityTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  activityTypeChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
+  activityTypeText: { fontSize: 11, fontWeight: '600', color: colors.gray600 },
+  photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  photoWrap: { width: '31%', aspectRatio: 1, position: 'relative' },
+  photoThumb: { width: '100%', height: '100%', borderRadius: 10 },
+  photoBadge: { position: 'absolute', bottom: 3, left: 3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
+  photoBadgeText: { fontSize: 8, fontWeight: '700' },
+  smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white },
+  smallBtnText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  weightCard: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.gray100, padding: 12 },
   docsCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
   docRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
   docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center' },
