@@ -11,6 +11,7 @@ import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '@/hooks/use-event-comments';
+import QRCode from 'react-qr-code';
 import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -658,6 +659,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [newWeightDate, setNewWeightDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newBodyCondition, setNewBodyCondition] = useState('');
   const [newWeightNotes, setNewWeightNotes] = useState('');
+  const [showQR, setShowQR] = useState(false);
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
     type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0],
@@ -1063,6 +1065,14 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               >
                 Compartir
               </button>
+              {horse.public_token && (
+                <button
+                  onClick={() => setShowQR(true)}
+                  className="flex-1 rounded-xl border border-emerald-100 py-2.5 text-xs font-semibold text-emerald-600 transition hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer"
+                >
+                  QR
+                </button>
+              )}
               {canDelete && (
                 <button
                   onClick={() => setConfirmDelete(true)}
@@ -1579,8 +1589,16 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Acciones */}
-            {(canEdit || canDelete || isOwner) && (
+            {(canEdit || canDelete || isOwner || horse.public_token) && (
               <div className="flex flex-wrap gap-2 border-t border-gray-100 px-4 py-3">
+                {horse.public_token && (
+                  <button
+                    onClick={() => setShowQR(true)}
+                    className="flex-1 rounded-lg border border-emerald-100 py-2 text-xs font-medium text-emerald-600 transition hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer"
+                  >
+                    Ver QR
+                  </button>
+                )}
                 {canEdit && (
                   <Link
                     href="/caballos"
@@ -1901,6 +1919,79 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         </div>{/* cierre space-y-4 col derecha */}
       </div>{/* cierre grid desktop */}
+
+      {/* ─── Modal QR ─── */}
+      {showQR && horse.public_token && createPortal(
+        <>
+          <div className="fixed inset-0 z-[998] bg-black/60 backdrop-blur-sm" onClick={() => setShowQR(false)} />
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div className="w-full max-w-xs rounded-3xl bg-white shadow-2xl overflow-hidden">
+              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0f1f3d 0%, #1a3a6b 100%)' }}>
+                <div>
+                  <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Código QR</p>
+                  <p className="text-lg font-bold text-white">{horse.name}</p>
+                </div>
+                <button onClick={() => setShowQR(false)} className="text-white/50 hover:text-white transition cursor-pointer text-xl">✕</button>
+              </div>
+              <div className="p-6 flex flex-col items-center gap-4">
+                <div className="rounded-2xl bg-white p-3 shadow-inner border border-gray-100">
+                  <QRCode
+                    value={`${window.location.origin}/caballo/${horse.public_token}`}
+                    size={200}
+                    fgColor="#0f1f3d"
+                    bgColor="#ffffff"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-gray-800">Escaneá para ver el perfil</p>
+                  <p className="text-xs text-gray-400 mt-1">El perfil es permanente y público</p>
+                </div>
+                <div className="w-full space-y-2">
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/caballo/${horse.public_token}`;
+                      navigator.clipboard.writeText(url);
+                      alert('Enlace copiado!');
+                    }}
+                    className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Copiar enlace
+                  </button>
+                  <button
+                    onClick={() => {
+                      const svg = document.querySelector('#qr-modal svg') as SVGElement;
+                      if (!svg) return;
+                      const svgData = new XMLSerializer().serializeToString(svg);
+                      const canvas = document.createElement('canvas');
+                      canvas.width = 400; canvas.height = 400;
+                      const ctx = canvas.getContext('2d')!;
+                      const img = new window.Image();
+                      img.onload = () => {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, 400, 400);
+                        ctx.drawImage(img, 0, 0, 400, 400);
+                        const a = document.createElement('a');
+                        a.download = `qr-${horse.name}.png`;
+                        a.href = canvas.toDataURL();
+                        a.click();
+                      };
+                      img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                    }}
+                    className="w-full rounded-xl py-2.5 text-sm font-semibold text-white cursor-pointer transition"
+                    style={{ backgroundColor: '#0f1f3d' }}
+                  >
+                    Descargar QR
+                  </button>
+                </div>
+              </div>
+              <div id="qr-modal" className="hidden">
+                <QRCode value={`${window.location.origin}/caballo/${horse.public_token}`} size={400} fgColor="#0f1f3d" bgColor="#ffffff" />
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body,
+      )}
     </div>
   );
 }

@@ -43,6 +43,7 @@ export interface Horse {
   activity?: CatalogItem;
   events?: Event[];
   co_owners?: HorseOwnership[];
+  public_token: string | null;
   created_at: string;
 }
 

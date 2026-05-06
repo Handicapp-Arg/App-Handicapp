@@ -10,6 +10,7 @@ import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploa
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
+import QRCode from 'react-native-qrcode-svg';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { DatePicker } from '../../../components/DatePicker';
 import { useEventsByHorse } from '../../../hooks/use-events';
@@ -213,6 +214,7 @@ export default function HorseDetailScreen() {
   const { data: medicalRecords } = useMedicalRecords(id);
   const addMedical = useAddMedicalRecord(id);
   const deleteMedical = useDeleteMedicalRecord(id);
+  const [showQR, setShowQR] = useState(false);
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
     type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0],
@@ -316,6 +318,17 @@ export default function HorseDetailScreen() {
         </TouchableOpacity>
 
         {/* Acciones (cámara / editar / eliminar) */}
+        {/* Botón QR */}
+        {horse.public_token && (
+          <TouchableOpacity
+            style={[styles.heroActionBtn, { position: 'absolute', left: 16, bottom: 16 }, { backgroundColor: 'rgba(5, 150, 105, 0.7)' }]}
+            onPress={() => setShowQR(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.heroActionText}>QR</Text>
+          </TouchableOpacity>
+        )}
+
         {(can('horses', 'update') || can('horses', 'delete')) && (
           <View style={[styles.heroActions, { top: insets.top + 12 }]}>
             {can('horses', 'update') && (
@@ -542,6 +555,49 @@ export default function HorseDetailScreen() {
           </View>
         )}
       </View>
+
+      {/* ─── Modal QR ─── */}
+      <Modal visible={showQR} animationType="fade" transparent>
+        <View style={qrStyles.overlay}>
+          <View style={qrStyles.card}>
+            <View style={qrStyles.header}>
+              <View>
+                <Text style={qrStyles.headerSub}>Código QR</Text>
+                <Text style={qrStyles.headerTitle}>{horse.name}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowQR(false)}>
+                <Text style={qrStyles.closeBtn}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={qrStyles.qrWrap}>
+              {horse.public_token && (
+                <QRCode
+                  value={`https://app.handicapp.com/caballo/${horse.public_token}`}
+                  size={220}
+                  color="#0f1f3d"
+                  backgroundColor="#ffffff"
+                  logoBackgroundColor="#ffffff"
+                />
+              )}
+            </View>
+
+            <Text style={qrStyles.hint}>Escaneá para ver el perfil público del caballo</Text>
+            <Text style={qrStyles.sublabel}>Historial médico · Peso · Eventos</Text>
+
+            <TouchableOpacity
+              style={qrStyles.copyBtn}
+              onPress={() => {
+                const url = `https://app.handicapp.com/caballo/${horse.public_token}`;
+                Alert.alert('Enlace', url, [{ text: 'OK' }]);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={qrStyles.copyBtnText}>Ver enlace</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* ─── Modal agregar peso ─── */}
       <Modal visible={showAddWeight} animationType="slide" transparent>
@@ -910,6 +966,24 @@ const evStyles = StyleSheet.create({
     backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
   },
   commentSendText: { fontSize: 16, color: colors.white, fontWeight: '700' },
+});
+
+const qrStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  card: { backgroundColor: colors.white, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden' },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    padding: 20, paddingBottom: 16,
+    backgroundColor: colors.primary,
+  },
+  headerSub: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8 },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.white, marginTop: 2 },
+  closeBtn: { fontSize: 18, color: 'rgba(255,255,255,0.5)', padding: 4 },
+  qrWrap: { alignItems: 'center', paddingVertical: 28, backgroundColor: '#f8fafc' },
+  hint: { textAlign: 'center', fontSize: 13, fontWeight: '600', color: colors.gray700, paddingHorizontal: 20, marginTop: 4 },
+  sublabel: { textAlign: 'center', fontSize: 11, color: colors.gray400, marginTop: 4, paddingBottom: 4 },
+  copyBtn: { margin: 16, marginTop: 12, borderRadius: 14, backgroundColor: colors.primary, paddingVertical: 14, alignItems: 'center' },
+  copyBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 });
 
 const medStyles = StyleSheet.create({

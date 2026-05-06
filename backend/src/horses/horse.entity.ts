@@ -8,7 +8,9 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  BeforeInsert,
 } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { User } from '../auth/user.entity';
 import { Event } from '../events/event.entity';
 import { HorseUser } from './horse-user.entity';
@@ -47,6 +49,14 @@ export class Horse {
 
   @Column({ type: 'varchar', length: 15, nullable: true, unique: true })
   microchip: string | null;
+
+  @Column({ type: 'uuid', unique: true, nullable: true })
+  public_token: string | null;
+
+  @BeforeInsert()
+  generatePublicToken() {
+    if (!this.public_token) this.public_token = randomUUID();
+  }
 
   @Column('uuid', { nullable: true })
   breed_id: string | null;

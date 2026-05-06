@@ -41,6 +41,7 @@ export class HorsesService implements OnModuleInit {
 
   async onModuleInit() {
     await this.backfillHorseUsers();
+    await this.ensurePublicTokens();
   }
 
   /**
@@ -557,6 +558,69 @@ export class HorsesService implements OnModuleInit {
     });
 
     return { horse, events, weights, expires_at: shareToken.expires_at };
+  }
+
+  async getPublicProfile(publicToken: string) {
+    const horse = await this.horseRepository.findOne({
+      where: { public_token: publicToken },
+      relations: ['owner', 'establishment', 'breed', 'activity'],
+    });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+
+    const events = await this.horseRepository.manager
+      .getRepository('events')
+      .find({
+        where: { horse_id: horse.id, deleted_at: null },
+        order: { date: 'DESC' },
+        take: 30,
+      } as any);
+
+    const weights = await this.weightRepository.find({
+      where: { horse_id: horse.id },
+      order: { date: 'DESC' },
+      take: 10,
+    });
+
+    const medicalRecords = await this.horseRepository.manager
+      .getRepository('medical_records')
+      .find({
+        where: { horse_id: horse.id },
+        order: { date: 'DESC' },
+        take: 20,
+      } as any);
+
+    return {
+      id: horse.id,
+      name: horse.name,
+      birth_date: horse.birth_date,
+      image_url: horse.image_url,
+      microchip: horse.microchip,
+      breed: horse.breed ? { name: horse.breed.name } : null,
+      activity: horse.activity ? { name: horse.activity.name } : null,
+      owner: { name: horse.owner.name },
+      establishment: horse.establishment ? { name: horse.establishment.name } : null,
+      events: events.map((e: any) => ({
+        id: e.id, type: e.type, description: e.description, date: e.date,
+        amount: e.type === 'gasto' ? e.amount : null,
+      })),
+      weights: weights.map((w) => ({
+        id: w.id, weight_kg: w.weight_kg, body_condition: w.body_condition, date: w.date,
+      })),
+      medical: medicalRecords.map((m: any) => ({
+        id: m.id, type: m.type, name: m.name, date: m.date, next_due: m.next_due,
+      })),
+    };
+  }
+
+  async ensurePublicTokens(): Promise<void> {
+    const { randomUUID } = await import('crypto');
+    const horses = await this.horseRepository
+      .createQueryBuilder('horse')
+      .where('horse.public_token IS NULL')
+      .getMany();
+    for (const horse of horses) {
+      await this.horseRepository.update(horse.id, { public_token: randomUUID() });
+    }
   }
 
   // ── Documentos ───────────────────────────────────────────

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { HorsesController } from './horses.controller';
+import { HorsesPublicController } from './horses-public.controller';
 import { HorsesService } from './horses.service';
 import { Horse } from './horse.entity';
 import { HorseUser } from './horse-user.entity';
@@ -17,7 +18,7 @@ import { AuthModule } from '../auth/auth.module';
     MulterModule.register({ storage: multer.memoryStorage() }),
     AuthModule,
   ],
-  controllers: [HorsesController],
+  controllers: [HorsesController, HorsesPublicController],
   providers: [HorsesService],
   exports: [HorsesService],
 })

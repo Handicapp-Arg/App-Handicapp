@@ -36,6 +36,7 @@ export interface Horse {
   breed?: CatalogItem;
   activity?: CatalogItem;
   co_owners?: HorseOwnership[];
+  public_token: string | null;
   created_at: string;
 }
 
