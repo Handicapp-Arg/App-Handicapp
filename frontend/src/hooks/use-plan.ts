@@ -21,7 +21,7 @@ export function usePlanStatus() {
 export function useActivatePro() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (months = 1) => (await api.post('/plans/activate-pro', { months })).data,
+    mutationFn: async (months: number = 1) => (await api.post('/plans/activate-pro', { months })).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plan-status'] });
       queryClient.invalidateQueries({ queryKey: ['horses'] });

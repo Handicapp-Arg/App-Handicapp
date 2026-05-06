@@ -11,7 +11,8 @@ export interface MedicalRecord {
   brand: string | null;
   batch: string | null;
   notes: string | null;
-  recorded_by: { id: string; name: string } | null;
+  recorded_by: string | null;
+  recorder?: { id: string; name: string; role: string } | null;
 }
 
 export interface CreateMedicalRecordDto {
