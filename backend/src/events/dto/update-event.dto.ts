@@ -1,4 +1,4 @@
-import { IsEnum, IsDateString, IsOptional, IsNumberString, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsDateString, IsOptional, IsNumberString, IsNotEmpty, IsIn } from 'class-validator';
 import { EventType } from '../event.entity';
 
 export class UpdateEventDto {
@@ -17,4 +17,8 @@ export class UpdateEventDto {
   @IsOptional()
   @IsNumberString()
   amount?: string;
+
+  @IsOptional()
+  @IsIn(['ARS', 'USD'])
+  currency?: 'ARS' | 'USD';
 }

@@ -22,6 +22,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
     { description: '', quantity: '1', unit_price: '' },
   ]);
   const [notes, setNotes] = useState('');
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
 
   const selectedHorse = horses?.find((h) => h.id === horseId);
 
@@ -45,6 +46,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
       owner_id: ownerId,
       month,
       year,
+      currency,
       items: items.filter((i) => i.description && i.unit_price).map((i) => ({
         description: i.description,
         quantity: parseFloat(i.quantity),
@@ -94,6 +96,22 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-gray-600">Año</label>
                 <input type="number" value={year} onChange={(e) => setYear(parseInt(e.target.value))} min={2020} className={inputCls} />
+              </div>
+            </div>
+
+            {/* Moneda */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-600">Moneda</label>
+              <div className="flex gap-2">
+                {(['ARS', 'USD'] as const).map((c) => (
+                  <button key={c} type="button" onClick={() => setCurrency(c)}
+                    className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition cursor-pointer ${
+                      currency === c ? 'bg-[#0f1f3d] text-white border-transparent' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {c === 'ARS' ? '$ ARS — Pesos' : 'USD — Dólares'}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -207,7 +225,7 @@ export default function FacturacionPage() {
                     )}
                   </div>
                   <p className="text-lg font-bold text-gray-900 shrink-0">
-                    ${Number(bill.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    {(bill as { currency?: string }).currency === 'USD' ? 'USD ' : '$'}{Number(bill.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
 

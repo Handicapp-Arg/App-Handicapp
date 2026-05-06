@@ -57,6 +57,9 @@ export class Bill {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 
+  @Column({ type: 'varchar', length: 3, default: 'ARS' })
+  currency: 'ARS' | 'USD';
+
   @Column({ type: 'enum', enum: BillStatus, default: BillStatus.DRAFT })
   status: BillStatus;
 

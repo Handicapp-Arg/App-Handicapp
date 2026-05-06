@@ -33,6 +33,9 @@ export class Event {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   amount: number | null;
 
+  @Column({ type: 'varchar', length: 3, default: 'ARS' })
+  currency: 'ARS' | 'USD';
+
   @Column({ type: 'date' })
   date: string;
 

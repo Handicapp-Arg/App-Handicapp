@@ -62,6 +62,7 @@ export class BillingService {
         items,
         total: parseFloat(total.toFixed(2)),
         notes: dto.notes ?? null,
+        currency: dto.currency ?? 'ARS',
         status: BillStatus.DRAFT,
       }),
     );

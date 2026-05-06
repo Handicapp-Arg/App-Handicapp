@@ -51,6 +51,7 @@ export class EventsService {
     const event = this.eventRepository.create({
       ...dto,
       amount: dto.amount ? parseFloat(dto.amount) : null,
+      currency: dto.currency ?? 'ARS',
     });
 
     if (files?.length) {
@@ -208,6 +209,7 @@ export class EventsService {
     if (dto.amount !== undefined) {
       event.amount = dto.amount ? parseFloat(dto.amount) : null;
     }
+    if (dto.currency !== undefined) event.currency = dto.currency;
 
     return this.eventRepository.save(event);
   }

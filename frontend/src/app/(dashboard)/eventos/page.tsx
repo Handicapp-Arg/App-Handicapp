@@ -182,6 +182,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
   const [description, setDescription] = useState(event.description);
   const [date, setDate] = useState(event.date);
   const [amount, setAmount] = useState(event.amount != null ? String(event.amount) : '');
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>(event.currency ?? 'ARS');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,6 +191,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       type,
       description,
       date,
+      currency,
       amount: type === 'gasto' && amount ? amount : undefined,
     });
     onClose();
@@ -219,11 +221,19 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       </div>
       {type === 'gasto' && (
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">Monto ($)</label>
-          <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
-          />
+          <label className="block text-sm font-medium text-gray-700">Monto</label>
+          <div className="flex gap-2">
+            <select value={currency} onChange={(e) => setCurrency(e.target.value as 'ARS' | 'USD')}
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+            >
+              <option value="ARS">$ ARS</option>
+              <option value="USD">USD</option>
+            </select>
+            <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+            />
+          </div>
         </div>
       )}
       <div className="space-y-1.5">
@@ -660,7 +670,7 @@ export default function EventosPage() {
                 </div>
                 {event.amount != null && (
                   <p className="text-sm font-semibold text-purple-700 mb-1">
-                    ${Number(event.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    {event.currency === 'USD' ? 'USD ' : '$'}{Number(event.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </p>
                 )}
                 <p className="text-sm text-gray-700 leading-relaxed">{event.description}</p>

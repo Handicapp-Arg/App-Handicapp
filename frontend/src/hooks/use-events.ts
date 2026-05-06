@@ -104,6 +104,7 @@ export function useUpdateEvent() {
       description?: string;
       date?: string;
       amount?: string;
+      currency?: 'ARS' | 'USD';
     }) => {
       const { data } = await api.patch(`/events/${id}`, payload);
       return data as Event;

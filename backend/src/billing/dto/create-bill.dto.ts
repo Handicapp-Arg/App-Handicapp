@@ -1,4 +1,4 @@
-import { IsUUID, IsInt, IsArray, IsString, IsNumber, Min, Max, ValidateNested, IsOptional } from 'class-validator';
+import { IsUUID, IsInt, IsArray, IsString, IsNumber, Min, Max, ValidateNested, IsOptional, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BillItemDto {
@@ -35,4 +35,8 @@ export class CreateBillDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsIn(['ARS', 'USD'])
+  currency?: 'ARS' | 'USD';
 }

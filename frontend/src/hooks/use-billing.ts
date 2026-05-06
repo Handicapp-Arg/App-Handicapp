@@ -46,7 +46,7 @@ export function useBills() {
 export function useCreateBill() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (dto: { horse_id: string; owner_id: string; month: number; year: number; items: Omit<BillItem, 'total'>[]; notes?: string }) => {
+    mutationFn: async (dto: { horse_id: string; owner_id: string; month: number; year: number; items: Omit<BillItem, 'total'>[]; notes?: string; currency?: 'ARS' | 'USD' }) => {
       const { data } = await api.post('/billing', dto);
       return data as Bill;
     },
