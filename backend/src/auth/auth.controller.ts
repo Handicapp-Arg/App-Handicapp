@@ -82,6 +82,8 @@ export class AuthController {
       email: user.email,
       name: user.name,
       role: user.role,
+      plan: user.plan ?? 'free',
+      plan_expires_at: user.plan_expires_at,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
   }

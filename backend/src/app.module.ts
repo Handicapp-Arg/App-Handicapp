@@ -22,6 +22,7 @@ import { ActivityPhotosModule } from './activity-photos/activity-photos.module';
 import { BillingModule } from './billing/billing.module';
 import { MedicalModule } from './medical/medical.module';
 import { ContractsModule } from './contracts/contracts.module';
+import { PlansModule } from './plans/plans.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ContractsModule } from './contracts/contracts.module';
     BillingModule,
     MedicalModule,
     ContractsModule,
+    PlansModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

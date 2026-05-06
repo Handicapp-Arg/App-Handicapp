@@ -28,6 +28,12 @@ export class User {
   @OneToMany(() => Horse, (horse) => horse.owner)
   horses: Horse[];
 
+  @Column({ type: 'varchar', default: 'free' })
+  plan: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  plan_expires_at: Date | null;
+
   @Column({ type: 'varchar', nullable: true, select: false })
   reset_token: string | null;
 
