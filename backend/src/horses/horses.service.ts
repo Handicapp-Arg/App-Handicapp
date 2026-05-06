@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import {
   Injectable,
   OnModuleInit,
@@ -17,6 +18,7 @@ import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { AssignVetDto } from './dto/assign-vet.dto';
 import { HorseDocument } from './horse-document.entity';
 import { WeightRecord } from './weight-record.entity';
+import { ShareToken } from './share-token.entity';
 import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -32,6 +34,8 @@ export class HorsesService implements OnModuleInit {
     private readonly documentRepository: Repository<HorseDocument>,
     @InjectRepository(WeightRecord)
     private readonly weightRepository: Repository<WeightRecord>,
+    @InjectRepository(ShareToken)
+    private readonly shareTokenRepository: Repository<ShareToken>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -502,6 +506,57 @@ export class HorsesService implements OnModuleInit {
     const record = await this.weightRepository.findOne({ where: { id: recordId, horse_id: horseId } });
     if (!record) throw new NotFoundException('Registro no encontrado');
     await this.weightRepository.remove(record);
+  }
+
+  // ── Compartir historial ───────────────────────────────────
+
+  async createShareToken(horseId: string, user: User): Promise<{ token: string; expires_at: Date }> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    // Limpiar tokens expirados del mismo caballo
+    await this.shareTokenRepository.delete({ horse_id: horseId });
+
+    const token = randomBytes(24).toString('hex');
+    const expires_at = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 horas
+
+    await this.shareTokenRepository.save(
+      this.shareTokenRepository.create({ token, horse_id: horseId, created_by: user.id, expires_at }),
+    );
+
+    return { token, expires_at };
+  }
+
+  async getPublicHorseHistory(token: string) {
+    const shareToken = await this.shareTokenRepository.findOne({ where: { token } });
+
+    if (!shareToken || shareToken.expires_at < new Date()) {
+      throw new NotFoundException('El enlace es inválido o expiró');
+    }
+
+    const horse = await this.horseRepository.findOne({
+      where: { id: shareToken.horse_id },
+      relations: ['owner', 'establishment', 'breed', 'activity'],
+    });
+
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+
+    const events = await this.horseRepository.manager
+      .getRepository('events')
+      .find({
+        where: { horse_id: horse.id },
+        order: { date: 'DESC' },
+        take: 50,
+      } as any);
+
+    const weights = await this.weightRepository.find({
+      where: { horse_id: horse.id },
+      order: { date: 'DESC' },
+      take: 20,
+    });
+
+    return { horse, events, weights, expires_at: shareToken.expires_at };
   }
 
   // ── Documentos ───────────────────────────────────────────

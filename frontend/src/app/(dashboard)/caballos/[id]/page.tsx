@@ -461,6 +461,17 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const canDeleteEvent = can('events', 'delete');
   const isOwner = horse && user && horse.owner_id === user.id;
 
+  const handleShare = async () => {
+    try {
+      const { data } = await api.post(`/horses/${id}/share`);
+      const link = `${window.location.origin}/historial/${data.token}`;
+      await navigator.clipboard.writeText(link);
+      alert(`Enlace copiado al portapapeles!\nVálido 72 horas.\n\n${link}`);
+    } catch {
+      alert('No se pudo generar el enlace.');
+    }
+  };
+
   const handleExportCSV = async () => {
     const token = localStorage.getItem('token');
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api');
@@ -820,6 +831,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   Transferir
                 </button>
               )}
+              <button
+                onClick={handleShare}
+                className="flex-1 rounded-xl border border-blue-100 py-2.5 text-xs font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
+              >
+                Compartir
+              </button>
               {canDelete && (
                 <button
                   onClick={() => setConfirmDelete(true)}
