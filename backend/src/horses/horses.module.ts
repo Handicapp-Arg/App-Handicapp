@@ -11,12 +11,14 @@ import { HorseDocument } from './horse-document.entity';
 import { WeightRecord } from './weight-record.entity';
 import { ShareToken } from './share-token.entity';
 import { AuthModule } from '../auth/auth.module';
+import { PlansModule } from '../plans/plans.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Horse, HorseUser, HorseDocument, WeightRecord, ShareToken]),
     MulterModule.register({ storage: multer.memoryStorage() }),
     AuthModule,
+    PlansModule,
   ],
   controllers: [HorsesController, HorsesPublicController],
   providers: [HorsesService],

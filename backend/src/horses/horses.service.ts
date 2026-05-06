@@ -22,6 +22,7 @@ import { ShareToken } from './share-token.entity';
 import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { PlansService } from '../plans/plans.service';
 
 @Injectable()
 export class HorsesService implements OnModuleInit {
@@ -37,6 +38,7 @@ export class HorsesService implements OnModuleInit {
     @InjectRepository(ShareToken)
     private readonly shareTokenRepository: Repository<ShareToken>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly plansService: PlansService,
   ) {}
 
   async onModuleInit() {
@@ -62,6 +64,8 @@ export class HorsesService implements OnModuleInit {
     if (user.role === 'propietario') {
       owner_id = user.id;
       establishment_id = dto.establishment_id ?? null;
+      // Verificar límite de plan antes de crear
+      await this.plansService.assertCanAddHorse(user);
     } else if (user.role === 'establecimiento') {
       if (!dto.owner_id) {
         throw new BadRequestException(
