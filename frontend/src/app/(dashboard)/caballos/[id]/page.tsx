@@ -10,6 +10,7 @@ import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
+import { useEventComments, useAddEventComment, useDeleteEventComment } from '@/hooks/use-event-comments';
 import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -159,16 +160,82 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
 
 /* ─── Event Card ─── */
 
+function EventCommentThread({ eventId, currentUserId }: { eventId: string; currentUserId?: string }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const { data: comments } = useEventComments(eventId, open);
+  const add = useAddEventComment(eventId);
+  const del = useDeleteEventComment(eventId);
+
+  return (
+    <div className="mt-2 border-t border-gray-100 pt-2">
+      <button onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition cursor-pointer"
+      >
+        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+        </svg>
+        {open ? 'Ocultar' : 'Comentarios'}{comments && comments.length > 0 ? ` (${comments.length})` : ''}
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-1.5">
+          {comments?.map((c) => (
+            <div key={c.id} className="flex items-start gap-1.5 group">
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[9px] font-bold text-gray-500">
+                {c.user?.name?.[0]?.toUpperCase() ?? '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-semibold text-gray-600">{c.user?.name}</span>
+                <span className="ml-1 text-[10px] text-gray-400">
+                  {new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <p className="text-xs text-gray-700 break-words">{c.text}</p>
+              </div>
+              {(c.user_id === currentUserId) && (
+                <button onClick={() => del.mutate(c.id)}
+                  className="hidden group-hover:flex shrink-0 rounded p-0.5 text-gray-300 hover:text-red-400 cursor-pointer"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ))}
+          <form className="flex gap-1.5 mt-2"
+            onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; await add.mutateAsync(text.trim()); setText(''); }}
+          >
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Escribí un comentario..."
+              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs focus:border-gray-400 focus:bg-white focus:outline-none"
+            />
+            <button type="submit" disabled={!text.trim() || add.isPending}
+              className="rounded-lg bg-[#0f1f3d] px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40 cursor-pointer"
+            >
+              {add.isPending ? '...' : 'Enviar'}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EventCard({
   event,
   onEdit,
   onDelete,
   canEditMetrics,
+  currentUserId,
 }: {
   event: Event;
   onEdit?: (e: Event) => void;
   onDelete?: (id: string) => void;
   canEditMetrics?: boolean;
+  currentUserId?: string;
 }) {
   const badge = typeBadge[event.type] ?? typeBadge.nota;
   return (
@@ -217,6 +284,7 @@ function EventCard({
       {event.type === 'entrenamiento' && (
         <TrainingMetricsPanel eventId={event.id} canEdit={canEditMetrics ?? false} />
       )}
+      <EventCommentThread eventId={event.id} currentUserId={currentUserId} />
     </div>
   );
 }
@@ -1351,6 +1419,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   onEdit={canEditEvent ? setEditingEvent : undefined}
                   onDelete={canDeleteEvent ? setDeletingEventId : undefined}
                   canEditMetrics={canEditEvent}
+                  currentUserId={user?.id}
                 />
               ))}
             </div>
@@ -1809,6 +1878,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   onEdit={canEditEvent ? setEditingEvent : undefined}
                   onDelete={canDeleteEvent ? setDeletingEventId : undefined}
                   canEditMetrics={canEditEvent}
+                  currentUserId={user?.id}
                 />
               ))}
             </div>

@@ -122,4 +122,27 @@ export class EventsController {
   ) {
     return this.eventsService.remove(id, user);
   }
+
+  @Get(':id/comments')
+  @UseGuards(AuthGuard('jwt'))
+  getComments(@Param('id') id: string, @GetUser() user: User) {
+    return this.eventsService.getComments(id, user);
+  }
+
+  @Post(':id/comments')
+  @UseGuards(AuthGuard('jwt'))
+  addComment(
+    @Param('id') id: string,
+    @Body('text') text: string,
+    @GetUser() user: User,
+  ) {
+    return this.eventsService.addComment(id, text, user);
+  }
+
+  @Delete('comments/:commentId')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteComment(@Param('commentId') commentId: string, @GetUser() user: User) {
+    return this.eventsService.deleteComment(commentId, user);
+  }
 }

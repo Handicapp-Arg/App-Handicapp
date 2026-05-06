@@ -8,6 +8,7 @@ import { In, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
+import { EventComment } from './event-comment.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
 import { TrainingMetrics } from './training-metrics.entity';
@@ -33,6 +34,8 @@ export class EventsService {
     private readonly horseUserRepository: Repository<HorseUser>,
     @InjectRepository(TrainingMetrics)
     private readonly metricsRepository: Repository<TrainingMetrics>,
+    @InjectRepository(EventComment)
+    private readonly commentRepository: Repository<EventComment>,
     private readonly eventEmitter: EventEmitter2,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -259,6 +262,33 @@ export class EventsService {
     await this.assertAccess(event.horse, user);
 
     await this.eventRepository.softDelete(id);
+  }
+
+  async getComments(eventId: string, user: User): Promise<EventComment[]> {
+    const event = await this.eventRepository.findOne({ where: { id: eventId }, relations: ['horse'] });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    await this.assertAccess(event.horse, user);
+    return this.commentRepository.find({
+      where: { event_id: eventId },
+      order: { created_at: 'ASC' },
+    });
+  }
+
+  async addComment(eventId: string, text: string, user: User): Promise<EventComment> {
+    const event = await this.eventRepository.findOne({ where: { id: eventId }, relations: ['horse'] });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    await this.assertAccess(event.horse, user);
+    const comment = this.commentRepository.create({ event_id: eventId, user_id: user.id, text });
+    return this.commentRepository.save(comment);
+  }
+
+  async deleteComment(commentId: string, user: User): Promise<void> {
+    const comment = await this.commentRepository.findOne({ where: { id: commentId }, relations: ['event', 'event.horse'] });
+    if (!comment) throw new NotFoundException('Comentario no encontrado');
+    if (comment.user_id !== user.id && user.role !== 'admin' && user.role !== 'establecimiento') {
+      throw new ForbiddenException('No podés eliminar este comentario');
+    }
+    await this.commentRepository.delete(commentId);
   }
 
   private async assertAccess(horse: Horse, user: User): Promise<void> {
