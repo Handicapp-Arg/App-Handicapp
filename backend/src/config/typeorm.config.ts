@@ -6,6 +6,7 @@ import { HorseUser } from '../horses/horse-user.entity';
 import { HorseDocument } from '../horses/horse-document.entity';
 import { WeightRecord } from '../horses/weight-record.entity';
 import { ServiceAppointment } from '../agenda/service-appointment.entity';
+import { DailyRoutine } from '../routines/daily-routine.entity';
 import { Event } from '../events/event.entity';
 import { EventPhoto } from '../events/event-photo.entity';
 import { Permission } from '../permissions/permission.entity';
@@ -21,7 +22,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, WeightRecord, ServiceAppointment, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem],
+  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, WeightRecord, ServiceAppointment, DailyRoutine, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,

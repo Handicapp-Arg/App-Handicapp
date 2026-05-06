@@ -17,6 +17,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { EmailModule } from './email/email.module';
 import { HealthRemindersModule } from './health-reminders/health-reminders.module';
 import { AgendaModule } from './agenda/agenda.module';
+import { RoutinesModule } from './routines/routines.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AgendaModule } from './agenda/agenda.module';
     EmailModule,
     HealthRemindersModule,
     AgendaModule,
+    RoutinesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

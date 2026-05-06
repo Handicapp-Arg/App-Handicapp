@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
+import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -400,6 +401,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: weightRecords } = useWeightRecords(id);
   const addWeight = useAddWeightRecord(id);
   const deleteWeight = useDeleteWeightRecord(id);
+  const { data: routines } = useRoutines(id, 7);
+  const upsertRoutine = useUpsertRoutine(id);
+  const todayISO = new Date().toISOString().split('T')[0];
+  const todayRoutine = routines?.find((r) => r.date === todayISO);
   const deleteHorse = useDeleteHorse();
   const deleteEvent = useDeleteEvent();
   const transferHorse = useTransferHorse();
@@ -421,6 +426,23 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [newWeightNotes, setNewWeightNotes] = useState('');
 
   const canEdit = can('horses', 'update');
+
+  const ROUTINE_ITEMS = [
+    { key: 'morning_feed',   label: 'Comida mañana' },
+    { key: 'afternoon_feed', label: 'Comida tarde' },
+    { key: 'evening_feed',   label: 'Comida noche' },
+    { key: 'water_ok',       label: 'Agua' },
+    { key: 'paddock',        label: 'Paddock' },
+    { key: 'trained',        label: 'Entrenamiento' },
+    { key: 'health_check',   label: 'Revisión salud' },
+  ] as const;
+
+  const canFillRoutine = ['establecimiento', 'veterinario', 'propietario', 'admin'].includes(user?.role ?? '');
+
+  const toggleRoutineItem = (key: typeof ROUTINE_ITEMS[number]['key']) => {
+    const current = todayRoutine?.[key] ?? false;
+    upsertRoutine.mutate({ date: todayISO, [key]: !current });
+  };
   const canDelete = can('horses', 'delete');
   const canCreateEvent = can('events', 'create');
   const canEditEvent = can('events', 'update');
@@ -1056,6 +1078,46 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
+        {/* Rutina diaria (mobile) */}
+        {canFillRoutine && (
+          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Rutina de hoy</h2>
+                <p className="text-[11px] text-gray-400">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {ROUTINE_ITEMS.map(({ key, label }) => {
+                const checked = todayRoutine?.[key] ?? false;
+                return (
+                  <button key={key} onClick={() => toggleRoutineItem(key)}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition cursor-pointer ${
+                      checked ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                      checked ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                    }`}>
+                      {checked && (
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                    </span>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Historial de eventos */}
         <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
@@ -1404,6 +1466,39 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>
+
+        {/* Rutina diaria (desktop) */}
+        {canFillRoutine && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-gray-900">Rutina de hoy</h2>
+              <p className="text-[10px] text-gray-400">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {ROUTINE_ITEMS.map(({ key, label }) => {
+                const checked = todayRoutine?.[key] ?? false;
+                return (
+                  <button key={key} onClick={() => toggleRoutineItem(key)}
+                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition cursor-pointer ${
+                      checked ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                      checked ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                    }`}>
+                      {checked && (
+                        <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                    </span>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Eventos (desktop) */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
