@@ -23,6 +23,7 @@ import { BillingModule } from './billing/billing.module';
 import { MedicalModule } from './medical/medical.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PlansModule } from './plans/plans.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { PlansModule } from './plans/plans.module';
     MedicalModule,
     ContractsModule,
     PlansModule,
+    SearchModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

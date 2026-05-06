@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
+import { GlobalSearch } from '@/components/global-search';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -118,6 +119,11 @@ export function Sidebar() {
             </span>
           )}
         </Link>
+      </div>
+
+      {/* Búsqueda global */}
+      <div className="px-3 pb-4">
+        <GlobalSearch />
       </div>
 
       {/* Nav */}
