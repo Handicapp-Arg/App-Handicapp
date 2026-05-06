@@ -18,6 +18,7 @@ import { EmailModule } from './email/email.module';
 import { HealthRemindersModule } from './health-reminders/health-reminders.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { RoutinesModule } from './routines/routines.module';
+import { ActivityPhotosModule } from './activity-photos/activity-photos.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { RoutinesModule } from './routines/routines.module';
     HealthRemindersModule,
     AgendaModule,
     RoutinesModule,
+    ActivityPhotosModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

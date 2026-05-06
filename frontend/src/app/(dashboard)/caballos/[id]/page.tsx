@@ -8,6 +8,7 @@ import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropi
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
+import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -403,6 +404,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const deleteWeight = useDeleteWeightRecord(id);
   const { data: routines } = useRoutines(id, 7);
   const upsertRoutine = useUpsertRoutine(id);
+  const { data: activityPhotos } = useActivityPhotos(id);
+  const uploadActivityPhoto = useUploadActivityPhoto(id);
+  const deleteActivityPhoto = useDeleteActivityPhoto(id);
   const todayISO = new Date().toISOString().split('T')[0];
   const todayRoutine = routines?.find((r) => r.date === todayISO);
   const deleteHorse = useDeleteHorse();
@@ -419,6 +423,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [showAssignVet, setShowAssignVet] = useState(false);
   const [selectedVetId, setSelectedVetId] = useState('');
   const docInputRef = useRef<HTMLInputElement>(null);
+  const activityPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [activityPhotoType, setActivityPhotoType] = useState('otro');
   const [showAddWeight, setShowAddWeight] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -1168,6 +1174,80 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>
+
+        {/* Fotos de actividad (mobile) */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+              </span>
+              <h2 className="text-base font-bold text-gray-900">Fotos verificadas</h2>
+              {activityPhotos && activityPhotos.length > 0 && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{activityPhotos.length}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <select value={activityPhotoType} onChange={(e) => setActivityPhotoType(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs focus:outline-none"
+              >
+                {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
+                  <option key={v} value={v}>{m.label}</option>
+                ))}
+              </select>
+              <input ref={activityPhotoInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  await uploadActivityPhoto.mutateAsync({ file, activity_type: activityPhotoType });
+                  e.target.value = '';
+                }}
+              />
+              <button onClick={() => activityPhotoInputRef.current?.click()}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Foto
+              </button>
+            </div>
+          </div>
+
+          {!activityPhotos?.length ? (
+            <p className="text-xs text-gray-400">Sin fotos de actividad. Las fotos tomadas con el botón incluyen un sello de fecha y autor.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {activityPhotos.map((p) => {
+                const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
+                return (
+                  <div key={p.id} className="relative group">
+                    <a href={p.url} target="_blank" rel="noopener noreferrer">
+                      <img src={p.url} alt={meta.label} className="h-24 w-full rounded-xl object-cover" />
+                    </a>
+                    <div className="absolute top-1 left-1">
+                      <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${meta.bg} ${meta.color}`}>{meta.label}</span>
+                    </div>
+                    <button onClick={() => deleteActivityPhoto.mutate(p.id)}
+                      className="absolute top-1 right-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer"
+                    >
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <p className="mt-0.5 text-[9px] text-gray-400 text-center">
+                      {new Date(p.taken_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ─── DESKTOP LAYOUT (lg+) ─── */}
