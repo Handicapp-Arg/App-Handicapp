@@ -10,6 +10,8 @@ import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
+import { TrainingMetrics } from './training-metrics.entity';
+import { TrainingMetricsDto } from './dto/training-metrics.dto';
 import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -29,6 +31,8 @@ export class EventsService {
     private readonly horseRepository: Repository<Horse>,
     @InjectRepository(HorseUser)
     private readonly horseUserRepository: Repository<HorseUser>,
+    @InjectRepository(TrainingMetrics)
+    private readonly metricsRepository: Repository<TrainingMetrics>,
     private readonly eventEmitter: EventEmitter2,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -189,6 +193,34 @@ export class EventsService {
     await this.assertAccess(event.horse, user);
 
     return event;
+  }
+
+  async upsertTrainingMetrics(eventId: string, dto: TrainingMetricsDto, user: User): Promise<TrainingMetrics> {
+    const event = await this.eventRepository.findOne({ where: { id: eventId }, relations: ['horse'] });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    await this.assertAccess(event.horse, user);
+
+    const existing = await this.metricsRepository.findOne({ where: { event_id: eventId } });
+    if (existing) {
+      Object.assign(existing, {
+        distance_km: dto.distance_km ?? existing.distance_km,
+        duration_min: dto.duration_min ?? existing.duration_min,
+        intensity: dto.intensity ?? existing.intensity,
+        discipline: dto.discipline ?? existing.discipline,
+      });
+      return this.metricsRepository.save(existing);
+    }
+
+    return this.metricsRepository.save(
+      this.metricsRepository.create({ event_id: eventId, ...dto }),
+    );
+  }
+
+  async getTrainingMetrics(eventId: string, user: User): Promise<TrainingMetrics | null> {
+    const event = await this.eventRepository.findOne({ where: { id: eventId }, relations: ['horse'] });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    await this.assertAccess(event.horse, user);
+    return this.metricsRepository.findOne({ where: { event_id: eventId } });
   }
 
   async update(id: string, dto: UpdateEventDto, user: User): Promise<Event> {

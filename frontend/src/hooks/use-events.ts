@@ -127,3 +127,38 @@ export function useDeleteEvent() {
     },
   });
 }
+
+export interface TrainingMetrics {
+  id: string;
+  event_id: string;
+  distance_km: number | null;
+  duration_min: number | null;
+  intensity: number | null;
+  discipline: string | null;
+}
+
+export function useTrainingMetrics(eventId: string) {
+  return useQuery<TrainingMetrics | null>({
+    queryKey: ['events', eventId, 'training-metrics'],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get(`/events/${eventId}/training-metrics`);
+        return data;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!eventId,
+  });
+}
+
+export function useUpsertTrainingMetrics(eventId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: { distance_km?: number; duration_min?: number; intensity?: number; discipline?: string }) => {
+      const { data } = await api.post(`/events/${eventId}/training-metrics`, dto);
+      return data as TrainingMetrics;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events', eventId, 'training-metrics'] }),
+  });
+}

@@ -9,6 +9,7 @@ import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
+import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -161,10 +162,12 @@ function EventCard({
   event,
   onEdit,
   onDelete,
+  canEditMetrics,
 }: {
   event: Event;
   onEdit?: (e: Event) => void;
   onDelete?: (id: string) => void;
+  canEditMetrics?: boolean;
 }) {
   const badge = typeBadge[event.type] ?? typeBadge.nota;
   return (
@@ -209,6 +212,9 @@ function EventCard({
             <img key={p.id} src={p.url} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" loading="lazy" />
           ))}
         </div>
+      )}
+      {event.type === 'entrenamiento' && (
+        <TrainingMetricsPanel eventId={event.id} canEdit={canEditMetrics ?? false} />
       )}
     </div>
   );
@@ -1169,6 +1175,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   event={ev}
                   onEdit={canEditEvent ? setEditingEvent : undefined}
                   onDelete={canDeleteEvent ? setDeletingEventId : undefined}
+                  canEditMetrics={canEditEvent}
                 />
               ))}
             </div>
@@ -1612,6 +1619,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   event={ev}
                   onEdit={canEditEvent ? setEditingEvent : undefined}
                   onDelete={canDeleteEvent ? setDeletingEventId : undefined}
+                  canEditMetrics={canEditEvent}
                 />
               ))}
             </div>

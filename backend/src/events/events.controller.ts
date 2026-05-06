@@ -23,6 +23,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsQueryDto } from './dto/events-query.dto';
+import { TrainingMetricsDto } from './dto/training-metrics.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -94,6 +95,22 @@ export class EventsController {
     @GetUser() user: User,
   ) {
     return this.eventsService.update(id, dto, user);
+  }
+
+  @Get(':id/training-metrics')
+  @RequirePermission('events', 'read')
+  getTrainingMetrics(@Param('id') id: string, @GetUser() user: User) {
+    return this.eventsService.getTrainingMetrics(id, user);
+  }
+
+  @Post(':id/training-metrics')
+  @RequirePermission('events', 'update')
+  upsertTrainingMetrics(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: TrainingMetricsDto,
+    @GetUser() user: User,
+  ) {
+    return this.eventsService.upsertTrainingMetrics(id, dto, user);
   }
 
   @Delete(':id')
