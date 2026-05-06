@@ -242,6 +242,30 @@ export default function FacturacionPage() {
 
                 {/* Acciones */}
                 <div className="flex gap-2 flex-wrap">
+                  {/* Botón PDF */}
+                  <button
+                    onClick={async () => {
+                      const token = localStorage.getItem('token');
+                      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+                      const res = await fetch(`${base}/billing/${bill.id}/pdf`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (!res.ok) return;
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `factura-${bill.horse?.name ?? 'caballo'}.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer flex items-center gap-1"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    PDF
+                  </button>
                   {isEst && bill.status === 'borrador' && (
                     <>
                       <button onClick={() => sendBill.mutate(bill.id)}

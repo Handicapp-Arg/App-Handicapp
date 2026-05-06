@@ -1,7 +1,8 @@
 import {
-  Controller, Get, Post, Patch, Delete,
+  Controller, Get, Post, Patch, Delete, Res,
   Param, Body, UseGuards, ValidationPipe, HttpCode, HttpStatus,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
@@ -43,6 +44,18 @@ export class BillingController {
     @GetUser() user: User,
   ) {
     return this.billingService.dispute(id, reason, user);
+  }
+
+  @Get(':id/pdf')
+  async downloadPdf(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Res() res: Response,
+  ) {
+    const { pdf, filename } = await this.billingService.generatePdf(id, user);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(Buffer.from(pdf));
   }
 
   @Delete(':id')
