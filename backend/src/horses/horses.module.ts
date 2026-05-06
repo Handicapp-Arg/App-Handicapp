@@ -7,11 +7,12 @@ import { HorsesService } from './horses.service';
 import { Horse } from './horse.entity';
 import { HorseUser } from './horse-user.entity';
 import { HorseDocument } from './horse-document.entity';
+import { WeightRecord } from './weight-record.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Horse, HorseUser, HorseDocument]),
+    TypeOrmModule.forFeature([Horse, HorseUser, HorseDocument, WeightRecord]),
     MulterModule.register({ storage: multer.memoryStorage() }),
     AuthModule,
   ],

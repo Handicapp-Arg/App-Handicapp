@@ -31,6 +31,6 @@ import { EmailModule } from '../email/email.module';
     NotificationsGateway,
     EventCreatedListener,
   ],
-  exports: [NotificationsService, NotificationSettingsService],
+  exports: [NotificationsService, NotificationSettingsService, NotificationsGateway],
 })
 export class NotificationsModule {}

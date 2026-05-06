@@ -29,6 +29,7 @@ import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { AssignVetDto } from './dto/assign-vet.dto';
+import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -85,6 +86,33 @@ export class HorsesController {
   @RequirePermission('horses', 'read')
   getFinancialSummary(@Param('id') id: string, @GetUser() user: User) {
     return this.horsesService.getFinancialSummary(id, user);
+  }
+
+  @Get(':id/weight')
+  @RequirePermission('horses', 'read')
+  getWeightRecords(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getWeightRecords(id, user);
+  }
+
+  @Post(':id/weight')
+  @RequirePermission('horses', 'update')
+  addWeightRecord(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: CreateWeightRecordDto,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.addWeightRecord(id, dto, user);
+  }
+
+  @Delete(':id/weight/:recordId')
+  @RequirePermission('horses', 'update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteWeightRecord(
+    @Param('id') id: string,
+    @Param('recordId') recordId: string,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.deleteWeightRecord(id, recordId, user);
   }
 
   @Get(':id/documents')

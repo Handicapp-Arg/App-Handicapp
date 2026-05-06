@@ -16,6 +16,8 @@ import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { AssignVetDto } from './dto/assign-vet.dto';
 import { HorseDocument } from './horse-document.entity';
+import { WeightRecord } from './weight-record.entity';
+import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -28,6 +30,8 @@ export class HorsesService implements OnModuleInit {
     private readonly horseUserRepository: Repository<HorseUser>,
     @InjectRepository(HorseDocument)
     private readonly documentRepository: Repository<HorseDocument>,
+    @InjectRepository(WeightRecord)
+    private readonly weightRepository: Repository<WeightRecord>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -461,6 +465,43 @@ export class HorsesService implements OnModuleInit {
     return this.horseUserRepository.find({
       where: { horse_id: horseId, role: 'owner' },
     });
+  }
+
+  // ── Peso ─────────────────────────────────────────────────
+
+  async getWeightRecords(horseId: string, user: User): Promise<WeightRecord[]> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+    return this.weightRepository.find({
+      where: { horse_id: horseId },
+      order: { date: 'DESC' },
+    });
+  }
+
+  async addWeightRecord(horseId: string, dto: CreateWeightRecordDto, user: User): Promise<WeightRecord> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const record = this.weightRepository.create({
+      horse_id: horseId,
+      weight_kg: parseFloat(dto.weight_kg),
+      body_condition: dto.body_condition ?? null,
+      date: dto.date,
+      notes: dto.notes ?? null,
+      recorded_by: user.id,
+    });
+    return this.weightRepository.save(record);
+  }
+
+  async deleteWeightRecord(horseId: string, recordId: string, user: User): Promise<void> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+    const record = await this.weightRepository.findOne({ where: { id: recordId, horse_id: horseId } });
+    if (!record) throw new NotFoundException('Registro no encontrado');
+    await this.weightRepository.remove(record);
   }
 
   // ── Documentos ───────────────────────────────────────────

@@ -4,7 +4,7 @@ import { use, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument } from '@/hooks/use-horses';
+import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import api from '@/lib/api';
@@ -397,6 +397,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: documents } = useHorseDocuments(id);
   const uploadDoc = useUploadDocument(id);
   const deleteDoc = useDeleteDocument(id);
+  const { data: weightRecords } = useWeightRecords(id);
+  const addWeight = useAddWeightRecord(id);
+  const deleteWeight = useDeleteWeightRecord(id);
   const deleteHorse = useDeleteHorse();
   const deleteEvent = useDeleteEvent();
   const transferHorse = useTransferHorse();
@@ -411,6 +414,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [showAssignVet, setShowAssignVet] = useState(false);
   const [selectedVetId, setSelectedVetId] = useState('');
   const docInputRef = useRef<HTMLInputElement>(null);
+  const [showAddWeight, setShowAddWeight] = useState(false);
+  const [newWeight, setNewWeight] = useState('');
+  const [newWeightDate, setNewWeightDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newBodyCondition, setNewBodyCondition] = useState('');
+  const [newWeightNotes, setNewWeightNotes] = useState('');
 
   const canEdit = can('horses', 'update');
   const canDelete = can('horses', 'delete');
@@ -523,6 +531,77 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           }}
           onCancel={() => setDeletingEventId(null)}
         />
+      )}
+
+      {/* Modal registrar peso */}
+      {showAddWeight && createPortal(
+        <>
+          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setShowAddWeight(false)} />
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between bg-orange-600 px-5 py-4">
+                <p className="font-bold text-white">Registrar peso</p>
+                <button onClick={() => setShowAddWeight(false)} className="text-white/70 hover:text-white cursor-pointer">✕</button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-600">Peso (kg) *</label>
+                    <input type="number" step="0.1" min="1" value={newWeight} onChange={(e) => setNewWeight(e.target.value)}
+                      placeholder="450.0"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-600">Condición (1-9)</label>
+                    <input type="number" min="1" max="9" value={newBodyCondition} onChange={(e) => setNewBodyCondition(e.target.value)}
+                      placeholder="5"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-600">Fecha</label>
+                  <input type="date" value={newWeightDate} onChange={(e) => setNewWeightDate(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-600">Notas (opcional)</label>
+                  <textarea rows={2} value={newWeightNotes} onChange={(e) => setNewWeightNotes(e.target.value)}
+                    placeholder="Observaciones..."
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm resize-none focus:border-gray-400 focus:bg-white focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={() => setShowAddWeight(false)}
+                    className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!newWeight) return;
+                      await addWeight.mutateAsync({
+                        weight_kg: newWeight,
+                        body_condition: newBodyCondition ? parseInt(newBodyCondition) : undefined,
+                        date: newWeightDate,
+                        notes: newWeightNotes || undefined,
+                      });
+                      setNewWeight(''); setNewBodyCondition(''); setNewWeightNotes('');
+                      setShowAddWeight(false);
+                    }}
+                    disabled={!newWeight || addWeight.isPending}
+                    className="flex-1 rounded-lg bg-orange-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-orange-700 transition"
+                  >
+                    {addWeight.isPending ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body,
       )}
 
       {/* Modal asignar veterinario */}
@@ -793,6 +872,71 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
         )}
+
+        {/* Peso y condición corporal (mobile) */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+              </span>
+              <h2 className="text-base font-bold text-gray-900">Peso y condición</h2>
+            </div>
+            {canEdit && (
+              <button onClick={() => setShowAddWeight(true)}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Registrar
+              </button>
+            )}
+          </div>
+
+          {!weightRecords?.length ? (
+            <p className="text-xs text-gray-400">Sin registros de peso</p>
+          ) : (
+            <div className="space-y-2">
+              {/* Último peso destacado */}
+              <div className="rounded-xl bg-orange-50 p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-orange-500 uppercase tracking-wide">Último registro</p>
+                  <p className="text-2xl font-bold text-orange-900">{Number(weightRecords[0].weight_kg)} kg</p>
+                  {weightRecords[0].body_condition && (
+                    <p className="text-xs text-orange-600">CC: {weightRecords[0].body_condition}/9</p>
+                  )}
+                </div>
+                <p className="text-xs text-orange-400">
+                  {new Date(weightRecords[0].date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                </p>
+              </div>
+              {/* Historial */}
+              {weightRecords.slice(1).map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">{Number(r.weight_kg)} kg</p>
+                    {r.body_condition && <p className="text-xs text-gray-400">CC: {r.body_condition}/9</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-400">
+                      {new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                    {canEdit && (
+                      <button onClick={() => deleteWeight.mutate(r.id)} className="text-gray-300 hover:text-red-400 transition cursor-pointer">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Documentos (mobile) */}
         <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -1211,7 +1355,57 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
-        {/* ─── Col derecha: eventos ─── */}
+        {/* ─── Col derecha: peso + eventos ─── */}
+        <div className="space-y-4">
+
+        {/* Peso (desktop) */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">Peso y condición corporal</h2>
+            {canEdit && (
+              <button onClick={() => setShowAddWeight(true)}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Registrar
+              </button>
+            )}
+          </div>
+          {!weightRecords?.length ? (
+            <p className="text-xs text-gray-400">Sin registros de peso</p>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="rounded-xl bg-orange-50 px-3 py-2.5 flex items-center justify-between">
+                <div>
+                  <p className="text-xl font-bold text-orange-900">{Number(weightRecords[0].weight_kg)} kg</p>
+                  {weightRecords[0].body_condition && <p className="text-[10px] text-orange-500">CC: {weightRecords[0].body_condition}/9</p>}
+                </div>
+                <p className="text-[10px] text-orange-400">
+                  {new Date(weightRecords[0].date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+              {weightRecords.slice(1, 5).map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                  <span className="text-sm font-medium text-gray-700">{Number(r.weight_kg)} kg{r.body_condition ? ` · CC ${r.body_condition}/9` : ''}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-400">{new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    {canEdit && (
+                      <button onClick={() => deleteWeight.mutate(r.id)} className="text-gray-300 hover:text-red-400 transition cursor-pointer">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Eventos (desktop) */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">
@@ -1248,7 +1442,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>
-      </div>
+        </div>{/* cierre space-y-4 col derecha */}
+      </div>{/* cierre grid desktop */}
     </div>
   );
 }
