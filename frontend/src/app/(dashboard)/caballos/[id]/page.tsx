@@ -660,6 +660,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [newBodyCondition, setNewBodyCondition] = useState('');
   const [newWeightNotes, setNewWeightNotes] = useState('');
   const [showQR, setShowQR] = useState(false);
+  const [contentTab, setContentTab] = useState<'historial' | 'medico' | 'fotos' | 'rutina'>('historial');
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
     type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0],
@@ -1160,8 +1161,33 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
+        {/* ─── Tab bar de contenido (mobile) ─── */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-1 shadow-sm flex gap-1">
+          {([
+            { key: 'historial', label: 'Historial', count: sortedEvents.length },
+            { key: 'medico', label: 'Médico', count: medicalRecords?.length },
+            { key: 'fotos', label: 'Fotos', count: activityPhotos?.length },
+            { key: 'rutina', label: 'Rutina', count: null },
+          ] as const).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setContentTab(key)}
+              className={`flex-1 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
+                contentTab === key ? 'bg-[#0f1f3d] text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {label}
+              {count != null && count > 0 && (
+                <span className={`ml-1 text-[10px] ${contentTab === key ? 'text-white/70' : 'text-gray-400'}`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* Peso y condición corporal (mobile) */}
-        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'medico' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
@@ -1344,7 +1370,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Rutina diaria (mobile) */}
-        {canFillRoutine && (
+        {canFillRoutine && contentTab === 'rutina' && (
           <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
@@ -1384,7 +1410,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Historial de eventos */}
-        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'historial' ? 'hidden' : ''}`}>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -1437,7 +1463,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Fotos de actividad (mobile) */}
-        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'fotos' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -1510,18 +1536,20 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Historial médico (mobile) */}
-        <MedicalSection
-          records={medicalRecords ?? []}
-          canEdit={canEdit}
-          showForm={showAddMedical}
-          form={medicalForm}
-          onOpenForm={() => setShowAddMedical(true)}
-          onCloseForm={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
-          onFormChange={(f) => setMedicalForm((prev) => ({ ...prev, ...f }))}
-          onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
-          onDelete={(rid) => deleteMedical.mutate(rid)}
-          isPending={addMedical.isPending}
-        />
+        {contentTab === 'medico' && (
+          <MedicalSection
+            records={medicalRecords ?? []}
+            canEdit={canEdit}
+            showForm={showAddMedical}
+            form={medicalForm}
+            onOpenForm={() => setShowAddMedical(true)}
+            onCloseForm={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
+            onFormChange={(f) => setMedicalForm((prev) => ({ ...prev, ...f }))}
+            onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
+            onDelete={(rid) => deleteMedical.mutate(rid)}
+            isPending={addMedical.isPending}
+          />
+        )}
 
       </div>
 
@@ -1783,8 +1811,33 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         {/* ─── Col derecha: peso + eventos ─── */}
         <div className="space-y-4">
 
+        {/* Tab bar desktop */}
+        <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+          {([
+            { key: 'historial', label: 'Historial', count: sortedEvents.length },
+            { key: 'medico',    label: 'Médico',    count: medicalRecords?.length },
+            { key: 'fotos',     label: 'Fotos',     count: activityPhotos?.length },
+            { key: 'rutina',    label: 'Rutina',    count: null },
+          ] as const).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setContentTab(key)}
+              className={`flex-1 rounded-lg py-2 text-sm font-semibold transition cursor-pointer ${
+                contentTab === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {label}
+              {count != null && count > 0 && (
+                <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${contentTab === key ? 'bg-gray-100 text-gray-600' : 'bg-gray-200 text-gray-500'}`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* Peso (desktop) */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        {contentTab === 'medico' && <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">Peso y condición corporal</h2>
             {canEdit && (
@@ -1828,10 +1881,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Rutina diaria (desktop) */}
-        {canFillRoutine && (
+        {canFillRoutine && contentTab === 'rutina' && (
           <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Rutina de hoy</h2>
@@ -1864,7 +1917,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Eventos (desktop) */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        {contentTab === 'historial' && <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">
               Eventos
@@ -1901,10 +1954,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Historial médico (desktop) */}
-        <MedicalSection
+        {contentTab === 'medico' && <MedicalSection
           records={medicalRecords ?? []}
           canEdit={canEdit}
           showForm={showAddMedical}
@@ -1915,7 +1968,55 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
           onDelete={(rid) => deleteMedical.mutate(rid)}
           isPending={addMedical.isPending}
-        />
+        />}
+
+        {/* Fotos (desktop) */}
+        {contentTab === 'fotos' && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">Fotos verificadas</h2>
+              <div className="flex items-center gap-2">
+                <select value={activityPhotoType} onChange={(e) => setActivityPhotoType(e.target.value)}
+                  className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs focus:outline-none"
+                >
+                  {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
+                    <option key={v} value={v}>{m.label}</option>
+                  ))}
+                </select>
+                <input ref={activityPhotoInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    await uploadActivityPhoto.mutateAsync({ file, activity_type: activityPhotoType });
+                    e.target.value = '';
+                  }}
+                />
+                <button onClick={() => activityPhotoInputRef.current?.click()}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  + Foto
+                </button>
+              </div>
+            </div>
+            {!activityPhotos?.length ? (
+              <p className="text-xs text-gray-400">Sin fotos. Las fotos tomadas con el botón incluyen sello de fecha y autor.</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {activityPhotos.map((p) => {
+                  const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
+                  return (
+                    <div key={p.id} className="relative group aspect-square">
+                      <a href={p.url} target="_blank" rel="noopener noreferrer">
+                        <img src={p.url} alt={meta.label} className="h-full w-full rounded-xl object-cover" />
+                      </a>
+                      <span className={`absolute top-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${meta.bg} ${meta.color}`}>{meta.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         </div>{/* cierre space-y-4 col derecha */}
       </div>{/* cierre grid desktop */}
