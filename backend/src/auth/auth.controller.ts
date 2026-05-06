@@ -20,6 +20,7 @@ import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { EstablishmentQueryDto } from './dto/establishment-query.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
@@ -32,6 +33,11 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly permissionsService: PermissionsService,
   ) {}
+
+  @Get('directorio')
+  getDirectorio(@Query(new ValidationPipe({ transform: true })) query: EstablishmentQueryDto) {
+    return this.authService.getDirectorio(query.search);
+  }
 
   @Post('register')
   register(@Body(ValidationPipe) dto: RegisterDto) {

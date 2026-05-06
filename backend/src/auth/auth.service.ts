@@ -119,6 +119,33 @@ export class AuthService {
     return this.userRepository.save(user);
   }
 
+  async getDirectorio(search?: string): Promise<{ id: string; name: string; horse_count: number }[]> {
+    const qb = this.userRepository
+      .createQueryBuilder('u')
+      .select(['u.id', 'u.name'])
+      .where('u.role = :role', { role: 'establecimiento' });
+
+    if (search) {
+      qb.andWhere('u.name ILIKE :s', { s: `%${search}%` });
+    }
+
+    qb.orderBy('u.name', 'ASC');
+    const users = await qb.getMany();
+
+    const horseCounts: { establishment_id: string; count: string }[] =
+      await this.userRepository.query(
+        `SELECT establishment_id, COUNT(*)::text as count FROM horses WHERE establishment_id IS NOT NULL GROUP BY establishment_id`,
+      );
+
+    const countMap = new Map(horseCounts.map((r) => [r.establishment_id, +r.count]));
+
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      horse_count: countMap.get(u.id) ?? 0,
+    }));
+  }
+
   async findByRole(role: string): Promise<Pick<User, 'id' | 'name'>[]> {
     return this.userRepository.find({
       where: { role },

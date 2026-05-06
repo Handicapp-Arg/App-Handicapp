@@ -135,6 +135,18 @@ export default function InicioScreen() {
         </View>
       )}
 
+      {/* Directorio (solo propietario) */}
+      {data?.role === 'propietario' && (
+        <TouchableOpacity
+          style={styles.directorioBtn}
+          onPress={() => router.push('/directorio')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.directorioBtnText}>🏢 Buscar establecimientos</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Actividad reciente */}
       {data?.recent_events && data.recent_events.length > 0 && (
         <View style={styles.section}>
@@ -189,4 +201,6 @@ const styles = StyleSheet.create({
   rowSub: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
   chevron: { fontSize: text.lg, color: colors.gray300 },
   dateText: { fontSize: text.xs, color: colors.gray400, minWidth: 40, textAlign: 'right' },
+  directorioBtn: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray100, paddingHorizontal: space[4], paddingVertical: space[3], flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  directorioBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
 });
