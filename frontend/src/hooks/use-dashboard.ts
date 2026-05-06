@@ -22,11 +22,22 @@ export interface EstablecimientoDashboard {
   monthly_events_count: number;
 }
 
+export interface MedicalDue {
+  id: string;
+  horse_id: string;
+  type: string;
+  name: string;
+  date: string;
+  next_due: string;
+}
+
 export interface VeterinarioDashboard {
   role: 'veterinario';
-  horses: import('@/types').Horse[];
-  recent_events: import('@/types').Event[];
+  total_horses: number;
   total_salud_events: number;
+  horses: import('@/types').Horse[];
+  recent_health_events: import('@/types').Event[];
+  upcoming_medical: MedicalDue[];
 }
 
 export type DashboardData = AdminDashboard | PropietarioDashboard | EstablecimientoDashboard | VeterinarioDashboard;

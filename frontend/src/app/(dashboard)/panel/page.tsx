@@ -479,65 +479,123 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
 /* ─── Dashboard Veterinario ─── */
 
 function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
+  const MED_LABEL: Record<string, string> = {
+    vacuna: 'Vacuna', desparasitacion: 'Desparasitación', analisis: 'Análisis', tratamiento: 'Tratamiento',
+  };
+
+  if (data.horses.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
+        <p className="text-3xl mb-3">💉</p>
+        <p className="text-sm font-semibold text-gray-600">Sin caballos asignados</p>
+        <p className="mt-1 text-xs text-gray-400">Un propietario o establecimiento debe asignarte como veterinario desde el detalle del caballo.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Caballos asignados</p>
-          <p className="mt-1 text-3xl font-bold text-gray-900">{data.horses.length}</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Mis pacientes</p>
+          <p className="mt-1 text-3xl font-bold text-gray-900">{data.total_horses}</p>
         </div>
         <div className="rounded-2xl border border-red-50 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium text-red-400 uppercase tracking-wide">Eventos de salud</p>
+          <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">Eventos salud</p>
           <p className="mt-1 text-3xl font-bold text-red-700">{data.total_salud_events}</p>
+        </div>
+        <div className={`rounded-2xl border p-4 shadow-sm ${data.upcoming_medical.length > 0 ? 'border-amber-100 bg-amber-50' : 'border-gray-100 bg-white'}`}>
+          <p className={`text-[10px] font-semibold uppercase tracking-wide ${data.upcoming_medical.length > 0 ? 'text-amber-500' : 'text-gray-400'}`}>Vencen pronto</p>
+          <p className={`mt-1 text-3xl font-bold ${data.upcoming_medical.length > 0 ? 'text-amber-700' : 'text-gray-900'}`}>{data.upcoming_medical.length}</p>
         </div>
       </div>
 
-      {/* Caballos asignados */}
-      {data.horses.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Mis caballos</h2>
-            <Link href="/caballos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+      {/* Próximos vencimientos médicos */}
+      {data.upcoming_medical.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-amber-100">
+            <h2 className="text-sm font-semibold text-amber-800">⏰ Próximos vencimientos (30 días)</h2>
           </div>
-          <div className="divide-y divide-gray-50">
-            {data.horses.map((h) => (
-              <Link key={h.id} href={`/caballos/${h.id}`}
-                className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-              >
-                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-                  {h.image_url
-                    ? <img src={h.image_url} alt={h.name} className="h-full w-full object-cover" />
-                    : <div className="flex h-full items-center justify-center text-xs font-bold text-gray-400">{h.name[0]}</div>
-                  }
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{h.name}</p>
-                  {h.owner && <p className="text-xs text-gray-400 truncate">Prop. {h.owner.name}</p>}
-                </div>
-                <svg className="h-4 w-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </Link>
-            ))}
+          <div className="divide-y divide-amber-100">
+            {data.upcoming_medical.map((m) => {
+              const dueDate = new Date(m.next_due + 'T12:00:00');
+              const daysUntil = Math.round((dueDate.getTime() - new Date().setHours(0,0,0,0)) / 86_400_000);
+              const horse = data.horses.find((h) => h.id === m.horse_id);
+              return (
+                <Link key={m.id} href={`/caballos/${m.horse_id}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-amber-100/50 transition"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-semibold text-amber-700 bg-white/70 rounded-full px-2 py-0.5">
+                        {MED_LABEL[m.type] ?? m.type}
+                      </span>
+                      <span className="text-sm font-medium text-amber-900">{m.name}</span>
+                    </div>
+                    {horse && <p className="text-xs text-amber-600 mt-0.5">{horse.name}</p>}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-bold text-amber-700">
+                      {daysUntil === 0 ? 'Hoy' : daysUntil === 1 ? 'Mañana' : `en ${daysUntil}d`}
+                    </p>
+                    <p className="text-[10px] text-amber-500">
+                      {dueDate.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
 
+      {/* Caballos asignados */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900">Mis pacientes</h2>
+          <Link href="/caballos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {data.horses.map((h) => (
+            <Link key={h.id} href={`/caballos/${h.id}`}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+            >
+              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                {h.image_url
+                  ? <img src={h.image_url} alt={h.name} className="h-full w-full object-cover" />
+                  : <div className="flex h-full items-center justify-center text-xs font-bold text-gray-400">{h.name[0]}</div>
+                }
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-900">{h.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {h.breed && <span className="text-[10px] text-gray-400">{h.breed.name}</span>}
+                  {h.owner && <span className="text-[10px] text-gray-400">· {h.owner.name}</span>}
+                </div>
+              </div>
+              <svg className="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Últimos eventos de salud */}
-      {data.recent_events.length > 0 && (
+      {data.recent_health_events.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Últimos registros de salud</h2>
             <Link href="/eventos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
           </div>
           <div className="divide-y divide-gray-50">
-            {data.recent_events.map((ev) => (
+            {data.recent_health_events.map((ev) => (
               <div key={ev.id} className="flex items-start gap-3 px-5 py-3">
-                <span className="mt-0.5 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 shrink-0">Salud</span>
+                <span className="mt-0.5 shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">Salud</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-gray-700">{ev.description}</p>
-                  {ev.horse && <p className="text-xs text-gray-400">{ev.horse.name}</p>}
+                  <p className="text-sm text-gray-700 line-clamp-1">{ev.description}</p>
+                  {(ev as any).horse && <p className="text-xs text-gray-400">{(ev as any).horse.name}</p>}
                 </div>
                 <span className="text-[10px] text-gray-400 shrink-0">
                   {new Date(ev.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
@@ -545,13 +603,6 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {data.horses.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400">No tenés caballos asignados todavía.</p>
-          <p className="mt-1 text-xs text-gray-400">Un propietario debe asignarte desde el detalle de su caballo.</p>
         </div>
       )}
     </div>
