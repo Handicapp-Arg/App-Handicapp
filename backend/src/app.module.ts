@@ -19,6 +19,7 @@ import { HealthRemindersModule } from './health-reminders/health-reminders.modul
 import { AgendaModule } from './agenda/agenda.module';
 import { RoutinesModule } from './routines/routines.module';
 import { ActivityPhotosModule } from './activity-photos/activity-photos.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ActivityPhotosModule } from './activity-photos/activity-photos.module';
     AgendaModule,
     RoutinesModule,
     ActivityPhotosModule,
+    BillingModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
