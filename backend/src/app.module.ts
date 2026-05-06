@@ -16,6 +16,7 @@ import { CatalogItemsModule } from './catalog-items/catalog-items.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmailModule } from './email/email.module';
 import { HealthRemindersModule } from './health-reminders/health-reminders.module';
+import { AgendaModule } from './agenda/agenda.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { HealthRemindersModule } from './health-reminders/health-reminders.modul
     DashboardModule,
     EmailModule,
     HealthRemindersModule,
+    AgendaModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
