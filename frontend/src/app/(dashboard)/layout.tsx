@@ -4,6 +4,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ProtectedRoute } from '@/lib/protected-route';
+import { OnboardingWizard } from '@/components/onboarding-wizard';
 
 export default function DashboardLayout({
   children,
@@ -12,6 +13,7 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
+      <OnboardingWizard />
       <div className="flex min-h-screen md:flex-row flex-col">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
