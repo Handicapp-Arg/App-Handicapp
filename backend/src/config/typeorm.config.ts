@@ -11,6 +11,7 @@ import { ActivityPhoto } from '../activity-photos/activity-photo.entity';
 import { Bill } from '../billing/bill.entity';
 import { TrainingMetrics } from '../events/training-metrics.entity';
 import { ShareToken } from '../horses/share-token.entity';
+import { MedicalRecord } from '../medical/medical-record.entity';
 import { Event } from '../events/event.entity';
 import { EventPhoto } from '../events/event-photo.entity';
 import { Permission } from '../permissions/permission.entity';
@@ -26,7 +27,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, ShareToken, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem],
+  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,

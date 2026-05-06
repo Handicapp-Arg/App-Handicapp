@@ -9,6 +9,7 @@ import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
 import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -386,6 +387,156 @@ function CreateEventModal({
   );
 }
 
+/* ─── Medical Labels ─── */
+
+const medicalTypeLabel: Record<string, string> = {
+  vacuna: 'Vacuna', desparasitacion: 'Desparasitación', analisis: 'Análisis', tratamiento: 'Tratamiento',
+};
+const medicalTypeBadge: Record<string, string> = {
+  vacuna: 'bg-green-50 text-green-700', desparasitacion: 'bg-orange-50 text-orange-700',
+  analisis: 'bg-blue-50 text-blue-700', tratamiento: 'bg-red-50 text-red-700',
+};
+
+/* ─── MedicalSection ─── */
+
+interface MedicalSectionProps {
+  records: MedicalRecord[];
+  canEdit: boolean;
+  showForm: boolean;
+  form: CreateMedicalRecordDto;
+  onOpenForm: () => void;
+  onCloseForm: () => void;
+  onFormChange: (partial: Partial<CreateMedicalRecordDto>) => void;
+  onSubmit: () => Promise<void>;
+  onDelete: (id: string) => void;
+  isPending: boolean;
+}
+
+function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, isPending }: MedicalSectionProps) {
+  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none';
+  return (
+    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm lg:rounded-2xl lg:border-gray-200">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.745 3.745 0 0 1 3.296-1.043A3.745 3.745 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 0 1 3.296 1.043 3.745 3.745 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+            </svg>
+          </span>
+          <h2 className="text-base font-bold text-gray-900">
+            Historial médico
+            {records.length > 0 && (
+              <span className="ml-1.5 text-xs font-normal text-gray-400">({records.length})</span>
+            )}
+          </h2>
+        </div>
+        {canEdit && !showForm && (
+          <button onClick={onOpenForm}
+            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Agregar
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <form className="mb-3 space-y-2 rounded-xl border border-green-100 bg-green-50 p-3"
+          onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Tipo</label>
+              <select value={form.type} onChange={(e) => onFormChange({ type: e.target.value as MedicalRecord['type'] })} className={inputCls}>
+                <option value="vacuna">Vacuna</option>
+                <option value="desparasitacion">Desparasitación</option>
+                <option value="analisis">Análisis</option>
+                <option value="tratamiento">Tratamiento</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Fecha</label>
+              <input type="date" value={form.date} onChange={(e) => onFormChange({ date: e.target.value })} className={inputCls} required />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Nombre / producto</label>
+            <input type="text" value={form.name} onChange={(e) => onFormChange({ name: e.target.value })} className={inputCls} placeholder="Ej: Triple viral, Ivermectina..." required />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Próxima dosis</label>
+              <input type="date" value={form.next_due ?? ''} onChange={(e) => onFormChange({ next_due: e.target.value || undefined })} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Marca / lote</label>
+              <input type="text" value={form.brand ?? ''} onChange={(e) => onFormChange({ brand: e.target.value || undefined })} className={inputCls} placeholder="Opcional" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Notas</label>
+            <textarea rows={2} value={form.notes ?? ''} onChange={(e) => onFormChange({ notes: e.target.value || undefined })} className={inputCls} placeholder="Observaciones adicionales" />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={onCloseForm}
+              className="flex-1 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+            >Cancelar</button>
+            <button type="submit" disabled={isPending}
+              className="flex-1 rounded-lg bg-green-600 py-2 text-xs font-semibold text-white disabled:opacity-50 transition cursor-pointer hover:bg-green-700"
+            >{isPending ? 'Guardando...' : 'Guardar'}</button>
+          </div>
+        </form>
+      )}
+
+      {records.length === 0 && !showForm ? (
+        <p className="text-xs text-gray-400">Sin registros médicos. Agregá vacunas, desparasitaciones y tratamientos.</p>
+      ) : (
+        <div className="space-y-2">
+          {records.map((rec) => (
+            <div key={rec.id} className="rounded-xl border border-gray-100 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${medicalTypeBadge[rec.type] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {medicalTypeLabel[rec.type] ?? rec.type}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 truncate">{rec.name}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] text-gray-400">
+                    {new Date(rec.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                  {canEdit && (
+                    <button onClick={() => onDelete(rec.id)}
+                      className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              {(rec.next_due || rec.brand || rec.notes) && (
+                <div className="mt-1.5 space-y-0.5 pl-1">
+                  {rec.next_due && (
+                    <p className="text-[10px] text-amber-600">
+                      Próxima: {new Date(rec.next_due + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                  )}
+                  {rec.brand && <p className="text-[10px] text-gray-400">Marca/Lote: {rec.brand}{rec.batch ? ` · ${rec.batch}` : ''}</p>}
+                  {rec.notes && <p className="text-[10px] text-gray-500 italic">{rec.notes}</p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main Page ─── */
 
 export default function HorseDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -413,6 +564,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
   const deleteActivityPhoto = useDeleteActivityPhoto(id);
+  const { data: medicalRecords } = useMedicalRecords(id);
+  const addMedical = useAddMedicalRecord(id);
+  const deleteMedical = useDeleteMedicalRecord(id);
   const todayISO = new Date().toISOString().split('T')[0];
   const todayRoutine = routines?.find((r) => r.date === todayISO);
   const deleteHorse = useDeleteHorse();
@@ -436,6 +590,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [newWeightDate, setNewWeightDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newBodyCondition, setNewBodyCondition] = useState('');
   const [newWeightNotes, setNewWeightNotes] = useState('');
+  const [showAddMedical, setShowAddMedical] = useState(false);
+  const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
+    type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0],
+  });
 
   const canEdit = can('horses', 'update');
 
@@ -1272,6 +1430,20 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
+        {/* Historial médico (mobile) */}
+        <MedicalSection
+          records={medicalRecords ?? []}
+          canEdit={canEdit}
+          showForm={showAddMedical}
+          form={medicalForm}
+          onOpenForm={() => setShowAddMedical(true)}
+          onCloseForm={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
+          onFormChange={(f) => setMedicalForm((prev) => ({ ...prev, ...f }))}
+          onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
+          onDelete={(rid) => deleteMedical.mutate(rid)}
+          isPending={addMedical.isPending}
+        />
+
       </div>
 
       {/* ─── DESKTOP LAYOUT (lg+) ─── */}
@@ -1642,6 +1814,21 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>
+
+        {/* Historial médico (desktop) */}
+        <MedicalSection
+          records={medicalRecords ?? []}
+          canEdit={canEdit}
+          showForm={showAddMedical}
+          form={medicalForm}
+          onOpenForm={() => setShowAddMedical(true)}
+          onCloseForm={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
+          onFormChange={(f) => setMedicalForm((prev) => ({ ...prev, ...f }))}
+          onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
+          onDelete={(rid) => deleteMedical.mutate(rid)}
+          isPending={addMedical.isPending}
+        />
+
         </div>{/* cierre space-y-4 col derecha */}
       </div>{/* cierre grid desktop */}
     </div>

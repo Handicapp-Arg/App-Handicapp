@@ -20,6 +20,7 @@ import { AgendaModule } from './agenda/agenda.module';
 import { RoutinesModule } from './routines/routines.module';
 import { ActivityPhotosModule } from './activity-photos/activity-photos.module';
 import { BillingModule } from './billing/billing.module';
+import { MedicalModule } from './medical/medical.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { BillingModule } from './billing/billing.module';
     RoutinesModule,
     ActivityPhotosModule,
     BillingModule,
+    MedicalModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
