@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { useNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/colors';
@@ -150,6 +151,7 @@ export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const { notifications, unread, markAllRead } = useNotifications();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { data: planStatus } = usePlanStatus();
   const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers();
   const setPlan = useAdminSetPlan();
@@ -200,6 +202,27 @@ export default function PerfilScreen() {
             horseLimit={planStatus.horse_limit}
             isLimited={planStatus.is_limited}
           />
+        </View>
+      )}
+
+      {/* Accesos rápidos */}
+      {(showPlan || isAdmin) && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Accesos rápidos</Text>
+          <View style={quickStyles.list}>
+            {(showPlan || isAdmin) && (
+              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/contratos')} activeOpacity={0.8}>
+                <View style={quickStyles.iconWrap}>
+                  <Text style={quickStyles.icon}>📄</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={quickStyles.label}>Contratos de pensión</Text>
+                  <Text style={quickStyles.desc}>Firmá o revisá contratos</Text>
+                </View>
+                <Text style={quickStyles.arrow}>›</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
 
@@ -363,4 +386,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 2,
   },
   permText: { fontSize: text.xs, fontWeight: weight.medium, color: colors.gray700 },
+});
+
+const quickStyles = StyleSheet.create({
+  list: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden' },
+  item: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray50 },
+  iconWrap: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
+  icon: { fontSize: 20 },
+  label: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
+  desc: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  arrow: { fontSize: 22, color: colors.gray300, fontWeight: weight.regular },
 });

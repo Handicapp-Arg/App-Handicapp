@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
+import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { DatePicker } from '../../../components/DatePicker';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { useAuth } from '../../../lib/auth';
@@ -105,7 +107,73 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EventCard({ event }: { event: Event }) {
+function EventCommentThread({ eventId, currentUserId }: { eventId: string; currentUserId?: string }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const { data: comments } = useEventComments(eventId, open);
+  const add = useAddEventComment(eventId);
+  const del = useDeleteEventComment(eventId);
+
+  return (
+    <View style={evStyles.commentRoot}>
+      <TouchableOpacity style={evStyles.commentToggle} onPress={() => setOpen((p) => !p)} activeOpacity={0.7}>
+        <Text style={evStyles.commentToggleText}>
+          💬 {open ? 'Ocultar' : 'Comentarios'}{comments && comments.length > 0 ? ` (${comments.length})` : ''}
+        </Text>
+      </TouchableOpacity>
+
+      {open && (
+        <View style={evStyles.commentBody}>
+          {comments?.map((c) => (
+            <View key={c.id} style={evStyles.commentRow}>
+              <View style={evStyles.commentAvatar}>
+                <Text style={evStyles.commentAvatarText}>{c.user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={evStyles.commentAuthor}>{c.user?.name}</Text>
+                  <Text style={evStyles.commentDate}>
+                    {new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+                <Text style={evStyles.commentText}>{c.text}</Text>
+              </View>
+              {c.user_id === currentUserId && (
+                <TouchableOpacity onPress={() => del.mutate(c.id)} style={{ paddingLeft: 6 }}>
+                  <Text style={{ fontSize: 14, color: '#d1d5db' }}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+
+          <View style={evStyles.commentInputRow}>
+            <TextInput
+              style={evStyles.commentInput}
+              value={text}
+              onChangeText={setText}
+              placeholder="Escribí un comentario..."
+              placeholderTextColor="#9ca3af"
+              multiline
+            />
+            <TouchableOpacity
+              style={[evStyles.commentSendBtn, (!text.trim() || add.isPending) && { opacity: 0.4 }]}
+              disabled={!text.trim() || add.isPending}
+              onPress={async () => {
+                await add.mutateAsync(text.trim());
+                setText('');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={evStyles.commentSendText}>{add.isPending ? '...' : '↑'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function EventCard({ event, currentUserId }: { event: Event; currentUserId?: string }) {
   const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
@@ -121,6 +189,7 @@ function EventCard({ event }: { event: Event }) {
           ${Number(event.amount).toLocaleString('es-AR')}
         </Text>
       )}
+      <EventCommentThread eventId={event.id} currentUserId={currentUserId} />
     </View>
   );
 }
@@ -130,7 +199,7 @@ export default function HorseDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
   const { data: financial } = useFinancialSummary(id);
@@ -141,6 +210,13 @@ export default function HorseDetailScreen() {
   const upsertRoutine = useUpsertRoutine(id);
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
+  const { data: medicalRecords } = useMedicalRecords(id);
+  const addMedical = useAddMedicalRecord(id);
+  const deleteMedical = useDeleteMedicalRecord(id);
+  const [showAddMedical, setShowAddMedical] = useState(false);
+  const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
+    type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0],
+  });
   const todayISO = new Date().toISOString().split('T')[0];
   const todayRoutine = routines?.find((r) => r.date === todayISO);
   const [showAddWeight, setShowAddWeight] = useState(false);
@@ -525,10 +601,161 @@ export default function HorseDetailScreen() {
           </View>
         ) : (
           <View style={styles.eventsList}>
-            {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} />)}
+            {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} currentUserId={user?.id} />)}
           </View>
         )}
       </View>
+
+      {/* ─── Historial médico ─── */}
+      <View style={styles.section}>
+        <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Historial médico</Text>
+            {medicalRecords && medicalRecords.length > 0 && (
+              <View style={styles.countBadge}>
+                <Text style={styles.countText}>{medicalRecords.length}</Text>
+              </View>
+            )}
+          </View>
+          {can('horses', 'update') && (
+            <TouchableOpacity onPress={() => setShowAddMedical(true)} style={styles.smallBtn}>
+              <Text style={styles.smallBtnText}>+ Agregar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {!medicalRecords?.length ? (
+          <Text style={styles.emptyText}>Sin registros médicos. Agregá vacunas, desparasitaciones y tratamientos.</Text>
+        ) : (
+          <View style={medStyles.list}>
+            {medicalRecords.map((rec) => {
+              const c = MEDICAL_TYPE_COLORS[rec.type] ?? MEDICAL_TYPE_COLORS.tratamiento;
+              return (
+                <View key={rec.id} style={medStyles.card}>
+                  <View style={medStyles.cardTop}>
+                    <View style={[medStyles.typeBadge, { backgroundColor: c.bg }]}>
+                      <Text style={[medStyles.typeText, { color: c.text }]}>{MEDICAL_TYPE_LABELS[rec.type] ?? rec.type}</Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 8 }}>
+                      <Text style={medStyles.name} numberOfLines={1}>{rec.name}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={medStyles.date}>
+                        {new Date(rec.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </Text>
+                      {can('horses', 'update') && (
+                        <TouchableOpacity onPress={() => Alert.alert('Eliminar', `¿Eliminás "${rec.name}"?`, [
+                          { text: 'Cancelar', style: 'cancel' },
+                          { text: 'Eliminar', style: 'destructive', onPress: () => deleteMedical.mutate(rec.id) },
+                        ])}>
+                          <Text style={{ color: '#d1d5db', fontSize: 14 }}>✕</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                  {(rec.next_due || rec.brand || rec.notes) && (
+                    <View style={medStyles.meta}>
+                      {rec.next_due && (
+                        <Text style={medStyles.nextDue}>
+                          Próxima: {new Date(rec.next_due + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </Text>
+                      )}
+                      {rec.brand && <Text style={medStyles.brand}>Marca: {rec.brand}</Text>}
+                      {rec.notes && <Text style={medStyles.notes}>{rec.notes}</Text>}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* Modal agregar registro médico */}
+      <Modal visible={showAddMedical} animationType="slide" transparent>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={[styles.modalCard, { maxHeight: '85%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Nuevo registro médico</Text>
+              <TouchableOpacity onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.modalBody, { paddingBottom: 8 }]}>
+              <Text style={styles.fieldLabel}>Tipo</Text>
+              <View style={medStyles.typeGrid}>
+                {(['vacuna', 'desparasitacion', 'analisis', 'tratamiento'] as const).map((t) => {
+                  const c = MEDICAL_TYPE_COLORS[t];
+                  const active = medicalForm.type === t;
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      style={[medStyles.typeOption, active && { backgroundColor: c.bg, borderColor: c.text }]}
+                      onPress={() => setMedicalForm((p) => ({ ...p, type: t }))}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[medStyles.typeOptionText, active && { color: c.text, fontWeight: '700' }]}>
+                        {MEDICAL_TYPE_LABELS[t]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Nombre / producto *</Text>
+              <TextInput
+                style={styles.input}
+                value={medicalForm.name}
+                onChangeText={(v) => setMedicalForm((p) => ({ ...p, name: v }))}
+                placeholder="Ej: Triple viral, Ivermectina..."
+                placeholderTextColor="#9ca3af"
+              />
+
+              <DatePicker label="Fecha *" value={medicalForm.date} onChange={(v) => setMedicalForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
+              <DatePicker label="Próxima dosis" value={medicalForm.next_due ?? ''} onChange={(v) => setMedicalForm((p) => ({ ...p, next_due: v || undefined }))} />
+
+              <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Marca / laboratorio</Text>
+              <TextInput
+                style={styles.input}
+                value={medicalForm.brand ?? ''}
+                onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))}
+                placeholder="Opcional"
+                placeholderTextColor="#9ca3af"
+              />
+
+              <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Notas</Text>
+              <TextInput
+                style={[styles.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={medicalForm.notes ?? ''}
+                onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))}
+                placeholder="Observaciones adicionales"
+                placeholderTextColor="#9ca3af"
+                multiline
+              />
+            </ScrollView>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.submitBtn, { flex: 1 }, (!medicalForm.name.trim() || addMedical.isPending) && { opacity: 0.5 }]}
+                disabled={!medicalForm.name.trim() || addMedical.isPending}
+                onPress={async () => {
+                  await addMedical.mutateAsync(medicalForm);
+                  setShowAddMedical(false);
+                  setMedicalForm({ type: 'vacuna', name: '', date: todayISO });
+                }}
+                activeOpacity={0.85}
+              >
+                {addMedical.isPending
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.submitBtnText}>Guardar</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Modal editar */}
       <Modal visible={showEdit} animationType="slide" transparent>
@@ -656,4 +883,54 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, height: 6, backgroundColor: colors.gray100, borderRadius: 999, overflow: 'hidden' },
   barFill: { height: '100%', backgroundColor: '#a855f7', borderRadius: 999 },
   barValue: { width: 64, fontSize: 10, fontWeight: '600', color: colors.gray700, textAlign: 'right' },
+});
+
+const evStyles = StyleSheet.create({
+  commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.gray100, paddingTop: 8 },
+  commentToggle: { flexDirection: 'row', alignItems: 'center' },
+  commentToggleText: { fontSize: 11, color: colors.gray400, fontWeight: '600' },
+  commentBody: { marginTop: 8, gap: 8 },
+  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  commentAvatar: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: colors.gray200, justifyContent: 'center', alignItems: 'center',
+  },
+  commentAvatarText: { fontSize: 10, fontWeight: '700', color: colors.gray600 },
+  commentAuthor: { fontSize: 11, fontWeight: '700', color: colors.gray700 },
+  commentDate: { fontSize: 10, color: colors.gray400 },
+  commentText: { fontSize: 12, color: colors.gray700, marginTop: 2 },
+  commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },
+  commentInput: {
+    flex: 1, borderWidth: 1, borderColor: colors.gray200, borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: colors.gray900,
+    backgroundColor: colors.gray50, minHeight: 36, maxHeight: 80,
+  },
+  commentSendBtn: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
+  },
+  commentSendText: { fontSize: 16, color: colors.white, fontWeight: '700' },
+});
+
+const medStyles = StyleSheet.create({
+  list: { gap: 8 },
+  card: {
+    backgroundColor: colors.white, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.gray100, padding: 12, gap: 6,
+  },
+  cardTop: { flexDirection: 'row', alignItems: 'center' },
+  typeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  typeText: { fontSize: 10, fontWeight: '700' },
+  name: { fontSize: 13, fontWeight: '600', color: colors.gray900 },
+  date: { fontSize: 10, color: colors.gray400 },
+  meta: { gap: 2, paddingLeft: 2 },
+  nextDue: { fontSize: 11, color: '#d97706', fontWeight: '500' },
+  brand: { fontSize: 11, color: colors.gray400 },
+  notes: { fontSize: 11, color: colors.gray500, fontStyle: 'italic' },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  typeOption: {
+    borderRadius: 10, borderWidth: 1, borderColor: colors.gray200,
+    paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.white,
+  },
+  typeOptionText: { fontSize: 12, color: colors.gray600 },
 });
