@@ -16,6 +16,7 @@ import {
   HorseTable,
 } from '@/components/panel';
 import { PlanBanner } from '@/components/plan-banner';
+import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 
 /* ─── tipos ─── */
 
@@ -620,15 +621,19 @@ export default function PanelPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+      <div className="space-y-4">
+        <h1 className="text-[1.375rem] font-extrabold tracking-tight text-gray-900">{title}</h1>
+        <div className="grid grid-cols-3 gap-3">
+          {[1,2,3].map(i => <SkeletonStat key={i} />)}
+        </div>
+        <PageLoader />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+      <h1 className="text-[1.375rem] font-extrabold tracking-tight text-gray-900">{title}</h1>
 
       <PlanBanner />
 
