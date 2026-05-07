@@ -929,60 +929,63 @@ export default function CaballosPage() {
           ))}
         </div>
         ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredHorses.map((horse) => (
-            <div key={horse.id}
+            <div
+              key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
-              className="group cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)' }}
+              className="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-2xl bg-gray-900 shadow-md ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:ring-[#c4922a]/25"
             >
-              {/* Imagen con gradiente */}
-              <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                {horse.image_url ? (
-                  <img
-                    src={horse.image_url}
-                    alt={horse.name}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                    <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                )}
-                {/* Badges superpuestos */}
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-1.5">
-                  {horse.breed ? (
-                    <span className="rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
-                      {horse.breed.name}
-                    </span>
-                  ) : <span />}
-                  {horse.activity && (
-                    <span className="rounded-full bg-amber-500/70 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
-                      {horse.activity.name}
-                    </span>
-                  )}
+              {/* Imagen */}
+              {horse.image_url ? (
+                <img
+                  src={cldTransform(horse.image_url, { width: 500, ar: '4:5' })}
+                  alt={horse.name}
+                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#0f1f3d] to-[#1a3366]">
+                  <span className="text-5xl font-bold text-white/10 select-none">{horse.name[0]?.toUpperCase()}</span>
                 </div>
+              )}
+
+              {/* Gradiente overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5" />
+
+              {/* Badges superiores */}
+              <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3.5">
+                {horse.breed ? (
+                  <span className="rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md">
+                    {horse.breed.name}
+                  </span>
+                ) : <span />}
+                {horse.activity && (
+                  <span className="rounded-full bg-[#c4922a]/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-100 shadow-sm ring-1 ring-[#c4922a]/35 backdrop-blur-md">
+                    {horse.activity.name}
+                  </span>
+                )}
               </div>
 
-              <div className="p-4">
-                <h2 className="font-bold text-gray-900 truncate">{horse.name}</h2>
-                <div className="mt-1.5 flex flex-wrap gap-1">
+              {/* Info inferior */}
+              <div className="absolute inset-x-0 bottom-0 p-4">
+                <h2 className="truncate text-[17px] font-bold leading-tight text-white tracking-[-0.02em]">
+                  {horse.name}
+                </h2>
+                <div className="mt-2 flex flex-col gap-0.5">
                   {horse.owner && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                    <p className="text-[11px] text-white/55 font-medium truncate">
                       {horse.owner.name}
-                    </span>
+                    </p>
                   )}
                   {horse.establishment && (
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                    <p className="text-[11px] text-white/40 truncate">
                       {horse.establishment.name}
-                    </span>
+                    </p>
+                  )}
+                  {horse.birth_date && !horse.owner && (
+                    <p className="text-[11px] text-white/45">{calcAge(horse.birth_date)}</p>
                   )}
                 </div>
-                {horse.birth_date && (
-                  <p className="mt-2 text-xs text-gray-400">{calcAge(horse.birth_date)}</p>
-                )}
               </div>
             </div>
           ))}

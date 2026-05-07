@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
@@ -22,20 +23,20 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
         active
-          ? 'bg-white/15 text-white shadow-sm'
-          : 'text-white/55 hover:bg-white/8 hover:text-white/90'
+          ? 'bg-white/12 text-white'
+          : 'text-white/50 hover:bg-white/7 hover:text-white/85'
       }`}
     >
-      {/* Indicador activo */}
+      {/* Acento activo izquierdo */}
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-white/60" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] rounded-full bg-[#c4922a]" />
       )}
-      <span className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-white/50 group-hover:text-white/80'}`}>
+      <span className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-white/45 group-hover:text-white/75'}`}>
         {item.icon}
       </span>
-      <span className="flex-1 truncate">{item.label}</span>
+      <span className="flex-1 truncate tracking-[-0.01em]">{item.label}</span>
       {item.badge != null && item.badge > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
           {item.badge > 9 ? '9+' : item.badge}
         </span>
       )}
@@ -46,7 +47,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="px-3 pt-5 pb-1.5">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">{label}</p>
+      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-white/22">{label}</p>
     </div>
   );
 }
@@ -106,14 +107,21 @@ export function Sidebar() {
   ].filter((s) => s.items.length > 0);
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-60 flex-col border-r border-white/5 bg-[#0f1f3d] text-white">
+    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] flex-col bg-[#0f1f3d] text-white">
 
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 pt-6 pb-5">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
-          <span className="text-sm font-bold text-white">H</span>
-        </div>
-        <span className="text-base font-bold tracking-tight text-white">HandicApp</span>
+      <div className="px-5 pt-6 pb-4">
+        <Link href="/" className="flex items-center">
+          <Image
+            src="https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png"
+            alt="HandicApp"
+            width={130}
+            height={32}
+            className="h-7 w-auto object-contain"
+            priority
+            unoptimized
+          />
+        </Link>
       </div>
 
       {/* Búsqueda global */}
@@ -121,13 +129,16 @@ export function Sidebar() {
         <GlobalSearch />
       </div>
 
+      {/* Separador */}
+      <div className="mx-4 h-px bg-white/8" />
+
       {/* Nav con secciones */}
-      <nav className="flex-1 overflow-y-auto px-2 pb-4">
+      <nav className="flex-1 overflow-y-auto px-2 py-2">
         {sections.map((section, si) => (
           <div key={section.label}>
-            {si > 0 && <div className="my-2 mx-3 h-px bg-white/8" />}
+            {si > 0 && <div className="my-1.5 mx-3 h-px bg-white/7" />}
             <SectionDivider label={section.label} />
-            <div className="space-y-0.5">
+            <div className="space-y-px">
               {section.items.map((item) => (
                 <NavLink
                   key={item.href}
@@ -141,26 +152,26 @@ export function Sidebar() {
       </nav>
 
       {/* Footer: usuario + salir */}
-      <div className="border-t border-white/8 p-2 space-y-0.5">
+      <div className="border-t border-white/8 p-2 space-y-px">
         <Link
           href="/perfil"
-          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
-            pathname === '/perfil' ? 'bg-white/15 text-white' : 'text-white/55 hover:bg-white/8 hover:text-white/90'
+          className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all duration-150 ${
+            pathname === '/perfil' ? 'bg-white/12 text-white' : 'text-white/50 hover:bg-white/7 hover:text-white/85'
           }`}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-bold text-white uppercase">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#c4922a]/80 text-[11px] font-bold text-white uppercase ring-1 ring-[#c4922a]/40">
             {user?.name?.charAt(0) ?? '?'}
           </span>
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="truncate text-sm font-semibold text-white">{user?.name}</span>
-            <span className="truncate text-[10px] uppercase tracking-wide text-white/40">
+            <span className="truncate text-[13px] font-semibold text-white/90 tracking-[-0.01em]">{user?.name}</span>
+            <span className="truncate text-[10px] font-medium text-white/35 tracking-[0.03em]">
               {roleLabel[user?.role || ''] || user?.role}
             </span>
           </span>
         </Link>
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/40 transition-colors hover:bg-red-500/12 hover:text-red-300 cursor-pointer"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/35 transition-all duration-150 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
         >
           <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />

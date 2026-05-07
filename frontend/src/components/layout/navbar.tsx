@@ -33,10 +33,15 @@ export function Navbar() {
     <header className="md:hidden sticky top-0 z-20 bg-[#0f1f3d] shadow-lg">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
 
-        {/* Izquierda: logo + sección activa */}
-        <div className="flex items-center gap-4">
-          <Link href="/caballos" className="text-lg font-bold text-white tracking-tight">
-            HandicApp
+        {/* Izquierda: logo */}
+        <div className="flex items-center">
+          <Link href="/caballos" className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370535/logo-icon-white_fbeduu.png"
+              alt="HandicApp"
+              className="h-8 w-auto object-contain"
+            />
           </Link>
         </div>
 
