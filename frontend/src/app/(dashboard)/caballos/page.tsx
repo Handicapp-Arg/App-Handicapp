@@ -21,6 +21,9 @@ import { getErrorMessage } from '@/lib/errors';
 import { cldTransform } from '@/lib/cloudinary';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { PageHeader } from '@/components/ui/page-header';
+import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Horse, HorseOwnership } from '@/types';
 
 const inputClass =
@@ -554,16 +557,19 @@ export default function CaballosPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200 border-t-[#0f1f3d]" />
+      <div className="space-y-6">
+        <PageHeader title="Caballos" />
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {[1,2,3,4,5,6].map((i) => <SkeletonCard key={i} />)}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-        Error al cargar los caballos
+      <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        Error al cargar los caballos. Intentá recargar la página.
       </div>
     );
   }
@@ -617,32 +623,22 @@ export default function CaballosPage() {
         />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 md:gap-4">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900">Caballos</h1>
-          {horses && horses.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs md:text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {horses.length} en total
-            </span>
-          )}
-        </div>
-        {can('horses', 'create') && (
+      <PageHeader
+        title="Caballos"
+        badge={horses && horses.length > 0 ? { label: `${horses.length} en total`, color: 'green' } : undefined}
+        action={can('horses', 'create') ? (
           <button
             onClick={() => { setCreateError(null); setShowForm(!showForm); }}
-            className="hidden md:flex items-center gap-2.5 rounded-2xl py-2.5 pl-2.5 pr-5 text-sm font-semibold text-white shadow-sm cursor-pointer"
+            className="hidden md:flex items-center gap-2 rounded-xl py-2.5 pl-3 pr-4 text-sm font-semibold text-white shadow-sm cursor-pointer transition-all active:scale-95"
             style={{ backgroundColor: '#0f1f3d' }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </span>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
             Nuevo caballo
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* FAB mobile: arriba del bottom-nav */}
       {can('horses', 'create') && (
@@ -852,15 +848,16 @@ export default function CaballosPage() {
           : (horses ?? []);
 
         return !filteredHorses.length ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <EmptyState
+          icon={
+            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
             </svg>
-          </div>
-          <p className="text-sm font-medium text-gray-600">No hay caballos registrados</p>
-          <p className="mt-1 text-xs text-gray-400">Creá el primero con el botón de arriba</p>
-        </div>
+          }
+          title={search ? 'Sin resultados para esa búsqueda' : 'No hay caballos registrados'}
+          message={search ? `No encontramos coincidencias para "${search}".` : 'Registrá el primer caballo para empezar a gestionar su historial.'}
+          action={!search && can('horses', 'create') ? { label: 'Registrar caballo', onClick: () => setShowForm(true) } : undefined}
+        />
         ) : user?.role === 'propietario' ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
           {filteredHorses.map((horse) => (
@@ -936,75 +933,56 @@ export default function CaballosPage() {
           {filteredHorses.map((horse) => (
             <div key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
-              className="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md overflow-hidden cursor-pointer">
-
-              {/* Imagen */}
-              <div className="aspect-[4/3] bg-gray-100">
+              className="group cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)' }}
+            >
+              {/* Imagen con gradiente */}
+              <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                 {horse.image_url ? (
-                  <img src={horse.image_url} alt={horse.name} className="h-full w-full object-cover" />
+                  <img
+                    src={horse.image_url}
+                    alt={horse.name}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
                 )}
+                {/* Badges superpuestos */}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-1.5">
+                  {horse.breed ? (
+                    <span className="rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                      {horse.breed.name}
+                    </span>
+                  ) : <span />}
+                  {horse.activity && (
+                    <span className="rounded-full bg-amber-500/70 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                      {horse.activity.name}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="p-4">
-                {/* Nombre + badges */}
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <h2 className="text-base font-bold text-gray-900">{horse.name}</h2>
-                  <div className="flex flex-wrap gap-1 justify-end">
-                    {horse.establishment && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
-                        {horse.establishment.name}
-                      </span>
-                    )}
-                    {horse.co_owners && horse.co_owners.length > 0 ? (
-                      horse.co_owners.map((co) => (
-                        <span key={co.id} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                          {co.user?.name ?? 'Sin nombre'}{co.percentage != null ? ` ${Number(co.percentage)}%` : ''}
-                        </span>
-                      ))
-                    ) : (
-                      horse.owner && (
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                          {horse.owner.name}
-                        </span>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* Badges raza/actividad */}
-                {(horse.breed || horse.activity) && (
-                  <div className="mb-2 flex flex-wrap gap-1">
-                    {horse.breed && (
-                      <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
-                        {horse.breed.name}
-                      </span>
-                    )}
-                    {horse.activity && (
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                        {horse.activity.name}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Datos */}
-                <div className="mb-4 space-y-0.5 text-xs text-gray-500">
-                  {horse.microchip && <p>Microchip: {horse.microchip}</p>}
-                  {horse.birth_date && (
-                    <p>
-                      {new Date(horse.birth_date + 'T12:00:00').toLocaleDateString('es-AR')}
-                      {' · '}{calcAge(horse.birth_date)}
-                    </p>
+                <h2 className="font-bold text-gray-900 truncate">{horse.name}</h2>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {horse.owner && (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                      {horse.owner.name}
+                    </span>
                   )}
-                  <p>Registrado {new Date(horse.created_at).toLocaleDateString('es-AR')}</p>
+                  {horse.establishment && (
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                      {horse.establishment.name}
+                    </span>
+                  )}
                 </div>
-
+                {horse.birth_date && (
+                  <p className="mt-2 text-xs text-gray-400">{calcAge(horse.birth_date)}</p>
+                )}
               </div>
             </div>
           ))}
