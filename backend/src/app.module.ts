@@ -25,6 +25,8 @@ import { ContractsModule } from './contracts/contracts.module';
 import { PlansModule } from './plans/plans.module';
 import { SearchModule } from './search/search.module';
 import { BoardingRequestsModule } from './boarding-requests/boarding-requests.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { SuperAdminModule } from './superadmin/superadmin.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { BoardingRequestsModule } from './boarding-requests/boarding-requests.mo
     PlansModule,
     SearchModule,
     BoardingRequestsModule,
+    OrganizationsModule,
+    SuperAdminModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

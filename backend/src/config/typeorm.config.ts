@@ -23,6 +23,9 @@ import { Notification } from '../notifications/notification.entity';
 import { NotificationSetting } from '../notifications/notification-setting.entity';
 import { CatalogItem } from '../catalog-items/catalog-item.entity';
 import { BoardingRequest } from '../boarding-requests/boarding-request.entity';
+import { Organization } from '../organizations/organization.entity';
+import { OrganizationMember } from '../organizations/organization-member.entity';
+import { OrganizationInvitation } from '../organizations/organization-invitation.entity';
 
 export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -31,7 +34,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, HorseMovement, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, EventComment, Contract, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem, BoardingRequest],
+  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, HorseMovement, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, EventComment, Contract, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem, BoardingRequest, Organization, OrganizationMember, OrganizationInvitation],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,

@@ -84,12 +84,21 @@ export class HorsesService implements OnModuleInit {
   async create(dto: CreateHorseDto, user: User): Promise<Horse> {
     let owner_id: string;
     let establishment_id: string | null = null;
+    let organization_id: string | null = null;
 
     if (user.role === 'propietario') {
       owner_id = user.id;
       establishment_id = dto.establishment_id ?? null;
-      // Verificar límite de plan antes de crear
-      await this.plansService.assertCanAddHorse(user);
+      // Si elige un establecimiento, intentamos resolver su organización
+      if (establishment_id) {
+        const orgRow: { id: string }[] = await this.horseRepository.query(
+          `SELECT id FROM organizations WHERE owner_id = $1 LIMIT 1`,
+          [establishment_id],
+        );
+        organization_id = orgRow[0]?.id ?? null;
+      }
+      // Verificar límite — si va a una organización, chequea ese plan; si no, el individual
+      await this.plansService.assertCanAddHorse(user, organization_id);
     } else if (user.role === 'establecimiento') {
       if (!dto.owner_id) {
         throw new BadRequestException(
@@ -98,6 +107,16 @@ export class HorsesService implements OnModuleInit {
       }
       owner_id = dto.owner_id;
       establishment_id = user.id;
+      // Resolver la organización del establecimiento (la creó la migración o el onboarding)
+      const orgRow: { id: string }[] = await this.horseRepository.query(
+        `SELECT id FROM organizations WHERE owner_id = $1 LIMIT 1`,
+        [user.id],
+      );
+      organization_id = orgRow[0]?.id ?? null;
+      // Verificar límite del plan de la organización
+      if (organization_id) {
+        await this.plansService.assertCanAddHorse(user, organization_id);
+      }
     } else {
       // Admin: requiere owner_id explícito
       if (!dto.owner_id) {
@@ -105,6 +124,13 @@ export class HorsesService implements OnModuleInit {
       }
       owner_id = dto.owner_id;
       establishment_id = dto.establishment_id ?? null;
+      if (establishment_id) {
+        const orgRow: { id: string }[] = await this.horseRepository.query(
+          `SELECT id FROM organizations WHERE owner_id = $1 LIMIT 1`,
+          [establishment_id],
+        );
+        organization_id = orgRow[0]?.id ?? null;
+      }
     }
 
     if (dto.microchip) {
@@ -124,6 +150,7 @@ export class HorsesService implements OnModuleInit {
       birth_date: dto.birth_date ?? null,
       owner_id,
       establishment_id,
+      organization_id,
       microchip: dto.microchip ?? null,
       breed_id: dto.breed_id ?? null,
       activity_id: dto.activity_id ?? null,

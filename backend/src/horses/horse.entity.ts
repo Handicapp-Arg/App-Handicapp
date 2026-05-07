@@ -47,6 +47,11 @@ export class Horse {
   @JoinColumn({ name: 'establishment_id' })
   establishment: User;
 
+  // Organización que gestiona el caballo (temporal, mutable, puede ser null).
+  // El propietario es siempre dueño de los datos (owner_id).
+  @Column('uuid', { nullable: true })
+  organization_id: string | null;
+
   @Column({ type: 'varchar', length: 15, nullable: true, unique: true })
   microchip: string | null;
 
