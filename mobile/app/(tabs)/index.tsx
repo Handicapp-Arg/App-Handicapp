@@ -173,12 +173,12 @@ export default function InicioScreen() {
         {data?.role === 'propietario' && (
           <View style={s.heroStats}>
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).horses?.length ?? 0}</Text>
+              <Text style={s.heroStatValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{(data as any).horses?.length ?? 0}</Text>
               <Text style={s.heroStatLabel}>Caballos</Text>
             </View>
             <View style={s.heroStatDivider} />
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>${((data as any).monthly_spend ?? 0).toLocaleString('es-AR')}</Text>
+              <Text style={s.heroStatValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>${((data as any).monthly_spend ?? 0).toLocaleString('es-AR')}</Text>
               <Text style={s.heroStatLabel}>Gasto del mes</Text>
             </View>
           </View>
@@ -339,7 +339,7 @@ const s = StyleSheet.create({
   heroAvatarText: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.white },
   heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: radius.lg, padding: space[4] },
   heroStatItem: { flex: 1, alignItems: 'center' },
-  heroStatValue: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.white },
+  heroStatValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
   heroStatLabel: { fontSize: text.xs, color: 'rgba(255,255,255,0.5)', marginTop: 2, fontWeight: weight.medium },
   heroStatDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.12)' },
 
