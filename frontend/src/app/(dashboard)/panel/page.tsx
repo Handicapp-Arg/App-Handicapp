@@ -16,6 +16,7 @@ import {
   HorseTable,
 } from '@/components/panel';
 import { PlanBanner } from '@/components/plan-banner';
+import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '@/hooks/use-boarding-requests';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 
 /* ─── tipos ─── */
@@ -397,12 +398,73 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
 
 /* ─── Dashboard Establecimiento ─── */
 
+function BoardingRequestsPanel() {
+  const { data: requests } = useBoardingRequests();
+  const accept = useAcceptBoardingRequest();
+  const reject = useRejectBoardingRequest();
+
+  const pending = requests?.filter((r) => r.status === 'pending') ?? [];
+  if (!pending.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-amber-100">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+          </svg>
+        </span>
+        <h2 className="text-sm font-semibold text-amber-900">
+          Solicitudes de alojamiento
+          <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-800">{pending.length}</span>
+        </h2>
+      </div>
+      <div className="divide-y divide-amber-100">
+        {pending.map((req) => (
+          <div key={req.id} className="flex items-center gap-4 px-5 py-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900">
+                {req.requester?.name} solicita alojar a <span className="text-[#0f1f3d]">{req.horse?.name}</span>
+              </p>
+              {req.message && (
+                <p className="mt-0.5 text-xs text-gray-500 italic">"{req.message}"</p>
+              )}
+              <p className="mt-0.5 text-xs text-gray-400">
+                {new Date(req.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                onClick={() => reject.mutate(req.id)}
+                disabled={reject.isPending || accept.isPending}
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+              >
+                Rechazar
+              </button>
+              <button
+                onClick={() => accept.mutate(req.id)}
+                disabled={accept.isPending || reject.isPending}
+                className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a1628] transition cursor-pointer disabled:opacity-50"
+              >
+                {accept.isPending ? '...' : 'Aceptar'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard }) {
   const now = new Date();
   const monthName = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
 
   return (
     <div className="space-y-5">
+      {/* Solicitudes de alojamiento */}
+      <BoardingRequestsPanel />
+
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">

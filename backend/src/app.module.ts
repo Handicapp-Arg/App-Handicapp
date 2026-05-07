@@ -24,6 +24,7 @@ import { MedicalModule } from './medical/medical.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PlansModule } from './plans/plans.module';
 import { SearchModule } from './search/search.module';
+import { BoardingRequestsModule } from './boarding-requests/boarding-requests.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { SearchModule } from './search/search.module';
     ContractsModule,
     PlansModule,
     SearchModule,
+    BoardingRequestsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

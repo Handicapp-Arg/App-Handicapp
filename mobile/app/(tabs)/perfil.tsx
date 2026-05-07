@@ -4,11 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
+import { haptic } from '../../lib/haptics';
 import { useNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { layout } from '../../styles/common';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
+import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '../../hooks/use-boarding-requests';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -165,11 +167,18 @@ export default function PerfilScreen() {
     ]);
   };
 
+  const { data: boardingRequests } = useBoardingRequests();
+  const acceptRequest = useAcceptBoardingRequest();
+  const rejectRequest = useRejectBoardingRequest();
+
   if (!user) return null;
 
   const initials = user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
   const isAdmin = user.role === 'admin';
+  const isEstab = user.role === 'establecimiento';
   const showPlan = user.role === 'propietario' || user.role === 'establecimiento';
+
+  const pendingRequests = boardingRequests?.filter((r) => r.status === 'pending') ?? [];
 
   const filteredAdminUsers = adminUsers?.filter((u) =>
     adminSearch ? u.name.toLowerCase().includes(adminSearch.toLowerCase()) || u.email.toLowerCase().includes(adminSearch.toLowerCase()) : true,
@@ -236,6 +245,59 @@ export default function PerfilScreen() {
                 <Text style={quickStyles.arrow}>›</Text>
               </TouchableOpacity>
             )}
+          </View>
+        </View>
+      )}
+
+      {/* Solicitudes de alojamiento (establecimiento) */}
+      {isEstab && pendingRequests.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Solicitudes de alojamiento</Text>
+          <Text style={styles.sectionSubtitle}>Propietarios que quieren alojar sus caballos en tu establecimiento.</Text>
+          <View style={styles.adminList}>
+            {pendingRequests.map((req) => (
+              <View key={req.id} style={{ backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, padding: 14, gap: 10 }}>
+                <View style={{ gap: 2 }}>
+                  <Text style={{ fontSize: 13, fontWeight: weight.bold, color: colors.gray900 }}>
+                    {req.requester?.name}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.gray500 }}>
+                    Solicita alojar a <Text style={{ fontWeight: weight.semibold, color: colors.primary }}>{req.horse?.name}</Text>
+                  </Text>
+                  {req.message && (
+                    <Text style={{ fontSize: 11, color: colors.gray400, fontStyle: 'italic' }}>"{req.message}"</Text>
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, borderRadius: 8, borderWidth: 1, borderColor: '#fca5a5', paddingVertical: 8, alignItems: 'center' }}
+                    onPress={() => {
+                      haptic.medium();
+                      Alert.alert('Rechazar solicitud', '¿Rechazás la solicitud de alojamiento?', [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { text: 'Rechazar', style: 'destructive', onPress: () => rejectRequest.mutate(req.id) },
+                      ]);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: weight.semibold, color: colors.red700 }}>Rechazar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, borderRadius: 8, backgroundColor: colors.primary, paddingVertical: 8, alignItems: 'center' }}
+                    onPress={() => {
+                      haptic.medium();
+                      Alert.alert('Aceptar solicitud', `¿Aceptás alojar a ${req.horse?.name}?`, [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { text: 'Aceptar', onPress: () => { haptic.success(); acceptRequest.mutate(req.id); } },
+                      ]);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: weight.bold, color: colors.white }}>Aceptar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
       )}
