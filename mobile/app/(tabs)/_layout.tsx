@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/colors';
@@ -7,28 +7,30 @@ import { useNotifications } from '../../lib/notifications';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-const SAFE_ICONS: Record<string, { active: IoniconsName; inactive: IoniconsName }> = {
-  index:       { active: 'home',           inactive: 'home-outline' },
-  caballos:    { active: 'paw',            inactive: 'paw-outline' },
-  eventos:     { active: 'document-text',  inactive: 'document-text-outline' },
-  agenda:      { active: 'calendar',       inactive: 'calendar-outline' },
-  facturacion: { active: 'receipt',        inactive: 'receipt-outline' },
-  perfil:      { active: 'person-circle',  inactive: 'person-circle-outline' },
+const SAFE_ICONS: Record<string, { active: IoniconsName; inactive: IoniconsName; label: string }> = {
+  index:       { active: 'home',           inactive: 'home-outline',          label: 'Inicio' },
+  caballos:    { active: 'paw',            inactive: 'paw-outline',           label: 'Caballos' },
+  eventos:     { active: 'document-text',  inactive: 'document-text-outline', label: 'Eventos' },
+  agenda:      { active: 'calendar',       inactive: 'calendar-outline',      label: 'Agenda' },
+  facturacion: { active: 'receipt',        inactive: 'receipt-outline',       label: 'Facturas' },
+  perfil:      { active: 'person-circle',  inactive: 'person-circle-outline', label: 'Perfil' },
 };
 
+const ACCENT = '#c4922a';
+
 function TabIcon({ name, focused, badge }: { name: string; focused: boolean; badge?: number }) {
-  const icons = SAFE_ICONS[name] ?? SAFE_ICONS.index;
+  const meta = SAFE_ICONS[name] ?? SAFE_ICONS.index;
   return (
     <View style={styles.iconWrap}>
+      {/* Pill de fondo activo */}
+      {focused && <View style={styles.activePill} />}
       <Ionicons
-        name={focused ? icons.active : icons.inactive}
-        size={24}
-        color={focused ? colors.primary : colors.gray400}
+        name={focused ? meta.active : meta.inactive}
+        size={22}
+        color={focused ? colors.primary : '#94a3b8'}
       />
       {badge != null && badge > 0 && (
-        <View style={styles.badge}>
-          <View style={styles.badgeDot} />
-        </View>
+        <View style={styles.badgeDot} />
       )}
     </View>
   );
@@ -43,25 +45,33 @@ export default function TabsLayout() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray400,
+        tabBarInactiveTintColor: '#94a3b8',
         tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.gray200,
-          borderTopWidth: 1,
-          paddingBottom: insets.bottom + 4,
-          paddingTop: 6,
-          height: 56 + insets.bottom,
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
+          backgroundColor: '#ffffff',
+          borderTopWidth: 0,
+          paddingBottom: insets.bottom + 2,
+          paddingTop: 8,
+          height: 60 + insets.bottom,
+          elevation: 0,
+          shadowColor: '#0f1f3d',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 16,
+          ...Platform.select({
+            ios: {
+              borderTopColor: 'transparent',
+            },
+            android: {
+              borderTopWidth: 1,
+              borderTopColor: '#e2e8f0',
+            },
+          }),
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
-          marginTop: 2,
-          letterSpacing: 0.2,
+          marginTop: 1,
+          letterSpacing: 0.1,
         },
         tabBarIcon: ({ focused }) => (
           <TabIcon
@@ -76,13 +86,18 @@ export default function TabsLayout() {
       <Tabs.Screen name="caballos"    options={{ title: 'Caballos' }} />
       <Tabs.Screen name="eventos"     options={{ title: 'Eventos' }} />
       <Tabs.Screen name="agenda"      options={{ title: 'Agenda' }} />
-      <Tabs.Screen name="facturacion" options={{ title: 'Facturación' }} />
+      <Tabs.Screen name="facturacion" options={{ title: 'Facturas' }} />
       <Tabs.Screen
         name="perfil"
         options={{
           title: 'Perfil',
           tabBarBadge: unread > 0 ? unread : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.red500, fontSize: 10, minWidth: 16, height: 16 },
+          tabBarBadgeStyle: {
+            backgroundColor: '#ef4444',
+            fontSize: 9,
+            minWidth: 14,
+            height: 14,
+          },
         }}
       />
     </Tabs>
@@ -90,7 +105,29 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconWrap: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
-  badge: { position: 'absolute', top: 0, right: 0 },
-  badgeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.red500, borderWidth: 1.5, borderColor: colors.white },
+  iconWrap: {
+    width: 32,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  activePill: {
+    position: 'absolute',
+    width: 36,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: 'rgba(15, 31, 61, 0.08)',
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#ef4444',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
 });

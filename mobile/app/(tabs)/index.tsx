@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image as RNImage } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -64,7 +64,7 @@ function HorseRow({ horse }: { horse: Horse }) {
     >
       <View style={s.horseAvatar}>
         {horse.image_url
-          ? <Image source={{ uri: horse.image_url }} style={s.horseImg} />
+          ? <RNImage source={{ uri: horse.image_url }} style={s.horseImg} />
           : (
             <View style={s.horseAvatarFallback}>
               <Text style={s.horseAvatarText}>{horse.name[0]?.toUpperCase()}</Text>
@@ -147,24 +147,25 @@ export default function InicioScreen() {
     >
       {/* ─── Hero header con gradiente ─── */}
       <LinearGradient
-        colors={['#0f1f3d', '#1a3a6b', '#0f2d52']}
+        colors={['#0a1628', '#0f1f3d', '#122444']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[s.hero, { paddingTop: insets.top + space[5] }]}
+        style={[s.hero, { paddingTop: insets.top + space[4] }]}
       >
+        {/* Logo + acciones */}
         <View style={s.heroTop}>
-          <View style={s.heroText}>
-            <Text style={s.heroGreeting}>{greeting()},</Text>
-            <Text style={s.heroName}>{firstName}</Text>
-            <Text style={s.heroRole}>{roleLabel}</Text>
-          </View>
+          <RNImage
+            source={{ uri: 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370535/logo-icon-white_fbeduu.png' }}
+            style={s.heroLogo}
+            resizeMode="contain"
+          />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
             <TouchableOpacity
               style={s.heroSearchBtn}
               onPress={() => { haptic.light(); router.push('/buscar' as any); }}
               activeOpacity={0.8}
             >
-              <Ionicons name="search-outline" size={20} color="rgba(255,255,255,0.85)" />
+              <Ionicons name="search-outline" size={19} color="rgba(255,255,255,0.75)" />
             </TouchableOpacity>
             <TouchableOpacity
               style={s.heroAvatar}
@@ -176,6 +177,13 @@ export default function InicioScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Saludo debajo del logo */}
+        <View style={s.heroGreetingBlock}>
+          <Text style={s.heroGreeting}>{greeting()}</Text>
+          <Text style={s.heroName}>{firstName}</Text>
+          <Text style={s.heroRole}>{roleLabel}</Text>
         </View>
 
         {/* Stats en el hero */}
@@ -333,25 +341,25 @@ const s = StyleSheet.create({
   content: { paddingBottom: 32 },
 
   /* Hero */
-  hero: { paddingHorizontal: space[5], paddingBottom: space[6] },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space[5] },
-  heroText: { gap: 2 },
-  heroGreeting: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)', fontWeight: weight.medium },
-  heroName: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.white, lineHeight: 34 },
-  heroRole: { fontSize: text.xs, color: 'rgba(255,255,255,0.45)', fontWeight: weight.semibold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  hero: { paddingHorizontal: space[5], paddingBottom: space[5] },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space[4] },
+  heroLogo: { width: 36, height: 36 },
+  heroGreetingBlock: { gap: 2, marginBottom: space[4] },
+  heroGreeting: { fontSize: text.xs, color: 'rgba(255,255,255,0.45)', fontWeight: weight.medium, letterSpacing: 0.3 },
+  heroName: { fontSize: text['2xl'], fontWeight: weight.bold, color: colors.white, lineHeight: 30, letterSpacing: -0.5 },
+  heroRole: { fontSize: text.xs, color: '#c4922a', fontWeight: weight.semibold, textTransform: 'uppercase', letterSpacing: 0.8 },
   heroSearchBtn: {
-    width: 38, height: 38, borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    width: 36, height: 36, borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.10)',
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   heroAvatar: {
-    width: 44, height: 44, borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 38, height: 38, borderRadius: radius.full,
+    backgroundColor: '#c4922a',
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)',
   },
-  heroAvatarText: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.white },
+  heroAvatarText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white, letterSpacing: 0.5 },
   heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: radius.lg, padding: space[4] },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
