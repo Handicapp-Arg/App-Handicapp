@@ -3,40 +3,50 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
+import { Spinner } from '@/components/ui/skeleton';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
   propietario: 'Propietario',
   establecimiento: 'Establecimiento',
+  veterinario: 'Veterinario',
 };
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+const roleColors: Record<string, { bg: string; text: string }> = {
+  admin:          { bg: '#eff6ff', text: '#1d4ed8' },
+  propietario:    { bg: '#f0fdf4', text: '#15803d' },
+  establecimiento:{ bg: '#faf5ff', text: '#7e22ce' },
+  veterinario:    { bg: '#fff7ed', text: '#c2410c' },
+};
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+    <div className="rounded-2xl border border-gray-100 bg-white p-6"
+      style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0/0.05)' }}
+    >
+      <h2 className="mb-5 text-sm font-bold uppercase tracking-wider text-gray-400">{title}</h2>
       {children}
     </div>
   );
 }
 
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <input
-      {...props}
-      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#1a1a2e] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/10 disabled:opacity-50 sm:max-w-sm"
-    />
+    <div className="space-y-1.5">
+      <label className="block text-sm font-semibold text-gray-700">{label}</label>
+      {children}
+      {hint && <p className="text-xs text-gray-400">{hint}</p>}
+    </div>
   );
 }
+
+const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#0f1f3d] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/8 sm:max-w-sm';
 
 function PasswordInput(props: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
   const [show, setShow] = useState(false);
   return (
     <div className="relative sm:max-w-sm">
-      <input
-        {...props}
-        type={show ? 'text' : 'password'}
-        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 pr-10 text-sm text-gray-900 transition focus:border-[#1a1a2e] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/10 disabled:opacity-50"
-      />
+      <input {...props} type={show ? 'text' : 'password'} className={inputCls + ' pr-10'} />
       <button
         type="button"
         onClick={() => setShow((v) => !v)}
@@ -57,13 +67,25 @@ function PasswordInput(props: Omit<React.InputHTMLAttributes<HTMLInputElement>, 
   );
 }
 
-function Alert({ type, message }: { type: 'success' | 'error'; message: string }) {
-  const styles =
-    type === 'success'
-      ? 'bg-green-50 border-green-200 text-green-700'
-      : 'bg-red-50 border-red-200 text-red-600';
+type AlertType = 'success' | 'error';
+function Alert({ type, message }: { type: AlertType; message: string }) {
   return (
-    <div className={`rounded-lg border px-4 py-3 text-sm ${styles}`}>{message}</div>
+    <div className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium ${
+      type === 'success'
+        ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+        : 'border-red-100 bg-red-50 text-red-600'
+    }`}>
+      {type === 'success' ? (
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      ) : (
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+      )}
+      {message}
+    </div>
   );
 }
 
@@ -85,154 +107,116 @@ export default function PerfilPage() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileMsg('');
-    setProfileError('');
-    setSavingProfile(true);
+    setProfileMsg(''); setProfileError(''); setSavingProfile(true);
     try {
       await api.patch('/auth/profile', { name, email });
       await refreshUser();
       setProfileMsg('Datos actualizados correctamente');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response: { data: { message: string } } }).response?.data?.message
-          : null;
+      const msg = err && typeof err === 'object' && 'response' in err
+        ? (err as { response: { data: { message: string } } }).response?.data?.message : null;
       setProfileError(msg || 'Error al actualizar');
-    } finally {
-      setSavingProfile(false);
-    }
+    } finally { setSavingProfile(false); }
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordMsg('');
-    setPasswordError('');
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Las contraseñas nuevas no coinciden');
-      return;
-    }
+    setPasswordMsg(''); setPasswordError('');
+    if (newPassword !== confirmPassword) { setPasswordError('Las contraseñas nuevas no coinciden'); return; }
     setSavingPassword(true);
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
       setPasswordMsg('Contraseña actualizada correctamente');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response: { data: { message: string } } }).response?.data?.message
-          : null;
+      const msg = err && typeof err === 'object' && 'response' in err
+        ? (err as { response: { data: { message: string } } }).response?.data?.message : null;
       setPasswordError(msg || 'Error al cambiar contraseña');
-    } finally {
-      setSavingPassword(false);
-    }
+    } finally { setSavingPassword(false); }
   };
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : '?';
 
+  const roleColor = roleColors[user?.role || ''] ?? { bg: '#f3f4f6', text: '#6b7280' };
+
   return (
-    <div className="max-w-2xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1a1a2e] text-lg font-bold text-white">
-          {initials}
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{user?.name}</h1>
-          <span className="inline-block mt-0.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-            {roleLabel[user?.role || ''] || user?.role}
-          </span>
+    <div className="max-w-2xl space-y-5">
+
+      {/* Hero del perfil */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-6"
+        style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0/0.05)' }}
+      >
+        <div className="flex items-center gap-5">
+          {/* Avatar grande */}
+          <div
+            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-extrabold text-white"
+            style={{ backgroundColor: '#0f1f3d' }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-extrabold tracking-tight text-gray-900 truncate">
+              {user?.name}
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-400">{user?.email}</p>
+            <span
+              className="mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-bold"
+              style={{ backgroundColor: roleColor.bg, color: roleColor.text }}
+            >
+              {roleLabel[user?.role || ''] || user?.role}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Datos personales */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-5 text-base font-semibold text-gray-900">Datos personales</h2>
+      <SectionCard title="Datos personales">
         <form onSubmit={handleProfileSubmit} className="space-y-4">
-          <Field label="Nombre">
-            <Input
-              id="name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+          <Field label="Nombre completo">
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           </Field>
-
-          <Field label="Email">
-            <Input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <Field label="Correo electrónico" hint="Cambiar el email requiere verificación.">
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </Field>
-
           {profileMsg && <Alert type="success" message={profileMsg} />}
           {profileError && <Alert type="error" message={profileError} />}
-
           <button
             type="submit"
             disabled={savingProfile}
-            className="rounded-lg bg-[#1a1a2e] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2d2d4e] disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            style={{ backgroundColor: '#0f1f3d' }}
           >
-            {savingProfile ? 'Guardando...' : 'Guardar cambios'}
+            {savingProfile ? <><Spinner size="sm" color="white" /> Guardando...</> : 'Guardar cambios'}
           </button>
         </form>
-      </div>
+      </SectionCard>
 
-      {/* Cambiar contraseña */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-5 text-base font-semibold text-gray-900">Cambiar contraseña</h2>
+      {/* Seguridad */}
+      <SectionCard title="Seguridad">
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           <Field label="Contraseña actual">
-            <PasswordInput
-              id="current-password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+            <PasswordInput required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="••••••••" />
           </Field>
-
-          <Field label="Nueva contraseña">
-            <PasswordInput
-              id="new-password"
-              required
-              minLength={6}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+          <Field label="Nueva contraseña" hint="Mínimo 6 caracteres.">
+            <PasswordInput required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
           </Field>
-
           <Field label="Confirmar nueva contraseña">
-            <PasswordInput
-              id="confirm-password"
-              required
-              minLength={6}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+            <PasswordInput required minLength={6} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
           </Field>
-
           {passwordMsg && <Alert type="success" message={passwordMsg} />}
           {passwordError && <Alert type="error" message={passwordError} />}
-
           <button
             type="submit"
             disabled={savingPassword}
-            className="rounded-lg bg-[#1a1a2e] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2d2d4e] disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            style={{ backgroundColor: '#0f1f3d' }}
           >
-            {savingPassword ? 'Cambiando...' : 'Cambiar contraseña'}
+            {savingPassword ? <><Spinner size="sm" color="white" /> Cambiando...</> : 'Cambiar contraseña'}
           </button>
         </form>
-      </div>
+      </SectionCard>
     </div>
   );
 }
