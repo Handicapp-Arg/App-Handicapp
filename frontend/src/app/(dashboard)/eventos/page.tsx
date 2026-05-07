@@ -8,6 +8,9 @@ import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
 import EventCalendar from '@/components/event-calendar';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { PageHeader } from '@/components/ui/page-header';
+import { SkeletonRow, Spinner } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Event } from '@/types';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api$/, '');
@@ -493,17 +496,18 @@ export default function EventosPage() {
   const isLoading = loadingAll;
 
   if (loadingHorses) return (
-    <div className="flex justify-center py-20">
-      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+    <div className="space-y-5">
+      <PageHeader title="Eventos" />
+      <div className="space-y-2">{[1,2,3,4,5].map(i => <SkeletonRow key={i} />)}</div>
     </div>
   );
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Eventos</h1>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={`Eventos${allEvents?.length ? ` (${allEvents.length})` : ''}`}
+        action={
+          <div className="flex items-center gap-2">
           {/* Toggle calendario/lista */}
           <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
             <button
@@ -527,7 +531,7 @@ export default function EventosPage() {
           {can('events', 'create') && (
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer active:scale-95"
               style={{ backgroundColor: '#0f1f3d' }}
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -536,8 +540,8 @@ export default function EventosPage() {
               Nuevo
             </button>
           )}
-        </div>
-      </div>
+        </div>}
+      />
 
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-2">
@@ -593,36 +597,26 @@ export default function EventosPage() {
 
       {/* Vista calendario */}
       {view === 'calendar' && (
-        isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
-          </div>
-        ) : (
-          <EventCalendar events={displayEvents || []} />
-        )
+        isLoading
+          ? <div className="flex justify-center py-12"><Spinner size="md" /></div>
+          : <EventCalendar events={displayEvents || []} />
       )}
 
       {/* Vista lista */}
       {view === 'list' && (
         isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
-          </div>
+          <div className="space-y-2">{[1,2,3,4,5].map(i => <SkeletonRow key={i} />)}</div>
         ) : !displayEvents?.length ? (
-          <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
-            <p className="text-sm text-gray-400">
-              {filterHorseId ? 'Este caballo no tiene eventos' : 'No hay eventos registrados'}
-            </p>
-            {can('events', 'create') && (
-              <button
-                onClick={() => setShowCreate(true)}
-                className="mt-3 text-sm font-medium underline cursor-pointer"
-                style={{ color: '#0f1f3d' }}
-              >
-                Crear el primero
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            }
+            title={hasFilters ? 'Sin eventos con esos filtros' : 'No hay eventos registrados'}
+            message={hasFilters ? 'Probá limpiar los filtros para ver todos los eventos.' : 'Los eventos de salud, entrenamiento, gastos y notas aparecerán aquí.'}
+            action={!hasFilters && can('events', 'create') ? { label: 'Crear primer evento', onClick: () => setShowCreate(true) } : undefined}
+          />
         ) : (
           <div className="space-y-3">
             {displayEvents.map((event) => (
