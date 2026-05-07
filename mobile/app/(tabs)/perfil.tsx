@@ -245,6 +245,18 @@ export default function PerfilScreen() {
                 <Text style={quickStyles.arrow}>›</Text>
               </TouchableOpacity>
             )}
+            {(user?.role === 'establecimiento' || user?.role === 'admin') && (
+              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/organizacion' as any)} activeOpacity={0.8}>
+                <View style={quickStyles.iconWrap}>
+                  <Text style={quickStyles.icon}>🏢</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={quickStyles.label}>Organización</Text>
+                  <Text style={quickStyles.desc}>Miembros, plan, invitaciones</Text>
+                </View>
+                <Text style={quickStyles.arrow}>›</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}

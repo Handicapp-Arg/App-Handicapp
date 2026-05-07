@@ -67,8 +67,35 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    await this.userRepository.save(user);
-    return this.generateTokens(user);
+    const savedUser = await this.userRepository.save(user);
+
+    // Si es un establecimiento, crear automáticamente su organización
+    if (savedUser.role === 'establecimiento') {
+      try {
+        await this.userRepository.query(
+          `INSERT INTO organizations (id, name, owner_id, plan, horse_limit, status, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, 'free', 3, 'active', NOW(), NOW())
+           RETURNING id`,
+          [savedUser.name, savedUser.id],
+        );
+        const org: { id: string }[] = await this.userRepository.query(
+          `SELECT id FROM organizations WHERE owner_id = $1 LIMIT 1`,
+          [savedUser.id],
+        );
+        if (org[0]) {
+          await this.userRepository.query(
+            `INSERT INTO organization_members (id, organization_id, user_id, role_in_org, joined_at)
+             VALUES (gen_random_uuid(), $1, $2, 'admin', NOW())
+             ON CONFLICT DO NOTHING`,
+            [org[0].id, savedUser.id],
+          );
+        }
+      } catch {
+        // No interrumpir el registro si falla la creación de la organización
+      }
+    }
+
+    return this.generateTokens(savedUser);
   }
 
   async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
