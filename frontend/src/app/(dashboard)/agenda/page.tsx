@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '@/hooks/use-agenda';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES).map(([value, meta]) => ({ value, ...meta }));
 
@@ -115,9 +116,9 @@ export default function AgendaPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Agenda</h1>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Agenda"
+        action={<div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
             {(['upcoming', 'all'] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
@@ -131,7 +132,7 @@ export default function AgendaPage() {
           </div>
           {horses && horses.length > 0 && (
             <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer active:scale-95"
               style={{ backgroundColor: '#0f1f3d' }}
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -140,12 +141,12 @@ export default function AgendaPage() {
               Nuevo turno
             </button>
           )}
-        </div>
-      </div>
+        </div>}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[#0f1f3d]" />
         </div>
       ) : !appointments?.length ? (
         <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, type Contract } from '@/hooks/use-contracts';
+import { PageHeader } from '@/components/ui/page-header';
 import { useAuth } from '@/lib/auth-context';
 import { usePropietarios, useHorses } from '@/hooks/use-horses';
 
@@ -140,14 +141,12 @@ export default function ContratosPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Contratos de pensión</h1>
-          <p className="mt-1 text-sm text-gray-400">Contratos digitales firmados entre el establecimiento y los propietarios.</p>
-        </div>
-        {isEstablishment && (
+      <PageHeader
+        title="Contratos de pensión"
+        subtitle="Contratos digitales firmados entre el establecimiento y los propietarios."
+        action={isEstablishment ? (
           <button onClick={() => setShowCreate(true)}
-            className="shrink-0 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition cursor-pointer"
+            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition cursor-pointer active:scale-95"
             style={{ backgroundColor: '#0f1f3d' }}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -155,8 +154,8 @@ export default function ContratosPage() {
             </svg>
             Nuevo contrato
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Nuevo contrato */}
       {showCreate && (

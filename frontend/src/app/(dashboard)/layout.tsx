@@ -14,7 +14,7 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <OnboardingWizard />
-      <div className="flex min-h-screen md:flex-row flex-col">
+      <div className="flex min-h-screen md:flex-row flex-col" style={{ backgroundColor: 'var(--surface-page)' }}>
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Navbar />

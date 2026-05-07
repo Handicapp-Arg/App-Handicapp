@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/auth-context';
 import { useBills, useCreateBill, useSendBill, useApproveBill, useDisputeBill, useDeleteBill, STATUS_META, monthLabel } from '@/hooks/use-billing';
+import { PageHeader } from '@/components/ui/page-header';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
 import type { BillItem } from '@/hooks/use-billing';
@@ -181,11 +182,11 @@ export default function FacturacionPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Facturación</h1>
-        {isEst && (
+      <PageHeader
+        title="Facturación"
+        action={isEst ? (
           <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer active:scale-95"
             style={{ backgroundColor: '#0f1f3d' }}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -193,12 +194,12 @@ export default function FacturacionPage() {
             </svg>
             Nueva factura
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[#0f1f3d]" />
         </div>
       ) : !bills?.length ? (
         <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
