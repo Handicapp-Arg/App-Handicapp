@@ -224,6 +224,18 @@ export default function PerfilScreen() {
                 <Text style={quickStyles.arrow}>›</Text>
               </TouchableOpacity>
             )}
+            {user?.role === 'propietario' && (
+              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/directorio' as any)} activeOpacity={0.8}>
+                <View style={quickStyles.iconWrap}>
+                  <Text style={quickStyles.icon}>🏡</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={quickStyles.label}>Directorio de establecimientos</Text>
+                  <Text style={quickStyles.desc}>Encontrá establecimientos en HandicApp</Text>
+                </View>
+                <Text style={quickStyles.arrow}>›</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}

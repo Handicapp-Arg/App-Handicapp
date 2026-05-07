@@ -154,6 +154,10 @@ export class AuthService {
     });
   }
 
+  async savePushToken(userId: string, token: string): Promise<void> {
+    await this.userRepository.update(userId, { push_token: token });
+  }
+
   async lookupByEmail(email: string): Promise<{ id: string; name: string; role: string } | null> {
     const user = await this.userRepository.findOne({
       where: { email: email.toLowerCase().trim() },

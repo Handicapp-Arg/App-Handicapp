@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, RefreshControl,
+  View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../lib/api';
-import { Spinner } from '../components/Spinner';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { EmptyState } from '../components/EmptyState';
+import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
-import { layout, typography } from '../styles/common';
 
-interface DirectorioItem { id: string; name: string; horse_count: number; }
+interface DirectorioItem {
+  id: string;
+  name: string;
+  horse_count: number;
+}
 
 function useDirectorio(search: string) {
   return useQuery<DirectorioItem[]>({
@@ -20,88 +25,130 @@ function useDirectorio(search: string) {
       const url = search ? `/auth/directorio?search=${encodeURIComponent(search)}` : '/auth/directorio';
       return (await api.get(url)).data;
     },
+    staleTime: 60_000,
   });
 }
 
 export default function DirectorioScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
-  const { data, isLoading, refetch, isRefetching } = useDirectorio(query);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { data, isLoading, refetch, isRefetching } = useDirectorio(debouncedSearch);
 
   const handleSearch = (v: string) => {
     setSearch(v);
     clearTimeout((global as any).__dirTimer);
-    (global as any).__dirTimer = setTimeout(() => setQuery(v), 400);
+    (global as any).__dirTimer = setTimeout(() => setDebouncedSearch(v), 400);
   };
 
   return (
-    <View style={[layout.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>‹</Text>
-        </TouchableOpacity>
-        <Text style={typography.pageTitle}>Directorio</Text>
-      </View>
+    <View style={[s.root, { paddingTop: insets.top }]}>
+      <ScreenHeader title="Directorio" showBack />
 
-      <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+      {/* Buscador */}
+      <View style={s.searchWrap}>
+        <Ionicons name="search-outline" size={16} color={colors.gray400} />
         <TextInput
-          style={styles.searchInput}
+          style={s.searchInput}
           value={search}
           onChangeText={handleSearch}
           placeholder="Buscar establecimiento..."
           placeholderTextColor={colors.gray400}
           clearButtonMode="while-editing"
+          autoCapitalize="none"
         />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); haptic.selection(); }}>
+            <Ionicons name="close-circle" size={16} color={colors.gray300} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {isLoading ? <Spinner /> : !data?.length ? (
-        <View style={layout.center}>
-          <Text style={typography.caption}>{search ? 'Sin resultados' : 'No hay establecimientos registrados'}</Text>
+      {isLoading ? (
+        <View style={s.center}>
+          <View style={s.spinner} />
         </View>
+      ) : !data?.length ? (
+        <EmptyState
+          icon="business-outline"
+          title={search ? 'Sin resultados' : 'Sin establecimientos'}
+          message={
+            search
+              ? `No encontramos establecimientos para "${search}".`
+              : 'No hay establecimientos registrados en HandicApp.'
+          }
+        />
       ) : (
         <FlatList
           data={data}
           keyExtractor={(d) => d.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={s.list}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.name[0].toUpperCase()}</Text>
+            <View style={s.card}>
+              {/* Avatar inicial */}
+              <View style={s.avatar}>
+                <Text style={s.avatarText}>{item.name[0]?.toUpperCase()}</Text>
               </View>
-              <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.count}>{item.horse_count} {item.horse_count === 1 ? 'caballo en pensión' : 'caballos en pensión'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardName}>{item.name}</Text>
+                <Text style={s.cardSub}>
+                  {item.horse_count === 0
+                    ? 'Sin caballos alojados'
+                    : `${item.horse_count} caballo${item.horse_count !== 1 ? 's' : ''} en pensión`}
+                </Text>
               </View>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>✓ HandicApp</Text>
+              {/* Badge conteo */}
+              <View style={s.badge}>
+                <Text style={s.badgeNum}>{item.horse_count}</Text>
+                <Ionicons name="paw-outline" size={10} color={colors.primary} />
               </View>
             </View>
           )}
+          ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
-          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[2] },
-  backBtn: { width: 32, height: 32, justifyContent: 'center' },
-  backText: { fontSize: 24, color: colors.primary },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: space[4], marginBottom: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: space[3], gap: space[2] },
-  searchIcon: { fontSize: 14 },
-  searchInput: { flex: 1, paddingVertical: space[2] + 2, fontSize: text.sm, color: colors.gray900 },
-  list: { padding: space[4], gap: space[3], paddingBottom: space[8] },
-  card: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray100, padding: space[4], flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  avatar: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#f0f3f8' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  spinner: {
+    width: 24, height: 24, borderRadius: 12,
+    borderWidth: 2.5, borderColor: colors.gray200, borderTopColor: colors.primary,
+  },
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2],
+    marginHorizontal: space[4], marginVertical: space[3],
+    backgroundColor: colors.white, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.gray200,
+    paddingHorizontal: space[3], paddingVertical: 2,
+  },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: colors.gray900 },
+  list: { paddingHorizontal: space[4], paddingBottom: space[8] },
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: colors.white, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: '#e8edf5',
+    padding: space[4],
+    shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+  },
+  avatar: {
+    width: 44, height: 44, borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    justifyContent: 'center', alignItems: 'center',
+  },
   avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
-  info: { flex: 1 },
-  name: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
-  count: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
-  badge: { backgroundColor: colors.emerald50, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontSize: 10, fontWeight: weight.semibold, color: colors.emerald700 },
+  cardName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
+  cardSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
+  badge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: colors.gray100, borderRadius: radius.full,
+    paddingHorizontal: 8, paddingVertical: 5,
+  },
+  badgeNum: { fontSize: text.xs, fontWeight: weight.bold, color: colors.primary },
 });

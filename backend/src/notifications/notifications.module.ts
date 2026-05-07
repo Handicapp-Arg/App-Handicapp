@@ -13,6 +13,7 @@ import { NotificationsGateway } from './notifications.gateway';
 import { EventCreatedListener } from './listeners/event-created.listener';
 import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { EmailModule } from '../email/email.module';
     }),
     AuthModule,
     EmailModule,
+    PushModule,
   ],
   controllers: [NotificationsController, NotificationSettingsController],
   providers: [

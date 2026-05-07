@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 
-import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useTransferHorse, usePropietarios, useHorseMovements, useUploadDocument, useDeleteDocument } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
@@ -182,6 +182,21 @@ export default function HorseDetailScreen() {
   const deleteMedical = useDeleteMedicalRecord(id);
   const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(id, horse?.name ?? '');
 
+  // Vets
+  const { data: horseVets } = useHorseVets(id);
+  const { data: veterinarios } = useVeterinarios();
+  const assignVet = useAssignVet(id);
+  const removeVet = useRemoveVet(id);
+
+  // Transferencia
+  const { data: propietarios } = usePropietarios();
+  const transferHorse = useTransferHorse();
+  const { data: movements } = useHorseMovements(id);
+
+  // Documentos upload
+  const uploadDoc = useUploadDocument(id);
+  const deleteDoc = useDeleteDocument(id);
+
   const todayISO = new Date().toISOString().split('T')[0];
   const todayRoutine = routines?.find((r) => r.date === todayISO);
   const deleteHorse = useDeleteHorse();
@@ -197,11 +212,67 @@ export default function HorseDetailScreen() {
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({ type: 'vacuna', name: '', date: todayISO });
 
+  // Vet modal
+  const [showAssignVet, setShowAssignVet] = useState(false);
+  const [selectedVetId, setSelectedVetId] = useState('');
+
+  // Transfer modal
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [transferOwnerId, setTransferOwnerId] = useState('');
+
+  // Doc upload modal
+  const [showUploadDoc, setShowUploadDoc] = useState(false);
+  const [docName, setDocName] = useState('');
+
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.8 });
     if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+  };
+
+  const handlePickDocument = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+    if (!result.canceled && result.assets[0]) {
+      const name = docName.trim() || 'Documento';
+      await uploadDoc.mutateAsync({ uri: result.assets[0].uri, name });
+      setShowUploadDoc(false);
+      setDocName('');
+      haptic.success();
+    }
+  };
+
+  const handleRemoveVet = (vetUserId: string, vetName: string) => {
+    Alert.alert('Quitar veterinario', `¿Quitás a ${vetName} del acceso a ${horse?.name}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Quitar', style: 'destructive', onPress: () => { haptic.medium(); removeVet.mutate(vetUserId); } },
+    ]);
+  };
+
+  const handleTransfer = () => {
+    if (!transferOwnerId) return;
+    Alert.alert('Confirmar transferencia', '¿Transferís la propiedad de este caballo? Esta acción no se puede deshacer.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Transferir',
+        style: 'destructive',
+        onPress: async () => {
+          await transferHorse.mutateAsync({ id, new_owner_id: transferOwnerId });
+          haptic.success();
+          setShowTransfer(false);
+          setTransferOwnerId('');
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteDoc = (docId: string, docName: string) => {
+    Alert.alert('Eliminar documento', `¿Eliminás "${docName}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => deleteDoc.mutate(docId) },
+    ]);
   };
 
   const handleDelete = () => {
@@ -364,24 +435,105 @@ export default function HorseDetailScreen() {
             </View>
           )}
 
-          {/* Documentos */}
-          {documents && documents.length > 0 && (
+          {/* ─── Veterinarios asignados ─── */}
+          {(can('horses', 'update') || (horseVets && horseVets.length > 0)) && (
             <View style={s.section}>
+              <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+                <Text style={s.sectionTitle}>Veterinarios</Text>
+                {can('horses', 'update') && (
+                  <TouchableOpacity onPress={() => setShowAssignVet(true)} style={s.smallBtn}>
+                    <Text style={s.smallBtnText}>+ Asignar</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {!horseVets?.length ? (
+                <Text style={s.emptyText}>Sin veterinarios asignados</Text>
+              ) : (
+                <View style={s.docsCard}>
+                  {horseVets.map((v, i) => (
+                    <View key={v.id}>
+                      {i > 0 && <View style={s.docDivider} />}
+                      <View style={s.docRow}>
+                        <View style={[s.docIcon, { backgroundColor: '#eff6ff' }]}>
+                          <Ionicons name="person-outline" size={16} color="#1d4ed8" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.docName}>{v.user.name}</Text>
+                          <Text style={{ fontSize: 11, color: colors.gray400 }}>{v.user.email}</Text>
+                        </View>
+                        {can('horses', 'update') && (
+                          <TouchableOpacity onPress={() => handleRemoveVet(v.user_id, v.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <Ionicons name="close-circle-outline" size={20} color={colors.gray300} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ─── Transferencia de propiedad ─── */}
+          {user?.role === 'propietario' && horse.owner_id === user.id && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Propiedad</Text>
+              <TouchableOpacity
+                style={[s.smallBtn, { alignSelf: 'flex-start', borderColor: colors.red500 }]}
+                onPress={() => setShowTransfer(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.smallBtnText, { color: colors.red500 }]}>Transferir caballo</Text>
+              </TouchableOpacity>
+              {movements && movements.length > 0 && (
+                <View style={{ marginTop: 12, gap: 6 }}>
+                  <Text style={s.emptyText}>Historial de movimientos:</Text>
+                  {movements.slice(0, 5).map((m) => (
+                    <View key={m.id} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+                      <Text style={{ fontSize: 11, color: colors.gray400 }}>
+                        {new Date(m.created_at).toLocaleDateString('es-AR')}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.gray600, flex: 1 }}>{m.description}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ─── Documentos ─── */}
+          <View style={s.section}>
+            <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
               <Text style={s.sectionTitle}>Documentos</Text>
+              {can('horses', 'update') && (
+                <TouchableOpacity onPress={() => setShowUploadDoc(true)} style={s.smallBtn}>
+                  <Text style={s.smallBtnText}>+ Subir</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {!documents?.length ? (
+              <Text style={s.emptyText}>Sin documentos adjuntos</Text>
+            ) : (
               <View style={s.docsCard}>
                 {documents.map((doc, i) => (
                   <View key={doc.id}>
                     {i > 0 && <View style={s.docDivider} />}
-                    <TouchableOpacity style={s.docRow} onPress={() => Linking.openURL(doc.url)} activeOpacity={0.7}>
-                      <View style={s.docIcon}><Ionicons name="document-text-outline" size={18} color={colors.red500} /></View>
-                      <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
-                    </TouchableOpacity>
+                    <View style={s.docRow}>
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => Linking.openURL(doc.url)} activeOpacity={0.7}>
+                        <View style={s.docIcon}><Ionicons name="document-text-outline" size={18} color={colors.red500} /></View>
+                        <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
+                      </TouchableOpacity>
+                      {can('horses', 'update') && (
+                        <TouchableOpacity onPress={() => handleDeleteDoc(doc.id, doc.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <Ionicons name="trash-outline" size={16} color={colors.gray300} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                 ))}
               </View>
-            </View>
-          )}
+            )}
+          </View>
 
           {/* Peso */}
           <View style={s.section}>
@@ -414,7 +566,25 @@ export default function HorseDetailScreen() {
 
           {/* Rutina */}
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Rutina de hoy</Text>
+            <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+              <Text style={s.sectionTitle}>Rutina de hoy</Text>
+              {/* % de cumplimiento semanal */}
+              {routines && routines.length > 0 && (() => {
+                const totalChecks = routines.reduce((acc, r) =>
+                  acc + ROUTINE_ITEMS.filter(({ key }) => r[key]).length, 0);
+                const maxChecks = routines.length * ROUTINE_ITEMS.length;
+                const pct = maxChecks > 0 ? Math.round((totalChecks / maxChecks) * 100) : 0;
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={{ fontSize: text.xs, color: pct >= 70 ? '#16a34a' : pct >= 40 ? colors.amber600 : colors.red500, fontWeight: weight.bold }}>
+                      {pct}%
+                    </Text>
+                    <Text style={{ fontSize: 10, color: colors.gray400 }}>últimos {routines.length}d</Text>
+                  </View>
+                );
+              })()}
+            </View>
+
             <View style={s.routineGrid}>
               {ROUTINE_ITEMS.map(({ key, label, emoji }) => {
                 const checked = todayRoutine?.[key] ?? false;
@@ -432,6 +602,30 @@ export default function HorseDetailScreen() {
                 );
               })}
             </View>
+
+            {/* Tendencia de los últimos días */}
+            {routines && routines.length > 1 && (
+              <View style={s.routineTrend}>
+                <Text style={s.routineTrendTitle}>Últimos {routines.length} días</Text>
+                <View style={s.routineTrendDays}>
+                  {[...routines].reverse().map((r) => {
+                    const completedCount = ROUTINE_ITEMS.filter(({ key }) => r[key]).length;
+                    const pct = completedCount / ROUTINE_ITEMS.length;
+                    const dayLabel = new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'narrow' });
+                    const isToday = r.date === todayISO;
+                    return (
+                      <View key={r.date} style={s.routineTrendDay}>
+                        <View style={[s.routineTrendBar, {
+                          height: Math.max(4, pct * 36),
+                          backgroundColor: pct >= 0.7 ? '#16a34a' : pct >= 0.4 ? colors.amber600 : pct > 0 ? colors.red500 : colors.gray200,
+                        }]} />
+                        <Text style={[s.routineTrendLabel, isToday && { color: colors.primary, fontWeight: weight.bold }]}>{dayLabel}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -678,6 +872,142 @@ export default function HorseDetailScreen() {
           <EditHorseModal horse={horse} onClose={() => setShowEdit(false)} />
         </View>
       </Modal>
+
+      {/* ─── Modal asignar veterinario ─── */}
+      <Modal visible={showAssignVet} animationType="slide" transparent onRequestClose={() => setShowAssignVet(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Asignar veterinario</Text>
+              <TouchableOpacity onPress={() => setShowAssignVet(false)}><Text style={s.modalCloseText}>✕</Text></TouchableOpacity>
+            </View>
+            <View style={s.modalBody}>
+              <Text style={s.fieldLabel}>Veterinario</Text>
+              {!veterinarios?.length ? (
+                <Text style={s.emptyText}>No hay veterinarios registrados en el sistema.</Text>
+              ) : (
+                <View style={{ gap: 6 }}>
+                  {veterinarios
+                    .filter((v) => !horseVets?.some((a) => a.user_id === v.id))
+                    .map((v) => (
+                      <TouchableOpacity
+                        key={v.id}
+                        style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                        onPress={() => setSelectedVetId(v.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons name="person-outline" size={16} color={selectedVetId === v.id ? colors.white : colors.primary} />
+                        <Text style={[s.smallBtnText, selectedVetId === v.id && { color: colors.white }]}>{v.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              )}
+            </View>
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignVet(false)}>
+                <Text style={s.btnSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedVetId || assignVet.isPending) && { opacity: 0.5 }]}
+                disabled={!selectedVetId || assignVet.isPending}
+                onPress={async () => {
+                  await assignVet.mutateAsync(selectedVetId);
+                  haptic.success();
+                  setShowAssignVet(false);
+                  setSelectedVetId('');
+                }}
+                activeOpacity={0.85}
+              >
+                {assignVet.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ─── Modal transferir ─── */}
+      <Modal visible={showTransfer} animationType="slide" transparent onRequestClose={() => setShowTransfer(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={s.modalSheet}>
+            <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
+              <Text style={[s.modalTitle, { color: colors.white }]}>Transferir propiedad</Text>
+              <TouchableOpacity onPress={() => setShowTransfer(false)}><Text style={[s.modalCloseText, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text></TouchableOpacity>
+            </View>
+            <View style={s.modalBody}>
+              <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Nuevo propietario</Text>
+              <Text style={{ fontSize: 12, color: colors.gray500, marginBottom: 12 }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
+              {!propietarios?.length ? (
+                <Text style={s.emptyText}>No hay otros propietarios en el sistema.</Text>
+              ) : (
+                <View style={{ gap: 6 }}>
+                  {propietarios
+                    .filter((p) => p.id !== user?.id)
+                    .map((p) => (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={[s.smallBtn, { alignSelf: 'stretch', paddingVertical: 12 }, transferOwnerId === p.id && { backgroundColor: colors.red500, borderColor: colors.red500 }]}
+                        onPress={() => setTransferOwnerId(p.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[s.smallBtnText, transferOwnerId === p.id && { color: colors.white }]}>{p.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              )}
+            </View>
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowTransfer(false)}>
+                <Text style={s.btnSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, { flex: 1, backgroundColor: colors.red500, borderRadius: radius.md, paddingVertical: 12, alignItems: 'center' }, (!transferOwnerId || transferHorse.isPending) && { opacity: 0.5 }]}
+                disabled={!transferOwnerId || transferHorse.isPending}
+                onPress={handleTransfer}
+                activeOpacity={0.85}
+              >
+                {transferHorse.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[s.btnPrimaryText]}>Confirmar</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ─── Modal subir documento ─── */}
+      <Modal visible={showUploadDoc} animationType="slide" transparent onRequestClose={() => setShowUploadDoc(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={[s.modalSheet, { maxHeight: '45%' }]}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Subir documento</Text>
+              <TouchableOpacity onPress={() => setShowUploadDoc(false)}><Text style={s.modalCloseText}>✕</Text></TouchableOpacity>
+            </View>
+            <View style={s.modalBody}>
+              <Text style={s.fieldLabel}>Nombre del documento</Text>
+              <TextInput
+                style={s.input}
+                value={docName}
+                onChangeText={setDocName}
+                placeholder="Ej: Pedigree, Certificado..."
+                placeholderTextColor={colors.gray400}
+                autoCapitalize="sentences"
+              />
+              <Text style={{ fontSize: 11, color: colors.gray400, marginTop: 8 }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
+            </View>
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowUploadDoc(false)}>
+                <Text style={s.btnSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, s.btnPrimary, { flex: 1 }, uploadDoc.isPending && { opacity: 0.5 }]}
+                disabled={uploadDoc.isPending}
+                onPress={handlePickDocument}
+                activeOpacity={0.85}
+              >
+                {uploadDoc.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Seleccionar</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScrollView>
   );
 }
@@ -764,6 +1094,12 @@ const s = StyleSheet.create({
   routineEmoji: { fontSize: 16 },
   routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: colors.gray600 },
   routineLabelChecked: { color: '#15803d' },
+  routineTrend: { marginTop: 12, backgroundColor: colors.gray50, borderRadius: radius.md, padding: space[3] },
+  routineTrendTitle: { fontSize: 10, fontWeight: weight.semibold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  routineTrendDays: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 52 },
+  routineTrendDay: { alignItems: 'center', gap: 4, flex: 1 },
+  routineTrendBar: { width: 14, borderRadius: 4, minHeight: 4 },
+  routineTrendLabel: { fontSize: 9, color: colors.gray400, fontWeight: weight.medium },
 
   /* Eventos */
   eventsList: { gap: 8 },
@@ -833,6 +1169,8 @@ const s = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' },
+  modalCloseText: { fontSize: 18, color: colors.gray400 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   modalTitle: { fontSize: 17, fontWeight: '700', color: colors.gray900 },
   modalBody: { padding: 20, gap: 10 },

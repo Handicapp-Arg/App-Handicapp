@@ -131,3 +131,100 @@ export function useDeleteWeightRecord(horseId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'weight'] }),
   });
 }
+
+/* ─── Veterinarios ─── */
+
+export function useVeterinarios() {
+  return useQuery<{ id: string; name: string }[]>({
+    queryKey: ['veterinarios'],
+    queryFn: async () => (await api.get('/auth/users?role=veterinario')).data,
+  });
+}
+
+export function useHorseVets(horseId: string) {
+  return useQuery<{ id: string; user_id: string; user: { id: string; name: string; email: string } }[]>({
+    queryKey: ['horses', horseId, 'vets'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/vets`)).data,
+    enabled: !!horseId,
+  });
+}
+
+export function useAssignVet(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (user_id: string) => api.post(`/horses/${horseId}/vets`, { user_id }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'vets'] }),
+  });
+}
+
+export function useRemoveVet(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vetUserId: string) => api.delete(`/horses/${horseId}/vets/${vetUserId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'vets'] }),
+  });
+}
+
+/* ─── Transferencia ─── */
+
+export function usePropietarios() {
+  return useQuery<{ id: string; name: string }[]>({
+    queryKey: ['propietarios'],
+    queryFn: async () => (await api.get('/auth/users?role=propietario')).data,
+  });
+}
+
+export function useTransferHorse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, new_owner_id }: { id: string; new_owner_id: string }) =>
+      api.post(`/horses/${id}/transfer`, { new_owner_id }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses'] }),
+  });
+}
+
+/* ─── Historial de movimientos ─── */
+
+export interface HorseMovement {
+  id: string;
+  type: string;
+  description: string;
+  actor: { id: string; name: string; role: string } | null;
+  created_at: string;
+}
+
+export function useHorseMovements(horseId: string) {
+  return useQuery<HorseMovement[]>({
+    queryKey: ['horses', horseId, 'movements'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/movements`)).data,
+    enabled: !!horseId,
+  });
+}
+
+/* ─── Documentos ─── */
+
+export function useUploadDocument(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ uri, name }: { uri: string; name: string }) => {
+      const formData = new FormData();
+      const ext = uri.split('.').pop()?.toLowerCase() ?? 'pdf';
+      const mime = ext === 'pdf' ? 'application/pdf' : 'image/jpeg';
+      formData.append('file', { uri, name: `${name}.${ext}`, type: mime } as unknown as Blob);
+      formData.append('name', name);
+      const { data } = await api.post(`/horses/${horseId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data as HorseDocument;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'documents'] }),
+  });
+}
+
+export function useDeleteDocument(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (docId: string) => api.delete(`/horses/${horseId}/documents/${docId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'documents'] }),
+  });
+}

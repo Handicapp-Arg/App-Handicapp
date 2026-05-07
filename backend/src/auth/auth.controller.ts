@@ -127,6 +127,13 @@ export class AuthController {
     return this.authService.lookupByEmail(email);
   }
 
+  @Post('push-token')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  savePushToken(@Body('token') token: string, @GetUser() user: User) {
+    return this.authService.savePushToken(user.id, token);
+  }
+
   @Patch('profile')
   @UseGuards(AuthGuard('jwt'))
   async updateProfile(

@@ -4,9 +4,13 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Notification } from './notification.entity';
+import { User } from '../auth/user.entity';
+import { PushService } from '../push/push.service';
 
 @WebSocketGateway({
   cors: {
@@ -22,7 +26,11 @@ export class NotificationsGateway
 
   private userSockets = new Map<string, Set<string>>();
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    private readonly pushService: PushService,
+  ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     try {
@@ -62,7 +70,22 @@ export class NotificationsGateway
     }
   }
 
-  sendToUser(userId: string, notification: Notification): void {
+  // Envía WebSocket en tiempo real + push si el usuario no está conectado
+  async sendToUser(userId: string, notification: Notification): Promise<void> {
     this.server.to(`user:${userId}`).emit('notification', notification);
+
+    // Si el usuario no tiene ningún socket activo, enviar push
+    const isOnline = (this.userSockets.get(userId)?.size ?? 0) > 0;
+    if (!isOnline) {
+      const user = await this.userRepo.findOne({ where: { id: userId }, select: ['push_token'] });
+      if (user?.push_token) {
+        await this.pushService.sendToTokens(
+          [user.push_token],
+          notification.title,
+          notification.message,
+          { notificationId: notification.id },
+        ).catch(() => {});
+      }
+    }
   }
 }
