@@ -123,21 +123,28 @@ export class AgendaService {
     for (const appt of upcoming) {
       const horseUsers = await this.horseUserRepository.find({
         where: { horse_id: appt.horse_id },
-        relations: ['user'],
       });
 
-      const date = appt.scheduled_at.toLocaleDateString('es-AR', {
-        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      const timeStr = appt.scheduled_at.toLocaleTimeString('es-AR', {
+        hour: '2-digit', minute: '2-digit',
       });
       const typeLabel = TYPE_LABELS[appt.type] ?? appt.type;
-      const message = `${typeLabel} para ${appt.horse.name} mañana: ${appt.title} — ${date}`;
+      const title = `🗓️ Turno mañana — ${typeLabel}`;
+      const message = `${appt.horse.name}: ${appt.title} mañana a las ${timeStr}.`;
+
+      // Incluir propietario del caballo, creador del turno y usuarios asignados
+      const recipientIds = new Set<string>([
+        appt.horse.owner_id,
+        appt.created_by,
+        ...horseUsers.map((hu) => hu.user_id),
+      ].filter(Boolean));
 
       const notifications = await this.notificationsService.createMany(
-        horseUsers.map((hu) => ({
+        [...recipientIds].map((recipient_id) => ({
           type: NotificationType.HEALTH_REMINDER,
-          title: `Recordatorio: ${typeLabel}`,
+          title,
           message,
-          recipient_id: hu.user_id,
+          recipient_id,
         })),
       );
 

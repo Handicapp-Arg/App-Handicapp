@@ -154,6 +154,14 @@ export class AuthService {
     });
   }
 
+  async lookupByEmail(email: string): Promise<{ id: string; name: string; role: string } | null> {
+    const user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase().trim() },
+      select: ['id', 'name', 'role'],
+    });
+    return user ? { id: user.id, name: user.name, role: user.role } : null;
+  }
+
   async getAdminOverview(query: AdminQueryDto) {
     const { search, role, page = 1, limit = 10 } = query;
 

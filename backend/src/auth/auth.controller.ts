@@ -121,6 +121,12 @@ export class AuthController {
     return this.authService.findByRole(role);
   }
 
+  @Get('users/lookup')
+  @UseGuards(AuthGuard('jwt'))
+  lookupByEmail(@Query('email') email: string) {
+    return this.authService.lookupByEmail(email);
+  }
+
   @Patch('profile')
   @UseGuards(AuthGuard('jwt'))
   async updateProfile(

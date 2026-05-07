@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, type Contract } from '../hooks/use-contracts';
+import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../hooks/use-contracts';
 import { useAuth } from '../lib/auth';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
@@ -131,6 +131,8 @@ export default function ContratosScreen() {
   const [createTitle, setCreateTitle] = useState('Contrato de Pensión');
   const [createOwnerEmail, setCreateOwnerEmail] = useState('');
   const [createBody, setCreateBody] = useState(DEFAULT_BODY);
+  const [emailToSearch, setEmailToSearch] = useState('');
+  const { data: foundUser, isFetching: searchingUser } = useLookupUserByEmail(emailToSearch);
 
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [signedName, setSignedName] = useState('');
@@ -192,45 +194,91 @@ export default function ContratosScreen() {
       </ScrollView>
 
       {/* Modal crear contrato */}
-      <Modal visible={showCreate} animationType="slide" transparent>
+      <Modal visible={showCreate} animationType="slide" transparent onRequestClose={() => setShowCreate(false)}>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Nuevo contrato</Text>
-              <TouchableOpacity onPress={() => setShowCreate(false)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { setShowCreate(false); setEmailToSearch(''); setCreateOwnerEmail(''); }}>
+                <Text style={s.modalClose}>✕</Text>
+              </TouchableOpacity>
             </View>
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
+              {/* Buscar propietario por email */}
               <Text style={s.fieldLabel}>Email del propietario *</Text>
-              <TextInput style={s.input} value={createOwnerEmail} onChangeText={setCreateOwnerEmail}
-                placeholder="propietario@email.com" placeholderTextColor="#9ca3af"
-                keyboardType="email-address" autoCapitalize="none" />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TextInput
+                  style={[s.input, { flex: 1 }]}
+                  value={createOwnerEmail}
+                  onChangeText={setCreateOwnerEmail}
+                  placeholder="propietario@email.com"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  returnKeyType="search"
+                  onSubmitEditing={() => setEmailToSearch(createOwnerEmail.trim())}
+                />
+                <TouchableOpacity
+                  style={[s.searchBtn, searchingUser && { opacity: 0.6 }]}
+                  onPress={() => setEmailToSearch(createOwnerEmail.trim())}
+                  disabled={searchingUser}
+                  activeOpacity={0.8}
+                >
+                  {searchingUser
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={s.searchBtnText}>Buscar</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+
+              {/* Resultado del lookup */}
+              {emailToSearch && !searchingUser && (
+                foundUser ? (
+                  <View style={s.userFound}>
+                    <Text style={s.userFoundIcon}>✓</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.userFoundName}>{foundUser.name}</Text>
+                      <Text style={s.userFoundRole}>{foundUser.role}</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={s.userNotFound}>
+                    <Text style={s.userNotFoundText}>No se encontró ningún usuario con ese email.</Text>
+                  </View>
+                )
+              )}
+
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Título *</Text>
               <TextInput style={s.input} value={createTitle} onChangeText={setCreateTitle} placeholderTextColor="#9ca3af" />
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Cuerpo del contrato *</Text>
-              <TextInput style={[s.input, { height: 180, textAlignVertical: 'top', paddingTop: 10 }]}
-                value={createBody} onChangeText={setCreateBody} multiline placeholderTextColor="#9ca3af" />
-              <Text style={s.hint}>El propietario recibirá el contrato y podrá firmarlo o rechazarlo desde su app.</Text>
+              <TextInput
+                style={[s.input, { height: 180, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={createBody} onChangeText={setCreateBody} multiline placeholderTextColor="#9ca3af"
+              />
+              <Text style={s.hint}>El propietario podrá firmar o rechazar el contrato desde su app.</Text>
             </ScrollView>
             <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.cancelBtn, { flex: 1 }]} onPress={() => setShowCreate(false)}>
+              <TouchableOpacity style={[s.cancelBtn, { flex: 1 }]} onPress={() => { setShowCreate(false); setEmailToSearch(''); setCreateOwnerEmail(''); }}>
                 <Text style={s.cancelBtnText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.submitBtn, { flex: 1 }, createContract.isPending && { opacity: 0.6 }]}
-                disabled={createContract.isPending || !createOwnerEmail.trim() || !createTitle.trim()}
+                style={[s.submitBtn, { flex: 1 }, (!foundUser || createContract.isPending) && { opacity: 0.5 }]}
+                disabled={!foundUser || createContract.isPending || !createTitle.trim()}
                 onPress={async () => {
-                  // Buscar el propietario por email desde los usuarios
-                  Alert.alert(
-                    'Crear contrato',
-                    'Para crear el contrato necesitás el ID del propietario. Esta función se completa con la búsqueda de usuarios. Por ahora usá el panel web.',
-                    [{ text: 'Entendido', onPress: () => setShowCreate(false) }]
-                  );
+                  if (!foundUser) return;
+                  await createContract.mutateAsync({ owner_id: foundUser.id, title: createTitle.trim(), body: createBody });
+                  haptic.success();
+                  setShowCreate(false);
+                  setEmailToSearch('');
+                  setCreateOwnerEmail('');
+                  setCreateTitle('Contrato de Pensión');
+                  setCreateBody(DEFAULT_BODY);
                 }}
                 activeOpacity={0.85}
               >
                 {createContract.isPending
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={s.submitBtnText}>Crear</Text>
+                  : <Text style={s.submitBtnText}>Crear contrato</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -357,6 +405,14 @@ const s = StyleSheet.create({
   submitBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
   signSubmitBtn: { borderRadius: radius.md, backgroundColor: '#16a34a', paddingVertical: space[3] + 1, alignItems: 'center' },
   rejectSubmitBtn: { borderRadius: radius.md, backgroundColor: colors.red500, paddingVertical: space[3] + 1, alignItems: 'center' },
+  searchBtn: { borderRadius: radius.md, backgroundColor: colors.primary, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
+  searchBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
+  userFoundIcon: { fontSize: 18, color: '#16a34a' },
+  userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: '#15803d' },
+  userFoundRole: { fontSize: text.xs, color: '#16a34a', textTransform: 'capitalize' },
+  userNotFound: { backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
+  userNotFoundText: { fontSize: text.xs, color: '#b91c1c' },
 });
 
 const cStyles = StyleSheet.create({

@@ -158,15 +158,24 @@ export default function InicioScreen() {
             <Text style={s.heroName}>{firstName}</Text>
             <Text style={s.heroRole}>{roleLabel}</Text>
           </View>
-          <TouchableOpacity
-            style={s.heroAvatar}
-            onPress={() => { haptic.light(); router.push('/(tabs)/perfil'); }}
-            activeOpacity={0.8}
-          >
-            <Text style={s.heroAvatarText}>
-              {user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '?'}
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+            <TouchableOpacity
+              style={s.heroSearchBtn}
+              onPress={() => { haptic.light(); router.push('/buscar' as any); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="search-outline" size={20} color="rgba(255,255,255,0.85)" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.heroAvatar}
+              onPress={() => { haptic.light(); router.push('/(tabs)/perfil'); }}
+              activeOpacity={0.8}
+            >
+              <Text style={s.heroAvatarText}>
+                {user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '?'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Stats en el hero */}
@@ -330,6 +339,12 @@ const s = StyleSheet.create({
   heroGreeting: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)', fontWeight: weight.medium },
   heroName: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.white, lineHeight: 34 },
   heroRole: { fontSize: text.xs, color: 'rgba(255,255,255,0.45)', fontWeight: weight.semibold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroSearchBtn: {
+    width: 38, height: 38, borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+  },
   heroAvatar: {
     width: 44, height: 44, borderRadius: radius.full,
     backgroundColor: 'rgba(255,255,255,0.15)',

@@ -1,6 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 
+export function useLookupUserByEmail(email: string) {
+  return useQuery<{ id: string; name: string; role: string } | null>({
+    queryKey: ['user-lookup', email],
+    queryFn: async () => {
+      if (!email || email.length < 5) return null;
+      const res = await api.get('/auth/users/lookup', { params: { email } });
+      return res.data ?? null;
+    },
+    enabled: email.includes('@') && email.length >= 5,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
 export interface Contract {
   id: string;
   establishment_id: string;
