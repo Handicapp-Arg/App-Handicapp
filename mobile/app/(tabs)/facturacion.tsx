@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBills, useSendBill, useApproveBill, useDisputeBill, STATUS_META, monthLabel } from '../../hooks/use-billing';
+import { formatCurrency } from '../../lib/currency';
 import { useAuth } from '../../lib/auth';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { EmptyState } from '../../components/EmptyState';
@@ -115,7 +116,7 @@ export default function FacturacionScreen() {
                     {bill.horse && <Text style={styles.horseName}>{bill.horse.name}</Text>}
                     <Text style={styles.period}>{monthLabel(bill.month, bill.year)}</Text>
                   </View>
-                  <Text style={styles.total}>${Number(bill.total).toLocaleString('es-AR')}</Text>
+                  <Text style={styles.total}>{formatCurrency(bill.total, bill.currency)}</Text>
                 </View>
 
                 {/* Items */}
@@ -123,7 +124,7 @@ export default function FacturacionScreen() {
                   {bill.items.map((item, i) => (
                     <View key={i} style={styles.itemRow}>
                       <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
-                      <Text style={styles.itemTotal}>${item.total.toLocaleString('es-AR')}</Text>
+                      <Text style={styles.itemTotal}>{formatCurrency(item.total, bill.currency)}</Text>
                     </View>
                   ))}
                 </View>

@@ -15,6 +15,7 @@ export interface Bill {
   year: number;
   items: BillItem[];
   total: number;
+  currency: 'ARS' | 'USD';
   status: 'borrador' | 'enviada' | 'aprobada' | 'disputada';
   dispute_reason: string | null;
   notes: string | null;

@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { EventTypeBadge } from './EventTypeBadge';
+import { formatCurrency } from '../lib/currency';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
 import { card } from '../styles/common';
@@ -43,7 +44,7 @@ export function EventCard({ event, showHorse = true, onDelete }: Props) {
       {/* Monto (solo gastos) */}
       {event.amount != null && (
         <Text style={styles.amount}>
-          ${Number(event.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+          {formatCurrency(event.amount, event.currency ?? 'ARS')}
         </Text>
       )}
 

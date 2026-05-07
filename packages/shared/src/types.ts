@@ -61,6 +61,7 @@ export interface Event {
   type: EventType;
   description: string;
   amount: number | null;
+  currency: 'ARS' | 'USD';
   date: string;
   horse_id: string;
   horse?: Horse;

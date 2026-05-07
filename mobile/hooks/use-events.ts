@@ -79,7 +79,7 @@ export function useEventsByHorse(horseId: string) {
 export function useCreateEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { type: string; description: string; date: string; horse_id: string; amount?: string }) => {
+    mutationFn: async (payload: { type: string; description: string; date: string; horse_id: string; amount?: string; currency?: string }) => {
       const { data } = await api.post('/events', payload);
       return data as Event;
     },

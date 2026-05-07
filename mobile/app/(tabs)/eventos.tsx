@@ -14,6 +14,7 @@ import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { EventRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
+import { CURRENCY_OPTIONS, type Currency } from '../../lib/currency';
 import { colors, eventTypeColors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { layout, typography, input as inputStyle, modal as modalStyle, button } from '../../styles/common';
@@ -30,6 +31,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState<Currency>('ARS');
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
@@ -39,6 +41,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
     await createEvent.mutateAsync({
       type, description, date, horse_id: horseId,
       amount: type === 'gasto' && amount ? amount : undefined,
+      currency: type === 'gasto' ? currency : undefined,
     });
     onClose();
   };
@@ -94,10 +97,24 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
           {/* Fecha */}
           <DatePicker label="Fecha" value={date} onChange={setDate} maxDate={new Date()} />
 
-          {/* Monto */}
+          {/* Monto y moneda */}
           {type === 'gasto' && (
             <View style={{ gap: space[2] }}>
-              <Text style={typography.label}>Monto ($)</Text>
+              <Text style={typography.label}>Monto</Text>
+              <View style={{ flexDirection: 'row', gap: space[2] }}>
+                {CURRENCY_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.currencyBtn, currency === opt.value && styles.currencyBtnActive]}
+                    onPress={() => setCurrency(opt.value)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.currencyBtnText, currency === opt.value && styles.currencyBtnTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               <TextInput
                 style={inputStyle.base}
                 value={amount}
@@ -284,4 +301,8 @@ const styles = StyleSheet.create({
   },
   typeBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
   errorText: { fontSize: text.sm, color: colors.red500 },
+  currencyBtn: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
+  currencyBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  currencyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  currencyBtnTextActive: { color: colors.white },
 });
