@@ -6,10 +6,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useHorses, useCreateHorse } from '../../../hooks/use-horses';
 import { DatePicker } from '../../../components/DatePicker';
+import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
+import { HorseCardSkeleton } from '../../../components/Skeleton';
+import { EmptyState } from '../../../components/EmptyState';
 import { useAuth } from '../../../lib/auth';
-import { Spinner } from '../../../components/Spinner';
+import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import type { Horse } from '../../../../packages/shared/src';
 
@@ -18,35 +23,45 @@ function HorseCard({ horse }: { horse: Horse }) {
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push(`/(tabs)/caballos/${horse.id}`)}
-      activeOpacity={0.75}
+      onPress={() => { haptic.light(); router.push(`/(tabs)/caballos/${horse.id}`); }}
+      activeOpacity={0.88}
     >
+      {/* Imagen con overlay gradiente */}
       <View style={styles.imgWrap}>
         {horse.image_url
           ? <Image source={{ uri: horse.image_url }} style={styles.img} resizeMode="cover" />
           : (
             <View style={styles.imgPlaceholder}>
-              <Text style={styles.imgPlaceholderText}>{horse.name[0]}</Text>
+              <Text style={styles.imgPlaceholderText}>{horse.name[0]?.toUpperCase()}</Text>
             </View>
           )
         }
-        {horse.breed && (
-          <View style={styles.breedBadge}>
-            <Text style={styles.breedText}>{horse.breed.name}</Text>
-          </View>
-        )}
-      </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.cardName} numberOfLines={1}>{horse.name}</Text>
+        {/* Overlay gradiente inferior */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.65)']}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0.4 }}
+          end={{ x: 0, y: 1 }}
+        />
+        {/* Nombre sobre la imagen */}
+        <View style={styles.imgFooter}>
+          <Text style={styles.imgName} numberOfLines={1}>{horse.name}</Text>
+          {horse.breed && <Text style={styles.imgBreed} numberOfLines={1}>{horse.breed.name}</Text>}
+        </View>
+        {/* Badge actividad arriba derecha */}
         {horse.activity && (
           <View style={styles.activityBadge}>
             <Text style={styles.activityText}>{horse.activity.name}</Text>
           </View>
         )}
-        {horse.establishment && (
-          <Text style={styles.cardSub} numberOfLines={1}>{horse.establishment.name}</Text>
-        )}
       </View>
+      {/* Solo establecimiento si aplica */}
+      {horse.establishment && (
+        <View style={styles.cardFooter}>
+          <Ionicons name="business-outline" size={11} color={colors.gray400} />
+          <Text style={styles.cardSub} numberOfLines={1}>{horse.establishment.name}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -139,30 +154,36 @@ export default function CaballosScreen() {
       )
     : (horses ?? []);
 
-  if (isLoading) return <Spinner />;
+  if (isLoading) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <ScreenHeader
+          title="Caballos"
+          right={can('horses', 'create') ? <HeaderButton label="+ Nuevo" onPress={() => setShowCreate(true)} /> : undefined}
+        />
+        <View style={styles.skeletonGrid}>
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={{ flex: 1, maxWidth: '50%' }}>
+              <HorseCardSkeleton />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={styles.title}>Caballos</Text>
-          {horses && horses.length > 0 && (
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{horses.length}</Text>
-            </View>
-          )}
-        </View>
-        {can('horses', 'create') && (
-          <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreate(true)}>
-            <Text style={styles.newBtnText}>+ Nuevo</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title={`Caballos${horses?.length ? ` (${horses.length})` : ''}`}
+        right={can('horses', 'create') ? (
+          <HeaderButton label="+ Nuevo" onPress={() => { haptic.medium(); setShowCreate(true); }} />
+        ) : undefined}
+      />
 
       {/* Buscador */}
       <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search-outline" size={16} color={colors.gray400} />
         <TextInput
           style={styles.searchInput}
           value={search}
@@ -171,14 +192,21 @@ export default function CaballosScreen() {
           placeholderTextColor={colors.gray400}
           clearButtonMode="while-editing"
         />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+            <Ionicons name="close-circle" size={16} color={colors.gray300} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>
-            {search ? 'Sin resultados para esa búsqueda' : 'No hay caballos registrados'}
-          </Text>
-        </View>
+        <EmptyState
+          icon={search ? 'search-outline' : 'paw-outline'}
+          title={search ? 'Sin resultados' : 'No hay caballos registrados'}
+          message={search ? `No encontramos resultados para "${search}"` : 'Registrá el primer caballo para empezar a gestionar su historial.'}
+          actionLabel={!search && can('horses', 'create') ? 'Registrar caballo' : undefined}
+          onAction={() => { haptic.medium(); setShowCreate(true); }}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -204,47 +232,39 @@ export default function CaballosScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
-  title: { fontSize: 22, fontWeight: '800', color: colors.gray900 },
-  countBadge: { backgroundColor: colors.emerald50, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  countText: { fontSize: 12, fontWeight: '700', color: colors.emerald700 },
+  root: { flex: 1, backgroundColor: '#f0f2f5' },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 16, marginVertical: 10,
     backgroundColor: colors.white, borderRadius: 14,
-    borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, gap: 8,
+    borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 2, gap: 8,
   },
-  searchIcon: { fontSize: 14 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: colors.gray900 },
+  skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 12 },
   list: { padding: 12, paddingBottom: 32, gap: 12 },
   row: { gap: 12 },
+  // Card mejorada
   card: {
     flex: 1, backgroundColor: colors.white, borderRadius: 18,
-    borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden',
+    overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
   },
-  imgWrap: { position: 'relative', aspectRatio: 4 / 3 },
+  imgWrap: { position: 'relative', aspectRatio: 1 },
   img: { width: '100%', height: '100%' },
-  imgPlaceholder: {
-    flex: 1, backgroundColor: colors.gray100,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  imgPlaceholderText: { fontSize: 32, fontWeight: '700', color: colors.gray400 },
-  breedBadge: {
-    position: 'absolute', bottom: 6, left: 6,
-    backgroundColor: 'rgba(15,31,61,0.7)', borderRadius: 8,
+  imgPlaceholder: { flex: 1, backgroundColor: '#e8ecf4', justifyContent: 'center', alignItems: 'center' },
+  imgPlaceholderText: { fontSize: 36, fontWeight: '800', color: colors.primary, opacity: 0.4 },
+  imgOverlay: { ...StyleSheet.absoluteFillObject },
+  imgFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10, paddingTop: 28 },
+  imgName: { fontSize: 14, fontWeight: '800', color: colors.white, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  imgBreed: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.75)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  activityBadge: {
+    position: 'absolute', top: 8, right: 8,
+    backgroundColor: 'rgba(15,31,61,0.75)', borderRadius: 8,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  breedText: { fontSize: 10, fontWeight: '600', color: colors.white },
-  cardBody: { padding: 10, gap: 4 },
-  cardName: { fontSize: 14, fontWeight: '700', color: colors.gray900 },
-  activityBadge: { backgroundColor: colors.amber50, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
-  activityText: { fontSize: 10, fontWeight: '600', color: colors.amber600 },
-  cardSub: { fontSize: 11, color: colors.gray400 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  emptyText: { fontSize: 14, color: colors.gray400, textAlign: 'center' },
-  newBtn: { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
-  newBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  activityText: { fontSize: 10, fontWeight: '700', color: colors.white },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: colors.gray50 },
+  cardSub: { fontSize: 11, color: colors.gray400, flex: 1 },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },

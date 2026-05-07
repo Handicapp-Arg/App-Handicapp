@@ -6,7 +6,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBills, useSendBill, useApproveBill, useDisputeBill, STATUS_META, monthLabel } from '../../hooks/use-billing';
 import { useAuth } from '../../lib/auth';
-import { Spinner } from '../../components/Spinner';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { layout, typography, modal as modalStyle, button } from '../../styles/common';
@@ -69,31 +71,32 @@ export default function FacturacionScreen() {
   const isProp = user?.role === 'propietario';
 
   const handleSend = (id: string) => {
+    haptic.medium();
     Alert.alert('Enviar factura', '¿Enviás esta factura al propietario?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Enviar', onPress: () => sendBill.mutate(id) },
+      { text: 'Enviar', onPress: () => { haptic.success(); sendBill.mutate(id); } },
     ]);
   };
 
   const handleApprove = (id: string) => {
+    haptic.medium();
     Alert.alert('Aprobar factura', '¿Confirmás que aprobás esta factura?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Aprobar', onPress: () => approveBill.mutate(id) },
+      { text: 'Aprobar', onPress: () => { haptic.success(); approveBill.mutate(id); } },
     ]);
   };
 
   return (
     <View style={[layout.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={typography.pageTitle}>Facturación</Text>
-      </View>
+      <ScreenHeader title="Facturación" />
 
-      {isLoading ? <Spinner /> : !bills?.length ? (
-        <View style={layout.center}>
-          <Text style={typography.caption}>
-            {isEst ? 'No hay facturas creadas' : 'No recibiste facturas todavía'}
-          </Text>
-        </View>
+      {isLoading ? null : !bills?.length ? (
+        <EmptyState
+          icon="receipt-outline"
+          title={isEst ? 'Sin facturas creadas' : 'Sin facturas recibidas'}
+          message={isEst ? 'Creá facturas de pensión para enviar a los propietarios.' : 'Las facturas del establecimiento aparecerán aquí para que puedas aprobarlas.'}
+          tint="#8b5cf6"
+        />
       ) : (
         <FlatList
           data={bills}

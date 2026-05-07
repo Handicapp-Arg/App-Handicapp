@@ -10,7 +10,10 @@ import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
 import { DatePicker } from '../../components/DatePicker';
 import { EventCard } from '../../components/EventCard';
-import { Spinner } from '../../components/Spinner';
+import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { EventRowSkeleton } from '../../components/Skeleton';
+import { haptic } from '../../lib/haptics';
 import { colors, eventTypeColors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { layout, typography, input as inputStyle, modal as modalStyle, button } from '../../styles/common';
@@ -163,15 +166,12 @@ export default function EventosScreen() {
   return (
     <View style={[layout.screen, { paddingTop: insets.top }]}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={typography.pageTitle}>Eventos</Text>
-        {canCreate && (
-          <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreate(true)}>
-            <Text style={styles.newBtnText}>+ Nuevo</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title={total > 0 ? `Eventos (${total})` : 'Eventos'}
+        right={canCreate ? (
+          <HeaderButton label="+ Nuevo" onPress={() => { haptic.medium(); setShowCreate(true); }} />
+        ) : undefined}
+      />
 
       {/* Filtros */}
       <ScrollView
@@ -199,12 +199,20 @@ export default function EventosScreen() {
       )}
 
       {/* Lista */}
-      {isLoading ? <Spinner /> : !events.length ? (
-        <View style={layout.center}>
-          <Text style={typography.caption}>
-            No hay eventos{filterType ? ` de tipo ${eventTypeColors[filterType]?.label}` : ''}
-          </Text>
+      {isLoading ? (
+        <View style={{ paddingHorizontal: space[4], paddingTop: space[3], gap: space[2] }}>
+          {[1,2,3,4,5].map((i) => <EventRowSkeleton key={i} />)}
         </View>
+      ) : !events.length ? (
+        <EmptyState
+          icon={filterType ? 'filter-outline' : 'document-text-outline'}
+          title={filterType ? 'Sin eventos de este tipo' : 'Sin eventos registrados'}
+          message={filterType
+            ? `No hay eventos de "${eventTypeColors[filterType]?.label}". Probá con otro filtro.`
+            : 'Los eventos registrados de salud, entrenamiento y gastos aparecerán aquí.'}
+          actionLabel={canCreate && !filterType ? 'Crear primer evento' : undefined}
+          onAction={() => { haptic.medium(); setShowCreate(true); }}
+        />
       ) : (
         <FlatList
           data={events}

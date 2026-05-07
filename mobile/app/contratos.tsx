@@ -7,6 +7,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, type Contract } from '../hooks/use-contracts';
 import { useAuth } from '../lib/auth';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { EmptyState } from '../components/EmptyState';
+import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
 
@@ -141,18 +144,15 @@ export default function ContratosScreen() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Text style={s.backBtnText}>‹</Text>
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Contratos</Text>
-        {isEstab && (
-          <TouchableOpacity onPress={() => setShowCreate(true)} style={s.addBtn} activeOpacity={0.8}>
+      <ScreenHeader
+        title="Contratos"
+        showBack
+        right={isEstab ? (
+          <TouchableOpacity onPress={() => { haptic.medium(); setShowCreate(true); }} style={s.addBtn} activeOpacity={0.8}>
             <Text style={s.addBtnText}>+ Nuevo</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        ) : undefined}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -160,16 +160,13 @@ export default function ContratosScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
-        {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
-        ) : !contracts?.length ? (
-          <View style={s.empty}>
-            <Text style={s.emptyIcon}>📄</Text>
-            <Text style={s.emptyTitle}>Sin contratos</Text>
-            <Text style={s.emptyMsg}>
-              {isEstab ? 'Creá un contrato digital para que el propietario lo firme.' : 'No tenés contratos pendientes por el momento.'}
-            </Text>
-          </View>
+        {!contracts?.length ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="Sin contratos"
+            message={isEstab ? 'Creá un contrato digital para que el propietario lo firme desde la app.' : 'No tenés contratos pendientes por el momento.'}
+            tint={colors.primary}
+          />
         ) : (
           <>
             {pending.length > 0 && (
@@ -268,6 +265,7 @@ export default function ContratosScreen() {
                 onPress={async () => {
                   if (!signingContract) return;
                   await signContract.mutateAsync({ id: signingContract.id, signed_name: signedName.trim() });
+                  haptic.success();
                   setSigningContract(null);
                   setSignedName('');
                 }}

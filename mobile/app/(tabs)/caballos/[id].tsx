@@ -16,6 +16,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { useAuth } from '../../../lib/auth';
 import { Spinner } from '../../../components/Spinner';
+import { haptic } from '../../../lib/haptics';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
 import { colors } from '../../../lib/colors';
 import type { Event, Horse } from '../../../../packages/shared/src';
@@ -491,7 +492,7 @@ export default function HorseDetailScreen() {
               <TouchableOpacity
                 key={key}
                 style={[styles.routineItem, checked && styles.routineItemChecked]}
-                onPress={() => upsertRoutine.mutate({ date: todayISO, [key]: !checked })}
+                onPress={() => { haptic.selection(); upsertRoutine.mutate({ date: todayISO, [key]: !checked }); }}
                 activeOpacity={0.7}
               >
                 <Text style={styles.routineEmoji}>{emoji}</Text>
