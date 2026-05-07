@@ -124,12 +124,28 @@ export class PlansService {
   }
 
   /**
+   * Verifica que la organización esté activa (no suspendida).
+   */
+  async assertOrgActive(orgId: string): Promise<void> {
+    const org = await this.orgRepo.findOne({ where: { id: orgId } });
+    if (!org) throw new NotFoundException('Organización no encontrada');
+    if (org.status === 'suspended') {
+      throw new ForbiddenException(
+        'Esta organización está suspendida. Contactá al administrador de HandicApp para reactivarla.',
+      );
+    }
+  }
+
+  /**
    * Verifica si se puede agregar un caballo nuevo.
-   * - Si target_org_id está presente: chequea el plan de la organización
+   * - Si target_org_id está presente: chequea status + plan de la organización
    * - Si no: chequea el plan individual del usuario
    */
   async assertCanAddHorse(user: User, targetOrgId?: string | null): Promise<void> {
     if (targetOrgId) {
+      // Bloqueo si la organización está suspendida
+      await this.assertOrgActive(targetOrgId);
+
       const status = await this.getOrgPlanStatus(targetOrgId);
       if (status.is_limited) {
         throw new ForbiddenException(

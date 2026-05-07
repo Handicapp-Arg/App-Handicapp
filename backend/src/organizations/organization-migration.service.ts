@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, LessThan, Not } from 'typeorm';
 import { Organization } from './organization.entity';
 import { OrganizationMember } from './organization-member.entity';
 import { User } from '../auth/user.entity';
@@ -40,8 +41,40 @@ export class OrganizationMigrationService implements OnModuleInit {
     if (process.env.SKIP_ORG_MIGRATION === 'true') return;
     try {
       await this.migrate();
+      await this.downgradeExpiredPlans();
     } catch (err) {
       this.logger.error('Migración de organizaciones falló', err as Error);
+    }
+  }
+
+  /**
+   * Cron diario a las 3 AM: para cada organización con plan vencido y plan != free,
+   * la baja a plan 'free' con horse_limit = 3 y limpia plan_expires_at.
+   * También corre al startup para asegurar consistencia.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async downgradeExpiredPlans(): Promise<void> {
+    const now = new Date();
+    const expired = await this.orgRepo.find({
+      where: {
+        plan: Not('free' as any),
+        plan_expires_at: LessThan(now),
+      },
+    });
+
+    if (!expired.length) {
+      this.logger.log('Sin organizaciones con plan vencido');
+      return;
+    }
+
+    this.logger.log(`Bajando ${expired.length} organizaciones con plan vencido a Free...`);
+
+    for (const org of expired) {
+      org.plan = 'free';
+      org.horse_limit = 3;
+      org.plan_expires_at = null;
+      await this.orgRepo.save(org);
+      this.logger.log(`→ ${org.name} bajada a plan Free`);
     }
   }
 

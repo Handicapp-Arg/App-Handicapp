@@ -201,6 +201,13 @@ export class HorsesService implements OnModuleInit {
       return horses.map((h) => this.attachCoOwners(h));
     }
 
+    // Resolver IDs de organizaciones donde el usuario es miembro
+    const memberRows: { organization_id: string }[] = await this.horseRepository.query(
+      `SELECT organization_id FROM organization_members WHERE user_id = $1`,
+      [user.id],
+    );
+    const orgIds = memberRows.map((r) => r.organization_id);
+
     if (user.role === 'propietario') {
       const ownedQb = applySearch(buildQb('h'), 'h').andWhere('h.owner_id = :uid', { uid: user.id });
       const ownedHorses = await ownedQb.getMany();
@@ -222,17 +229,35 @@ export class HorsesService implements OnModuleInit {
     }
 
     if (user.role === 'establecimiento') {
-      const qb = applySearch(buildQb('h'), 'h').andWhere('h.establishment_id = :uid', { uid: user.id });
+      // Caballos donde es establishment_id directo O caballos en alguna de sus organizaciones
+      const qb = applySearch(buildQb('h'), 'h');
+      if (orgIds.length) {
+        qb.andWhere('(h.establishment_id = :uid OR h.organization_id IN (:...orgIds))', { uid: user.id, orgIds });
+      } else {
+        qb.andWhere('h.establishment_id = :uid', { uid: user.id });
+      }
       const horses = await qb.getMany();
       return horses.map((h) => this.attachCoOwners(h));
     }
 
-    // veterinario: caballos donde está asignado en horse_users
+    // veterinario: caballos asignados vía horse_users + caballos de organizaciones donde sea miembro
     const assignments = await this.horseUserRepository.find({
       where: { user_id: user.id },
     });
-    if (!assignments.length) return [];
     const assignedIds = assignments.map((a) => a.horse_id);
+
+    if (orgIds.length) {
+      const qb = applySearch(buildQb('h'), 'h');
+      if (assignedIds.length) {
+        qb.andWhere('(h.id IN (:...ids) OR h.organization_id IN (:...orgIds))', { ids: assignedIds, orgIds });
+      } else {
+        qb.andWhere('h.organization_id IN (:...orgIds)', { orgIds });
+      }
+      const horses = await qb.getMany();
+      return horses.map((h) => this.attachCoOwners(h));
+    }
+
+    if (!assignments.length) return [];
     const qb = applySearch(buildQb('h'), 'h').andWhere('h.id IN (:...ids)', { ids: assignedIds });
     const horses = await qb.getMany();
     return horses.map((h) => this.attachCoOwners(h));
@@ -853,17 +878,54 @@ export class HorsesService implements OnModuleInit {
   private async assertAccess(horse: Horse, user: User): Promise<void> {
     if (user.role === 'admin') return;
 
-    if (user.role === 'propietario' && horse.owner_id === user.id) return;
+    // Propietario directo
+    if (horse.owner_id === user.id) return;
 
-    if (user.role === 'establecimiento' && horse.establishment_id === user.id) return;
+    // Establecimiento directo (legacy: campo establishment_id)
+    if (user.role === 'establecimiento' && horse.establishment_id === user.id) {
+      // Si tiene organización, validar que no esté suspendida
+      if (horse.organization_id) await this.assertOrgNotSuspended(horse.organization_id);
+      return;
+    }
 
-    // Co-owner o veterinario asignado
+    // Co-owner o veterinario asignado vía horse_users
     const entry = await this.horseUserRepository.findOne({
       where: { horse_id: horse.id, user_id: user.id },
     });
     if (entry) return;
 
+    // Acceso vía organización: si el caballo pertenece a una org y el usuario
+    // es miembro de esa org, tiene acceso (todos los roles_in_org pueden ver).
+    // Si la org está suspendida, solo bloqueamos a admin/staff (los que escriben).
+    if (horse.organization_id) {
+      const orgMember: { user_id: string; role_in_org: string }[] = await this.horseRepository.query(
+        `SELECT user_id, role_in_org FROM organization_members WHERE organization_id = $1 AND user_id = $2 LIMIT 1`,
+        [horse.organization_id, user.id],
+      );
+      if (orgMember.length > 0) {
+        const role = orgMember[0].role_in_org;
+        // Bloquear admin/staff si la org está suspendida (no pueden escribir).
+        // Propietarios y vets siguen viendo aunque esté suspendida.
+        if (role === 'admin' || role === 'staff') {
+          await this.assertOrgNotSuspended(horse.organization_id);
+        }
+        return;
+      }
+    }
+
     throw new ForbiddenException('No tenés acceso a este caballo');
+  }
+
+  private async assertOrgNotSuspended(orgId: string): Promise<void> {
+    const rows: { status: string }[] = await this.horseRepository.query(
+      `SELECT status FROM organizations WHERE id = $1 LIMIT 1`,
+      [orgId],
+    );
+    if (rows[0]?.status === 'suspended') {
+      throw new ForbiddenException(
+        'Esta organización está suspendida. Contactá al administrador de HandicApp para reactivarla.',
+      );
+    }
   }
 
   private attachCoOwners(horse: Horse): Horse {

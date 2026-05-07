@@ -157,12 +157,40 @@ export class AgendaService {
 
   private async assertAccess(horse: Horse, user: User): Promise<void> {
     if (user.role === 'admin') return;
-    if (user.role === 'propietario' && horse.owner_id === user.id) return;
-    if (user.role === 'establecimiento' && horse.establishment_id === user.id) return;
+    if (horse.owner_id === user.id) return;
+    if (user.role === 'establecimiento' && horse.establishment_id === user.id) {
+      if (horse.organization_id) await this.assertOrgNotSuspended(horse.organization_id);
+      return;
+    }
+
     const entry = await this.horseUserRepository.findOne({
       where: { horse_id: horse.id, user_id: user.id },
     });
     if (entry) return;
+
+    if (horse.organization_id) {
+      const rows: { role_in_org: string }[] = await this.horseRepository.query(
+        `SELECT role_in_org FROM organization_members WHERE organization_id = $1 AND user_id = $2 LIMIT 1`,
+        [horse.organization_id, user.id],
+      );
+      if (rows.length > 0) {
+        if (['admin', 'staff'].includes(rows[0].role_in_org)) {
+          await this.assertOrgNotSuspended(horse.organization_id);
+        }
+        return;
+      }
+    }
+
     throw new ForbiddenException('No tenés acceso a este caballo');
+  }
+
+  private async assertOrgNotSuspended(orgId: string): Promise<void> {
+    const rows: { status: string }[] = await this.horseRepository.query(
+      `SELECT status FROM organizations WHERE id = $1 LIMIT 1`,
+      [orgId],
+    );
+    if (rows[0]?.status === 'suspended') {
+      throw new ForbiddenException('Esta organización está suspendida.');
+    }
   }
 }
