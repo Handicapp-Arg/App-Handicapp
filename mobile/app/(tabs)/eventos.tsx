@@ -240,6 +240,7 @@ export default function EventosScreen() {
             <EventCard
               event={item}
               showHorse
+              canEditMetrics={canCreate}
               onDelete={canDelete ? (id) => deleteEvent.mutate(id) : undefined}
             />
           )}

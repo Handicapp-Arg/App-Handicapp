@@ -16,6 +16,8 @@ import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../..
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { useEventsByHorse } from '../../../hooks/use-events';
+import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
+import { formatCurrency } from '../../../lib/currency';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
 import { DatePicker } from '../../../components/DatePicker';
@@ -138,7 +140,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
 }
 
 /* ─── EventCard ─── */
-function EventCard({ event, currentUserId }: { event: Event; currentUserId?: string }) {
+function EventCard({ event, currentUserId, canEdit }: { event: Event; currentUserId?: string; canEdit?: boolean }) {
   const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
     <View style={s.eventCard}>
@@ -148,7 +150,10 @@ function EventCard({ event, currentUserId }: { event: Event; currentUserId?: str
       </View>
       <Text style={s.eventDesc}>{event.description}</Text>
       {event.amount != null && (
-        <Text style={s.eventAmount}>${Number(event.amount).toLocaleString('es-AR')}</Text>
+        <Text style={s.eventAmount}>{formatCurrency(event.amount, event.currency ?? 'ARS')}</Text>
+      )}
+      {event.type === 'entrenamiento' && (
+        <TrainingMetricsPanel eventId={event.id} canEdit={canEdit ?? false} />
       )}
       <EventCommentThread eventId={event.id} currentUserId={currentUserId} />
     </View>
@@ -443,7 +448,7 @@ export default function HorseDetailScreen() {
             <View style={s.empty}><Text style={s.emptyText}>Sin eventos registrados</Text></View>
           ) : (
             <View style={s.eventsList}>
-              {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} currentUserId={user?.id} />)}
+              {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} />)}
             </View>
           )}
         </View>

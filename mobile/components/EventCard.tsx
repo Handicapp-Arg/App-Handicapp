@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { EventTypeBadge } from './EventTypeBadge';
+import { TrainingMetricsPanel } from './TrainingMetricsPanel';
 import { formatCurrency } from '../lib/currency';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
@@ -9,10 +10,11 @@ import type { Event } from '../../packages/shared/src';
 interface Props {
   event: Event;
   showHorse?: boolean;
+  canEditMetrics?: boolean;
   onDelete?: (id: string) => void;
 }
 
-export function EventCard({ event, showHorse = true, onDelete }: Props) {
+export function EventCard({ event, showHorse = true, canEditMetrics = false, onDelete }: Props) {
   const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
@@ -54,6 +56,11 @@ export function EventCard({ event, showHorse = true, onDelete }: Props) {
       {/* Fotos */}
       {event.photos && event.photos.length > 0 && (
         <Text style={styles.photoCount}>📷 {event.photos.length} foto{event.photos.length > 1 ? 's' : ''}</Text>
+      )}
+
+      {/* Métricas de entrenamiento */}
+      {event.type === 'entrenamiento' && (
+        <TrainingMetricsPanel eventId={event.id} canEdit={canEditMetrics} />
       )}
     </View>
   );

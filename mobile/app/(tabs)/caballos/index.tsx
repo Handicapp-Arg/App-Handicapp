@@ -143,16 +143,27 @@ export default function CaballosScreen() {
   const { can } = useAuth();
   const { data: horses, isLoading, refetch, isRefetching } = useHorses();
   const [search, setSearch] = useState('');
+  const [filterActivity, setFilterActivity] = useState('');
+  const [filterEstab, setFilterEstab] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const filtered = search
-    ? (horses ?? []).filter((h) =>
-        h.name.toLowerCase().includes(search.toLowerCase()) ||
-        h.breed?.name.toLowerCase().includes(search.toLowerCase()) ||
-        h.microchip?.includes(search)
-      )
-    : (horses ?? []);
+  // Opciones de filtro dinámicas según los datos disponibles
+  const activityOptions = [...new Set((horses ?? []).map((h) => h.activity?.name).filter(Boolean))] as string[];
+  const estabOptions = [...new Set((horses ?? []).map((h) => h.establishment?.name).filter(Boolean))] as string[];
+  const hasFilters = activityOptions.length > 1 || estabOptions.length > 1;
+
+  const filtered = (horses ?? []).filter((h) => {
+    const q = search.toLowerCase();
+    const matchSearch = !search || (
+      h.name.toLowerCase().includes(q) ||
+      (h.breed?.name ?? '').toLowerCase().includes(q) ||
+      (h.microchip ?? '').includes(q)
+    );
+    const matchActivity = !filterActivity || h.activity?.name === filterActivity;
+    const matchEstab = !filterEstab || h.establishment?.name === filterEstab;
+    return matchSearch && matchActivity && matchEstab;
+  });
 
   if (isLoading) {
     return (
@@ -198,6 +209,38 @@ export default function CaballosScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Filtros por actividad y establecimiento */}
+      {hasFilters && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+          style={{ maxHeight: 44 }}
+        >
+          {activityOptions.map((act) => (
+            <TouchableOpacity
+              key={act}
+              style={[styles.filterChip, filterActivity === act && styles.filterChipActive]}
+              onPress={() => { haptic.selection(); setFilterActivity(filterActivity === act ? '' : act); }}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.filterChipText, filterActivity === act && styles.filterChipTextActive]}>{act}</Text>
+            </TouchableOpacity>
+          ))}
+          {estabOptions.map((est) => (
+            <TouchableOpacity
+              key={est}
+              style={[styles.filterChip, filterEstab === est && styles.filterChipActive]}
+              onPress={() => { haptic.selection(); setFilterEstab(filterEstab === est ? '' : est); }}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="business-outline" size={11} color={filterEstab === est ? colors.white : colors.gray500} />
+              <Text style={[styles.filterChipText, filterEstab === est && styles.filterChipTextActive]}>{est}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -265,6 +308,11 @@ const styles = StyleSheet.create({
   activityText: { fontSize: 10, fontWeight: '700', color: colors.white },
   cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: colors.gray50 },
   cardSub: { fontSize: 11, color: colors.gray400, flex: 1 },
+  filterRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: colors.gray600 },
+  filterChipTextActive: { color: colors.white },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
