@@ -7,7 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '../../hooks/use-agenda';
 import { useHorses } from '../../hooks/use-horses';
 import { DatePicker } from '../../components/DatePicker';
-import { Spinner } from '../../components/Spinner';
+import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { layout, typography, card, modal as modalStyle, button, input as inputStyle } from '../../styles/common';
@@ -177,18 +179,24 @@ export default function AgendaScreen() {
 
   return (
     <View style={[layout.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={typography.pageTitle}>Agenda</Text>
-        <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreate(true)}>
-          <Text style={styles.newBtnText}>+ Turno</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Agenda"
+        right={
+          <HeaderButton
+            label="+ Turno"
+            onPress={() => { haptic.medium(); setShowCreate(true); }}
+          />
+        }
+      />
 
-      {/* Toggle */}
+      {/* Toggle Próximos / Todos */}
       <View style={styles.toggle}>
         {(['upcoming', 'all'] as const).map((v) => (
-          <TouchableOpacity key={v} style={[styles.toggleBtn, upcoming === (v === 'upcoming') && styles.toggleBtnActive]}
-            onPress={() => setUpcoming(v === 'upcoming')}
+          <TouchableOpacity
+            key={v}
+            style={[styles.toggleBtn, upcoming === (v === 'upcoming') && styles.toggleBtnActive]}
+            onPress={() => { haptic.selection(); setUpcoming(v === 'upcoming'); }}
+            activeOpacity={0.8}
           >
             <Text style={[styles.toggleText, upcoming === (v === 'upcoming') && styles.toggleTextActive]}>
               {v === 'upcoming' ? 'Próximos' : 'Todos'}
@@ -197,10 +205,18 @@ export default function AgendaScreen() {
         ))}
       </View>
 
-      {isLoading ? <Spinner /> : !Object.keys(grouped).length ? (
+      {isLoading ? (
         <View style={layout.center}>
-          <Text style={typography.caption}>{upcoming ? 'No hay turnos próximos' : 'No hay turnos registrados'}</Text>
+          <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 3, borderColor: colors.gray200, borderTopColor: colors.primary }} />
         </View>
+      ) : !Object.keys(grouped).length ? (
+        <EmptyState
+          icon="calendar-outline"
+          title={upcoming ? 'No hay turnos próximos' : 'Sin turnos registrados'}
+          message={upcoming ? 'No tenés turnos programados. Creá el primero.' : 'Los turnos veterinarios y de servicio aparecerán aquí.'}
+          actionLabel="+ Crear turno"
+          onAction={() => { haptic.medium(); setShowCreate(true); }}
+        />
       ) : (
         <FlatList
           data={Object.entries(grouped)}
@@ -230,16 +246,13 @@ export default function AgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[1] },
-  newBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] },
-  newBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  toggle: { flexDirection: 'row', marginHorizontal: space[4], marginBottom: space[2], borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden' },
+  toggle: { flexDirection: 'row', marginHorizontal: space[4], marginBottom: space[3], marginTop: space[1], borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden' },
   toggleBtn: { flex: 1, paddingVertical: space[2], alignItems: 'center', backgroundColor: colors.white },
   toggleBtnActive: { backgroundColor: colors.primary },
   toggleText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray500 },
   toggleTextActive: { color: colors.white },
   dayLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray400, textTransform: 'capitalize' },
-  apptCard: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray100, padding: space[3], gap: space[1] + 2 },
+  apptCard: { backgroundColor: colors.white, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.gray100, padding: space[4], gap: space[2], shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   apptRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   typeDot: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   typeText: { fontSize: text.xs, fontWeight: weight.semibold },

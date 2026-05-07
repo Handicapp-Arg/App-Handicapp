@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { useNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/colors';
@@ -177,19 +178,20 @@ export default function PerfilScreen() {
   return (
     <ScrollView
       style={layout.root}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
+      contentContainerStyle={[styles.content, { paddingBottom: space[10] }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Avatar */}
-      <View style={styles.avatarSection}>
+      {/* Hero del perfil */}
+      <View style={[styles.hero, { paddingTop: insets.top + space[5] }]}>
+        {/* Avatar */}
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <Text style={styles.userName}>{user.name}</Text>
+        <Text style={styles.userEmail}>{user.email}</Text>
         <View style={styles.roleBadge}>
           <Text style={styles.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
         </View>
-        <Text style={styles.userEmail}>{user.email}</Text>
       </View>
 
       {/* Plan (propietario / establecimiento) */}
@@ -279,6 +281,7 @@ export default function PerfilScreen() {
 
       {/* Cerrar sesión */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+        <Ionicons name="log-out-outline" size={18} color={colors.red700} />
         <Text style={styles.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -286,22 +289,31 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: space[5], gap: space[6], paddingBottom: space[10] },
-  avatarSection: { alignItems: 'center', gap: space[2] },
+  content: { gap: space[5] },
+
+  /* Hero */
+  hero: {
+    alignItems: 'center', gap: space[2],
+    backgroundColor: colors.primary,
+    paddingBottom: space[6],
+    paddingHorizontal: space[5],
+  },
   avatar: {
     width: 80, height: 80, borderRadius: radius.xl,
-    backgroundColor: colors.primary,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center', alignItems: 'center',
   },
   avatarText: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.white },
-  userName: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
+  userName: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
   roleBadge: {
-    backgroundColor: colors.primary, borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
     paddingHorizontal: space[4], paddingVertical: space[1] + 2,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
-  roleText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  userEmail: { fontSize: text.sm, color: colors.gray500 },
-  section: { gap: space[2] + 2 },
+  roleText: { fontSize: text.xs, fontWeight: weight.bold, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  userEmail: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)' },
+  section: { gap: space[2] + 2, paddingHorizontal: space[5] },
   sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
   sectionSubtitle: { fontSize: text.sm, color: colors.gray500 },
   emptyText: { fontSize: text.sm, color: colors.gray400 },
@@ -374,8 +386,9 @@ const styles = StyleSheet.create({
   notifTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
   notifMsg: { fontSize: text.xs, color: colors.gray500, marginTop: 2 },
   logoutBtn: {
-    backgroundColor: '#fef2f2', borderRadius: radius.md, borderWidth: 1, borderColor: '#fecaca',
-    paddingVertical: space[4], alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
+    backgroundColor: '#fef2f2', borderRadius: radius.lg, borderWidth: 1, borderColor: '#fecaca',
+    paddingVertical: space[4], marginHorizontal: space[5],
   },
   logoutText: { fontSize: text.base, fontWeight: weight.bold, color: colors.red700 },
 
