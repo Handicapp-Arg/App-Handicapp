@@ -79,8 +79,23 @@ export function useEventsByHorse(horseId: string) {
 export function useCreateEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { type: string; description: string; date: string; horse_id: string; amount?: string; currency?: string }) => {
-      const { data } = await api.post('/events', payload);
+    mutationFn: async (payload: {
+      type: string; description: string; date: string; horse_id: string;
+      amount?: string; currency?: string; photoUris?: string[];
+    }) => {
+      const { photoUris, ...fields } = payload;
+      if (photoUris && photoUris.length > 0) {
+        const formData = new FormData();
+        Object.entries(fields).forEach(([k, v]) => { if (v !== undefined) formData.append(k, v as string); });
+        photoUris.forEach((uri, i) => {
+          const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+          const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+          formData.append('photos', { uri, name: `photo_${i}.${ext}`, type: mime } as unknown as Blob);
+        });
+        const { data } = await api.post('/events', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        return data as Event;
+      }
+      const { data } = await api.post('/events', fields);
       return data as Event;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['events'] }),

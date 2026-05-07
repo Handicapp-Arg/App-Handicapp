@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import api from '../lib/api';
 
 export interface MedicalRecord {
@@ -61,4 +64,31 @@ export function useDeleteMedicalRecord(horseId: string) {
     mutationFn: async (id: string) => { await api.delete(`/horses/${horseId}/medical/${id}`); },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['medical', horseId] }),
   });
+}
+
+export function useDownloadMedicalPdf(horseId: string, horseName: string) {
+  const [loading, setLoading] = useState(false);
+
+  const download = async () => {
+    setLoading(true);
+    try {
+      const baseUrl = (api.defaults.baseURL ?? '').replace(/\/$/, '');
+      const token = api.defaults.headers.common?.['Authorization'] as string | undefined;
+      const url = `${baseUrl}/horses/${horseId}/medical/pdf`;
+      const safeName = horseName.replace(/[^a-zA-Z0-9]/g, '_');
+      const localUri = `${FileSystem.cacheDirectory}historial-medico-${safeName}.pdf`;
+
+      const result = await FileSystem.downloadAsync(url, localUri, {
+        headers: token ? { Authorization: token } : {},
+      });
+
+      if (result.status === 200) {
+        await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { download, loading };
 }

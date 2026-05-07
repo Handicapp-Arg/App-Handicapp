@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, ValidationPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Res, UseGuards, ValidationPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { MedicalService } from './medical.service';
@@ -25,6 +26,21 @@ export class MedicalController {
     @GetUser() user: User,
   ) {
     return this.medicalService.create(horseId, dto, user);
+  }
+
+  @Get('pdf')
+  async downloadPdf(
+    @Param('horseId') horseId: string,
+    @GetUser() user: User,
+    @Res() res: Response,
+  ) {
+    const { pdf, filename } = await this.medicalService.generateMedicalPdf(horseId, user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdf.length,
+    });
+    res.end(Buffer.from(pdf));
   }
 
   @Delete(':recordId')

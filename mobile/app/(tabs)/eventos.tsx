@@ -1,9 +1,10 @@
-'use client';
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal,
   TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  Image, Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
 import { useHorses } from '../../hooks/use-horses';
@@ -32,7 +33,19 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('ARS');
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [error, setError] = useState('');
+
+  const pickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], allowsMultipleSelection: true, quality: 0.8, selectionLimit: 5,
+    });
+    if (!result.canceled) {
+      setPhotoUris((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 5));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!horseId) { setError('Seleccioná un caballo'); return; }
@@ -42,6 +55,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
       type, description, date, horse_id: horseId,
       amount: type === 'gasto' && amount ? amount : undefined,
       currency: type === 'gasto' ? currency : undefined,
+      photoUris: photoUris.length > 0 ? photoUris : undefined,
     });
     onClose();
   };
@@ -125,6 +139,31 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
               />
             </View>
           )}
+
+          {/* Fotos opcionales */}
+          <View style={{ gap: space[2] }}>
+            <Text style={typography.label}>Fotos (opcional)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
+              {photoUris.map((uri, i) => (
+                <View key={uri} style={styles.photoThumb}>
+                  <Image source={{ uri }} style={styles.photoImg} />
+                  <TouchableOpacity
+                    style={styles.photoRemove}
+                    onPress={() => setPhotoUris((p) => p.filter((_, idx) => idx !== i))}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  >
+                    <Text style={styles.photoRemoveText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {photoUris.length < 5 && (
+                <TouchableOpacity style={styles.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
+                  <Text style={styles.photoAddIcon}>📷</Text>
+                  <Text style={styles.photoAddText}>Agregar</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
 
           {/* Descripción */}
           <View style={{ gap: space[2] }}>
@@ -306,4 +345,11 @@ const styles = StyleSheet.create({
   currencyBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   currencyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
   currencyBtnTextActive: { color: colors.white },
+  photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
+  photoImg: { width: '100%', height: '100%' },
+  photoRemove: { position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
+  photoRemoveText: { fontSize: 9, color: colors.white, fontWeight: weight.bold },
+  photoAdd: { width: 72, height: 72, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.gray200, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2, backgroundColor: colors.gray50 },
+  photoAddIcon: { fontSize: 20 },
+  photoAddText: { fontSize: 10, color: colors.gray400, fontWeight: weight.semibold },
 });

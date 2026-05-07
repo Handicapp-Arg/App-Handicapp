@@ -13,7 +13,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
-import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
@@ -180,6 +180,7 @@ export default function HorseDetailScreen() {
   const { data: medicalRecords } = useMedicalRecords(id);
   const addMedical = useAddMedicalRecord(id);
   const deleteMedical = useDeleteMedicalRecord(id);
+  const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(id, horse?.name ?? '');
 
   const todayISO = new Date().toISOString().split('T')[0];
   const todayRoutine = routines?.find((r) => r.date === todayISO);
@@ -464,11 +465,26 @@ export default function HorseDetailScreen() {
                 <View style={s.countBadge}><Text style={s.countText}>{medicalRecords.length}</Text></View>
               )}
             </View>
-            {can('horses', 'update') && (
-              <TouchableOpacity onPress={() => setShowAddMedical(true)} style={s.smallBtn}>
-                <Text style={s.smallBtnText}>+ Agregar</Text>
-              </TouchableOpacity>
-            )}
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              {medicalRecords && medicalRecords.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => { haptic.light(); downloadPdf(); }}
+                  style={s.pdfBtn}
+                  disabled={pdfLoading}
+                  activeOpacity={0.75}
+                >
+                  {pdfLoading
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <><Ionicons name="document-text-outline" size={13} color={colors.primary} /><Text style={s.pdfBtnText}>PDF</Text></>
+                  }
+                </TouchableOpacity>
+              )}
+              {can('horses', 'update') && (
+                <TouchableOpacity onPress={() => setShowAddMedical(true)} style={s.smallBtn}>
+                  <Text style={s.smallBtnText}>+ Agregar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {!medicalRecords?.length ? (
@@ -799,6 +815,8 @@ const s = StyleSheet.create({
   /* Botones pequeños */
   smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white },
   smallBtnText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white, minWidth: 44, justifyContent: 'center' },
+  pdfBtnText: { fontSize: 11, fontWeight: '700', color: colors.primary },
 
   /* QR Modal */
   qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 },

@@ -9,7 +9,7 @@ import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
-import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '@/hooks/use-event-comments';
 import QRCode from 'react-qr-code';
 import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
@@ -506,9 +506,12 @@ interface MedicalSectionProps {
   onSubmit: () => Promise<void>;
   onDelete: (id: string) => void;
   isPending: boolean;
+  horseId: string;
+  horseName: string;
 }
 
-function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, isPending }: MedicalSectionProps) {
+function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, isPending, horseId, horseName }: MedicalSectionProps) {
+  const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(horseId, horseName);
   const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none';
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm lg:rounded-2xl lg:border-gray-200">
@@ -526,16 +529,30 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
             )}
           </h2>
         </div>
-        {canEdit && !showForm && (
-          <button onClick={onOpenForm}
-            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
-          >
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Agregar
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {records.length > 0 && (
+            <button
+              onClick={downloadPdf}
+              disabled={pdfLoading}
+              className="flex items-center gap-1 rounded-lg border border-[#0f1f3d] px-2.5 py-1.5 text-[10px] font-semibold text-[#0f1f3d] hover:bg-[#0f1f3d] hover:text-white transition cursor-pointer disabled:opacity-50"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              {pdfLoading ? 'Generando...' : 'PDF'}
+            </button>
+          )}
+          {canEdit && !showForm && (
+            <button onClick={onOpenForm}
+              className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Agregar
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && (
@@ -1576,6 +1593,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
             onDelete={(rid) => deleteMedical.mutate(rid)}
             isPending={addMedical.isPending}
+            horseId={id}
+            horseName={horse.name}
           />
         )}
 
@@ -2007,6 +2026,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
           onDelete={(rid) => deleteMedical.mutate(rid)}
           isPending={addMedical.isPending}
+          horseId={id}
+          horseName={horse.name}
         />}
 
         {/* Fotos (desktop) */}
