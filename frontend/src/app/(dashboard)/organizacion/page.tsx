@@ -11,7 +11,8 @@ import {
 } from '@/hooks/use-organizations';
 import { useAuth } from '@/lib/auth-context';
 import {
-  PageHeader, PageLoader, EmptyState, Card, Badge, Button, Input, Modal, Select,
+  PageHeader, EmptyState, Card, Badge, Button, Input, Modal, Select,
+  OrganizacionSkeleton,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
@@ -295,7 +296,7 @@ export default function OrganizacionPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
 
-  if (loadingOrgs || loadingOrg) return <PageLoader />;
+  if (loadingOrgs || loadingOrg) return <OrganizacionSkeleton />;
 
   if (orgsError || orgError) {
     return (

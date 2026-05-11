@@ -69,28 +69,81 @@ export function useCreateInvitation(orgId: string) {
   });
 }
 
+/** Optimistic: la invitación desaparece de la lista al instante. Rollback si la API falla. */
 export function useCancelInvitation(orgId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (invId: string) => { await api.delete(`/organizations/${orgId}/invitations/${invId}`); },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations', orgId, 'invitations'] }),
+    mutationFn: async (invId: string) => {
+      await api.delete(`/organizations/${orgId}/invitations/${invId}`);
+    },
+    onMutate: async (invId) => {
+      const key = ['organizations', orgId, 'invitations'];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<OrgInvitation[]>(key);
+      if (previous) {
+        qc.setQueryData<OrgInvitation[]>(key, previous.filter((i) => i.id !== invId));
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        qc.setQueryData(['organizations', orgId, 'invitations'], ctx.previous);
+      }
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['organizations', orgId, 'invitations'] }),
   });
 }
 
+/** Optimistic: el miembro desaparece del detalle de org al instante. */
 export function useRemoveMember(orgId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (memberId: string) => { await api.delete(`/organizations/${orgId}/members/${memberId}`); },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations', orgId] }),
+    mutationFn: async (memberId: string) => {
+      await api.delete(`/organizations/${orgId}/members/${memberId}`);
+    },
+    onMutate: async (memberId) => {
+      const key = ['organizations', orgId];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<Organization>(key);
+      if (previous) {
+        qc.setQueryData<Organization>(key, {
+          ...previous,
+          members: previous.members.filter((m) => m.id !== memberId),
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(['organizations', orgId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['organizations', orgId] }),
   });
 }
 
+/** Optimistic: el rol cambia visualmente al instante en el detalle. */
 export function useChangeMemberRole(orgId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ memberId, role_in_org }: { memberId: string; role_in_org: OrgRole }) =>
       (await api.patch(`/organizations/${orgId}/members/${memberId}/role`, { role_in_org })).data as OrgMember,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations', orgId] }),
+    onMutate: async ({ memberId, role_in_org }) => {
+      const key = ['organizations', orgId];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<Organization>(key);
+      if (previous) {
+        qc.setQueryData<Organization>(key, {
+          ...previous,
+          members: previous.members.map((m) =>
+            m.id === memberId ? { ...m, role_in_org } : m,
+          ),
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(['organizations', orgId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['organizations', orgId] }),
   });
 }
 

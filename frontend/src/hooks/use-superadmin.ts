@@ -63,19 +63,55 @@ export function useSetOrgPlan() {
   });
 }
 
+/** Optimistic toggle de status — la fila refleja el cambio antes del round-trip. */
 export function useSetOrgStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'active' | 'suspended' | 'trial' }) =>
       (await api.patch(`/superadmin/organizations/${id}/status`, { status })).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['superadmin'] }),
+    onMutate: async ({ id, status }) => {
+      // Captura todas las queries de orgs (variadas por filtros) para hacer rollback.
+      const queries = qc.getQueriesData<SuperAdminOrg[]>({ queryKey: ['superadmin', 'orgs'] });
+      for (const [key, data] of queries) {
+        if (!data) continue;
+        qc.setQueryData<SuperAdminOrg[]>(
+          key,
+          data.map((o) => (o.id === id ? { ...o, status } : o)),
+        );
+      }
+      return { snapshots: queries };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, data] of ctx.snapshots) {
+        qc.setQueryData(key, data);
+      }
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['superadmin'] }),
   });
 }
 
+/** Optimistic delete — la fila desaparece de la tabla mientras se confirma. */
 export function useDeleteOrg() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => { await api.delete(`/superadmin/organizations/${id}`); },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['superadmin'] }),
+    mutationFn: async (id: string) => {
+      await api.delete(`/superadmin/organizations/${id}`);
+    },
+    onMutate: async (id) => {
+      const queries = qc.getQueriesData<SuperAdminOrg[]>({ queryKey: ['superadmin', 'orgs'] });
+      for (const [key, data] of queries) {
+        if (!data) continue;
+        qc.setQueryData<SuperAdminOrg[]>(key, data.filter((o) => o.id !== id));
+      }
+      return { snapshots: queries };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, data] of ctx.snapshots) {
+        qc.setQueryData(key, data);
+      }
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['superadmin'] }),
   });
 }

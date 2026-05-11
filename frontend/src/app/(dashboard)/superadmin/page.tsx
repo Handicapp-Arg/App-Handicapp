@@ -12,7 +12,7 @@ import {
 import { PLAN_LABELS, type OrgPlan } from '@/hooks/use-organizations';
 import {
   PageHeader, Card, Badge, Button, Modal, Input, Select, DataTable,
-  type ColumnDef, type BadgeTone,
+  SuperadminSkeleton, type ColumnDef, type BadgeTone,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
 

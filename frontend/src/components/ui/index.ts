@@ -11,3 +11,4 @@ export { ErrorState } from './error-state';
 export { QueryState } from './query-state';
 export { PageHeader } from './page-header';
 export { SkeletonCard, SkeletonRow, SkeletonText, SkeletonStat, Spinner, PageLoader } from './skeleton';
+export { OrganizacionSkeleton, SuperadminSkeleton, ListSkeleton } from './page-skeletons';
