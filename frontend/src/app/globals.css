@@ -68,7 +68,7 @@
 }
 
 :root {
-  /* Compatibilidad con código legado que usa las vars antiguas */
+  /* Light theme tokens (default) */
   --background: #ffffff;
   --foreground: #0d1117;
 
@@ -99,6 +99,46 @@
   --shadow-md:   0 4px 12px -2px rgb(15 31 61 / 0.10), 0 2px 6px -2px rgb(15 31 61 / 0.06);
   --shadow-lg:   0 10px 30px -4px rgb(15 31 61 / 0.14), 0 4px 10px -4px rgb(15 31 61 / 0.08);
   --shadow-card: 0 1px 3px 0 rgb(15 31 61 / 0.07), 0 1px 2px -1px rgb(15 31 61 / 0.05);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Dark theme — se aplica con [data-theme="dark"] en <html>.
+   Re-mapea las CSS variables existentes para que TODOS los
+   componentes que ya consumen --color-* muten sin tocar JSX.
+   ─────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --background: #060d18;
+  --foreground: #e7ecf5;
+
+  --color-surface-page:   #060d18;
+  --color-surface-card:   #0f1f3d;
+  --color-surface-border: #1d2f57;
+
+  --color-navy-50:  #1d2f57;
+  --color-navy-100: #162f5c;
+  --color-navy-200: #2f4474;
+  --color-navy-300: #5a6d99;
+  --color-navy-400: #93a0c2;
+  --color-navy-500: #c5cee0;
+  --color-navy-700: #e7ecf5;
+  --color-navy-800: #f5f7fb;
+  --color-navy-900: #ffffff;
+
+  --color-gray-50:  #0a1628;
+  --color-gray-100: #0f1f3d;
+  --color-gray-200: #1d2f57;
+  --color-gray-300: #2f4474;
+  --color-gray-400: #5a6d99;
+  --color-gray-500: #93a0c2;
+  --color-gray-600: #c5cee0;
+  --color-gray-700: #e7ecf5;
+  --color-gray-900: #f5f7fb;
+
+  --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-md:   0 4px 12px -2px rgb(0 0 0 / 0.55), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg:   0 10px 30px -4px rgb(0 0 0 / 0.6),  0 4px 10px -4px rgb(0 0 0 / 0.45);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.45),  0 1px 2px -1px rgb(0 0 0 / 0.35);
 }
 
 @theme inline {

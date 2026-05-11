@@ -3,9 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { Command } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { GlobalSearch } from '@/components/global-search';
+import { useCommandPalette } from '@/lib/command-palette';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -56,6 +59,7 @@ export function Sidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const { data: unread } = useUnreadCount();
+  const { open: openPalette } = useCommandPalette();
 
   const unreadCount = unread?.count ?? 0;
 
@@ -129,8 +133,25 @@ export function Sidebar() {
       </div>
 
       {/* Búsqueda global */}
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-2">
         <GlobalSearch />
+      </div>
+
+      {/* Trigger del Command Palette */}
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          onClick={openPalette}
+          className="group flex w-full items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[12px] text-white/55 transition hover:border-white/15 hover:bg-white/[0.06] hover:text-white/85"
+        >
+          <span className="flex items-center gap-2">
+            <Command className="h-3.5 w-3.5" aria-hidden />
+            Comandos
+          </span>
+          <kbd className="rounded border border-white/12 bg-white/5 px-1 py-0.5 text-[10px] font-semibold text-white/55 group-hover:text-white/85">
+            ⌘K
+          </kbd>
+        </button>
       </div>
 
       {/* Separador */}
@@ -182,6 +203,10 @@ export function Sidebar() {
           </svg>
           Cerrar sesión
         </button>
+        <div className="flex justify-between items-center px-2 pt-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">Tema</span>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

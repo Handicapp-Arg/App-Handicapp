@@ -1,9 +1,11 @@
-import { type LucideIcon, Inbox } from 'lucide-react';
+import { isValidElement, type ReactNode } from 'react';
+import { Inbox, type LucideIcon } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/cn';
 
 interface EmptyStateProps {
-  icon?: LucideIcon;
+  /** Lucide icon component (preferido) o un ReactElement custom. */
+  icon?: LucideIcon | ReactNode;
   title: string;
   message?: string;
   action?: { label: string; onClick: () => void };
@@ -11,12 +13,23 @@ interface EmptyStateProps {
   className?: string;
 }
 
+function renderIcon(icon: EmptyStateProps['icon']): ReactNode {
+  if (!icon) {
+    return <Inbox className="h-6 w-6" strokeWidth={1.7} aria-hidden />;
+  }
+  if (isValidElement(icon)) {
+    return icon;
+  }
+  const Icon = icon as LucideIcon;
+  return <Icon className="h-6 w-6" strokeWidth={1.7} aria-hidden />;
+}
+
 /**
  * Estado vacío con voz consistente. Las copias por defecto evitan "Sin datos"
  * y otros placeholders genéricos — el componente exige título descriptivo.
  */
 export function EmptyState({
-  icon: Icon = Inbox,
+  icon,
   title,
   message,
   action,
@@ -31,7 +44,7 @@ export function EmptyState({
       )}
     >
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-50 text-navy-500">
-        <Icon className="h-6 w-6" strokeWidth={1.7} aria-hidden />
+        {renderIcon(icon)}
       </div>
       <p className="text-sm font-semibold text-navy-900">{title}</p>
       {message && <p className="mt-1.5 max-w-sm text-sm text-slate-500">{message}</p>}
