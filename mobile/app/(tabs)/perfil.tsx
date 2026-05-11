@@ -257,6 +257,30 @@ export default function PerfilScreen() {
                 <Text style={quickStyles.arrow}>›</Text>
               </TouchableOpacity>
             )}
+            {(user?.role === 'establecimiento' || user?.role === 'admin') && (
+              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/solicitudes' as any)} activeOpacity={0.8}>
+                <View style={quickStyles.iconWrap}>
+                  <Text style={quickStyles.icon}>📨</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={quickStyles.label}>Solicitudes</Text>
+                  <Text style={quickStyles.desc}>Pensión de caballos · aceptar o rechazar</Text>
+                </View>
+                <Text style={quickStyles.arrow}>›</Text>
+              </TouchableOpacity>
+            )}
+            {isAdmin && (
+              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/superadmin' as any)} activeOpacity={0.8}>
+                <View style={quickStyles.iconWrap}>
+                  <Text style={quickStyles.icon}>⚙️</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={quickStyles.label}>Panel superadmin</Text>
+                  <Text style={quickStyles.desc}>MRR · planes · organizaciones</Text>
+                </View>
+                <Text style={quickStyles.arrow}>›</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
