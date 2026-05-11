@@ -9,6 +9,7 @@ import { useInvitationByToken, useAcceptInvitation, ROLE_LABELS } from '../../ho
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
+import { Routes, nav } from '../../lib/routes';
 
 export default function InvitationScreen() {
   const insets = useSafeAreaInsets();
@@ -20,7 +21,7 @@ export default function InvitationScreen() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.replace('/(auth)/login' as any);
+      nav.replace(router, Routes.authLogin);
     }
   }, [user, authLoading]);
 
@@ -40,7 +41,7 @@ export default function InvitationScreen() {
         </View>
         <Text style={s.errorTitle}>Invitación inválida</Text>
         <Text style={s.errorMsg}>El link que abriste no es válido, ya fue usado o expiró.</Text>
-        <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 16 }]} onPress={() => router.replace('/(tabs)' as any)}>
+        <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 16 }]} onPress={() => nav.replace(router, Routes.tabsHome)}>
           <Text style={s.btnPrimaryText}>Ir al inicio</Text>
         </TouchableOpacity>
       </View>
@@ -68,7 +69,7 @@ export default function InvitationScreen() {
     haptic.medium();
     await accept.mutateAsync(token);
     haptic.success();
-    router.replace('/organizacion' as any);
+    nav.replace(router, Routes.organizacion);
   };
 
   return (
@@ -106,7 +107,7 @@ export default function InvitationScreen() {
           {accept.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.btnPrimaryText}>Aceptar invitación</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => router.replace('/(tabs)' as any)}>
+        <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => nav.replace(router, Routes.tabsHome)}>
           <Text style={s.btnSecondaryText}>No gracias</Text>
         </TouchableOpacity>
       </View>

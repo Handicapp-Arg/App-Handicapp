@@ -11,6 +11,7 @@ import { space, text, radius, weight } from '../../styles/tokens';
 import { layout } from '../../styles/common';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
 import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '../../hooks/use-boarding-requests';
+import { Routes, nav } from '../../lib/routes';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -234,7 +235,7 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             )}
             {user?.role === 'propietario' && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/directorio' as any)} activeOpacity={0.8}>
+              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.directorio)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
                   <Text style={quickStyles.icon}>🏡</Text>
                 </View>
@@ -246,7 +247,7 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             )}
             {(user?.role === 'establecimiento' || user?.role === 'admin') && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/organizacion' as any)} activeOpacity={0.8}>
+              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.organizacion)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
                   <Text style={quickStyles.icon}>🏢</Text>
                 </View>
@@ -258,7 +259,7 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             )}
             {(user?.role === 'establecimiento' || user?.role === 'admin') && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/solicitudes' as any)} activeOpacity={0.8}>
+              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.solicitudes)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
                   <Text style={quickStyles.icon}>📨</Text>
                 </View>
@@ -270,7 +271,7 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             )}
             {isAdmin && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/superadmin' as any)} activeOpacity={0.8}>
+              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.superadmin)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
                   <Text style={quickStyles.icon}>⚙️</Text>
                 </View>
