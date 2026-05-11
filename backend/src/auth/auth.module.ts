@@ -14,9 +14,18 @@ import { EmailModule } from '../email/email.module';
   imports: [
     TypeOrmModule.forFeature([User, RefreshToken]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'handicapp-secret-dev',
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET no configurado');
+        }
+        const expiresIn = (process.env.JWT_EXPIRES_IN ?? '15m') as `${number}${'s' | 'm' | 'h' | 'd'}`;
+        return {
+          secret,
+          signOptions: { expiresIn },
+        };
+      },
     }),
     EmailModule,
   ],

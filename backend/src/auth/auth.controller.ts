@@ -22,6 +22,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { EstablishmentQueryDto } from './dto/establishment-query.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from './user.entity';
 import { PermissionsService } from '../permissions/permissions.service';
@@ -52,14 +53,14 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  refresh(@Body('refreshToken') token: string) {
-    return this.authService.refreshTokens(token);
+  refresh(@Body(ValidationPipe) dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto.refreshToken);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  logout(@Body('refreshToken') token: string) {
-    return this.authService.revokeRefreshToken(token);
+  logout(@Body(ValidationPipe) dto: RefreshTokenDto) {
+    return this.authService.revokeRefreshToken(dto.refreshToken);
   }
 
   @Post('forgot-password')
