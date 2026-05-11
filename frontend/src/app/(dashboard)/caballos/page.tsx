@@ -21,9 +21,11 @@ import { getErrorMessage } from '@/lib/errors';
 import { cldTransform } from '@/lib/cloudinary';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { Plus, Search as SearchIcon, Filter as FilterIcon } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 import type { Horse, HorseOwnership } from '@/types';
 
 const inputClass =
@@ -627,16 +629,13 @@ export default function CaballosPage() {
         title="Caballos"
         badge={horses && horses.length > 0 ? { label: `${horses.length} en total`, tone: 'success' } : undefined}
         action={can('horses', 'create') ? (
-          <button
+          <Button
+            className="hidden md:inline-flex"
+            iconLeft={<Plus className="h-4 w-4" />}
             onClick={() => { setCreateError(null); setShowForm(!showForm); }}
-            className="hidden md:flex items-center gap-2 rounded-xl py-2.5 pl-3 pr-4 text-sm font-semibold text-white shadow-sm cursor-pointer transition-all active:scale-95"
-            style={{ backgroundColor: '#0f1f3d' }}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
             Nuevo caballo
-          </button>
+          </Button>
         ) : undefined}
       />
 
@@ -849,14 +848,18 @@ export default function CaballosPage() {
 
         return !filteredHorses.length ? (
         <EmptyState
-          icon={
-            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-            </svg>
+          icon={search ? SearchIcon : FilterIcon}
+          title={search ? 'No encontramos caballos con esa búsqueda' : 'Todavía no registraste caballos'}
+          message={
+            search
+              ? `Probá con otro nombre o limpiá la búsqueda para ver todos.`
+              : 'Cargá tu primer caballo para empezar a registrar eventos, salud y entrenamientos.'
           }
-          title={search ? 'Sin resultados para esa búsqueda' : 'No hay caballos registrados'}
-          message={search ? `No encontramos coincidencias para "${search}".` : 'Registrá el primer caballo para empezar a gestionar su historial.'}
-          action={!search && can('horses', 'create') ? { label: 'Registrar caballo', onClick: () => setShowForm(true) } : undefined}
+          action={
+            !search && can('horses', 'create')
+              ? { label: 'Registrar caballo', onClick: () => setShowForm(true) }
+              : undefined
+          }
         />
         ) : user?.role === 'propietario' ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">

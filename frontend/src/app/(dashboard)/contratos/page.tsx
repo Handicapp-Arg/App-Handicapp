@@ -1,15 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, type Contract } from '@/hooks/use-contracts';
-import { PageHeader } from '@/components/ui/page-header';
+import {
+  FileSignature, FilePen, Plus, ScrollText, X,
+} from 'lucide-react';
+import {
+  useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract,
+  type Contract,
+} from '@/hooks/use-contracts';
 import { useAuth } from '@/lib/auth-context';
 import { usePropietarios, useHorses } from '@/hooks/use-horses';
+import {
+  PageHeader, Card, Badge, Button, Input, Modal, Select, Textarea,
+  EmptyState, ListSkeleton, type BadgeTone,
+} from '@/components/ui';
 
-const statusBadge: Record<string, { label: string; cls: string }> = {
-  pending:  { label: 'Pendiente', cls: 'bg-amber-50 text-amber-700' },
-  signed:   { label: 'Firmado',   cls: 'bg-green-50 text-green-700' },
-  rejected: { label: 'Rechazado', cls: 'bg-red-50 text-red-700' },
+const STATUS_META: Record<string, { label: string; tone: BadgeTone }> = {
+  pending:  { label: 'Pendiente', tone: 'warning' },
+  signed:   { label: 'Firmado',   tone: 'success' },
+  rejected: { label: 'Rechazado', tone: 'danger' },
 };
 
 const DEFAULT_BODY = `CONTRATO DE PENSIÓN EQUINA
@@ -24,92 +33,91 @@ Entre el establecimiento ({establecimiento}) y el propietario ({propietario}), s
 
 Firmado digitalmente en HandicApp.`;
 
+// ─────────────────────────── Contract Card ───────────────────────────
 function ContractCard({
-  contract,
-  role,
-  userId,
-  onSign,
-  onReject,
-  onDelete,
+  contract, userId,
+  onSign, onReject, onDelete,
 }: {
   contract: Contract;
-  role: string;
   userId: string;
   onSign: (c: Contract) => void;
   onReject: (c: Contract) => void;
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const badge = statusBadge[contract.status] ?? statusBadge.pending;
+  const meta = STATUS_META[contract.status] ?? STATUS_META.pending;
   const isOwner = contract.owner_id === userId;
   const isEstablishment = contract.establishment_id === userId;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
+    <Card padded={false} className="overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.cls}`}>{badge.label}</span>
-              {contract.horse && (
-                <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[11px] font-semibold text-violet-700">{contract.horse.name}</span>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={meta.tone} dot>{meta.label}</Badge>
+              {contract.horse && <Badge tone="info">{contract.horse.name}</Badge>}
             </div>
-            <h3 className="mt-1.5 font-semibold text-gray-900">{contract.title}</h3>
-            <p className="mt-0.5 text-xs text-gray-400">
-              {isOwner ? `De: ${contract.establishment?.name}` : `Para: ${contract.owner?.name}`}
+            <h3 className="mt-2 text-base font-semibold tracking-tight text-navy-900">{contract.title}</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {isOwner ? (
+                <>De <strong className="text-slate-700">{contract.establishment?.name}</strong></>
+              ) : (
+                <>Para <strong className="text-slate-700">{contract.owner?.name}</strong></>
+              )}
               {' · '}
               {new Date(contract.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
             </p>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5">
             {isEstablishment && contract.status === 'pending' && (
-              <button onClick={() => onDelete(contract.id)}
-                className="rounded-lg border border-red-100 px-2 py-1 text-[11px] font-medium text-red-500 hover:bg-red-50 transition cursor-pointer"
-              >Cancelar</button>
+              <Button size="sm" variant="ghost" onClick={() => onDelete(contract.id)}>
+                Cancelar
+              </Button>
             )}
-            <button onClick={() => setExpanded((p) => !p)}
-              className="rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
-            >{expanded ? 'Cerrar' : 'Ver'}</button>
+            <Button size="sm" variant="secondary" onClick={() => setExpanded((p) => !p)}>
+              {expanded ? 'Cerrar' : 'Ver'}
+            </Button>
           </div>
         </div>
 
         {contract.status === 'signed' && contract.signed_name && (
-          <div className="mt-2 rounded-lg bg-green-50 px-3 py-2 border border-green-100">
-            <p className="text-[11px] text-green-700">
-              Firmado por <span className="font-semibold">{contract.signed_name}</span> el{' '}
+          <div className="mt-3 rounded-lg border border-success-500/20 bg-success-50 px-3 py-2">
+            <p className="text-xs text-success-700">
+              Firmado por <strong>{contract.signed_name}</strong> el{' '}
               {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
             </p>
           </div>
         )}
-
         {contract.status === 'rejected' && contract.rejection_reason && (
-          <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 border border-red-100">
-            <p className="text-[11px] text-red-700">Motivo: {contract.rejection_reason}</p>
+          <div className="mt-3 rounded-lg border border-danger-500/20 bg-danger-50 px-3 py-2">
+            <p className="text-xs text-danger-700">Motivo: {contract.rejection_reason}</p>
           </div>
         )}
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 p-4 bg-gray-50">
-          <pre className="whitespace-pre-wrap text-xs text-gray-700 font-sans leading-relaxed">{contract.body}</pre>
-
+        <div className="border-t border-slate-100 bg-slate-50/50 p-5">
+          <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-slate-700">
+            {contract.body}
+          </pre>
           {isOwner && contract.status === 'pending' && (
-            <div className="mt-4 flex gap-2">
-              <button onClick={() => onReject(contract)}
-                className="flex-1 rounded-xl border border-red-200 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition cursor-pointer"
-              >Rechazar</button>
-              <button onClick={() => onSign(contract)}
-                className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition cursor-pointer"
-              >Firmar digitalmente</button>
+            <div className="mt-5 flex gap-2">
+              <Button variant="secondary" className="flex-1" onClick={() => onReject(contract)}>
+                Rechazar
+              </Button>
+              <Button className="flex-1" iconLeft={<FileSignature className="h-4 w-4" />} onClick={() => onSign(contract)}>
+                Firmar digitalmente
+              </Button>
             </div>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
+// ─────────────────────────── Page ───────────────────────────
 export default function ContratosPage() {
   const { user } = useAuth();
   const { data: contracts, isLoading } = useContracts();
@@ -121,7 +129,12 @@ export default function ContratosPage() {
   const deleteContract = useDeleteContract();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ owner_id: '', horse_id: '', title: 'Contrato de Pensión', body: DEFAULT_BODY });
+  const [form, setForm] = useState({
+    owner_id: '',
+    horse_id: '',
+    title: 'Contrato de Pensión',
+    body: DEFAULT_BODY,
+  });
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [signedName, setSignedName] = useState('');
   const [rejectingContract, setRejectingContract] = useState<Contract | null>(null);
@@ -129,15 +142,9 @@ export default function ContratosPage() {
 
   const isEstablishment = user?.role === 'establecimiento' || user?.role === 'admin';
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none';
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
-      </div>
-    );
-  }
+  const resetForm = () => {
+    setForm({ owner_id: '', horse_id: '', title: 'Contrato de Pensión', body: DEFAULT_BODY });
+  };
 
   return (
     <div className="space-y-5">
@@ -145,79 +152,32 @@ export default function ContratosPage() {
         title="Contratos de pensión"
         subtitle="Contratos digitales firmados entre el establecimiento y los propietarios."
         action={isEstablishment ? (
-          <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition cursor-pointer active:scale-95"
-            style={{ backgroundColor: '#0f1f3d' }}
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
+          <Button onClick={() => setShowCreate(true)} iconLeft={<Plus className="h-4 w-4" />}>
             Nuevo contrato
-          </button>
+          </Button>
         ) : undefined}
       />
 
-      {/* Nuevo contrato */}
-      {showCreate && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 font-semibold text-gray-900">Crear contrato</h2>
-          <form className="space-y-3" onSubmit={async (e) => {
-            e.preventDefault();
-            await createContract.mutateAsync({ ...form, horse_id: form.horse_id || undefined });
-            setShowCreate(false);
-            setForm({ owner_id: '', horse_id: '', title: 'Contrato de Pensión', body: DEFAULT_BODY });
-          }}>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Propietario</label>
-                <select value={form.owner_id} onChange={(e) => setForm((p) => ({ ...p, owner_id: e.target.value }))} className={inputCls} required>
-                  <option value="">Seleccionar...</option>
-                  {propietarios?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Caballo (opcional)</label>
-                <select value={form.horse_id} onChange={(e) => setForm((p) => ({ ...p, horse_id: e.target.value }))} className={inputCls}>
-                  <option value="">Sin caballo específico</option>
-                  {horses?.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Título</label>
-              <input type="text" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className={inputCls} required />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Cuerpo del contrato</label>
-              <textarea rows={10} value={form.body} onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))} className={inputCls} required />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button type="button" onClick={() => setShowCreate(false)}
-                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-              >Cancelar</button>
-              <button type="submit" disabled={createContract.isPending}
-                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition cursor-pointer"
-                style={{ backgroundColor: '#0f1f3d' }}
-              >{createContract.isPending ? 'Creando...' : 'Crear contrato'}</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Lista */}
-      {!contracts?.length ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400">
-            {isEstablishment ? 'No hay contratos creados. Creá el primero.' : 'No tenés contratos pendientes.'}
-          </p>
-        </div>
+      {/* Lista o estados */}
+      {isLoading ? (
+        <ListSkeleton rows={4} />
+      ) : !contracts?.length ? (
+        <EmptyState
+          icon={ScrollText}
+          title={isEstablishment ? 'Todavía no creaste contratos' : 'No tenés contratos pendientes'}
+          message={
+            isEstablishment
+              ? 'Generá un contrato digital para que tus propietarios lo firmen sin papel.'
+              : 'Cuando un establecimiento te envíe un contrato, lo verás acá.'
+          }
+          action={isEstablishment ? { label: 'Crear primer contrato', onClick: () => setShowCreate(true) } : undefined}
+        />
       ) : (
         <div className="space-y-3">
           {contracts.map((c) => (
             <ContractCard
               key={c.id}
               contract={c}
-              role={user?.role ?? ''}
               userId={user?.id ?? ''}
               onSign={setSigningContract}
               onReject={setRejectingContract}
@@ -227,83 +187,151 @@ export default function ContratosPage() {
         </div>
       )}
 
-      {/* Modal firmar */}
-      {signingContract && (
-        <>
-          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setSigningContract(null)} />
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
-              <div className="px-5 py-4 bg-green-600">
-                <p className="font-bold text-white">Firmar digitalmente</p>
-              </div>
-              <div className="p-5 space-y-4">
-                <p className="text-sm text-gray-600">
-                  Para firmar el contrato <span className="font-semibold">"{signingContract.title}"</span>, escribí tu nombre completo tal como aparecerá en la firma.
-                </p>
-                <input
-                  type="text"
-                  value={signedName}
-                  onChange={(e) => setSignedName(e.target.value)}
-                  placeholder="Tu nombre completo..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
-                />
-                <p className="text-[11px] text-gray-400">
-                  Al confirmar, tu firma quedará registrada con fecha y hora en el sistema.
-                </p>
-                <div className="flex gap-2">
-                  <button onClick={() => setSigningContract(null)}
-                    className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-                  >Cancelar</button>
-                  <button
-                    disabled={!signedName.trim() || signContract.isPending}
-                    onClick={async () => {
-                      await signContract.mutateAsync({ id: signingContract.id, signed_name: signedName.trim() });
-                      setSigningContract(null);
-                      setSignedName('');
-                    }}
-                    className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 hover:bg-green-700 transition cursor-pointer"
-                  >{signContract.isPending ? 'Firmando...' : 'Confirmar firma'}</button>
-                </div>
-              </div>
-            </div>
+      {/* ── Modal: crear contrato ── */}
+      <Modal
+        open={showCreate}
+        onClose={() => { setShowCreate(false); resetForm(); }}
+        title="Crear contrato"
+        description="El propietario va a recibir una notificación para firmarlo."
+        size="xl"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => { setShowCreate(false); resetForm(); }}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="create-contract-form"
+              loading={createContract.isPending}
+              disabled={!form.owner_id || !form.title}
+            >
+              Crear contrato
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="create-contract-form"
+          className="space-y-4"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await createContract.mutateAsync({ ...form, horse_id: form.horse_id || undefined });
+            setShowCreate(false);
+            resetForm();
+          }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Propietario"
+              value={form.owner_id}
+              onChange={(e) => setForm((p) => ({ ...p, owner_id: e.target.value }))}
+              options={(propietarios ?? []).map((p) => ({ value: p.id, label: p.name }))}
+              placeholder="Seleccionar propietario"
+              required
+            />
+            <Select
+              label="Caballo (opcional)"
+              value={form.horse_id}
+              onChange={(e) => setForm((p) => ({ ...p, horse_id: e.target.value }))}
+              options={[
+                { value: '', label: 'Sin caballo específico' },
+                ...(horses ?? []).map((h) => ({ value: h.id, label: h.name })),
+              ]}
+            />
           </div>
-        </>
-      )}
+          <Input
+            label="Título"
+            value={form.title}
+            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+            required
+          />
+          <Textarea
+            label="Cuerpo del contrato"
+            value={form.body}
+            onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
+            rows={10}
+            required
+          />
+        </form>
+      </Modal>
 
-      {/* Modal rechazar */}
-      {rejectingContract && (
-        <>
-          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setRejectingContract(null)} />
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
-              <div className="px-5 py-4 bg-red-500">
-                <p className="font-bold text-white">Rechazar contrato</p>
-              </div>
-              <div className="p-5 space-y-4">
-                <p className="text-sm text-gray-600">Indicá el motivo del rechazo (opcional).</p>
-                <textarea rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Motivo del rechazo..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
-                />
-                <div className="flex gap-2">
-                  <button onClick={() => setRejectingContract(null)}
-                    className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-                  >Cancelar</button>
-                  <button
-                    disabled={rejectContract.isPending}
-                    onClick={async () => {
-                      await rejectContract.mutateAsync({ id: rejectingContract.id, reason: rejectReason });
-                      setRejectingContract(null);
-                      setRejectReason('');
-                    }}
-                    className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 hover:bg-red-600 transition cursor-pointer"
-                  >{rejectContract.isPending ? 'Rechazando...' : 'Confirmar rechazo'}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      {/* ── Modal: firmar ── */}
+      <Modal
+        open={!!signingContract}
+        onClose={() => { setSigningContract(null); setSignedName(''); }}
+        title="Firmar digitalmente"
+        description={signingContract ? `“${signingContract.title}”` : undefined}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => { setSigningContract(null); setSignedName(''); }}>
+              Cancelar
+            </Button>
+            <Button
+              loading={signContract.isPending}
+              disabled={!signedName.trim()}
+              iconLeft={<FilePen className="h-4 w-4" />}
+              onClick={async () => {
+                if (!signingContract) return;
+                await signContract.mutateAsync({ id: signingContract.id, signed_name: signedName.trim() });
+                setSigningContract(null);
+                setSignedName('');
+              }}
+            >
+              Confirmar firma
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Escribí tu nombre completo tal como aparecerá en la firma. Quedará registrado con fecha y hora.
+          </p>
+          <Input
+            label="Tu nombre completo"
+            value={signedName}
+            onChange={(e) => setSignedName(e.target.value)}
+            placeholder="Ej. Juan Pérez"
+            autoFocus
+          />
+        </div>
+      </Modal>
+
+      {/* ── Modal: rechazar ── */}
+      <Modal
+        open={!!rejectingContract}
+        onClose={() => { setRejectingContract(null); setRejectReason(''); }}
+        title="Rechazar contrato"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => { setRejectingContract(null); setRejectReason(''); }}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              loading={rejectContract.isPending}
+              iconLeft={<X className="h-4 w-4" />}
+              onClick={async () => {
+                if (!rejectingContract) return;
+                await rejectContract.mutateAsync({ id: rejectingContract.id, reason: rejectReason });
+                setRejectingContract(null);
+                setRejectReason('');
+              }}
+            >
+              Confirmar rechazo
+            </Button>
+          </>
+        }
+      >
+        <Textarea
+          label="Motivo del rechazo (opcional)"
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          rows={3}
+          placeholder="¿Hay algo que querés que ajusten antes de firmar?"
+        />
+      </Modal>
     </div>
   );
 }

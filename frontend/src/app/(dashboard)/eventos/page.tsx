@@ -8,10 +8,12 @@ import { useAuth } from '@/lib/auth-context';
 import ImagePicker from '@/components/image-picker';
 import EventCalendar from '@/components/event-calendar';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { CalendarDays, Filter as FilterIcon, List as ListIcon, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { SkeletonRow, Spinner } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { Button } from '@/components/ui/button';
 import type { Event } from '@/types';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api$/, '');
@@ -509,39 +511,43 @@ export default function EventosPage() {
         title={`Eventos${allEvents?.length ? ` (${allEvents.length})` : ''}`}
         action={
           <div className="flex items-center gap-2">
-          {/* Toggle calendario/lista */}
-          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
-            <button
-              onClick={() => setView('list')}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
-                view === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+            {/* Toggle calendario/lista */}
+            <div
+              role="tablist"
+              aria-label="Vista de eventos"
+              className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5"
             >
-              Lista
-            </button>
-            <button
-              onClick={() => setView('calendar')}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
-                view === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Calendario
-            </button>
-          </div>
+              <button
+                role="tab"
+                aria-selected={view === 'list'}
+                onClick={() => setView('list')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                  view === 'list' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <ListIcon className="h-3.5 w-3.5" aria-hidden />
+                Lista
+              </button>
+              <button
+                role="tab"
+                aria-selected={view === 'calendar'}
+                onClick={() => setView('calendar')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                  view === 'calendar' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                Calendario
+              </button>
+            </div>
 
-          {can('events', 'create') && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer active:scale-95"
-              style={{ backgroundColor: '#0f1f3d' }}
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Nuevo
-            </button>
-          )}
-        </div>}
+            {can('events', 'create') && (
+              <Button onClick={() => setShowCreate(true)} iconLeft={<Plus className="h-4 w-4" />}>
+                Nuevo evento
+              </Button>
+            )}
+          </div>
+        }
       />
 
       {/* Filtros */}
@@ -613,14 +619,20 @@ export default function EventosPage() {
           <ErrorState onRetry={() => refetchAll()} />
         ) : !displayEvents?.length ? (
           <EmptyState
-            icon={
-              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
+            icon={hasFilters ? FilterIcon : CalendarDays}
+            title={hasFilters ? 'No encontramos eventos con esos filtros' : 'Aún no registraste eventos'}
+            message={
+              hasFilters
+                ? 'Probá limpiar los filtros para ver todos los eventos.'
+                : 'Los eventos de salud, entrenamiento, gastos y notas que cargues van a aparecer acá.'
             }
-            title={hasFilters ? 'Sin eventos con esos filtros' : 'No hay eventos registrados'}
-            message={hasFilters ? 'Probá limpiar los filtros para ver todos los eventos.' : 'Los eventos de salud, entrenamiento, gastos y notas aparecerán aquí.'}
-            action={!hasFilters && can('events', 'create') ? { label: 'Crear primer evento', onClick: () => setShowCreate(true) } : undefined}
+            action={
+              !hasFilters && can('events', 'create')
+                ? { label: 'Crear primer evento', onClick: () => setShowCreate(true) }
+                : hasFilters
+                  ? { label: 'Limpiar filtros', onClick: () => { setFilterHorseId(''); setFilterType(''); setFilterDateFrom(''); setFilterDateTo(''); } }
+                  : undefined
+            }
           />
         ) : (
           <div className="space-y-3">
