@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import {
+  Building2, CheckCircle2, Copy, MessageCircle, Plus, Sparkles, UserMinus,
+} from 'lucide-react';
+import {
   useMyOrganizations, useOrganization, useOrgInvitations,
   useCreateInvitation, useCancelInvitation, useRemoveMember, useChangeMemberRole,
   ROLE_LABELS, PLAN_LABELS, type OrgRole,
@@ -98,6 +101,7 @@ function PlanPanel({
       {!isPro && (
         <Button
           className="mt-5 w-full"
+          iconLeft={<Sparkles className="h-4 w-4" />}
           onClick={() => window.open('https://wa.me/5491100000000?text=Hola,%20quiero%20mejorar%20el%20plan%20de%20mi%20organizaci%C3%B3n%20en%20HandicApp', '_blank')}
         >
           Mejorar plan
@@ -225,18 +229,19 @@ function InviteModal({
         <div className="space-y-4">
           <div className="flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-50">
-              <svg className="h-7 w-7 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
+              <CheckCircle2 className="h-7 w-7 text-success-500" strokeWidth={1.8} aria-hidden />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 break-all">
+          <div className="break-all rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700">
             {createdLink}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={handleCopy}>{copied ? '✓ Copiado' : 'Copiar link'}</Button>
+            <Button onClick={handleCopy} iconLeft={<Copy className="h-4 w-4" />}>
+              {copied ? 'Copiado' : 'Copiar link'}
+            </Button>
             <Button
               variant="secondary"
+              iconLeft={<MessageCircle className="h-4 w-4" />}
               onClick={() =>
                 window.open(
                   `https://wa.me/?text=${encodeURIComponent(`Te invito a HandicApp: ${createdLink}`)}`,
@@ -314,13 +319,9 @@ export default function OrganizacionPage() {
       <div className="max-w-3xl space-y-6">
         <PageHeader title="Organización" />
         <EmptyState
-          icon={
-            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
-            </svg>
-          }
-          title="No pertenecés a ninguna organización"
-          message="Las organizaciones permiten a los establecimientos gestionar a sus propietarios y veterinarios bajo un mismo plan."
+          icon={Building2}
+          title="Todavía no pertenecés a ninguna organización"
+          message="Las organizaciones permiten al establecimiento centralizar el plan, los miembros y los caballos. Si te invitaron, abrí el link de invitación; si querés crear una, escribinos."
         />
       </div>
     );
@@ -338,7 +339,9 @@ export default function OrganizacionPage() {
         subtitle="Tu organización en HandicApp"
         badge={{ label: PLAN_LABELS[org.plan], tone: org.plan !== 'free' ? 'gold' : 'neutral' }}
         action={canInvite && (
-          <Button onClick={() => setShowInvite(true)}>+ Invitar miembro</Button>
+          <Button onClick={() => setShowInvite(true)} iconLeft={<Plus className="h-4 w-4" />}>
+            Invitar miembro
+          </Button>
         )}
       />
 
@@ -442,6 +445,7 @@ export default function OrganizacionPage() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      iconLeft={<UserMinus className="h-3.5 w-3.5" />}
                       onClick={() => setMemberToRemove({ id: member.id, name: member.user.name })}
                       aria-label={`Quitar a ${member.user.name}`}
                     >

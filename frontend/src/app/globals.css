@@ -48,8 +48,14 @@
   --radius-xl:  1rem;
   --radius-2xl: 1.25rem;
 
-  /* Tipografía */
-  --font-sans: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  /* Tipografía — Inter cargado vía next/font, fallback al stack del sistema */
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Habilitar tabular-nums donde se muestren números (tablas, métricas, KPIs) */
+.numeric, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "calt" 1;
 }
 
 :root {

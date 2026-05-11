@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/colors';
 import { space, text, weight, radius } from '../styles/tokens';
+import { fontFamily } from '../styles/fonts';
 
 interface ScreenHeaderProps {
   title: string;
@@ -119,11 +120,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: text.lg,
     fontWeight: weight.extrabold,
+    fontFamily: fontFamily.extrabold,
     letterSpacing: -0.3,
   },
   titleLight: { color: colors.gray900 },
   titleDark: { color: colors.white },
-  subtitle: { fontSize: text.xs, marginTop: 1 },
+  subtitle: { fontSize: text.xs, marginTop: 1, fontFamily: fontFamily.medium },
   subtitleLight: { color: colors.gray400 },
   subtitleDark: { color: 'rgba(255,255,255,0.55)' },
   rightSlot: { flexShrink: 0 },
@@ -136,7 +138,7 @@ const styles = StyleSheet.create({
   },
   headerBtnPrimary: { backgroundColor: colors.primary },
   headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.gray200 },
-  headerBtnText: { fontSize: text.sm, fontWeight: weight.bold },
+  headerBtnText: { fontSize: text.sm, fontWeight: weight.bold, fontFamily: fontFamily.bold },
   headerBtnTextPrimary: { color: colors.white },
   headerBtnTextGhost: { color: colors.primary },
 });

@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/colors';
 import { space, text, weight, radius } from '../styles/tokens';
+import { fontFamily } from '../styles/fonts';
 
 interface EmptyStateProps {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -49,11 +50,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: text.base,
     fontWeight: weight.bold,
+    fontFamily: fontFamily.bold,
     color: colors.gray900,
     textAlign: 'center',
   },
   message: {
     fontSize: text.sm,
+    fontFamily: fontFamily.regular,
     color: colors.gray400,
     textAlign: 'center',
     lineHeight: 20,
@@ -67,6 +70,7 @@ const styles = StyleSheet.create({
   btnText: {
     fontSize: text.sm,
     fontWeight: weight.bold,
+    fontFamily: fontFamily.bold,
     color: colors.white,
   },
 });

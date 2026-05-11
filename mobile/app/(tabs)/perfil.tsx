@@ -38,7 +38,7 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
     <View style={[styles.planCard, isPro ? styles.planCardPro : styles.planCardFree]}>
       <View style={styles.planHeader}>
         <View style={styles.planBadge}>
-          <Text style={styles.planBadgeText}>{isPro ? '⭐ Pro' : 'Gratis'}</Text>
+          <Text style={styles.planBadgeText}>{isPro ? 'Pro' : 'Gratis'}</Text>
         </View>
         {!isPro && horseLimit && (
           <Text style={styles.planUsage}>{horseCount}/{horseLimit} caballos</Text>
@@ -88,7 +88,7 @@ function AdminUserPlanRow({ u, onActivate, onRevoke, isPending }: {
         </View>
         <View style={[styles.planPill, isPro ? styles.planPillPro : styles.planPillFree]}>
           <Text style={[styles.planPillText, isPro ? styles.planPillTextPro : styles.planPillTextFree]}>
-            {isPro ? '⭐ Pro' : 'Gratis'}
+            {isPro ? 'Pro' : 'Gratis'}
           </Text>
         </View>
       </View>
@@ -225,61 +225,61 @@ export default function PerfilScreen() {
             {(showPlan || isAdmin) && (
               <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/contratos')} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
-                  <Text style={quickStyles.icon}>📄</Text>
+                  <Ionicons name="document-text-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={quickStyles.label}>Contratos de pensión</Text>
                   <Text style={quickStyles.desc}>Firmá o revisá contratos</Text>
                 </View>
-                <Text style={quickStyles.arrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
               </TouchableOpacity>
             )}
             {user?.role === 'propietario' && (
               <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.directorio)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
-                  <Text style={quickStyles.icon}>🏡</Text>
+                  <Ionicons name="map-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={quickStyles.label}>Directorio de establecimientos</Text>
                   <Text style={quickStyles.desc}>Encontrá establecimientos en HandicApp</Text>
                 </View>
-                <Text style={quickStyles.arrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
               </TouchableOpacity>
             )}
             {(user?.role === 'establecimiento' || user?.role === 'admin') && (
               <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.organizacion)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
-                  <Text style={quickStyles.icon}>🏢</Text>
+                  <Ionicons name="business-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={quickStyles.label}>Organización</Text>
                   <Text style={quickStyles.desc}>Miembros, plan, invitaciones</Text>
                 </View>
-                <Text style={quickStyles.arrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
               </TouchableOpacity>
             )}
             {(user?.role === 'establecimiento' || user?.role === 'admin') && (
               <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.solicitudes)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
-                  <Text style={quickStyles.icon}>📨</Text>
+                  <Ionicons name="mail-unread-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={quickStyles.label}>Solicitudes</Text>
                   <Text style={quickStyles.desc}>Pensión de caballos · aceptar o rechazar</Text>
                 </View>
-                <Text style={quickStyles.arrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
               </TouchableOpacity>
             )}
             {isAdmin && (
               <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.superadmin)} activeOpacity={0.8}>
                 <View style={quickStyles.iconWrap}>
-                  <Text style={quickStyles.icon}>⚙️</Text>
+                  <Ionicons name="settings-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={quickStyles.label}>Panel superadmin</Text>
                   <Text style={quickStyles.desc}>MRR · planes · organizaciones</Text>
                 </View>
-                <Text style={quickStyles.arrow}>›</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
               </TouchableOpacity>
             )}
           </View>

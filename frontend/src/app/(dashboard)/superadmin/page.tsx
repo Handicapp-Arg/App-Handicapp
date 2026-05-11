@@ -1,6 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import {
+  Building2, ChevronLeft, ChevronRight, Lock, Plus, Search,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
   useSuperAdminMetrics, useSuperAdminOrgs, useCreateOrgManually,
@@ -289,12 +292,24 @@ function TableFooter({
         Mostrando <strong className="text-slate-700">{from}–{to}</strong> de <strong className="text-slate-700">{total}</strong>
       </span>
       <div className="flex items-center gap-1">
-        <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          ←
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+          aria-label="Página anterior"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
         </Button>
-        <span className="px-2">{page} / {last}</span>
-        <Button size="sm" variant="ghost" disabled={page >= last} onClick={() => onPage(page + 1)}>
-          →
+        <span className="tabular-nums px-2">{page} / {last}</span>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={page >= last}
+          onClick={() => onPage(page + 1)}
+          aria-label="Página siguiente"
+        >
+          <ChevronRight className="h-4 w-4" aria-hidden />
         </Button>
       </div>
     </div>
@@ -325,10 +340,17 @@ export default function SuperAdminPage() {
   if (user?.role !== 'admin') {
     return (
       <Card className="border-danger-500/30 bg-danger-50">
-        <p className="text-sm font-semibold text-danger-700">Acceso restringido</p>
-        <p className="mt-1 text-sm text-danger-700/80">
-          Solo el superadmin de HandicApp puede ver esta página.
-        </p>
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-danger-500/10 text-danger-500">
+            <Lock className="h-4 w-4" aria-hidden />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-danger-700">Acceso restringido</p>
+            <p className="mt-1 text-sm text-danger-700/80">
+              Solo el equipo de HandicApp puede entrar a esta sección.
+            </p>
+          </div>
+        </div>
       </Card>
     );
   }
@@ -422,7 +444,11 @@ export default function SuperAdminPage() {
       <PageHeader
         title="Superadmin"
         subtitle="Control total de la plataforma HandicApp"
-        action={<Button onClick={() => setShowCreate(true)}>+ Crear organización</Button>}
+        action={
+          <Button onClick={() => setShowCreate(true)} iconLeft={<Plus className="h-4 w-4" />}>
+            Crear organización
+          </Button>
+        }
       />
 
       {/* Métricas */}
@@ -455,16 +481,12 @@ export default function SuperAdminPage() {
 
       {/* Filtros */}
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[220px]">
+        <div className="min-w-[220px] flex-1">
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Buscar por nombre o email del dueño..."
-            iconLeft={
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-            }
+            placeholder="Buscar por nombre o email del dueño"
+            iconLeft={<Search className="h-4 w-4" aria-hidden />}
           />
         </div>
         <div className="w-40">
@@ -489,9 +511,19 @@ export default function SuperAdminPage() {
         rowKey={(o) => o.id}
         loading={isLoading}
         emptyState={
-          search || planFilter
-            ? 'No encontramos organizaciones con esos filtros.'
-            : 'Aún no hay organizaciones creadas.'
+          <div className="flex flex-col items-center gap-2 py-4">
+            <Building2 className="h-6 w-6 text-slate-300" aria-hidden />
+            <span className="text-sm font-medium text-slate-500">
+              {search || planFilter
+                ? 'No encontramos organizaciones con esos filtros'
+                : 'Aún no hay organizaciones creadas'}
+            </span>
+            {(search || planFilter) && (
+              <Button size="sm" variant="ghost" onClick={() => { setSearch(''); setPlanFilter(''); }}>
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
         }
         footer={
           <TableFooter

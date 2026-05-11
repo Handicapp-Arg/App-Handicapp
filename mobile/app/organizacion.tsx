@@ -263,7 +263,7 @@ export default function OrganizacionScreen() {
                   </View>
                   <View style={[s.roleBadge, isOrgOwner && s.roleBadgeOwner]}>
                     <Text style={[s.roleBadgeText, isOrgOwner && s.roleBadgeTextOwner]}>
-                      {isOrgOwner ? '👑 Dueño' : ROLE_LABELS[m.role_in_org]}
+                      {isOrgOwner ? 'Dueño' : ROLE_LABELS[m.role_in_org]}
                     </Text>
                   </View>
                   {isAdmin && !isOrgOwner && m.user_id !== user?.id && (
