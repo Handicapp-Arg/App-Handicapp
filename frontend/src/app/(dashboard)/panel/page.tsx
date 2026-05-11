@@ -18,6 +18,7 @@ import {
 import { PlanBanner } from '@/components/plan-banner';
 import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '@/hooks/use-boarding-requests';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 
 /* ─── tipos ─── */
 
@@ -129,11 +130,7 @@ function AdminPanel() {
         <SearchInput value={search} onChange={handleSearch} placeholder="Buscar usuario..." />
       )}
 
-      {loading && (
-        <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
-        </div>
-      )}
+      {loading && <PageLoader />}
 
       {!loading && !isHorsesTab && !isPlanesTab && usersResult?.data && (
         <div className="space-y-3">
@@ -676,7 +673,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
 
 export default function PanelPage() {
   const { user } = useAuth();
-  const { data: dashboard, isLoading } = useDashboard();
+  const { data: dashboard, isLoading, isError, refetch } = useDashboard();
 
   const isAdmin = user?.role === 'admin';
   const title = isAdmin ? 'Panel' : 'Inicio';
@@ -689,6 +686,15 @@ export default function PanelPage() {
           {[1,2,3].map(i => <SkeletonStat key={i} />)}
         </div>
         <PageLoader />
+      </div>
+    );
+  }
+
+  if (isError && !isAdmin) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-[1.375rem] font-extrabold tracking-tight text-gray-900">{title}</h1>
+        <ErrorState onRetry={() => refetch()} />
       </div>
     );
   }

@@ -11,6 +11,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import { PageHeader } from '@/components/ui/page-header';
 import { SkeletonRow, Spinner } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import type { Event } from '@/types';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api$/, '');
@@ -491,7 +492,7 @@ export default function EventosPage() {
   };
   const hasFilters = !!(filterType || filterDateFrom || filterDateTo || filterHorseId);
 
-  const { data: allEvents, isLoading: loadingAll } = useAllEvents(activeFilters);
+  const { data: allEvents, isLoading: loadingAll, isError: errorAll, refetch: refetchAll } = useAllEvents(activeFilters);
   const displayEvents = allEvents;
   const isLoading = loadingAll;
 
@@ -599,13 +600,17 @@ export default function EventosPage() {
       {view === 'calendar' && (
         isLoading
           ? <div className="flex justify-center py-12"><Spinner size="md" /></div>
-          : <EventCalendar events={displayEvents || []} />
+          : errorAll
+            ? <ErrorState onRetry={() => refetchAll()} />
+            : <EventCalendar events={displayEvents || []} />
       )}
 
       {/* Vista lista */}
       {view === 'list' && (
         isLoading ? (
           <div className="space-y-2">{[1,2,3,4,5].map(i => <SkeletonRow key={i} />)}</div>
+        ) : errorAll ? (
+          <ErrorState onRetry={() => refetchAll()} />
         ) : !displayEvents?.length ? (
           <EmptyState
             icon={

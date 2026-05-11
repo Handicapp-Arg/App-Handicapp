@@ -7,5 +7,7 @@ export { DataTable, type ColumnDef } from './data-table';
 export { Input } from './input';
 export { Textarea } from './textarea';
 export { EmptyState } from './empty-state';
+export { ErrorState } from './error-state';
+export { QueryState } from './query-state';
 export { PageHeader } from './page-header';
 export { SkeletonCard, SkeletonRow, SkeletonText, SkeletonStat, Spinner, PageLoader } from './skeleton';
