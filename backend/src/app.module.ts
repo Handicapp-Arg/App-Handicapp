@@ -27,6 +27,7 @@ import { SearchModule } from './search/search.module';
 import { BoardingRequestsModule } from './boarding-requests/boarding-requests.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
+import { HealthController } from './common/health.controller';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { SuperAdminModule } from './superadmin/superadmin.module';
     OrganizationsModule,
     SuperAdminModule,
   ],
+  controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

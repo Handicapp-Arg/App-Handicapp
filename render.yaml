@@ -5,6 +5,56 @@ services:
     rootDir: backend
     buildCommand: npm install --include=dev && npm run build
     startCommand: node dist/main
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+
+      # --- Server ---
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        sync: false        # set en dashboard: "https://app.handicapp.com,https://www.handicapp.com"
+
+      # --- Database (PostgreSQL) ---
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+
+      # --- Auth ---
+      - key: JWT_SECRET
+        generateValue: true   # Render genera y fija un secreto largo de manera automática
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: SKIP_DEV_SEED
+        value: "true"
+
+      # --- Cloudinary ---
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # --- Email (Resend) ---
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+
+      # --- Observabilidad ---
+      - key: SENTRY_DSN
+        sync: false
+
+      # --- Reglas de negocio ---
+      - key: HEALTH_REMINDER_DAYS
+        value: 30
