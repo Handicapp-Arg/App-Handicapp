@@ -33,8 +33,16 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
+  const allowedOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000,http://localhost:3001,http://localhost:3002')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error(`Origin ${origin} no permitido por CORS`));
+    },
+    credentials: true,
   });
 
   if (process.env.NODE_ENV !== 'production') {
