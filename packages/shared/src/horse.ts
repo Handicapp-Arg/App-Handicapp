@@ -1,11 +1,5 @@
-import type { UserSummary } from './user';
-
-export interface HorseOwnership {
-  id: string;
-  user_id: string;
-  percentage: number | null;
-  user?: UserSummary;
-}
+// HorseOwnership ya vive en ./types (legacy). Mantener este archivo solo
+// para tipos auxiliares que NO colisionen.
 
 export interface HorseRef {
   id: string;
