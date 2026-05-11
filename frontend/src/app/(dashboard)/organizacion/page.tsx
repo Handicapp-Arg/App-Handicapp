@@ -7,9 +7,10 @@ import {
   ROLE_LABELS, PLAN_LABELS, type OrgRole,
 } from '@/hooks/use-organizations';
 import { useAuth } from '@/lib/auth-context';
-import { PageHeader } from '@/components/ui/page-header';
-import { PageLoader } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
+import {
+  PageHeader, PageLoader, EmptyState, Card, Badge, Button, Input, Modal, Select,
+} from '@/components/ui';
+import { cn } from '@/lib/cn';
 
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
   { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal del establecimiento — gestiona caballos y eventos' },
@@ -18,76 +19,136 @@ const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
   { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la organización' },
 ];
 
-function PlanCard({ plan, horseCount, horseLimit, expiresAt }: {
-  plan: string; horseCount: number; horseLimit: number | null; expiresAt: string | null;
+const PLAN_PRICING: Record<string, { horses: string; price: string }> = {
+  free:       { horses: '3 caballos',     price: 'Gratis' },
+  basic:      { horses: '15 caballos',    price: 'Stable Basic' },
+  pro:        { horses: '50 caballos',    price: 'Stable Pro' },
+  enterprise: { horses: 'Sin límite',     price: 'Enterprise' },
+};
+
+// ─────────────────────────── KPI Card ───────────────────────────
+function Kpi({
+  label, value, hint, tone = 'neutral',
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+  tone?: 'neutral' | 'gold' | 'success' | 'danger';
 }) {
+  const accent = {
+    neutral: 'text-navy-900',
+    gold:    'text-gold-600',
+    success: 'text-success-700',
+    danger:  'text-danger-700',
+  }[tone];
+  return (
+    <Card className="p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">{label}</p>
+      <p className={cn('mt-2 text-2xl font-bold tracking-tight', accent)}>{value}</p>
+      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    </Card>
+  );
+}
+
+// ─────────────────────────── Plan section ───────────────────────────
+function PlanPanel({
+  plan, horseCount, horseLimit, expiresAt,
+}: { plan: string; horseCount: number; horseLimit: number | null; expiresAt: string | null }) {
   const pct = horseLimit ? Math.min((horseCount / horseLimit) * 100, 100) : 0;
   const isPro = plan !== 'free';
+  const meta = PLAN_PRICING[plan] ?? { horses: '—', price: PLAN_LABELS[plan as keyof typeof PLAN_LABELS] ?? plan };
+  const barTone = pct >= 100 ? 'bg-danger-500' : pct >= 80 ? 'bg-warning-500' : 'bg-navy-700';
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Plan</p>
-          <p className="mt-1 text-2xl font-bold tracking-[-0.025em] text-gray-900">{PLAN_LABELS[plan as keyof typeof PLAN_LABELS] ?? plan}</p>
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Plan actual</p>
+          <p className="mt-1 text-xl font-bold tracking-tight text-navy-900">{meta.price}</p>
+          <p className="mt-0.5 text-sm text-slate-500">{meta.horses}</p>
           {expiresAt && isPro && (
-            <p className="mt-1 text-xs text-gray-500">
-              Vence: {new Date(expiresAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+            <p className="mt-2 text-xs text-slate-500">
+              Renueva el {new Date(expiresAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
             </p>
           )}
         </div>
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-          isPro ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200'
-        }`}>
-          {isPro && '⭐'} {isPro ? 'Activo' : 'Free'}
-        </span>
+        <Badge tone={isPro ? 'gold' : 'neutral'} dot>
+          {isPro ? 'Activo' : 'Free'}
+        </Badge>
       </div>
 
-      <div className="mt-4 space-y-1.5">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-semibold text-gray-700">
-            {horseCount} {horseLimit ? `/ ${horseLimit}` : ''} caballos
+      <div className="mt-5">
+        <div className="mb-1.5 flex items-baseline justify-between">
+          <span className="text-sm font-semibold text-slate-700">
+            {horseCount} {horseLimit ? `de ${horseLimit}` : ''} caballos
           </span>
           {horseLimit && pct >= 80 && (
-            <span className="text-xs font-medium text-amber-600">Cerca del límite</span>
+            <span className="text-xs font-medium text-warning-700">Cerca del límite</span>
           )}
         </div>
-        {horseLimit && (
-          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-[#0f1f3d]'}`}
-              style={{ width: `${pct}%` }}
-            />
+        {horseLimit ? (
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+            <div className={cn('h-full rounded-full transition-all', barTone)} style={{ width: `${pct}%` }} />
           </div>
+        ) : (
+          <p className="text-xs text-slate-500">Sin límite de caballos</p>
         )}
       </div>
 
       {!isPro && (
-        <a
-          href="https://wa.me/5491100000000?text=Hola,%20quiero%20mejorar%20el%20plan%20de%20mi%20organizaci%C3%B3n%20en%20HandicApp"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 flex items-center justify-center gap-2 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white hover:bg-[#0a1628] transition cursor-pointer"
+        <Button
+          className="mt-5 w-full"
+          onClick={() => window.open('https://wa.me/5491100000000?text=Hola,%20quiero%20mejorar%20el%20plan%20de%20mi%20organizaci%C3%B3n%20en%20HandicApp', '_blank')}
         >
           Mejorar plan
-        </a>
+        </Button>
       )}
-    </div>
+    </Card>
   );
 }
 
-function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void }) {
+// ─────────────────────────── Invite modal ───────────────────────────
+function InviteModal({
+  orgId, open, onClose,
+}: { orgId: string; open: boolean; onClose: () => void }) {
   const create = useCreateInvitation(orgId);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<OrgRole>('staff');
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
-    if (!email.trim()) return;
-    const inv = await create.mutateAsync({ email: email.trim().toLowerCase(), role_in_org: role });
-    const link = `${window.location.origin}/invitacion/${inv.token}`;
-    setCreatedLink(link);
+  const reset = () => {
+    setEmail('');
+    setRole('staff');
+    setCreatedLink(null);
+    setCopied(false);
+    setEmailError(null);
+    setSubmitError(null);
+  };
+
+  const handleClose = () => {
+    onClose();
+    reset();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) {
+      setEmailError('Ingresá un email válido');
+      return;
+    }
+    setEmailError(null);
+    setSubmitError(null);
+    try {
+      const inv = await create.mutateAsync({ email: trimmed, role_in_org: role });
+      setCreatedLink(`${window.location.origin}/invitacion/${inv.token}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No pudimos generar la invitación';
+      setSubmitError(msg);
+    }
   };
 
   const handleCopy = async () => {
@@ -98,120 +159,159 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-[#0f1f3d] px-6 py-4">
-          <p className="font-bold text-white">Invitar miembro</p>
-          <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
-        </div>
-
-        {!createdLink ? (
-          <>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ejemplo@email.com"
-                  className="input-base"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Rol</label>
-                <div className="space-y-1.5">
-                  {ROLE_OPTIONS.map((opt) => (
-                    <label
-                      key={opt.value}
-                      className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
-                        role === opt.value ? 'border-[#0f1f3d] bg-[#0f1f3d]/5' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        checked={role === opt.value}
-                        onChange={() => setRole(opt.value)}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">{opt.label}</p>
-                        <p className="text-xs text-gray-500 leading-snug mt-0.5">{opt.desc}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 border-t border-gray-100 p-4">
-              <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50">
-                Cancelar
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!email.trim() || create.isPending}
-                className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#0a1628] transition"
-              >
-                {create.isPending ? 'Generando...' : 'Generar invitación'}
-              </button>
-            </div>
-          </>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      title={createdLink ? 'Invitación lista' : 'Invitar miembro'}
+      description={createdLink ? 'Compartí este link con la persona invitada. Válido 7 días.' : 'Le mandaremos por mail una invitación con un link único.'}
+      size="md"
+      footer={
+        createdLink ? (
+          <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
         ) : (
-          <div className="p-6 space-y-4">
-            <div className="flex justify-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-                <svg className="h-7 w-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-gray-900">Invitación lista</p>
-              <p className="mt-1 text-sm text-gray-500">Compartí este link con la persona invitada. Válido por 7 días.</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3 break-all text-xs text-gray-700 font-mono">
-              {createdLink}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleCopy} className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-[#0a1628] transition">
-                {copied ? '✓ Copiado' : 'Copiar link'}
-              </button>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Te invito a HandicApp: ${createdLink}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center rounded-lg border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+          <>
+            <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+            <Button type="submit" form="invite-form" loading={create.isPending} disabled={!email.trim()}>
+              Generar invitación
+            </Button>
+          </>
+        )
+      }
+    >
+      {!createdLink ? (
+        <form id="invite-form" onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="email"
+            label="Email"
+            placeholder="ejemplo@email.com"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+            error={emailError ?? undefined}
+            autoFocus
+            required
+          />
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium text-slate-700 mb-2">Rol</legend>
+            {ROLE_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={cn(
+                  'flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition',
+                  role === opt.value
+                    ? 'border-navy-700 bg-navy-50'
+                    : 'border-slate-200 hover:border-slate-300',
+                )}
               >
-                Enviar por WhatsApp
-              </a>
+                <input
+                  type="radio"
+                  name="role"
+                  value={opt.value}
+                  checked={role === opt.value}
+                  onChange={() => setRole(opt.value)}
+                  className="mt-1 h-4 w-4 accent-navy-700"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-slate-900">{opt.label}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 leading-snug">{opt.desc}</p>
+                </div>
+              </label>
+            ))}
+          </fieldset>
+          {submitError && (
+            <p className="rounded-lg bg-danger-50 px-3 py-2 text-xs text-danger-700" role="alert">{submitError}</p>
+          )}
+        </form>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-50">
+              <svg className="h-7 w-7 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
             </div>
-            <button onClick={onClose} className="w-full rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-50">
-              Cerrar
-            </button>
           </div>
-        )}
-      </div>
-    </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 break-all">
+            {createdLink}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={handleCopy}>{copied ? '✓ Copiado' : 'Copiar link'}</Button>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                window.open(
+                  `https://wa.me/?text=${encodeURIComponent(`Te invito a HandicApp: ${createdLink}`)}`,
+                  '_blank',
+                )
+              }
+            >
+              WhatsApp
+            </Button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
+// ─────────────────────────── Remove member confirm ───────────────────────────
+function ConfirmRemoveModal({
+  open, name, onCancel, onConfirm, loading,
+}: { open: boolean; name: string; onCancel: () => void; onConfirm: () => void; loading?: boolean }) {
+  return (
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title="Quitar miembro"
+      size="sm"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>Cancelar</Button>
+          <Button variant="danger" onClick={onConfirm} loading={loading}>Quitar</Button>
+        </>
+      }
+    >
+      <p className="text-sm text-slate-600">
+        <strong className="text-slate-900">{name}</strong> dejará de ser miembro y perderá el acceso. Esta acción es reversible re-invitando a la persona.
+      </p>
+    </Modal>
+  );
+}
+
+// ─────────────────────────── Page ───────────────────────────
 export default function OrganizacionPage() {
   const { user } = useAuth();
-  const { data: myOrgs, isLoading: loadingOrgs } = useMyOrganizations();
+  const { data: myOrgs, isLoading: loadingOrgs, error: orgsError } = useMyOrganizations();
   const orgId = myOrgs?.[0]?.id ?? null;
-  const { data: org, isLoading: loadingOrg } = useOrganization(orgId);
+  const { data: org, isLoading: loadingOrg, error: orgError } = useOrganization(orgId);
   const { data: invitations } = useOrgInvitations(orgId);
   const removeMember = useRemoveMember(orgId ?? '');
   const cancelInv = useCancelInvitation(orgId ?? '');
   const changeRole = useChangeMemberRole(orgId ?? '');
   const [showInvite, setShowInvite] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
 
   if (loadingOrgs || loadingOrg) return <PageLoader />;
 
+  if (orgsError || orgError) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        <PageHeader title="Organización" />
+        <Card>
+          <p className="text-sm font-semibold text-danger-700">No pudimos cargar tu organización.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Revisá tu conexión y volvé a intentar. Si persiste, contactanos.
+          </p>
+          <Button className="mt-4" variant="secondary" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   if (!org) {
     return (
-      <div className="space-y-6 max-w-3xl">
+      <div className="max-w-3xl space-y-6">
         <PageHeader title="Organización" />
         <EmptyState
           icon={
@@ -220,7 +320,7 @@ export default function OrganizacionPage() {
             </svg>
           }
           title="No pertenecés a ninguna organización"
-          message="Las organizaciones permiten a los establecimientos gestionar a sus propietarios y veterinarios bajo un mismo plan. Contactanos para crear la tuya."
+          message="Las organizaciones permiten a los establecimientos gestionar a sus propietarios y veterinarios bajo un mismo plan."
         />
       </div>
     );
@@ -232,133 +332,144 @@ export default function OrganizacionPage() {
   const canInvite = isAdmin || isOwner;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="max-w-5xl space-y-6">
       <PageHeader
         title={org.name}
         subtitle="Tu organización en HandicApp"
         badge={{ label: PLAN_LABELS[org.plan], tone: org.plan !== 'free' ? 'gold' : 'neutral' }}
+        action={canInvite && (
+          <Button onClick={() => setShowInvite(true)}>+ Invitar miembro</Button>
+        )}
       />
 
-      {/* Plan */}
+      {/* KPIs + Plan */}
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="md:col-span-2 grid grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Caballos</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{org.horse_count}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Miembros</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{org.members.length}</p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 md:col-span-2">
+          <Kpi label="Caballos" value={org.horse_count} hint={org.horse_limit ? `de ${org.horse_limit} permitidos` : 'sin límite'} />
+          <Kpi label="Miembros" value={org.members.length} hint="activos" />
         </div>
-        <PlanCard plan={org.plan} horseCount={org.horse_count} horseLimit={org.horse_limit} expiresAt={org.plan_expires_at} />
+        <PlanPanel
+          plan={org.plan}
+          horseCount={org.horse_count}
+          horseLimit={org.horse_limit}
+          expiresAt={org.plan_expires_at}
+        />
       </div>
 
       {/* Invitaciones pendientes */}
       {invitations && invitations.length > 0 && (
-        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Invitaciones pendientes ({invitations.length})</p>
+        <Card padded={false} className="overflow-hidden border-warning-500/30 bg-warning-50/40">
+          <div className="border-b border-warning-500/20 px-5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-warning-700">
+              Invitaciones pendientes ({invitations.length})
+            </p>
           </div>
-          <div className="space-y-2">
+          <ul className="divide-y divide-warning-500/10">
             {invitations.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between rounded-lg bg-white p-3 text-sm">
-                <div>
-                  <p className="font-semibold text-gray-900">{inv.email}</p>
-                  <p className="text-xs text-gray-500">{ROLE_LABELS[inv.role_in_org]} · expira {new Date(inv.expires_at).toLocaleDateString('es-AR')}</p>
+              <li key={inv.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy-900">{inv.email}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {ROLE_LABELS[inv.role_in_org]} · expira el {new Date(inv.expires_at).toLocaleDateString('es-AR')}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
                     onClick={() => navigator.clipboard.writeText(`${window.location.origin}/invitacion/${inv.token}`)}
-                    className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer"
                   >
                     Copiar link
-                  </button>
+                  </Button>
                   {canInvite && (
-                    <button
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => cancelInv.mutate(inv.id)}
-                      className="text-red-500 hover:text-red-700 text-lg leading-none cursor-pointer"
+                      aria-label={`Cancelar invitación de ${inv.email}`}
                     >
-                      ✕
-                    </button>
+                      Cancelar
+                    </Button>
                   )}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </Card>
       )}
 
       {/* Miembros */}
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Miembros <span className="text-gray-400 font-normal">({org.members.length})</span>
+      <Card padded={false} className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-900">
+            Miembros <span className="font-normal text-slate-400">({org.members.length})</span>
           </h2>
-          {canInvite && (
-            <button
-              onClick={() => setShowInvite(true)}
-              className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a1628] transition cursor-pointer"
-            >
-              + Invitar
-            </button>
-          )}
         </div>
-        <div className="divide-y divide-gray-50">
+        <ul className="divide-y divide-slate-100">
           {org.members.map((member) => {
             const isOrgOwner = member.user_id === org.owner_id;
+            const isMe = member.user_id === user?.id;
             return (
-              <div key={member.id} className="flex items-center gap-3 px-5 py-3.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0f1f3d] text-sm font-bold text-white">
+              <li key={member.id} className="flex items-center gap-3 px-5 py-3.5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-700 text-sm font-bold text-white">
                   {member.user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="truncate text-sm font-semibold text-navy-900">
                     {member.user.name}
-                    {member.user_id === user?.id && <span className="text-[10px] text-gray-400 ml-2">(vos)</span>}
+                    {isMe && <span className="ml-2 text-[10px] font-normal text-slate-400">(vos)</span>}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">{member.user.email}</p>
+                  <p className="truncate text-xs text-slate-400">{member.user.email}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {canInvite && !isOrgOwner ? (
-                    <select
-                      value={member.role_in_org}
-                      onChange={(e) => changeRole.mutate({ memberId: member.id, role_in_org: e.target.value as OrgRole })}
-                      className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 cursor-pointer focus:outline-none focus:border-gray-400"
-                    >
-                      {ROLE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                      isOrgOwner ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {isOrgOwner ? '👑 Dueño' : ROLE_LABELS[member.role_in_org]}
-                    </span>
-                  )}
-                  {canInvite && !isOrgOwner && member.user_id !== user?.id && (
-                    <button
-                      onClick={() => {
-                        if (confirm(`¿Quitar a ${member.user.name} de la organización?`)) {
-                          removeMember.mutate(member.id);
+                    <div className="w-36">
+                      <Select
+                        value={member.role_in_org}
+                        onChange={(e) =>
+                          changeRole.mutate({ memberId: member.id, role_in_org: e.target.value as OrgRole })
                         }
-                      }}
-                      className="text-gray-300 hover:text-red-500 cursor-pointer"
+                        options={ROLE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+                        aria-label={`Cambiar rol de ${member.user.name}`}
+                      />
+                    </div>
+                  ) : (
+                    <Badge tone={isOrgOwner ? 'gold' : 'neutral'} dot={isOrgOwner}>
+                      {isOrgOwner ? 'Dueño' : ROLE_LABELS[member.role_in_org]}
+                    </Badge>
+                  )}
+                  {canInvite && !isOrgOwner && !isMe && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setMemberToRemove({ id: member.id, name: member.user.name })}
+                      aria-label={`Quitar a ${member.user.name}`}
                     >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                      Quitar
+                    </Button>
                   )}
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
-      </div>
+        </ul>
+      </Card>
 
-      {showInvite && orgId && <InviteModal orgId={orgId} onClose={() => setShowInvite(false)} />}
+      {orgId && (
+        <InviteModal orgId={orgId} open={showInvite} onClose={() => setShowInvite(false)} />
+      )}
+      <ConfirmRemoveModal
+        open={!!memberToRemove}
+        name={memberToRemove?.name ?? ''}
+        loading={removeMember.isPending}
+        onCancel={() => setMemberToRemove(null)}
+        onConfirm={async () => {
+          if (memberToRemove) {
+            await removeMember.mutateAsync(memberToRemove.id);
+            setMemberToRemove(null);
+          }
+        }}
+      />
     </div>
   );
 }
