@@ -22,6 +22,7 @@ import { cldTransform } from '@/lib/cloudinary';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
 import { Plus, Search as SearchIcon, Filter as FilterIcon } from 'lucide-react';
+import { HorseIllustration } from '@/components/illustrations';
 import { PageHeader } from '@/components/ui/page-header';
 import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -848,7 +849,8 @@ export default function CaballosPage() {
 
         return !filteredHorses.length ? (
         <EmptyState
-          icon={search ? SearchIcon : FilterIcon}
+          icon={search ? SearchIcon : HorseIllustration}
+          illustration={!search}
           title={search ? 'No encontramos caballos con esa búsqueda' : 'Todavía no registraste caballos'}
           message={
             search

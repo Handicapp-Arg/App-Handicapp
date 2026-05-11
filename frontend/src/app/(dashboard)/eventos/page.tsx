@@ -9,6 +9,7 @@ import ImagePicker from '@/components/image-picker';
 import EventCalendar from '@/components/event-calendar';
 import ConfirmDialog from '@/components/confirm-dialog';
 import { CalendarDays, Filter as FilterIcon, List as ListIcon, Plus } from 'lucide-react';
+import { EventsIllustration } from '@/components/illustrations';
 import { PageHeader } from '@/components/ui/page-header';
 import { SkeletonRow, Spinner } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -619,7 +620,8 @@ export default function EventosPage() {
           <ErrorState onRetry={() => refetchAll()} />
         ) : !displayEvents?.length ? (
           <EmptyState
-            icon={hasFilters ? FilterIcon : CalendarDays}
+            icon={hasFilters ? FilterIcon : EventsIllustration}
+            illustration={!hasFilters}
             title={hasFilters ? 'No encontramos eventos con esos filtros' : 'Aún no registraste eventos'}
             message={
               hasFilters

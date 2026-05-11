@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import {
-  FileSignature, FilePen, Plus, ScrollText, X,
+  FileSignature, FilePen, Plus, X,
 } from 'lucide-react';
+import { ContractIllustration } from '@/components/illustrations';
 import {
   useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract,
   type Contract,
@@ -163,7 +164,8 @@ export default function ContratosPage() {
         <ListSkeleton rows={4} />
       ) : !contracts?.length ? (
         <EmptyState
-          icon={ScrollText}
+          icon={ContractIllustration}
+          illustration
           title={isEstablishment ? 'Todavía no creaste contratos' : 'No tenés contratos pendientes'}
           message={
             isEstablishment

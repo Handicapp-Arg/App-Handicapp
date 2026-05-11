@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import {
-  Building2, CheckCircle2, Copy, MessageCircle, Plus, Sparkles, UserMinus,
+  CheckCircle2, Copy, MessageCircle, Plus, Sparkles, UserMinus,
 } from 'lucide-react';
+import { OrganizationIllustration } from '@/components/illustrations';
 import {
   useMyOrganizations, useOrganization, useOrgInvitations,
   useCreateInvitation, useCancelInvitation, useRemoveMember, useChangeMemberRole,
@@ -320,7 +321,8 @@ export default function OrganizacionPage() {
       <div className="max-w-3xl space-y-6">
         <PageHeader title="Organización" />
         <EmptyState
-          icon={Building2}
+          icon={OrganizationIllustration}
+          illustration
           title="Todavía no pertenecés a ninguna organización"
           message="Las organizaciones permiten al establecimiento centralizar el plan, los miembros y los caballos. Si te invitaron, abrí el link de invitación; si querés crear una, escribinos."
         />
