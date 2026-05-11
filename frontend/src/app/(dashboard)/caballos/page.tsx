@@ -625,7 +625,7 @@ export default function CaballosPage() {
 
       <PageHeader
         title="Caballos"
-        badge={horses && horses.length > 0 ? { label: `${horses.length} en total`, color: 'green' } : undefined}
+        badge={horses && horses.length > 0 ? { label: `${horses.length} en total`, tone: 'success' } : undefined}
         action={can('horses', 'create') ? (
           <button
             onClick={() => { setCreateError(null); setShowForm(!showForm); }}

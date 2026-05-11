@@ -236,7 +236,7 @@ export default function OrganizacionPage() {
       <PageHeader
         title={org.name}
         subtitle="Tu organización en HandicApp"
-        badge={{ label: PLAN_LABELS[org.plan], color: org.plan !== 'free' ? 'amber' : undefined }}
+        badge={{ label: PLAN_LABELS[org.plan], tone: org.plan !== 'free' ? 'gold' : 'neutral' }}
       />
 
       {/* Plan */}

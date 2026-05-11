@@ -1,7 +1,4 @@
-/**
- * EmptyState para web — espejo de EmptyState.tsx de mobile.
- * Reemplaza el texto gris genérico "No hay datos".
- */
+import { Button } from './button';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -12,22 +9,18 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white py-16 px-8 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 px-8 text-center">
       {icon && (
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-300">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
           {icon}
         </div>
       )}
-      <p className="text-sm font-semibold text-gray-700">{title}</p>
-      {message && <p className="mt-1.5 text-sm text-gray-400 max-w-sm">{message}</p>}
+      <p className="text-sm font-semibold text-slate-700">{title}</p>
+      {message && <p className="mt-1.5 text-sm text-slate-400 max-w-sm">{message}</p>}
       {action && (
-        <button
-          onClick={action.onClick}
-          className="mt-5 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-95"
-          style={{ backgroundColor: '#0f1f3d' }}
-        >
+        <Button className="mt-5" onClick={action.onClick}>
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

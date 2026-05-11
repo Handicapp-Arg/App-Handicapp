@@ -88,7 +88,7 @@ export default function NotificacionesPage() {
     <div className="max-w-2xl space-y-5">
       <PageHeader
         title="Notificaciones"
-        badge={unread.length > 0 ? { label: `${unread.length} sin leer`, color: 'blue' } : undefined}
+        badge={unread.length > 0 ? { label: `${unread.length} sin leer`, tone: 'info' } : undefined}
         action={unread.length > 0 ? (
           <button
             onClick={() => markAsRead.mutate(undefined)}
