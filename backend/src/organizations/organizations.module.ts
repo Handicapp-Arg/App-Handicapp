@@ -9,11 +9,13 @@ import { OrganizationsService } from './organizations.service';
 import { OrganizationMigrationService } from './organization-migration.service';
 import { OrganizationsController, InvitationsController } from './organizations.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Organization, OrganizationMember, OrganizationInvitation, User, Horse]),
     NotificationsModule,
+    CommonModule,
   ],
   controllers: [OrganizationsController, InvitationsController],
   providers: [OrganizationsService, OrganizationMigrationService],

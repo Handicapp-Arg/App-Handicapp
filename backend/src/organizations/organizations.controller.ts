@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Query,
+  Controller, Get, Post, Patch, Delete, Param, Body,
   UseGuards, ValidationPipe, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -7,6 +7,8 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { IsEmail, IsIn } from 'class-validator';
 import { OrganizationsService } from './organizations.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { RequireOrgMembership } from '../common/decorators/require-org-membership.decorator';
+import { OrgMembershipGuard } from '../common/guards/org-membership.guard';
 import { User } from '../auth/user.entity';
 import type { OrgMemberRole } from './organization-member.entity';
 
@@ -25,7 +27,7 @@ class ChangeRoleDto {
 
 @ApiTags('organizations')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), OrgMembershipGuard)
 @Controller('organizations')
 export class OrganizationsController {
   constructor(private readonly service: OrganizationsService) {}
@@ -36,6 +38,7 @@ export class OrganizationsController {
   }
 
   @Get(':id')
+  @RequireOrgMembership()
   getById(@Param('id') id: string, @GetUser() user: User) {
     return this.service.getOrgById(id, user);
   }
@@ -43,12 +46,14 @@ export class OrganizationsController {
   // ─── Miembros ───
 
   @Delete(':id/members/:memberId')
+  @RequireOrgMembership({ admin: true })
   @HttpCode(HttpStatus.NO_CONTENT)
   removeMember(@Param('id') id: string, @Param('memberId') memberId: string, @GetUser() user: User) {
     return this.service.removeMember(id, memberId, user);
   }
 
   @Patch(':id/members/:memberId/role')
+  @RequireOrgMembership({ admin: true })
   changeRole(
     @Param('id') id: string,
     @Param('memberId') memberId: string,
@@ -61,6 +66,7 @@ export class OrganizationsController {
   // ─── Invitaciones ───
 
   @Post(':id/invitations')
+  @RequireOrgMembership({ admin: true })
   createInvitation(
     @Param('id') id: string,
     @Body(ValidationPipe) dto: CreateInvitationDto,
@@ -70,11 +76,13 @@ export class OrganizationsController {
   }
 
   @Get(':id/invitations')
+  @RequireOrgMembership()
   listInvitations(@Param('id') id: string, @GetUser() user: User) {
     return this.service.listInvitations(id, user);
   }
 
   @Delete(':id/invitations/:invitationId')
+  @RequireOrgMembership({ admin: true })
   @HttpCode(HttpStatus.NO_CONTENT)
   cancelInvitation(
     @Param('id') id: string,
