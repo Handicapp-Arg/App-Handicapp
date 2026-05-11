@@ -1,195 +1,438 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import {
   useSuperAdminMetrics, useSuperAdminOrgs, useCreateOrgManually,
   useSetOrgPlan, useSetOrgStatus, useDeleteOrg, type SuperAdminOrg,
 } from '@/hooks/use-superadmin';
-import { PageHeader } from '@/components/ui/page-header';
 import { PLAN_LABELS, type OrgPlan } from '@/hooks/use-organizations';
+import {
+  PageHeader, Card, Badge, Button, Modal, Input, Select, DataTable,
+  type ColumnDef, type BadgeTone,
+} from '@/components/ui';
+import { cn } from '@/lib/cn';
+
+const PAGE_SIZE = 15;
 
 const formatARS = (n: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
 
+const PLAN_TONE: Record<OrgPlan, BadgeTone> = {
+  free:       'neutral',
+  basic:      'info',
+  pro:        'gold',
+  enterprise: 'navy',
+};
+
+const STATUS_TONE: Record<SuperAdminOrg['status'], BadgeTone> = {
+  active:    'success',
+  suspended: 'danger',
+  trial:     'warning',
+};
+
+const STATUS_LABEL: Record<SuperAdminOrg['status'], string> = {
+  active:    'Activa',
+  suspended: 'Suspendida',
+  trial:     'Trial',
+};
+
+// ─────────────────────────── Metric Card ───────────────────────────
 function MetricCard({
-  label, value, sub, accent,
-}: { label: string; value: string; sub?: string; accent?: 'navy' | 'gold' | 'amber' | 'gray' }) {
-  const styles = {
-    navy:  { bg: '#0f1f3d', text: '#fff', label: 'rgba(255,255,255,0.5)', sub: 'rgba(255,255,255,0.6)' },
-    gold:  { bg: '#fffbeb', text: '#78350f', label: '#b45309', sub: '#d97706' },
-    amber: { bg: '#fff7ed', text: '#9a3412', label: '#c2410c', sub: '#ea580c' },
-    gray:  { bg: '#fff', text: '#0f172a', label: '#94a3b8', sub: '#64748b' },
-  };
-  const s = styles[accent ?? 'gray'];
+  label, value, sub, tone = 'neutral',
+}: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'neutral' }) {
   return (
-    <div className="rounded-2xl border border-gray-100 p-5 shadow-sm" style={{ backgroundColor: s.bg }}>
-      <p className="text-[10.5px] font-bold uppercase tracking-[0.07em]" style={{ color: s.label }}>{label}</p>
-      <p className="mt-1 text-[2rem] font-bold tracking-[-0.03em] leading-none" style={{ color: s.text }}>{value}</p>
-      {sub && <p className="mt-1.5 text-xs font-medium" style={{ color: s.sub }}>{sub}</p>}
-    </div>
+    <Card
+      className={cn(
+        'p-5 transition',
+        tone === 'navy' && 'bg-navy-700 border-navy-700',
+        tone === 'gold' && 'bg-gold-50 border-gold-500/30',
+      )}
+    >
+      <p
+        className={cn(
+          'text-[11px] font-semibold uppercase tracking-widest',
+          tone === 'navy' ? 'text-white/60' : tone === 'gold' ? 'text-gold-600' : 'text-slate-400',
+        )}
+      >
+        {label}
+      </p>
+      <p
+        className={cn(
+          'mt-2 text-3xl font-bold tracking-tight leading-none',
+          tone === 'navy' ? 'text-white' : tone === 'gold' ? 'text-gold-600' : 'text-navy-900',
+        )}
+      >
+        {value}
+      </p>
+      {sub && (
+        <p className={cn('mt-2 text-xs font-medium', tone === 'navy' ? 'text-white/70' : 'text-slate-500')}>
+          {sub}
+        </p>
+      )}
+    </Card>
   );
 }
 
-function CreateOrgModal({ onClose }: { onClose: () => void }) {
+// ─────────────────────────── Create org modal ───────────────────────────
+function CreateOrgModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const create = useCreateOrgManually();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [plan, setPlan] = useState<OrgPlan>('basic');
-  const [months, setMonths] = useState(1);
+  const [months, setMonths] = useState('1');
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
-    setError('');
+  const reset = () => {
+    setName(''); setEmail(''); setPlan('basic'); setMonths('1'); setNotes(''); setError(null);
+  };
+
+  const handleClose = () => { onClose(); reset(); };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
     try {
-      await create.mutateAsync({ name, owner_email: email, plan, months: plan !== 'free' ? months : undefined, notes: notes || undefined });
-      onClose();
-    } catch (e: any) {
-      setError(e.response?.data?.message ?? 'No se pudo crear la organización');
+      await create.mutateAsync({
+        name,
+        owner_email: email,
+        plan,
+        months: plan !== 'free' ? Number(months) : undefined,
+        notes: notes || undefined,
+      });
+      handleClose();
+    } catch (err) {
+      const msg =
+        typeof err === 'object' && err && 'response' in err
+          ? // @ts-expect-error axios shape
+            (err.response?.data?.message ?? null)
+          : err instanceof Error
+            ? err.message
+            : null;
+      setError(msg ?? 'No pudimos crear la organización');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-[#0f1f3d] px-6 py-4">
-          <p className="font-bold text-white">Crear organización manual</p>
-          <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre del establecimiento *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="input-base" placeholder="Haras Los Pinos" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email del dueño *</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-base" placeholder="dueno@email.com" />
-            <p className="mt-1 text-xs text-gray-400">El usuario debe existir en HandicApp.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Plan</label>
-              <select value={plan} onChange={(e) => setPlan(e.target.value as OrgPlan)} className="input-base">
-                <option value="free">Free (3 caballos)</option>
-                <option value="basic">Stable Basic (25)</option>
-                <option value="pro">Stable Pro (80)</option>
-                <option value="enterprise">Enterprise (∞)</option>
-              </select>
-            </div>
-            {plan !== 'free' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Duración (meses)</label>
-                <select value={months} onChange={(e) => setMonths(Number(e.target.value))} className="input-base">
-                  {[1, 3, 6, 12, 24].map((m) => <option key={m} value={m}>{m} meses</option>)}
-                </select>
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas internas (opcional)</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input-base resize-none" placeholder="Pagó por transferencia, etc..." />
-          </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-        </div>
-        <div className="flex gap-2 border-t border-gray-100 p-4">
-          <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50">Cancelar</button>
-          <button onClick={handleSubmit} disabled={!name || !email || create.isPending} className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#0a1628]">
-            {create.isPending ? 'Creando...' : 'Crear organización'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ChangePlanModal({ org, onClose }: { org: SuperAdminOrg; onClose: () => void }) {
-  const set = useSetOrgPlan();
-  const [plan, setPlan] = useState<OrgPlan>(org.plan);
-  const [months, setMonths] = useState(1);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-[#0f1f3d] px-6 py-4">
-          <p className="font-bold text-white">Cambiar plan</p>
-          <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
-        </div>
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-600"><span className="font-semibold">{org.name}</span></p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nuevo plan</label>
-            <select value={plan} onChange={(e) => setPlan(e.target.value as OrgPlan)} className="input-base">
-              <option value="free">Free</option>
-              <option value="basic">Stable Basic</option>
-              <option value="pro">Stable Pro</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
-          </div>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      title="Crear organización manual"
+      description="Le asignás un plan de pago a un establecimiento existente."
+      size="md"
+      footer={
+        <>
+          <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+          <Button type="submit" form="create-org-form" loading={create.isPending} disabled={!name || !email}>
+            Crear
+          </Button>
+        </>
+      }
+    >
+      <form id="create-org-form" onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Nombre del establecimiento"
+          placeholder="Haras Los Pinos"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <Input
+          type="email"
+          label="Email del dueño"
+          placeholder="dueno@email.com"
+          hint="El usuario debe existir en HandicApp."
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <Select
+            label="Plan"
+            value={plan}
+            onChange={(e) => setPlan(e.target.value as OrgPlan)}
+            options={[
+              { value: 'free',       label: 'Free (3 caballos)' },
+              { value: 'basic',      label: 'Stable Basic (15)' },
+              { value: 'pro',        label: 'Stable Pro (50)' },
+              { value: 'enterprise', label: 'Enterprise (∞)' },
+            ]}
+          />
           {plan !== 'free' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Duración (meses)</label>
-              <select value={months} onChange={(e) => setMonths(Number(e.target.value))} className="input-base">
-                {[1, 3, 6, 12, 24].map((m) => <option key={m} value={m}>{m} meses</option>)}
-              </select>
-            </div>
+            <Select
+              label="Duración"
+              value={months}
+              onChange={(e) => setMonths(e.target.value)}
+              options={[1, 3, 6, 12, 24].map((m) => ({ value: String(m), label: `${m} meses` }))}
+            />
           )}
         </div>
-        <div className="flex gap-2 border-t border-gray-100 p-4">
-          <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50">Cancelar</button>
-          <button
-            onClick={async () => { await set.mutateAsync({ id: org.id, plan, months: plan !== 'free' ? months : undefined }); onClose(); }}
-            disabled={set.isPending}
-            className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#0a1628]"
-          >
-            {set.isPending ? 'Aplicando...' : 'Confirmar'}
-          </button>
+        <div className="space-y-1.5">
+          <label htmlFor="notes" className="block text-sm font-medium text-slate-700">
+            Notas internas (opcional)
+          </label>
+          <textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 transition focus:border-navy-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy-700/10"
+            placeholder="Pagó por transferencia, etc..."
+          />
         </div>
+        {error && (
+          <p className="rounded-lg bg-danger-50 px-3 py-2 text-xs text-danger-700" role="alert">
+            {error}
+          </p>
+        )}
+      </form>
+    </Modal>
+  );
+}
+
+// ─────────────────────────── Change plan modal ───────────────────────────
+function ChangePlanModal({
+  org, open, onClose,
+}: { org: SuperAdminOrg | null; open: boolean; onClose: () => void }) {
+  const set = useSetOrgPlan();
+  const [plan, setPlan] = useState<OrgPlan>(org?.plan ?? 'basic');
+  const [months, setMonths] = useState('1');
+
+  if (!org) return null;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Cambiar plan"
+      description={org.name}
+      size="sm"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button
+            loading={set.isPending}
+            onClick={async () => {
+              await set.mutateAsync({
+                id: org.id,
+                plan,
+                months: plan !== 'free' ? Number(months) : undefined,
+              });
+              onClose();
+            }}
+          >
+            Confirmar
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Select
+          label="Nuevo plan"
+          value={plan}
+          onChange={(e) => setPlan(e.target.value as OrgPlan)}
+          options={[
+            { value: 'free',       label: 'Free' },
+            { value: 'basic',      label: 'Stable Basic' },
+            { value: 'pro',        label: 'Stable Pro' },
+            { value: 'enterprise', label: 'Enterprise' },
+          ]}
+        />
+        {plan !== 'free' && (
+          <Select
+            label="Duración"
+            value={months}
+            onChange={(e) => setMonths(e.target.value)}
+            options={[1, 3, 6, 12, 24].map((m) => ({ value: String(m), label: `${m} meses` }))}
+          />
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// ─────────────────────────── Delete confirm ───────────────────────────
+function DeleteConfirmModal({
+  org, open, onClose, onConfirm, loading,
+}: { org: SuperAdminOrg | null; open: boolean; onClose: () => void; onConfirm: () => void; loading?: boolean }) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Eliminar organización"
+      size="sm"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="danger" onClick={onConfirm} loading={loading}>Eliminar</Button>
+        </>
+      }
+    >
+      <p className="text-sm text-slate-600">
+        <strong className="text-slate-900">{org?.name ?? ''}</strong> dejará de existir. Los caballos asociados quedarán liberados (sin organización). No se borran usuarios ni eventos.
+      </p>
+    </Modal>
+  );
+}
+
+// ─────────────────────────── Pagination footer ───────────────────────────
+function TableFooter({
+  page, total, pageSize, onPage,
+}: { page: number; total: number; pageSize: number; onPage: (p: number) => void }) {
+  const last = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(total, page * pageSize);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+      <span>
+        Mostrando <strong className="text-slate-700">{from}–{to}</strong> de <strong className="text-slate-700">{total}</strong>
+      </span>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          ←
+        </Button>
+        <span className="px-2">{page} / {last}</span>
+        <Button size="sm" variant="ghost" disabled={page >= last} onClick={() => onPage(page + 1)}>
+          →
+        </Button>
       </div>
     </div>
   );
 }
 
+// ─────────────────────────── Page ───────────────────────────
 export default function SuperAdminPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SuperAdminOrg | null>(null);
+  const [deleting, setDeleting] = useState<SuperAdminOrg | null>(null);
 
   const { data: metrics } = useSuperAdminMetrics();
   const { data: orgs, isLoading } = useSuperAdminOrgs({ search, plan: planFilter });
   const setStatus = useSetOrgStatus();
   const deleteOrg = useDeleteOrg();
 
+  const pagedOrgs = useMemo(() => {
+    if (!orgs) return [];
+    const start = (page - 1) * PAGE_SIZE;
+    return orgs.slice(start, start + PAGE_SIZE);
+  }, [orgs, page]);
+
   if (user?.role !== 'admin') {
     return (
-      <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
-        Acceso restringido. Solo el superadmin puede ver esta página.
-      </div>
+      <Card className="border-danger-500/30 bg-danger-50">
+        <p className="text-sm font-semibold text-danger-700">Acceso restringido</p>
+        <p className="mt-1 text-sm text-danger-700/80">
+          Solo el superadmin de HandicApp puede ver esta página.
+        </p>
+      </Card>
     );
   }
+
+  const columns: ColumnDef<SuperAdminOrg>[] = [
+    {
+      key: 'name',
+      header: 'Organización',
+      render: (o) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-navy-900">{o.name}</p>
+          {o.owner && <p className="truncate text-xs text-slate-400">{o.owner.email}</p>}
+        </div>
+      ),
+    },
+    {
+      key: 'plan',
+      header: 'Plan',
+      hideBelow: 'sm',
+      render: (o) => <Badge tone={PLAN_TONE[o.plan]}>{PLAN_LABELS[o.plan]}</Badge>,
+    },
+    {
+      key: 'counts',
+      header: 'Uso',
+      hideBelow: 'md',
+      render: (o) => (
+        <span className="text-xs text-slate-500">
+          {o.horse_count} caballos · {o.member_count} miembros
+        </span>
+      ),
+    },
+    {
+      key: 'revenue',
+      header: 'Ingreso',
+      hideBelow: 'lg',
+      align: 'right',
+      render: (o) => {
+        const expired = o.plan_expires_at && new Date(o.plan_expires_at) < new Date();
+        return (
+          <div className="text-right">
+            {o.monthly_revenue_ars > 0 ? (
+              <span className="text-xs font-semibold text-slate-700">{formatARS(o.monthly_revenue_ars)}/mes</span>
+            ) : (
+              <span className="text-xs text-slate-400">—</span>
+            )}
+            {expired && <p className="text-[10px] font-semibold text-danger-700">Vencido</p>}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      hideBelow: 'sm',
+      render: (o) => <Badge tone={STATUS_TONE[o.status]}>{STATUS_LABEL[o.status]}</Badge>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      className: 'w-[1%] whitespace-nowrap',
+      render: (o) => (
+        <div className="flex justify-end gap-1.5">
+          <Button size="sm" variant="secondary" onClick={() => setEditingPlan(o)}>
+            Plan
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              setStatus.mutate({ id: o.id, status: o.status === 'active' ? 'suspended' : 'active' })
+            }
+          >
+            {o.status === 'active' ? 'Suspender' : 'Reactivar'}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setDeleting(o)}
+            aria-label={`Eliminar ${o.name}`}
+          >
+            Eliminar
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Superadmin"
         subtitle="Control total de la plataforma HandicApp"
-        action={
-          <button onClick={() => setShowCreate(true)} className="btn-primary">
-            + Crear organización
-          </button>
-        }
+        action={<Button onClick={() => setShowCreate(true)}>+ Crear organización</Button>}
       />
 
       {/* Métricas */}
       {metrics && (
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            label="MRR Activo"
+            label="MRR activo"
             value={formatARS(metrics.mrr_ars)}
-            sub={`ARR: ${formatARS(metrics.arr_ars)}`}
-            accent="navy"
+            sub={`ARR estimado: ${formatARS(metrics.arr_ars)}`}
+            tone="navy"
           />
           <MetricCard
             label="Organizaciones"
@@ -202,116 +445,82 @@ export default function SuperAdminPage() {
             sub={`Promedio ${metrics.avg_horses_per_org} por org`}
           />
           <MetricCard
-            label="Por plan"
+            label="Distribución de planes"
             value={`${metrics.by_plan.pro ?? 0} Pro`}
             sub={`${metrics.by_plan.basic ?? 0} Basic · ${metrics.by_plan.free ?? 0} Free · ${metrics.by_plan.enterprise ?? 0} Ent.`}
+            tone="gold"
           />
         </div>
       )}
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-          <input
-            type="text"
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[220px]">
+          <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Buscar por nombre o email del dueño..."
-            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm focus:border-[#0f1f3d] focus:outline-none"
+            iconLeft={
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            }
           />
         </div>
-        <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#0f1f3d] focus:outline-none">
-          <option value="">Todos los planes</option>
-          <option value="free">Free</option>
-          <option value="basic">Basic</option>
-          <option value="pro">Pro</option>
-          <option value="enterprise">Enterprise</option>
-        </select>
-      </div>
-
-      {/* Lista */}
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Organizaciones {orgs ? <span className="text-gray-400 font-normal">({orgs.length})</span> : ''}</h2>
+        <div className="w-40">
+          <Select
+            value={planFilter}
+            onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
+            options={[
+              { value: '',           label: 'Todos los planes' },
+              { value: 'free',       label: 'Free' },
+              { value: 'basic',      label: 'Basic' },
+              { value: 'pro',        label: 'Pro' },
+              { value: 'enterprise', label: 'Enterprise' },
+            ]}
+          />
         </div>
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
-          </div>
-        ) : !orgs?.length ? (
-          <div className="py-12 text-center text-sm text-gray-400">Sin organizaciones</div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {orgs.map((o) => {
-              const isExpired = o.plan_expires_at && new Date(o.plan_expires_at) < new Date();
-              return (
-                <div key={o.id} className="grid grid-cols-12 items-center gap-3 px-5 py-3.5 hover:bg-gray-50/50 transition">
-                  <div className="col-span-3 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{o.name}</p>
-                    {o.owner && <p className="text-xs text-gray-400 truncate">{o.owner.email}</p>}
-                  </div>
-                  <div className="col-span-2">
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                      o.plan === 'free' ? 'bg-gray-100 text-gray-600'
-                      : o.plan === 'basic' ? 'bg-blue-50 text-blue-700'
-                      : o.plan === 'pro' ? 'bg-amber-50 text-amber-700'
-                      : 'bg-purple-50 text-purple-700'
-                    }`}>
-                      {PLAN_LABELS[o.plan]}
-                    </span>
-                  </div>
-                  <div className="col-span-2 text-xs text-gray-500">
-                    {o.horse_count} caballos · {o.member_count} miembros
-                  </div>
-                  <div className="col-span-2 text-xs">
-                    {o.monthly_revenue_ars > 0
-                      ? <span className="font-semibold text-gray-700">{formatARS(o.monthly_revenue_ars)}/mes</span>
-                      : <span className="text-gray-400">—</span>
-                    }
-                    {isExpired && <p className="text-red-500 font-medium">Vencido</p>}
-                  </div>
-                  <div className="col-span-1">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      o.status === 'active' ? 'bg-emerald-50 text-emerald-700'
-                      : o.status === 'suspended' ? 'bg-red-50 text-red-700'
-                      : 'bg-amber-50 text-amber-700'
-                    }`}>
-                      {o.status}
-                    </span>
-                  </div>
-                  <div className="col-span-2 flex justify-end gap-1.5">
-                    <button onClick={() => setEditingPlan(o)} className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer">
-                      Plan
-                    </button>
-                    <button
-                      onClick={() => setStatus.mutate({ id: o.id, status: o.status === 'active' ? 'suspended' : 'active' })}
-                      className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer"
-                    >
-                      {o.status === 'active' ? 'Suspender' : 'Reactivar'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`¿Eliminar "${o.name}"? Los caballos quedarán liberados (sin organización).`)) {
-                          deleteOrg.mutate(o.id);
-                        }
-                      }}
-                      className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-red-50 cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
 
-      {showCreate && <CreateOrgModal onClose={() => setShowCreate(false)} />}
-      {editingPlan && <ChangePlanModal org={editingPlan} onClose={() => setEditingPlan(null)} />}
+      {/* Tabla */}
+      <DataTable<SuperAdminOrg>
+        columns={columns}
+        rows={pagedOrgs}
+        rowKey={(o) => o.id}
+        loading={isLoading}
+        emptyState={
+          search || planFilter
+            ? 'No encontramos organizaciones con esos filtros.'
+            : 'Aún no hay organizaciones creadas.'
+        }
+        footer={
+          <TableFooter
+            page={page}
+            total={orgs?.length ?? 0}
+            pageSize={PAGE_SIZE}
+            onPage={setPage}
+          />
+        }
+      />
+
+      <CreateOrgModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <ChangePlanModal
+        org={editingPlan}
+        open={!!editingPlan}
+        onClose={() => setEditingPlan(null)}
+      />
+      <DeleteConfirmModal
+        org={deleting}
+        open={!!deleting}
+        loading={deleteOrg.isPending}
+        onClose={() => setDeleting(null)}
+        onConfirm={async () => {
+          if (deleting) {
+            await deleteOrg.mutateAsync(deleting.id);
+            setDeleting(null);
+          }
+        }}
+      />
     </div>
   );
 }
