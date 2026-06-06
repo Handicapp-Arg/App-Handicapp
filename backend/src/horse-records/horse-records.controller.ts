@@ -1,0 +1,166 @@
+import {
+  Controller, Get, Post, Param, Query, Body,
+  UseGuards, Request, ParseUUIDPipe, ParseIntPipe,
+  DefaultValuePipe, HttpCode, HttpStatus,
+  UploadedFile, UseInterceptors,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { HorseRecordsService } from './horse-records.service';
+import { HorseRecordsScrapingService } from './horse-records-scraping.service';
+import { SearchRecordsDto } from './dto/search-records.dto';
+import { SubmitClaimDto } from './dto/submit-claim.dto';
+import { HorseRecordsBootstrapService } from './horse-records-bootstrap.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+
+@Controller('horse-records')
+export class HorseRecordsController {
+  constructor(
+    private readonly service: HorseRecordsService,
+    private readonly scraping: HorseRecordsScrapingService,
+    private readonly bootstrap: HorseRecordsBootstrapService,
+    private readonly cloudinary: CloudinaryService,
+  ) {}
+
+  // ─── Búsqueda pública ────────────────────────────────────────────────────
+  @Get('search')
+  search(@Query() dto: SearchRecordsDto) {
+    return this.service.search(dto);
+  }
+
+  // ─── Stats (admin) ───────────────────────────────────────────────────────
+  @Get('stats')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  getStats() {
+    return this.service.getStats();
+  }
+
+  // ─── Cola de scraping (admin) ────────────────────────────────────────────
+  @Get('scrape-queue')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  getQueueStats() {
+    return this.scraping.getQueueStats();
+  }
+
+  // ─── Enqueue manual (admin / debug) ─────────────────────────────────────
+  @Post('enqueue')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.ACCEPTED)
+  enqueue(@Body('name') name: string) {
+    return this.scraping.enqueueSearch(name);
+  }
+
+  // ─── Trigger Wikidata bulk import ─────────────────────────────────────────
+  @Post('admin/import-wikidata')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async importWikidata(
+    @Body('minYear') minYear = 1990,
+    @Body('maxYear') maxYear = 2020,
+  ) {
+    const count = await this.scraping.bulkImportFromWikidata(minYear, maxYear);
+    return { imported: count, minYear, maxYear };
+  }
+
+  // ─── Re-run bootstrap (re-seed + wikidata) ───────────────────────────────
+  @Post('admin/reseed')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.ACCEPTED)
+  reseed() {
+    (this.bootstrap as any).seedInBackground().catch(() => {});
+    return { message: 'Reseed started in background' };
+  }
+
+  // ─── Reset failed records to pending ─────────────────────────────────────
+  @Post('admin/retry-failed')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async retryFailed() {
+    return this.scraping.retryAllFailed();
+  }
+
+  // ─── Claims pendientes (admin) ───────────────────────────────────────────
+  @Get('claims/pending')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  getPendingClaims(
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ) {
+    return this.service.getPendingClaims(limit, offset);
+  }
+
+  // ─── Claims del usuario autenticado ─────────────────────────────────────
+  @Get('claims/mine')
+  @UseGuards(AuthGuard('jwt'))
+  getMyClaims(@Request() req: any) {
+    return this.service.getUserClaims(req.user.id);
+  }
+
+  // ─── Upload documento para claim ─────────────────────────────────────────
+  @Post('claims/upload-document')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async uploadClaimDocument(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const result = await this.cloudinary.upload(file, 'horse-claim-docs');
+    return { url: result.secure_url, public_id: result.public_id };
+  }
+
+  // ─── Reclamar propiedad ──────────────────────────────────────────────────
+  @Post('claims')
+  @UseGuards(AuthGuard('jwt'))
+  submitClaim(@Body() dto: SubmitClaimDto, @Request() req: any) {
+    return this.service.submitClaim(dto, req.user.id);
+  }
+
+  // ─── Aprobar claim (admin) ───────────────────────────────────────────────
+  @Post('claims/:claimId/approve')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  approveClaim(@Param('claimId', ParseUUIDPipe) claimId: string, @Request() req: any) {
+    return this.service.approveClaim(claimId, req.user.id);
+  }
+
+  // ─── Rechazar claim (admin) ──────────────────────────────────────────────
+  @Post('claims/:claimId/reject')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  rejectClaim(
+    @Param('claimId', ParseUUIDPipe) claimId: string,
+    @Request() req: any,
+    @Body('reason') reason: string,
+  ) {
+    return this.service.rejectClaim(claimId, req.user.id, reason);
+  }
+
+  // ─── Árbol genealógico ───────────────────────────────────────────────────
+  @Get(':id/tree')
+  getTree(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('depth', new DefaultValuePipe(4), ParseIntPipe) depth: number,
+  ) {
+    return this.service.getTree(id, Math.min(depth, 6));
+  }
+
+  // ─── Descendientes ───────────────────────────────────────────────────────
+  @Get(':id/progeny')
+  getProgeny(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getProgeny(id);
+  }
+
+  // ─── Ficha individual ────────────────────────────────────────────────────
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.findOne(id);
+  }
+}

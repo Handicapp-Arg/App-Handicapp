@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
+// expo-notifications removido de Expo Go en SDK 53 — se usa no-op
 import api, { getToken } from './api';
 import { clearBadge, usePushNotificationListeners, type PushPayload } from './push-notifications';
 
@@ -25,6 +25,7 @@ interface NotificationsContextType {
   loading: boolean;
   refresh: () => Promise<void>;
   markAllRead: () => Promise<void>;
+  markOneRead: (id: string) => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType>({
@@ -33,6 +34,7 @@ const NotificationsContext = createContext<NotificationsContextType>({
   loading: false,
   refresh: async () => {},
   markAllRead: async () => {},
+  markOneRead: async () => {},
 });
 
 /** Mapea un payload push a una ruta interna. Centralizado para test/maintenance. */
@@ -144,21 +146,30 @@ export function NotificationsProvider({ children, userId }: { children: React.Re
       await api.patch('/notifications/read', { id: unreadIds });
       await clearBadge();
     } catch {
-      // Rollback si falla
       await refresh();
     }
   }, [notifications, refresh]);
 
+  // ─── markOneRead: marcar una sola notificación como leída ───
+  const markOneRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    try {
+      await api.patch('/notifications/read', { id: [id] });
+    } catch {
+      await refresh();
+    }
+  }, [refresh]);
+
   // ─── Badge sync: refleja el unread real en el ícono nativo ───
   useEffect(() => {
     const unread = notifications.filter((n) => !n.read).length;
-    Notifications.setBadgeCountAsync(unread).catch(() => {});
+    // Badge sync deshabilitado en Expo Go
   }, [notifications]);
 
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <NotificationsContext.Provider value={{ unread, notifications, loading, refresh, markAllRead }}>
+    <NotificationsContext.Provider value={{ unread, notifications, loading, refresh, markAllRead, markOneRead }}>
       {children}
     </NotificationsContext.Provider>
   );

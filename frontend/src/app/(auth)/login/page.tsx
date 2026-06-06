@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -18,13 +19,16 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 const testUsers = [
-  { email: 'admin@test.com', password: '123456', label: 'Admin' },
-  { email: 'propietario@test.com', password: '123456', label: 'Propietario' },
-  { email: 'establo@test.com', password: '123456', label: 'Establecimiento' },
+  { email: 'admin@handicapp.com',          password: 'handicapp2026', label: 'Admin' },
+  { email: 'propietario@handicapp.com',    password: 'handicapp2026', label: 'Propietario' },
+  { email: 'establecimiento@handicapp.com', password: 'handicapp2026', label: 'Establecimiento' },
+  { email: 'veterinario@handicapp.com',    password: 'handicapp2026', label: 'Veterinario' },
 ];
 
-export default function LoginPage() {
+function LoginForm() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo') || '/caballos';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +40,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, returnTo);
     } catch {
       setError('Email o contraseña incorrectos');
     } finally {
@@ -158,5 +162,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import type { Event } from '../../packages/shared/src';
@@ -15,7 +15,6 @@ interface EventsPage {
 export function useAllEvents(params?: { type?: string; horse_id?: string }) {
   const [page, setPage] = useState(1);
   const [allItems, setAllItems] = useState<Event[]>([]);
-  const [hasMore, setHasMore] = useState(true);
 
   const buildUrl = (p: number) => {
     const qs = new URLSearchParams();
@@ -35,16 +34,17 @@ export function useAllEvents(params?: { type?: string; horse_id?: string }) {
     staleTime: 15_000,
   });
 
-  // Acumular páginas cuando llegan
-  const prevData = query.data;
-  if (prevData) {
-    const ids = new Set(allItems.map((e) => e.id));
-    const newItems = prevData.data.filter((e) => !ids.has(e.id));
-    if (newItems.length > 0) {
-      setAllItems((prev) => [...prev, ...newItems]);
-      setHasMore(allItems.length + newItems.length < prevData.total);
-    }
-  }
+  // Acumular páginas en un efecto para no llamar setState durante el render
+  useEffect(() => {
+    if (!query.data) return;
+    setAllItems((prev) => {
+      const existingIds = new Set(prev.map((e) => e.id));
+      const newItems = query.data!.data.filter((e) => !existingIds.has(e.id));
+      return newItems.length > 0 ? [...prev, ...newItems] : prev;
+    });
+  }, [query.data]);
+
+  const hasMore = query.data ? allItems.length < query.data.total : true;
 
   const loadMore = useCallback(() => {
     if (!query.isFetching && hasMore) setPage((p) => p + 1);
@@ -53,7 +53,6 @@ export function useAllEvents(params?: { type?: string; horse_id?: string }) {
   const reset = useCallback(() => {
     setPage(1);
     setAllItems([]);
-    setHasMore(true);
   }, []);
 
   return {

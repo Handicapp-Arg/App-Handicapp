@@ -13,11 +13,13 @@ import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDown
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '@/hooks/use-event-comments';
 import QRCode from 'react-qr-code';
 import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
+import PedigreeSection from '@/components/pedigree/PedigreeSection';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import ConfirmDialog from '@/components/confirm-dialog';
 import ImagePicker from '@/components/image-picker';
 import { cldTransform } from '@/lib/cloudinary';
+import { calcAge, formatDate as fmtDate } from '@/lib/utils';
 import type { Event } from '@/types';
 
 /* ─── Constants ─── */
@@ -41,14 +43,8 @@ const inputClass =
 
 /* ─── Helpers ─── */
 
-function calcAge(birthDate: string): string {
-  const diff = Date.now() - new Date(birthDate + 'T12:00:00').getTime();
-  const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-  return years === 1 ? '1 año' : `${years} años`;
-}
-
 function formatDate(date: string): string {
-  return new Date(date + 'T12:00:00').toLocaleDateString('es-AR', {
+  return fmtDate(date, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -652,6 +648,11 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
 
 /* ─── Main Page ─── */
 
+function PedigreeSectionWrapper({ horse, isOwner, isAdmin }: { horse: import('@/types').Horse; isOwner: boolean; isAdmin: boolean }) {
+  const canEdit = isOwner || isAdmin;
+  return <PedigreeSection horse={horse} canEdit={canEdit} />;
+}
+
 export default function HorseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -806,6 +807,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   infoItems.push({ label: 'Registrado', value: new Date(horse.created_at).toLocaleDateString('es-AR') });
 
   return (
+
     <div className="pb-8">
 
       {/* Confirmacion eliminar caballo */}
@@ -2080,6 +2082,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         </div>{/* cierre space-y-4 col derecha */}
       </div>{/* cierre grid desktop */}
+
+      {/* Sección de Pedigrí — debajo del grid, full width */}
+      <PedigreeSectionWrapper horse={horse} isOwner={!!isOwner} isAdmin={user?.role === 'admin'} />
 
       {/* ─── Modal QR ─── */}
       {showQR && horse.public_token && createPortal(

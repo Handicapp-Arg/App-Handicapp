@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSearch } from '../hooks/use-search';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
+import { Routes, nav } from '../lib/routes';
 
 function SectionHeader({ label }: { label: string }) {
   return (
@@ -102,7 +103,7 @@ export default function BuscarScreen() {
                 icon="paw-outline"
                 title={h.name}
                 subtitle={[h.breed, h.activity].filter(Boolean).join(' · ') || undefined}
-                onPress={() => { router.push(`/(tabs)/caballos/${h.id}` as any); }}
+                onPress={() => { nav.push(router, Routes.caballo(h.id)); }}
               />
             ))}
           </View>
@@ -117,7 +118,7 @@ export default function BuscarScreen() {
                 icon="calendar-outline"
                 title={e.description}
                 subtitle={[e.type, e.date ? new Date(e.date).toLocaleDateString('es-AR') : undefined].filter(Boolean).join(' · ')}
-                onPress={() => { router.push('/(tabs)/eventos' as any); }}
+                onPress={() => { nav.push(router, Routes.tabsEventos); }}
               />
             ))}
           </View>
@@ -132,7 +133,7 @@ export default function BuscarScreen() {
                 icon="medkit-outline"
                 title={m.name}
                 subtitle={m.type}
-                onPress={() => { router.push('/(tabs)/caballos' as any); }}
+                onPress={() => { nav.push(router, Routes.tabsCaballos); }}
               />
             ))}
           </View>

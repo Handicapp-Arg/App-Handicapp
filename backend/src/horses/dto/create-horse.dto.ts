@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsDateString, IsUUID, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsDateString, IsUUID, IsString, IsEnum, IsInt, Min, Max, Matches } from 'class-validator';
 
 export class CreateHorseDto {
   @IsNotEmpty()
@@ -28,4 +28,18 @@ export class CreateHorseDto {
   @IsOptional()
   @IsUUID()
   activity_id?: string;
+
+  @IsOptional()
+  @IsEnum(['macho', 'hembra', 'castrado'])
+  sex?: 'macho' | 'hembra' | 'castrado';
+
+  @IsOptional()
+  @IsString()
+  color?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(80)
+  @Max(220)
+  height_cm?: number;
 }

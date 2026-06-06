@@ -16,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   can: (resource: string, action: string) => boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, redirectTo?: string) => Promise<void>;
   register: (
     email: string,
     password: string,
@@ -55,12 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, redirectTo = '/caballos') => {
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('token', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     await fetchUser();
-    router.push('/caballos');
+    router.push(redirectTo);
   };
 
   const register = async (

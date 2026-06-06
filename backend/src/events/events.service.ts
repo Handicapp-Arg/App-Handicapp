@@ -285,7 +285,13 @@ export class EventsService {
   async deleteComment(commentId: string, user: User): Promise<void> {
     const comment = await this.commentRepository.findOne({ where: { id: commentId }, relations: ['event', 'event.horse'] });
     if (!comment) throw new NotFoundException('Comentario no encontrado');
-    if (comment.user_id !== user.id && user.role !== 'admin' && user.role !== 'establecimiento') {
+
+    const isAuthor = comment.user_id === user.id;
+    const isAdmin = user.role === 'admin';
+    const isEstabWithAccess = user.role === 'establecimiento'
+      && comment.event.horse.establishment_id === user.id;
+
+    if (!isAuthor && !isAdmin && !isEstabWithAccess) {
       throw new ForbiddenException('No podés eliminar este comentario');
     }
     await this.commentRepository.delete(commentId);

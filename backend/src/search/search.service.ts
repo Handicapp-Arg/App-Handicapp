@@ -69,7 +69,7 @@ export class SearchService {
 
   private async getAccessibleHorseIds(user: User): Promise<string[]> {
     if (user.role === 'admin') {
-      const horses = await this.horseRepo.find({ select: ['id'], where: {} });
+      const horses = await this.horseRepo.find({ select: ['id'] });
       return horses.map((h) => h.id);
     }
     if (user.role === 'propietario') {

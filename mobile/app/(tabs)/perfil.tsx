@@ -1,17 +1,13 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
-import { useNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
-import { layout } from '../../styles/common';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
-import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '../../hooks/use-boarding-requests';
-import { Routes, nav } from '../../lib/routes';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -27,7 +23,6 @@ const MONTHS_OPTIONS = [
   { label: '12 meses', value: 12 },
 ];
 
-/* ─── Plan Banner para perfil ─── */
 function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
   plan: string; horseCount: number; horseLimit: number | null; isLimited: boolean;
 }) {
@@ -35,37 +30,31 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
   const pct = horseLimit ? Math.min((horseCount / horseLimit) * 100, 100) : 0;
 
   return (
-    <View style={[styles.planCard, isPro ? styles.planCardPro : styles.planCardFree]}>
-      <View style={styles.planHeader}>
-        <View style={styles.planBadge}>
-          <Text style={styles.planBadgeText}>{isPro ? 'Pro' : 'Gratis'}</Text>
+    <View style={[s.planCard, isPro ? s.planCardPro : s.planCardFree]}>
+      <View style={s.planHeader}>
+        <View style={s.planBadge}>
+          <Text style={s.planBadgeText}>{isPro ? 'Pro' : 'Gratis'}</Text>
         </View>
-        {!isPro && horseLimit && (
-          <Text style={styles.planUsage}>{horseCount}/{horseLimit} caballos</Text>
-        )}
-        {isPro && (
-          <Text style={styles.planUsagePro}>{horseCount} caballos</Text>
-        )}
+        <Text style={isPro ? s.planUsagePro : s.planUsage}>
+          {isPro ? `${horseCount} caballos` : `${horseCount}${horseLimit ? `/${horseLimit}` : ''} caballos`}
+        </Text>
       </View>
       {!isPro && horseLimit && (
-        <>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.primary }]} />
-          </View>
-          {isLimited && (
-            <Text style={styles.planWarning}>Límite alcanzado. Pedile al administrador que active el plan Pro.</Text>
-          )}
-        </>
+        <View style={s.progressTrack}>
+          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.primary }]} />
+        </View>
+      )}
+      {isLimited && (
+        <Text style={s.planWarning}>Límite alcanzado. Pedile al administrador que active el plan Pro.</Text>
       )}
       {isPro && (
-        <Text style={styles.planProMsg}>Acceso ilimitado a todas las funciones.</Text>
+        <Text style={s.planProMsg}>Acceso ilimitado a todas las funciones.</Text>
       )}
     </View>
   );
 }
 
-/* ─── Fila de usuario para admin ─── */
-function AdminUserPlanRow({ u, onActivate, onRevoke, isPending }: {
+function AdminUserRow({ u, onActivate, onRevoke, isPending }: {
   u: AdminPlanUser;
   onActivate: (userId: string, months: number) => void;
   onRevoke: (userId: string) => void;
@@ -79,62 +68,51 @@ function AdminUserPlanRow({ u, onActivate, onRevoke, isPending }: {
     : null;
 
   return (
-    <View style={styles.adminRow}>
-      <View style={styles.adminRowTop}>
+    <View style={s.adminRow}>
+      <View style={s.adminRowTop}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.adminRowName} numberOfLines={1}>{u.name}</Text>
-          <Text style={styles.adminRowEmail} numberOfLines={1}>{u.email}</Text>
-          <Text style={styles.adminRowMeta}>{ROLE_LABELS[u.role] ?? u.role} · {u.horse_count} caballos</Text>
+          <Text style={s.adminRowName} numberOfLines={1}>{u.name}</Text>
+          <Text style={s.adminRowEmail} numberOfLines={1}>{u.email}</Text>
+          <Text style={s.adminRowMeta}>{ROLE_LABELS[u.role] ?? u.role} · {u.horse_count} caballos</Text>
         </View>
-        <View style={[styles.planPill, isPro ? styles.planPillPro : styles.planPillFree]}>
-          <Text style={[styles.planPillText, isPro ? styles.planPillTextPro : styles.planPillTextFree]}>
+        <View style={[s.planPill, isPro ? s.planPillPro : s.planPillFree]}>
+          <Text style={[s.planPillText, isPro ? s.planPillTextPro : s.planPillTextFree]}>
             {isPro ? 'Pro' : 'Gratis'}
           </Text>
         </View>
       </View>
-
-      {isPro && expiresStr && (
-        <Text style={styles.adminExpires}>Vence: {expiresStr}</Text>
-      )}
-
+      {isPro && expiresStr && <Text style={s.adminExpires}>Vence: {expiresStr}</Text>}
       {!isPro && (
         <>
-          <TouchableOpacity onPress={() => setShowMonths((p) => !p)} style={styles.monthsToggle}>
-            <Text style={styles.monthsToggleText}>Duración: {months} {months === 1 ? 'mes' : 'meses'} ▾</Text>
+          <TouchableOpacity onPress={() => setShowMonths((p) => !p)} style={s.monthsToggle}>
+            <Text style={s.monthsToggleText}>Duración: {months} {months === 1 ? 'mes' : 'meses'} ▾</Text>
           </TouchableOpacity>
           {showMonths && (
-            <View style={styles.monthsGrid}>
+            <View style={s.monthsGrid}>
               {MONTHS_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
                   onPress={() => { setMonths(opt.value); setShowMonths(false); }}
-                  style={[styles.monthsOption, months === opt.value && styles.monthsOptionActive]}
+                  style={[s.monthsOption, months === opt.value && s.monthsOptionActive]}
                 >
-                  <Text style={[styles.monthsOptionText, months === opt.value && styles.monthsOptionTextActive]}>
+                  <Text style={[s.monthsOptionText, months === opt.value && s.monthsOptionTextActive]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
-          <TouchableOpacity
-            style={styles.activateBtn}
-            onPress={() => onActivate(u.id, months)}
-            disabled={isPending}
-            activeOpacity={0.85}
-          >
-            {isPending ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Text style={styles.activateBtnText}>Activar Pro</Text>
-            )}
+          <TouchableOpacity style={s.activateBtn} onPress={() => onActivate(u.id, months)} disabled={isPending} activeOpacity={0.85}>
+            {isPending
+              ? <ActivityIndicator size="small" color={colors.white} />
+              : <Text style={s.activateBtnText}>Activar Pro</Text>
+            }
           </TouchableOpacity>
         </>
       )}
-
       {isPro && (
         <TouchableOpacity
-          style={styles.revokeBtn}
+          style={s.revokeBtn}
           onPress={() => Alert.alert('Revocar Pro', `¿Querés quitar el plan Pro a ${u.name}?`, [
             { text: 'Cancelar', style: 'cancel' },
             { text: 'Revocar', style: 'destructive', onPress: () => onRevoke(u.id) },
@@ -142,24 +120,32 @@ function AdminUserPlanRow({ u, onActivate, onRevoke, isPending }: {
           disabled={isPending}
           activeOpacity={0.85}
         >
-          <Text style={styles.revokeBtnText}>Revocar Pro</Text>
+          <Text style={s.revokeBtnText}>Revocar Pro</Text>
         </TouchableOpacity>
       )}
     </View>
   );
 }
 
-/* ─── Main ─── */
-
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
-  const { notifications, unread, markAllRead } = useNotifications();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { data: planStatus } = usePlanStatus();
   const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers();
   const setPlan = useAdminSetPlan();
   const [adminSearch, setAdminSearch] = useState('');
+
+  if (!user) return null;
+
+  const initials = user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const isAdmin = user.role === 'admin';
+  const showPlan = user.role === 'propietario' || user.role === 'establecimiento';
+
+  const filteredAdminUsers = adminUsers?.filter((u) =>
+    adminSearch
+      ? u.name.toLowerCase().includes(adminSearch.toLowerCase()) || u.email.toLowerCase().includes(adminSearch.toLowerCase())
+      : true,
+  );
 
   const handleLogout = () => {
     Alert.alert('Cerrar sesión', '¿Querés cerrar tu sesión?', [
@@ -168,46 +154,28 @@ export default function PerfilScreen() {
     ]);
   };
 
-  const { data: boardingRequests } = useBoardingRequests();
-  const acceptRequest = useAcceptBoardingRequest();
-  const rejectRequest = useRejectBoardingRequest();
-
-  if (!user) return null;
-
-  const initials = user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-  const isAdmin = user.role === 'admin';
-  const isEstab = user.role === 'establecimiento';
-  const showPlan = user.role === 'propietario' || user.role === 'establecimiento';
-
-  const pendingRequests = boardingRequests?.filter((r) => r.status === 'pending') ?? [];
-
-  const filteredAdminUsers = adminUsers?.filter((u) =>
-    adminSearch ? u.name.toLowerCase().includes(adminSearch.toLowerCase()) || u.email.toLowerCase().includes(adminSearch.toLowerCase()) : true,
-  );
-
   return (
     <ScrollView
-      style={layout.root}
-      contentContainerStyle={[styles.content, { paddingBottom: space[10] }]}
+      style={s.root}
+      contentContainerStyle={{ paddingBottom: space[10] }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero del perfil */}
-      <View style={[styles.hero, { paddingTop: insets.top + space[5] }]}>
-        {/* Avatar */}
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
+      {/* Hero */}
+      <View style={[s.hero, { paddingTop: insets.top + space[5] }]}>
+        <View style={s.avatar}>
+          <Text style={s.avatarText}>{initials}</Text>
         </View>
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
-        <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
+        <Text style={s.userName}>{user.name}</Text>
+        <Text style={s.userEmail}>{user.email}</Text>
+        <View style={s.roleBadge}>
+          <Text style={s.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
         </View>
       </View>
 
-      {/* Plan (propietario / establecimiento) */}
+      {/* Plan */}
       {showPlan && planStatus && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mi plan</Text>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Mi plan</Text>
           <PlanCard
             plan={planStatus.plan}
             horseCount={planStatus.horse_count}
@@ -217,142 +185,28 @@ export default function PerfilScreen() {
         </View>
       )}
 
-      {/* Accesos rápidos */}
-      {(showPlan || isAdmin) && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Accesos rápidos</Text>
-          <View style={quickStyles.list}>
-            {(showPlan || isAdmin) && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => router.push('/contratos')} activeOpacity={0.8}>
-                <View style={quickStyles.iconWrap}>
-                  <Ionicons name="document-text-outline" size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={quickStyles.label}>Contratos de pensión</Text>
-                  <Text style={quickStyles.desc}>Firmá o revisá contratos</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
-              </TouchableOpacity>
-            )}
-            {user?.role === 'propietario' && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.directorio)} activeOpacity={0.8}>
-                <View style={quickStyles.iconWrap}>
-                  <Ionicons name="map-outline" size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={quickStyles.label}>Directorio de establecimientos</Text>
-                  <Text style={quickStyles.desc}>Encontrá establecimientos en HandicApp</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
-              </TouchableOpacity>
-            )}
-            {(user?.role === 'establecimiento' || user?.role === 'admin') && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.organizacion)} activeOpacity={0.8}>
-                <View style={quickStyles.iconWrap}>
-                  <Ionicons name="business-outline" size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={quickStyles.label}>Organización</Text>
-                  <Text style={quickStyles.desc}>Miembros, plan, invitaciones</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
-              </TouchableOpacity>
-            )}
-            {(user?.role === 'establecimiento' || user?.role === 'admin') && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.solicitudes)} activeOpacity={0.8}>
-                <View style={quickStyles.iconWrap}>
-                  <Ionicons name="mail-unread-outline" size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={quickStyles.label}>Solicitudes</Text>
-                  <Text style={quickStyles.desc}>Pensión de caballos · aceptar o rechazar</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
-              </TouchableOpacity>
-            )}
-            {isAdmin && (
-              <TouchableOpacity style={quickStyles.item} onPress={() => nav.push(router, Routes.superadmin)} activeOpacity={0.8}>
-                <View style={quickStyles.iconWrap}>
-                  <Ionicons name="settings-outline" size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={quickStyles.label}>Panel superadmin</Text>
-                  <Text style={quickStyles.desc}>MRR · planes · organizaciones</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Solicitudes de alojamiento (establecimiento) */}
-      {isEstab && pendingRequests.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Solicitudes de alojamiento</Text>
-          <Text style={styles.sectionSubtitle}>Propietarios que quieren alojar sus caballos en tu establecimiento.</Text>
-          <View style={styles.adminList}>
-            {pendingRequests.map((req) => (
-              <View key={req.id} style={{ backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, padding: 14, gap: 10 }}>
-                <View style={{ gap: 2 }}>
-                  <Text style={{ fontSize: 13, fontWeight: weight.bold, color: colors.gray900 }}>
-                    {req.requester?.name}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.gray500 }}>
-                    Solicita alojar a <Text style={{ fontWeight: weight.semibold, color: colors.primary }}>{req.horse?.name}</Text>
-                  </Text>
-                  {req.message && (
-                    <Text style={{ fontSize: 11, color: colors.gray400, fontStyle: 'italic' }}>"{req.message}"</Text>
-                  )}
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    style={{ flex: 1, borderRadius: 8, borderWidth: 1, borderColor: '#fca5a5', paddingVertical: 8, alignItems: 'center' }}
-                    onPress={() => {
-                      haptic.medium();
-                      Alert.alert('Rechazar solicitud', '¿Rechazás la solicitud de alojamiento?', [
-                        { text: 'Cancelar', style: 'cancel' },
-                        { text: 'Rechazar', style: 'destructive', onPress: () => rejectRequest.mutate(req.id) },
-                      ]);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: weight.semibold, color: colors.red700 }}>Rechazar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={{ flex: 1, borderRadius: 8, backgroundColor: colors.primary, paddingVertical: 8, alignItems: 'center' }}
-                    onPress={() => {
-                      haptic.medium();
-                      Alert.alert('Aceptar solicitud', `¿Aceptás alojar a ${req.horse?.name}?`, [
-                        { text: 'Cancelar', style: 'cancel' },
-                        { text: 'Aceptar', onPress: () => { haptic.success(); acceptRequest.mutate(req.id); } },
-                      ]);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: weight.bold, color: colors.white }}>Aceptar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Gestión de planes (admin) */}
+      {/* Gestión de planes (solo admin) */}
       {isAdmin && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Gestión de planes</Text>
-          <Text style={styles.sectionSubtitle}>Activá o revocá el plan Pro para propietarios y establecimientos.</Text>
-
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Gestión de planes</Text>
+          <Text style={s.sectionSubtitle}>Activá o revocá el plan Pro para propietarios y establecimientos.</Text>
+          <TextInput
+            style={s.searchInput}
+            value={adminSearch}
+            onChangeText={setAdminSearch}
+            placeholder="Buscar por nombre o email..."
+            placeholderTextColor={colors.gray400}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+          />
           {loadingAdminUsers ? (
             <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: space[3] }} />
           ) : !filteredAdminUsers?.length ? (
-            <Text style={styles.emptyText}>No hay usuarios registrados.</Text>
+            <Text style={s.emptyText}>No hay usuarios registrados.</Text>
           ) : (
-            <View style={styles.adminList}>
+            <View style={{ gap: space[3] }}>
               {filteredAdminUsers.map((u) => (
-                <AdminUserPlanRow
+                <AdminUserRow
                   key={u.id}
                   u={u}
                   onActivate={(userId, months) => setPlan.mutate({ userId, plan: 'pro', months })}
@@ -365,71 +219,51 @@ export default function PerfilScreen() {
         </View>
       )}
 
-      {/* Notificaciones recientes */}
-      {notifications.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.notifHeader}>
-            <Text style={styles.sectionTitle}>Notificaciones</Text>
-            {unread > 0 && (
-              <TouchableOpacity onPress={markAllRead}>
-                <Text style={styles.markRead}>Marcar todas como leídas</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={styles.notifList}>
-            {notifications.slice(0, 8).map((n) => (
-              <View key={n.id} style={[styles.notifItem, !n.read && styles.notifUnread]}>
-                {!n.read && <View style={styles.notifDot} />}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.notifTitle}>{n.title}</Text>
-                  <Text style={styles.notifMsg} numberOfLines={2}>{n.message}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Cerrar sesión */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+      {/* Logout */}
+      <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
         <Ionicons name="log-out-outline" size={18} color={colors.red700} />
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
+        <Text style={s.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  content: { gap: space[5] },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.gray50 },
 
-  /* Hero */
   hero: {
-    alignItems: 'center', gap: space[2],
+    alignItems: 'center',
+    gap: space[2],
     backgroundColor: colors.primary,
     paddingBottom: space[6],
     paddingHorizontal: space[5],
   },
   avatar: {
-    width: 80, height: 80, borderRadius: radius.xl,
+    width: 80, height: 80, borderRadius: 40,
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center', alignItems: 'center',
   },
   avatarText: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.white },
   userName: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
+  userEmail: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)' },
   roleBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
     paddingHorizontal: space[4], paddingVertical: space[1] + 2,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
   roleText: { fontSize: text.xs, fontWeight: weight.bold, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  userEmail: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)' },
-  section: { gap: space[2] + 2, paddingHorizontal: space[5] },
+
+  section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
   sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
   sectionSubtitle: { fontSize: text.sm, color: colors.gray500 },
   emptyText: { fontSize: text.sm, color: colors.gray400 },
+  searchInput: {
+    borderWidth: 1, borderColor: colors.gray200, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+    fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
+  },
 
-  /* Plan card */
   planCard: { borderRadius: radius.lg, padding: space[4], gap: space[2], borderWidth: 1 },
   planCardFree: { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' },
   planCardPro: { backgroundColor: colors.amber50, borderColor: '#fde68a' },
@@ -443,8 +277,6 @@ const styles = StyleSheet.create({
   planWarning: { fontSize: text.xs, color: colors.amber600, fontWeight: weight.medium },
   planProMsg: { fontSize: text.xs, color: colors.amber600 },
 
-  /* Admin list */
-  adminList: { gap: space[3] },
   adminRow: {
     backgroundColor: colors.white, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.gray200,
@@ -463,23 +295,18 @@ const styles = StyleSheet.create({
   planPillTextPro: { color: colors.amber600 },
   monthsToggle: {
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200,
-    paddingHorizontal: space[3], paddingVertical: space[2],
-    backgroundColor: colors.gray50,
+    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.gray50,
   },
   monthsToggleText: { fontSize: text.sm, color: colors.gray700 },
   monthsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   monthsOption: {
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200,
-    paddingHorizontal: space[3], paddingVertical: space[2],
-    backgroundColor: colors.white,
+    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.white,
   },
   monthsOptionActive: { borderColor: colors.primary, backgroundColor: '#eff6ff' },
   monthsOptionText: { fontSize: text.sm, color: colors.gray600 },
   monthsOptionTextActive: { color: colors.primary, fontWeight: weight.semibold },
-  activateBtn: {
-    backgroundColor: colors.amber600, borderRadius: radius.md,
-    paddingVertical: space[3], alignItems: 'center',
-  },
+  activateBtn: { backgroundColor: colors.amber600, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   activateBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   revokeBtn: {
     borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md,
@@ -487,37 +314,10 @@ const styles = StyleSheet.create({
   },
   revokeBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray500 },
 
-  /* Notificaciones */
-  notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  markRead: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.primary },
-  notifList: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
-  notifItem: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] + 2, padding: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray50 },
-  notifUnread: { backgroundColor: '#f0f4ff' },
-  notifDot: { width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.primary, marginTop: 5, flexShrink: 0 },
-  notifTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
-  notifMsg: { fontSize: text.xs, color: colors.gray500, marginTop: 2 },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
     backgroundColor: '#fef2f2', borderRadius: radius.lg, borderWidth: 1, borderColor: '#fecaca',
-    paddingVertical: space[4], marginHorizontal: space[5],
+    paddingVertical: space[4], marginHorizontal: space[5], marginTop: space[6],
   },
   logoutText: { fontSize: text.base, fontWeight: weight.bold, color: colors.red700 },
-
-  permGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  permBadge: {
-    backgroundColor: colors.white, borderRadius: radius.sm,
-    borderWidth: 1, borderColor: colors.gray200,
-    paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 2,
-  },
-  permText: { fontSize: text.xs, fontWeight: weight.medium, color: colors.gray700 },
-});
-
-const quickStyles = StyleSheet.create({
-  list: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden' },
-  item: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray50 },
-  iconWrap: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
-  icon: { fontSize: 20 },
-  label: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  desc: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
-  arrow: { fontSize: 22, color: colors.gray300, fontWeight: weight.regular },
 });

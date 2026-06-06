@@ -1,4 +1,4 @@
-import { IsOptional, IsNotEmpty, IsDateString, IsUUID, IsString, Matches, ValidateIf } from 'class-validator';
+import { IsOptional, IsNotEmpty, IsDateString, IsUUID, IsString, IsEnum, IsInt, Min, Max, Matches, ValidateIf } from 'class-validator';
 
 export class UpdateHorseDto {
   @IsOptional()
@@ -26,4 +26,18 @@ export class UpdateHorseDto {
   @IsOptional()
   @IsUUID()
   activity_id?: string | null;
+
+  @IsOptional()
+  @IsEnum(['macho', 'hembra', 'castrado'])
+  sex?: 'macho' | 'hembra' | 'castrado' | null;
+
+  @IsOptional()
+  @IsString()
+  color?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(80)
+  @Max(220)
+  height_cm?: number | null;
 }

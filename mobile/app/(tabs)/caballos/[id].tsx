@@ -17,9 +17,11 @@ import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDown
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { useEventsByHorse } from '../../../hooks/use-events';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
+import { PedigreeTab } from '../../../components/PedigreeTab';
 import { formatCurrency } from '../../../lib/currency';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
+import { Routes, nav } from '../../../lib/routes';
 import { DatePicker } from '../../../components/DatePicker';
 import { Spinner } from '../../../components/Spinner';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
@@ -27,13 +29,14 @@ import { colors } from '../../../lib/colors';
 import { space, text, radius, weight } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
 
-type Tab = 'info' | 'historial' | 'medico' | 'fotos';
+type Tab = 'info' | 'historial' | 'medico' | 'fotos' | 'pedigree';
 
 const TABS: { key: Tab; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
   { key: 'info',      label: 'Info',      icon: 'information-circle-outline' },
   { key: 'historial', label: 'Historial', icon: 'time-outline' },
   { key: 'medico',    label: 'Médico',    icon: 'medkit-outline' },
   { key: 'fotos',     label: 'Fotos',     icon: 'images-outline' },
+  { key: 'pedigree',  label: 'Pedigrí',   icon: 'git-network-outline' },
 ];
 
 /* ─── EditHorseModal ─── */
@@ -390,6 +393,30 @@ export default function HorseDetailScreen() {
       {/* ════════════════ TAB: INFO ════════════════ */}
       {activeTab === 'info' && (
         <View style={{ gap: 0 }}>
+
+          {/* Botón publicar en venta (solo propietarios) */}
+          {(user?.role === 'propietario' || can('auctions', 'create')) && (
+            <View style={s.section}>
+              <TouchableOpacity
+                style={s.sellHorseBtn}
+                onPress={() => {
+                  haptic.medium();
+                  nav.push(router, `${Routes.remateCrear}?horse=${horse.id}` as never);
+                }}
+                activeOpacity={0.85}
+              >
+                <View style={s.sellHorseBtnIcon}>
+                  <Ionicons name="megaphone-outline" size={22} color="#7c3aed" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.sellHorseBtnTitle}>Publicar en venta</Text>
+                  <Text style={s.sellHorseBtnSub}>Vendé {horse.name} en Remates</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#7c3aed" />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Info grid */}
           {infoItems.length > 0 && (
             <View style={s.section}>
@@ -1008,6 +1035,15 @@ export default function HorseDetailScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* ════════════════ TAB: PEDIGRÍ ════════════════ */}
+      {activeTab === 'pedigree' && (
+        <PedigreeTab
+          horseId={horse.id}
+          horseName={horse.name}
+          canEdit={can('horses', 'update') || (user?.role === 'propietario' && horse.owner_id === user.id) || user?.role === 'admin'}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -1045,6 +1081,15 @@ const s = StyleSheet.create({
 
   /* Sections */
   section: { margin: 16, gap: 10 },
+  sellHorseBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#f5f3ff', borderRadius: 16,
+    borderWidth: 1.5, borderColor: '#ddd6fe',
+    padding: 16,
+  },
+  sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center' },
+  sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: '#4c1d95' },
+  sellHorseBtnSub: { fontSize: 12, color: '#7c3aed', marginTop: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.gray900 },
   countBadge: { backgroundColor: colors.gray200, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },

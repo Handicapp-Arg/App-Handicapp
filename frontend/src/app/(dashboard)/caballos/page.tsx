@@ -19,6 +19,7 @@ import { useBreeds, useActivities } from '@/hooks/use-catalog-items';
 import { useAuth } from '@/lib/auth-context';
 import { getErrorMessage } from '@/lib/errors';
 import { cldTransform } from '@/lib/cloudinary';
+import { calcAge } from '@/lib/utils';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
 import { Plus, Search as SearchIcon, Filter as FilterIcon } from 'lucide-react';
@@ -41,11 +42,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function calcAge(birthDate: string): string {
-  const diff = Date.now() - new Date(birthDate + 'T12:00:00').getTime();
-  const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-  return years === 1 ? '1 año' : `${years} años`;
-}
 
 function OwnershipSection({
   horseId,
@@ -909,6 +905,18 @@ export default function CaballosPage() {
                   </span>
                 )}
               </div>
+
+              {/* Badge pedigrí */}
+              {horse.pedigree_status && horse.pedigree_status !== 'unverified' && (
+                <div className="absolute top-2 left-2">
+                  {{
+                    pending:  <span title="Pedigrí pendiente" className="text-base">⏳</span>,
+                    partial:  <span title="Pedigrí parcial"   className="text-base">⚠️</span>,
+                    verified: <span title="Pedigrí verificado" className="text-base">✅</span>,
+                    disputed: <span title="Pedigrí disputado"  className="text-base">❌</span>,
+                  }[horse.pedigree_status]}
+                </div>
+              )}
 
               {/* Nombre + tenencia abajo */}
               <div className="absolute inset-x-0 bottom-0 p-5 sm:p-4">

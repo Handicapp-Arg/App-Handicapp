@@ -296,7 +296,6 @@ const styles = StyleSheet.create({
   img: { width: '100%', height: '100%' },
   imgPlaceholder: { flex: 1, backgroundColor: '#e8ecf4', justifyContent: 'center', alignItems: 'center' },
   imgPlaceholderText: { fontSize: 36, fontWeight: '800', color: colors.primary, opacity: 0.4 },
-  imgOverlay: { ...StyleSheet.absoluteFillObject },
   imgFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10, paddingTop: 28 },
   imgName: { fontSize: 14, fontWeight: '800', color: colors.white, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   imgBreed: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.75)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },

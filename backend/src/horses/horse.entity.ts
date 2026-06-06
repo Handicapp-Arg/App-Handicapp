@@ -15,6 +15,7 @@ import { User } from '../auth/user.entity';
 import { Event } from '../events/event.entity';
 import { HorseUser } from './horse-user.entity';
 import { CatalogItem } from '../catalog-items/catalog-item.entity';
+import { HorseRecord } from '../horse-records/horse-record.entity';
 
 @Entity('horses')
 export class Horse {
@@ -82,6 +83,45 @@ export class Horse {
 
   @OneToMany(() => HorseUser, (hu) => hu.horse)
   horseUsers: HorseUser[];
+
+  @Column({ type: 'varchar', nullable: true })
+  registration_number: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: ['studbook_ar', 'sra', 'accc', 'aqha', 'other'],
+    nullable: true,
+  })
+  registration_source: 'studbook_ar' | 'sra' | 'accc' | 'aqha' | 'other' | null;
+
+  @Column({
+    type: 'enum',
+    enum: ['macho', 'hembra', 'castrado'],
+    nullable: true,
+  })
+  sex: 'macho' | 'hembra' | 'castrado' | null;
+
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  color: string | null;
+
+  // Alzada en centímetros (e.g. 158)
+  @Column({ type: 'smallint', nullable: true })
+  height_cm: number | null;
+
+  // Apunta al registro global scraped del mismo caballo (si fue validado)
+  @Column('uuid', { nullable: true })
+  horse_record_id: string | null;
+
+  @ManyToOne(() => HorseRecord, { nullable: true, onDelete: 'SET NULL', eager: false })
+  @JoinColumn({ name: 'horse_record_id' })
+  horse_record: HorseRecord | null;
+
+  @Column({
+    type: 'enum',
+    enum: ['unverified', 'pending', 'partial', 'verified', 'disputed'],
+    default: 'unverified',
+  })
+  pedigree_status: 'unverified' | 'pending' | 'partial' | 'verified' | 'disputed';
 
   @CreateDateColumn()
   created_at: Date;

@@ -2,6 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import type { Horse, Event } from '../../packages/shared/src';
 
+interface MedicalUpcoming {
+  id: string;
+  type: string;
+  name: string;
+  next_due: string;
+  horse_id: string;
+}
+
 export interface DashboardData {
   role: 'admin' | 'propietario' | 'establecimiento' | 'veterinario';
   horses?: Horse[];
@@ -9,6 +17,11 @@ export interface DashboardData {
   monthly_spend?: number;
   monthly_events_count?: number;
   stats?: { propietarios: number; establecimientos: number; caballos: number };
+  // Veterinario
+  total_horses?: number;
+  total_salud_events?: number;
+  recent_health_events?: Event[];
+  upcoming_medical?: MedicalUpcoming[];
 }
 
 export function useDashboard() {

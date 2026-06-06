@@ -4,12 +4,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
-import { useDashboard } from '../../hooks/use-dashboard';
+import { useDashboard, type DashboardData } from '../../hooks/use-dashboard';
+import { useNotifications } from '../../lib/notifications';
 import { HomeSkeleton } from '../../components/Skeleton';
 import { EventTypeBadge } from '../../components/EventTypeBadge';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { haptic } from '../../lib/haptics';
+import { Routes, nav } from '../../lib/routes';
 import type { Horse, Event } from '../../../packages/shared/src';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -116,6 +118,7 @@ function SectionHeader({ title, onPress }: { title: string; onPress?: () => void
 export default function InicioScreen() {
   const { user } = useAuth();
   const { data, isLoading } = useDashboard();
+  const { unread } = useNotifications();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -131,12 +134,12 @@ export default function InicioScreen() {
   const roleLabel = ROLE_LABEL[user?.role ?? ''] ?? '';
 
   const quickActions = [
-    ...(user?.role !== 'veterinario' ? [{ icon: 'calendar-outline' as const, label: 'Eventos', color: '#3b82f6', path: '/(tabs)/eventos' }] : []),
-    { icon: 'paw-outline' as const, label: 'Caballos', color: '#10b981', path: '/(tabs)/caballos' },
-    { icon: 'time-outline' as const, label: 'Agenda', color: '#f59e0b', path: '/(tabs)/agenda' },
-    ...(user?.role === 'establecimiento' || user?.role === 'propietario'
-      ? [{ icon: 'receipt-outline' as const, label: 'Facturas', color: '#8b5cf6', path: '/(tabs)/facturacion' }]
-      : []),
+    { icon: 'search-outline' as const, label: 'Buscar', color: '#3b82f6', path: Routes.buscar },
+    ...(user?.role === 'propietario' ? [{ icon: 'trophy-outline' as const, label: 'Vender', color: '#7c3aed', path: Routes.remateCrear }] : []),
+    ...(user?.role === 'propietario' ? [{ icon: 'map-outline' as const, label: 'Directorio', color: '#10b981', path: Routes.directorio }] : []),
+    ...(user?.role === 'establecimiento' || user?.role === 'admin' ? [{ icon: 'mail-unread-outline' as const, label: 'Solicitudes', color: '#f97316', path: Routes.solicitudes }] : []),
+    ...(user?.role === 'propietario' || user?.role === 'establecimiento' ? [{ icon: 'receipt-outline' as const, label: 'Facturas', color: '#8b5cf6', path: Routes.tabsFacturacion }] : []),
+    ...(user?.role !== 'propietario' ? [{ icon: 'trophy-outline' as const, label: 'Remates', color: '#7c3aed', path: Routes.remates }] : []),
   ];
 
   return (
@@ -162,10 +165,18 @@ export default function InicioScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
             <TouchableOpacity
               style={s.heroSearchBtn}
-              onPress={() => { haptic.light(); router.push('/buscar' as any); }}
+              onPress={() => { haptic.light(); nav.push(router, Routes.buscar); }}
               activeOpacity={0.8}
             >
               <Ionicons name="search-outline" size={19} color="rgba(255,255,255,0.75)" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.heroSearchBtn}
+              onPress={() => { haptic.light(); nav.push(router, Routes.notificaciones); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="notifications-outline" size={19} color="rgba(255,255,255,0.75)" />
+              {unread > 0 && <View style={s.heroBellBadge} />}
             </TouchableOpacity>
             <TouchableOpacity
               style={s.heroAvatar}
@@ -190,12 +201,12 @@ export default function InicioScreen() {
         {data?.role === 'propietario' && (
           <View style={s.heroStats}>
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{(data as any).horses?.length ?? 0}</Text>
+              <Text style={s.heroStatValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{data.horses?.length ?? 0}</Text>
               <Text style={s.heroStatLabel}>Caballos</Text>
             </View>
             <View style={s.heroStatDivider} />
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>${((data as any).monthly_spend ?? 0).toLocaleString('es-AR')}</Text>
+              <Text style={s.heroStatValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>${(data.monthly_spend ?? 0).toLocaleString('es-AR')}</Text>
               <Text style={s.heroStatLabel}>Gasto del mes</Text>
             </View>
           </View>
@@ -203,12 +214,12 @@ export default function InicioScreen() {
         {data?.role === 'establecimiento' && (
           <View style={s.heroStats}>
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).horses?.length ?? 0}</Text>
+              <Text style={s.heroStatValue}>{data.horses?.length ?? 0}</Text>
               <Text style={s.heroStatLabel}>En pensión</Text>
             </View>
             <View style={s.heroStatDivider} />
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).monthly_events_count ?? 0}</Text>
+              <Text style={s.heroStatValue}>{data.monthly_events_count ?? 0}</Text>
               <Text style={s.heroStatLabel}>Eventos del mes</Text>
             </View>
           </View>
@@ -216,32 +227,32 @@ export default function InicioScreen() {
         {data?.role === 'veterinario' && (
           <View style={s.heroStats}>
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).total_horses ?? 0}</Text>
+              <Text style={s.heroStatValue}>{data.total_horses ?? 0}</Text>
               <Text style={s.heroStatLabel}>Pacientes</Text>
             </View>
             <View style={s.heroStatDivider} />
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).upcoming_medical?.length ?? 0}</Text>
-              <Text style={[s.heroStatLabel, (data as any).upcoming_medical?.length > 0 && { color: '#fbbf24' }]}>
+              <Text style={s.heroStatValue}>{data.upcoming_medical?.length ?? 0}</Text>
+              <Text style={[s.heroStatLabel, (data.upcoming_medical?.length ?? 0) > 0 && { color: '#fbbf24' }]}>
                 Vencen pronto
               </Text>
             </View>
           </View>
         )}
-        {data?.role === 'admin' && (data as any).stats && (
+        {data?.role === 'admin' && data.stats && (
           <View style={s.heroStats}>
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).stats.caballos}</Text>
+              <Text style={s.heroStatValue}>{data.stats.caballos}</Text>
               <Text style={s.heroStatLabel}>Caballos</Text>
             </View>
             <View style={s.heroStatDivider} />
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).stats.propietarios}</Text>
+              <Text style={s.heroStatValue}>{data.stats.propietarios}</Text>
               <Text style={s.heroStatLabel}>Propietarios</Text>
             </View>
             <View style={s.heroStatDivider} />
             <View style={s.heroStatItem}>
-              <Text style={s.heroStatValue}>{(data as any).stats.establecimientos}</Text>
+              <Text style={s.heroStatValue}>{data.stats.establecimientos}</Text>
               <Text style={s.heroStatLabel}>Establecimientos</Text>
             </View>
           </View>
@@ -256,20 +267,20 @@ export default function InicioScreen() {
             icon={qa.icon}
             label={qa.label}
             color={qa.color}
-            onPress={() => router.push(qa.path as any)}
+            onPress={() => nav.push(router, qa.path)}
           />
         ))}
       </View>
 
       {/* ─── Mis caballos ─── */}
-      {(data as any)?.horses?.length > 0 && (
+      {data?.horses && data.horses.length > 0 && (
         <View style={s.section}>
           <SectionHeader
-            title={data?.role === 'establecimiento' ? 'Caballos en pensión' : 'Mis caballos'}
-            onPress={() => router.push('/(tabs)/caballos')}
+            title={data.role === 'establecimiento' ? 'Caballos en pensión' : 'Mis caballos'}
+            onPress={() => nav.push(router, Routes.tabsCaballos)}
           />
           <View style={s.card}>
-            {(data as any).horses.slice(0, 5).map((h: Horse, i: number) => (
+            {data.horses.slice(0, 5).map((h: Horse, i: number) => (
               <View key={h.id}>
                 {i > 0 && <View style={s.divider} />}
                 <HorseRow horse={h} />
@@ -300,14 +311,14 @@ export default function InicioScreen() {
       )}
 
       {/* ─── Actividad reciente ─── */}
-      {(data as any)?.recent_events?.length > 0 && (
+      {data?.recent_events && data.recent_events.length > 0 && (
         <View style={s.section}>
           <SectionHeader
             title="Actividad reciente"
-            onPress={() => router.push('/(tabs)/eventos')}
+            onPress={() => nav.push(router, Routes.tabsEventos)}
           />
           <View style={s.card}>
-            {(data as any).recent_events.map((ev: Event, i: number) => (
+            {data.recent_events.map((ev: Event, i: number) => (
               <View key={ev.id}>
                 {i > 0 && <View style={s.divider} />}
                 <EventRow event={ev} />
@@ -318,7 +329,7 @@ export default function InicioScreen() {
       )}
 
       {/* Sin datos */}
-      {!(data as any)?.horses?.length && !(data as any)?.recent_events?.length && (
+      {!data?.horses?.length && !data?.recent_events?.length && (
         <View style={s.welcome}>
           <Text style={s.welcomeEmoji}>🐎</Text>
           <Text style={s.welcomeTitle}>Bienvenido a HandicApp</Text>
@@ -353,6 +364,12 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.10)',
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+  },
+  heroBellBadge: {
+    position: 'absolute', top: 4, right: 4,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#ef4444',
+    borderWidth: 1.5, borderColor: '#0f1f3d',
   },
   heroAvatar: {
     width: 38, height: 38, borderRadius: radius.full,

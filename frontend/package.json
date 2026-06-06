@@ -21,7 +21,8 @@
     "react-easy-crop": "^5.5.7",
     "react-qr-code": "^2.0.21",
     "socket.io-client": "^4.8.3",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "use-debounce": "^10.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
