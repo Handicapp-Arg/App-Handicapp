@@ -43,6 +43,25 @@ export class CloudinaryService {
     });
   }
 
+  async uploadVideo(
+    file: Express.Multer.File,
+    folder = 'handicapp/feed',
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const upload = cloudinary.uploader.upload_stream(
+        { folder, resource_type: 'video' },
+        (error, result) => {
+          if (error || !result) return reject(error);
+          resolve(result);
+        },
+      );
+      const stream = new Readable();
+      stream.push(file.buffer);
+      stream.push(null);
+      stream.pipe(upload);
+    });
+  }
+
   async delete(publicId: string, resourceType: 'image' | 'raw' = 'image'): Promise<void> {
     await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   }

@@ -8,15 +8,12 @@ import { useNotifications } from '../../lib/notifications';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const SAFE_ICONS: Record<string, { active: IoniconsName; inactive: IoniconsName; label: string }> = {
-  index:       { active: 'home',           inactive: 'home-outline',          label: 'Inicio' },
-  caballos:    { active: 'paw',            inactive: 'paw-outline',           label: 'Caballos' },
-  eventos:     { active: 'document-text',  inactive: 'document-text-outline', label: 'Eventos' },
-  agenda:      { active: 'calendar',       inactive: 'calendar-outline',      label: 'Agenda' },
-  facturacion: { active: 'receipt',        inactive: 'receipt-outline',       label: 'Facturas' },
-  perfil:      { active: 'person-circle',  inactive: 'person-circle-outline', label: 'Perfil' },
+  index:           { active: 'home',           inactive: 'home-outline',          label: 'Inicio' },
+  muro:            { active: 'newspaper',      inactive: 'newspaper-outline',     label: 'Muro' },
+  'caballos/index': { active: 'paw',           inactive: 'paw-outline',           label: 'Caballos' },
+  remates:         { active: 'trophy',         inactive: 'trophy-outline',        label: 'Remates' },
+  mas:             { active: 'grid',           inactive: 'grid-outline',          label: 'Más' },
 };
-
-const ACCENT = '#c4922a';
 
 function TabIcon({ name, focused, badge }: { name: string; focused: boolean; badge?: number }) {
   const meta = SAFE_ICONS[name] ?? SAFE_ICONS.index;
@@ -82,24 +79,23 @@ export default function TabsLayout() {
         ),
       })}
     >
-      <Tabs.Screen name="index"       options={{ title: 'Inicio' }} />
-      <Tabs.Screen name="caballos"    options={{ title: 'Caballos' }} />
-      <Tabs.Screen name="eventos"     options={{ title: 'Eventos' }} />
-      <Tabs.Screen name="agenda"      options={{ title: 'Agenda' }} />
-      <Tabs.Screen name="facturacion" options={{ title: 'Facturas' }} />
+      <Tabs.Screen name="index"          options={{ title: 'Inicio' }} />
+      <Tabs.Screen name="muro"           options={{ title: 'Muro' }} />
+      <Tabs.Screen name="caballos/index" options={{ title: 'Caballos' }} />
+      <Tabs.Screen name="remates"        options={{ title: 'Remates' }} />
       <Tabs.Screen
-        name="perfil"
+        name="mas"
         options={{
-          title: 'Perfil',
+          title: 'Más',
           tabBarBadge: unread > 0 ? unread : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: '#ef4444',
-            fontSize: 9,
-            minWidth: 14,
-            height: 14,
-          },
+          tabBarBadgeStyle: { backgroundColor: '#ef4444', fontSize: 9, minWidth: 14, height: 14 },
         }}
       />
+      <Tabs.Screen name="caballos/[id]" options={{ href: null }} />
+      <Tabs.Screen name="eventos"        options={{ href: null }} />
+      <Tabs.Screen name="facturacion"    options={{ href: null }} />
+      <Tabs.Screen name="perfil"         options={{ href: null }} />
+      <Tabs.Screen name="agenda"         options={{ href: null }} />
     </Tabs>
   );
 }

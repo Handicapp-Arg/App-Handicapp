@@ -26,6 +26,15 @@ import { BoardingRequest } from '../boarding-requests/boarding-request.entity';
 import { Organization } from '../organizations/organization.entity';
 import { OrganizationMember } from '../organizations/organization-member.entity';
 import { OrganizationInvitation } from '../organizations/organization-invitation.entity';
+import { Pedigree, PedigreeValidation, PedigreeDocument } from '../pedigree/entities/pedigree.entity';
+import { HorseRecord } from '../horse-records/horse-record.entity';
+import { HorseOwnershipClaim } from '../horse-records/horse-ownership-claim.entity';
+import { Auction } from '../auctions/auction.entity';
+import { AuctionBid } from '../auctions/auction-bid.entity';
+import { AuctionWatch } from '../auctions/auction-watch.entity';
+import { FeedPost } from '../feed/feed-post.entity';
+import { FeedLike } from '../feed/feed-like.entity';
+import { FeedComment } from '../feed/feed-comment.entity';
 
 export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -34,7 +43,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, HorseMovement, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, EventComment, Contract, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem, BoardingRequest, Organization, OrganizationMember, OrganizationInvitation],
+  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, HorseMovement, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, EventComment, Contract, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem, BoardingRequest, Organization, OrganizationMember, OrganizationInvitation, Pedigree, PedigreeValidation, PedigreeDocument, HorseRecord, HorseOwnershipClaim, Auction, AuctionBid, AuctionWatch, FeedPost, FeedLike, FeedComment],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,

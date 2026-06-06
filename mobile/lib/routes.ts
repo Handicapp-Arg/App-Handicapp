@@ -6,14 +6,27 @@ import type { Router } from 'expo-router';
  * el árbol de navegación.
  */
 export const Routes = {
-  tabsHome:        '/(tabs)',
-  authLogin:       '/(auth)/login',
-  organizacion:    '/organizacion',
-  directorio:      '/directorio',
-  contratos:       '/contratos',
-  solicitudes:     '/solicitudes',
-  superadmin:      '/superadmin',
-  invitacion:      (token: string) => `/invitacion/${token}`,
+  tabsHome:            '/(tabs)',
+  tabsCaballos:        '/(tabs)/caballos',
+  tabsEventos:         '/(tabs)/eventos',
+  tabsAgenda:          '/(tabs)/agenda',
+  tabsEventos:         '/(tabs)/eventos',
+  tabsFacturacion:     '/(tabs)/facturacion',
+  authLogin:           '/(auth)/login',
+  buscar:              '/buscar',
+  organizacion:        '/organizacion',
+  directorio:          '/directorio',
+  contratos:           '/contratos',
+  solicitudes:         '/solicitudes',
+  notificaciones:      '/notificaciones',
+  notificacionesConfig: '/notificaciones-config',
+  superadmin:          '/superadmin',
+  muro:                '/(tabs)/muro',
+  remates:             '/(tabs)/remates',
+  remateCrear:         '/remates/crear',
+  remate:              (id: string) => `/remates/${id}`,
+  invitacion:          (token: string) => `/invitacion/${token}`,
+  caballo:             (id: string) => `/(tabs)/caballos/${id}`,
 } as const;
 
 /** Wrappers tipados para no esparcir `as never` por la app. */

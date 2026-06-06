@@ -27,6 +27,10 @@ import { SearchModule } from './search/search.module';
 import { BoardingRequestsModule } from './boarding-requests/boarding-requests.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
+import { PedigreeModule } from './pedigree/pedigree.module';
+import { AuctionsModule } from './auctions/auctions.module';
+import { HorseRecordsModule } from './horse-records/horse-records.module';
+import { FeedModule } from './feed/feed.module';
 import { HealthController } from './common/health.controller';
 
 @Module({
@@ -57,6 +61,10 @@ import { HealthController } from './common/health.controller';
     BoardingRequestsModule,
     OrganizationsModule,
     SuperAdminModule,
+    PedigreeModule,
+    AuctionsModule,
+    HorseRecordsModule,
+    FeedModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
