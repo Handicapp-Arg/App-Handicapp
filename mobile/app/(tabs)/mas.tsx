@@ -72,6 +72,13 @@ export default function MasScreen() {
 
   const principal: MenuItem[] = [
     {
+      icon: 'git-branch-outline',
+      label: 'Árbol Genealógico',
+      desc: 'Pedigree global de caballos desde 1990',
+      path: Routes.arbol,
+      iconColor: '#059669',
+    },
+    {
       icon: 'document-text-outline',
       label: 'Eventos',
       desc: 'Historial de carreras y actividades',

@@ -27,6 +27,7 @@ export const Routes = {
   remate:              (id: string) => `/remates/${id}`,
   invitacion:          (token: string) => `/invitacion/${token}`,
   caballo:             (id: string) => `/(tabs)/caballos/${id}`,
+  arbol:               '/arbol',
 } as const;
 
 /** Wrappers tipados para no esparcir `as never` por la app. */
