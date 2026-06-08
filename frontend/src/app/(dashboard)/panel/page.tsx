@@ -3,57 +3,120 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { useAdminUsers, useAdminHorses, useAdminStats, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '@/hooks/use-admin';
-import { useHorses } from '@/hooks/use-horses';
+import {
+  useAdminUsers, useAdminStats, useAdminPlanUsers, useAdminSetPlan,
+  type AdminPlanUser,
+} from '@/hooks/use-admin';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useDashboard } from '@/hooks/use-dashboard';
 import type { PropietarioDashboard, EstablecimientoDashboard, VeterinarioDashboard } from '@/hooks/use-dashboard';
-import {
-  SearchInput,
-  Pagination,
-  StatCard,
-  UserTable,
-  HorseTable,
-} from '@/components/panel';
+import { SearchInput, Pagination, StatCard, UserTable } from '@/components/panel';
 import { PlanBanner } from '@/components/plan-banner';
 import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '@/hooks/use-boarding-requests';
-import { useAuditQueue, useRevokeClaim, useApproveClaim, type AuditClaim, type FraudSignal } from '@/hooks/use-horse-records';
+import { useAuditQueue, useRevokeClaim, useApproveClaim } from '@/hooks/use-horse-records';
+import { useAdminAuctions, useAdminCancelAuction, useAdminPauseAuction } from '@/hooks/use-auctions';
+import { useSuperAdminMetrics } from '@/hooks/use-superadmin';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import type { Auction } from '@/types';
 
 /* ─── tipos ─── */
 
-type Tab = 'propietarios' | 'establecimientos' | 'caballos' | 'planes' | 'fraudes';
+type Tab = 'propietarios' | 'establecimientos' | 'planes' | 'remates' | 'fraudes';
 
 const tabs: { key: Tab; label: string }[] = [
-  { key: 'propietarios', label: 'Propietarios' },
+  { key: 'propietarios',    label: 'Propietarios' },
   { key: 'establecimientos', label: 'Establecimientos' },
-  { key: 'caballos', label: 'Caballos' },
-  { key: 'planes', label: 'Planes' },
-  { key: 'fraudes', label: '🚨 Fraudes' },
+  { key: 'planes',          label: 'Planes' },
+  { key: 'remates',         label: 'Remates' },
+  { key: 'fraudes',         label: '🚨 Fraudes' },
 ];
 
 const roleForTab: Record<Tab, string | undefined> = {
-  propietarios: 'propietario',
+  propietarios:    'propietario',
   establecimientos: 'establecimiento',
-  caballos: undefined,
-  planes: undefined,
-  fraudes: undefined,
+  planes:          undefined,
+  remates:         undefined,
+  fraudes:         undefined,
 };
 
 const typeBadge: Record<string, string> = {
-  salud: 'bg-red-50 text-red-700',
-  entrenamiento: 'bg-yellow-50 text-yellow-700',
-  gasto: 'bg-purple-50 text-purple-700',
-  nota: 'bg-gray-100 text-gray-700',
+  salud:          'bg-red-50 text-red-700',
+  entrenamiento:  'bg-yellow-50 text-yellow-700',
+  gasto:          'bg-purple-50 text-purple-700',
+  nota:           'bg-gray-100 text-gray-700',
 };
 
 const typeLabel: Record<string, string> = {
-  salud: 'Salud',
-  entrenamiento: 'Entrenamiento',
-  gasto: 'Gasto',
-  nota: 'Nota',
+  salud: 'Salud', entrenamiento: 'Entrenamiento', gasto: 'Gasto', nota: 'Nota',
 };
+
+const formatARS = (n: number) =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+
+/* ─── Admin KPI bar ─── */
+
+function AdminMetrics() {
+  const { data: basic } = useAdminStats();
+  const { data: sa } = useSuperAdminMetrics();
+
+  const cards = [
+    {
+      label: 'MRR',
+      value: sa ? formatARS(sa.mrr_ars) : '—',
+      sub: sa ? `ARR ${formatARS(sa.arr_ars)}` : undefined,
+      accent: 'text-emerald-700',
+      bg: 'bg-emerald-50 border-emerald-100',
+    },
+    {
+      label: 'Propietarios',
+      value: basic?.propietarios ?? '—',
+      sub: undefined,
+      accent: 'text-blue-700',
+      bg: 'bg-blue-50 border-blue-100',
+    },
+    {
+      label: 'Establecimientos',
+      value: basic?.establecimientos ?? '—',
+      sub: sa ? `${sa.total_organizations} orgs` : undefined,
+      accent: 'text-indigo-700',
+      bg: 'bg-indigo-50 border-indigo-100',
+    },
+    {
+      label: 'Caballos',
+      value: basic?.caballos ?? '—',
+      sub: sa ? `~${sa.avg_horses_per_org} por org` : undefined,
+      accent: 'text-amber-700',
+      bg: 'bg-amber-50 border-amber-100',
+    },
+    {
+      label: 'Pro',
+      value: sa ? `${sa.by_plan?.pro ?? 0}` : '—',
+      sub: sa ? `${sa.by_plan?.basic ?? 0} Basic · ${sa.by_plan?.free ?? 0} Free` : undefined,
+      accent: 'text-purple-700',
+      bg: 'bg-purple-50 border-purple-100',
+    },
+    {
+      label: 'Nuevas orgs (30d)',
+      value: sa ? `${sa.new_orgs_30d}` : '—',
+      sub: sa && sa.suspended_count > 0 ? `${sa.suspended_count} suspendidas` : undefined,
+      accent: 'text-gray-700',
+      bg: 'bg-white border-gray-100',
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
+      {cards.map((c) => (
+        <div key={c.label} className={`rounded-2xl border p-3.5 shadow-sm ${c.bg}`}>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{c.label}</p>
+          <p className={`mt-1 text-xl font-extrabold leading-none ${c.accent}`}>{String(c.value)}</p>
+          {c.sub && <p className="mt-1 text-[10px] text-gray-400 leading-tight">{c.sub}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ─── Panel Admin ─── */
 
@@ -64,55 +127,69 @@ function AdminPanel() {
   const [tab, setTab] = useState<Tab>('propietarios');
   const [search, setSearch] = useState('');
   const [userPage, setUserPage] = useState(1);
-  const [horsePage, setHorsePage] = useState(1);
 
-  const isHorsesTab = tab === 'caballos';
+  const isUserTab = tab === 'propietarios' || tab === 'establecimientos';
   const isPlanesTab = tab === 'planes';
   const isFraudesTab = tab === 'fraudes';
+  const isRematesTab = tab === 'remates';
 
-  const { data: stats, isLoading: loadingStats } = useAdminStats();
   const { data: usersResult, isLoading: loadingUsers } = useAdminUsers({
-    search: (isHorsesTab || isPlanesTab || isFraudesTab) ? undefined : search,
+    search: isUserTab ? search : undefined,
     role: roleForTab[tab],
     page: userPage,
     limit,
   });
-  const { data: horsesResult, isLoading: loadingHorses } = useAdminHorses({
-    search: isHorsesTab ? search : undefined,
-    page: horsePage,
-    limit,
-  });
   const { data: planUsers, isLoading: loadingPlans } = useAdminPlanUsers();
-  const { data: allHorses } = useHorses();
   const setPlan = useAdminSetPlan();
 
   const handleTabChange = (t: Tab) => {
     setTab(t);
     setSearch('');
     setUserPage(1);
-    setHorsePage(1);
   };
 
   const handleSearch = (v: string) => {
     setSearch(v);
     setUserPage(1);
-    setHorsePage(1);
   };
 
-  const loading = loadingStats || (isFraudesTab ? false : isPlanesTab ? loadingPlans : isHorsesTab ? loadingHorses : loadingUsers);
+  const loading = isFraudesTab || isRematesTab
+    ? false
+    : isPlanesTab
+    ? loadingPlans
+    : loadingUsers;
 
   const filteredPlanUsers = planUsers?.filter((u) =>
-    search ? u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) : true,
+    search
+      ? u.name.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase())
+      : true,
   );
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Propietarios" value={stats?.propietarios ?? 0} />
-        <StatCard label="Establecimientos" value={stats?.establecimientos ?? 0} />
-        <StatCard label="Caballos" value={stats?.caballos ?? 0} />
+      <AdminMetrics />
+
+      {/* Quick links */}
+      <div className="flex flex-wrap gap-2">
+        <Link href="/superadmin"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" /></svg>
+          Organizaciones
+        </Link>
+        <Link href="/permisos"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
+          Permisos
+        </Link>
+        <Link href="/catalogo"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
+          Catálogo
+        </Link>
       </div>
 
+      {/* Tab bar */}
       <div className="flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
         {tabs.map((t) => (
           <button key={t.key} onClick={() => handleTabChange(t.key)}
@@ -125,35 +202,32 @@ function AdminPanel() {
         ))}
       </div>
 
-      {!isPlanesTab && !isFraudesTab && (
-        <SearchInput value={search} onChange={handleSearch}
-          placeholder={isHorsesTab ? 'Buscar por nombre, propietario o establecimiento...' : 'Buscar por nombre o correo...'}
+      {/* Search (when relevant) */}
+      {(isUserTab || isPlanesTab) && (
+        <SearchInput
+          value={search}
+          onChange={handleSearch}
+          placeholder={isPlanesTab ? 'Buscar usuario...' : 'Buscar por nombre o correo...'}
         />
-      )}
-      {isPlanesTab && (
-        <SearchInput value={search} onChange={handleSearch} placeholder="Buscar usuario..." />
       )}
 
       {loading && <PageLoader />}
 
-      {isFraudesTab && <FraudesTab />}
-
-      {!loading && !isHorsesTab && !isPlanesTab && !isFraudesTab && usersResult?.data && (
+      {/* User tables */}
+      {!loading && isUserTab && usersResult?.data && (
         <div className="space-y-3">
           <UserTable
             users={usersResult.data}
             roleLabel={tab === 'propietarios' ? 'Propietarios' : 'Establecimientos'}
-            allHorses={allHorses ?? []}
+            allHorses={[]}
             roleKey={roleForTab[tab] as 'propietario' | 'establecimiento'}
           />
-          <Pagination page={usersResult.page} total={usersResult.total} limit={usersResult.limit} onPageChange={setUserPage} />
-        </div>
-      )}
-
-      {!loading && isHorsesTab && horsesResult?.data && (
-        <div className="space-y-3">
-          <HorseTable horses={horsesResult.data} />
-          <Pagination page={horsesResult.page} total={horsesResult.total} limit={horsesResult.limit} onPageChange={setHorsePage} />
+          <Pagination
+            page={usersResult.page}
+            total={usersResult.total}
+            limit={usersResult.limit}
+            onPageChange={setUserPage}
+          />
         </div>
       )}
 
@@ -163,6 +237,125 @@ function AdminPanel() {
           onSetPlan={(userId, plan, months) => setPlan.mutate({ userId, plan, months })}
           isPending={setPlan.isPending}
         />
+      )}
+
+      {isRematesTab && <RematesAdminTab />}
+
+      {isFraudesTab && <FraudesTab />}
+    </div>
+  );
+}
+
+/* ─── Remates Admin Tab ─── */
+
+const AUCTION_STATUS_LABELS: Record<string, string> = {
+  draft: 'Borrador', active: 'Activo', paused: 'Pausado',
+  closed: 'Cerrado', sold: 'Vendido', cancelled: 'Cancelado',
+};
+
+const AUCTION_STATUS_COLORS: Record<string, string> = {
+  active: 'bg-emerald-50 text-emerald-700',
+  draft: 'bg-gray-100 text-gray-500',
+  paused: 'bg-amber-50 text-amber-700',
+  closed: 'bg-blue-50 text-blue-700',
+  sold: 'bg-purple-50 text-purple-700',
+  cancelled: 'bg-red-50 text-red-600',
+};
+
+function RematesAdminTab() {
+  const { data: auctions, isLoading } = useAdminAuctions();
+  const cancel = useAdminCancelAuction();
+  const pause = useAdminPauseAuction();
+  const [confirmCancel, setConfirmCancel] = useState<Auction | null>(null);
+
+  if (isLoading) return <PageLoader />;
+
+  const active = auctions?.filter((a) => a.status === 'active') ?? [];
+  const others = auctions?.filter((a) => a.status !== 'active') ?? [];
+  const all = [...active, ...others];
+
+  if (!all.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center">
+        <p className="text-3xl mb-2">🏇</p>
+        <p className="font-medium text-gray-700">Sin remates registrados</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-gray-400">
+        {all.length} remate{all.length !== 1 ? 's' : ''} · {active.length} activo{active.length !== 1 ? 's' : ''}
+      </p>
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="divide-y divide-gray-50">
+          {all.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${AUCTION_STATUS_COLORS[a.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                    {AUCTION_STATUS_LABELS[a.status] ?? a.status}
+                  </span>
+                  <span className="text-xs font-semibold text-gray-400">{a.type === 'remate' ? 'Remate' : 'Venta directa'}</span>
+                </div>
+                <p className="mt-0.5 truncate text-sm font-medium text-gray-900">{a.title}</p>
+                <p className="text-xs text-gray-400">
+                  {a.horse?.name ?? '—'} · {a.seller?.name ?? a.seller?.email ?? '—'}
+                  {a.auction_end ? ` · cierra ${new Date(a.auction_end).toLocaleDateString('es-AR')}` : ''}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1.5">
+                {a.status === 'active' && (
+                  <button
+                    onClick={() => pause.mutate(a.id)}
+                    disabled={pause.isPending}
+                    className="rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition cursor-pointer disabled:opacity-50"
+                  >
+                    Pausar
+                  </button>
+                )}
+                {!['sold', 'cancelled', 'closed'].includes(a.status) && (
+                  <button
+                    onClick={() => setConfirmCancel(a)}
+                    className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Confirm modal */}
+      {confirmCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="font-bold text-gray-900 mb-2">Cancelar remate</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Vas a cancelar <strong>{confirmCancel.title}</strong> de {confirmCancel.seller?.name ?? '—'}. Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmCancel(null)}
+                className="flex-1 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  await cancel.mutateAsync(confirmCancel.id);
+                  setConfirmCancel(null);
+                }}
+                disabled={cancel.isPending}
+                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 transition cursor-pointer disabled:opacity-50"
+              >
+                {cancel.isPending ? '...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -180,10 +373,10 @@ const FRAUD_SIGNAL_LABELS: Record<string, string> = {
 };
 
 const RISK_CONFIG = {
-  none:   { label: 'Sin riesgo',    cls: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400'  },
-  low:    { label: 'Riesgo bajo',   cls: 'bg-blue-50 text-blue-700',    dot: 'bg-blue-400'  },
-  medium: { label: 'Riesgo medio',  cls: 'bg-amber-50 text-amber-700',  dot: 'bg-amber-500' },
-  high:   { label: 'Riesgo alto',   cls: 'bg-red-50 text-red-700',      dot: 'bg-red-500'   },
+  none:   { label: 'Sin riesgo',   cls: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400'  },
+  low:    { label: 'Riesgo bajo',  cls: 'bg-blue-50 text-blue-700',    dot: 'bg-blue-400'  },
+  medium: { label: 'Riesgo medio', cls: 'bg-amber-50 text-amber-700',  dot: 'bg-amber-500' },
+  high:   { label: 'Riesgo alto',  cls: 'bg-red-50 text-red-700',      dot: 'bg-red-500'   },
 };
 
 const APPROVAL_REASON_LABELS: Record<string, string> = {
@@ -226,8 +419,7 @@ function FraudesTab() {
           {data?.total ?? 0} claim{(data?.total ?? 0) !== 1 ? 's' : ''} requieren revisión
         </p>
         <p className="text-xs text-gray-400">
-          Estos claims fueron auto-aprobados con evidencia débil o tienen señales de fraude.
-          Revisá y revocá si encontrás un problema.
+          Claims auto-aprobados con evidencia débil o con señales de fraude.
         </p>
       </div>
 
@@ -239,7 +431,6 @@ function FraudesTab() {
 
         return (
           <div key={claim.id} className={`rounded-xl border bg-white overflow-hidden ${claim.fraud_risk === 'high' ? 'border-red-200' : claim.fraud_risk === 'medium' ? 'border-amber-200' : 'border-gray-200'}`}>
-            {/* Banda de color según riesgo */}
             {claim.fraud_risk !== 'none' && (
               <div className={`h-1 w-full ${claim.fraud_risk === 'high' ? 'bg-red-400' : claim.fraud_risk === 'medium' ? 'bg-amber-400' : 'bg-blue-300'}`} />
             )}
@@ -278,7 +469,7 @@ function FraudesTab() {
                     onClick={() => setExpanded(isOpen ? null : claim.id)}
                     className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
                   >
-                    {isOpen ? 'Ocultar' : 'Ver detalle'}
+                    {isOpen ? 'Ocultar' : 'Detalle'}
                   </button>
                   {(claim.status === 'auto_approved' || claim.status === 'approved') && (
                     <button
@@ -300,7 +491,6 @@ function FraudesTab() {
                 </div>
               </div>
 
-              {/* Señales de fraude */}
               {signals.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {signals.map((s) => (
@@ -315,7 +505,6 @@ function FraudesTab() {
                 </div>
               )}
 
-              {/* Detalle expandido */}
               {isOpen && (
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600">
                   {signals.map((s) => (
@@ -348,7 +537,6 @@ function FraudesTab() {
         );
       })}
 
-      {/* Modal de revocación */}
       {revokeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
@@ -416,7 +604,6 @@ function PlansAdminTable({
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      {/* Header desktop */}
       <div className="hidden sm:grid grid-cols-[1fr_1fr_90px_100px_180px] gap-0 border-b border-gray-100 bg-gray-50 px-4 py-2.5">
         <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Usuario</span>
         <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Email</span>
@@ -435,7 +622,6 @@ function PlansAdminTable({
 
           return (
             <div key={u.id}>
-              {/* Desktop */}
               <div className="hidden sm:grid grid-cols-[1fr_1fr_90px_100px_180px] items-center px-4 py-3">
                 <div className="min-w-0 pr-2">
                   <p className="font-medium text-gray-900 truncate">{u.name}</p>
@@ -481,7 +667,6 @@ function PlansAdminTable({
                 </div>
               </div>
 
-              {/* Mobile */}
               <div className="sm:hidden p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -541,7 +726,6 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
 
   return (
     <div className="space-y-5">
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Mis caballos</p>
@@ -557,7 +741,6 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
         </div>
       </div>
 
-      {/* Caballos */}
       {data.horses.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -590,7 +773,6 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
         </div>
       )}
 
-      {/* Eventos recientes */}
       {data.recent_events.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -649,9 +831,7 @@ function BoardingRequestsPanel() {
               <p className="text-sm font-semibold text-gray-900">
                 {req.requester?.name} solicita alojar a <span className="text-[#0f1f3d]">{req.horse?.name}</span>
               </p>
-              {req.message && (
-                <p className="mt-0.5 text-xs text-gray-500 italic">"{req.message}"</p>
-              )}
+              {req.message && <p className="mt-0.5 text-xs text-gray-500 italic">"{req.message}"</p>}
               <p className="mt-0.5 text-xs text-gray-400">
                 {new Date(req.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
               </p>
@@ -685,10 +865,8 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
 
   return (
     <div className="space-y-5">
-      {/* Solicitudes de alojamiento */}
       <BoardingRequestsPanel />
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Caballos en pensión</p>
@@ -700,7 +878,6 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
         </div>
       </div>
 
-      {/* Caballos en pensión */}
       {data.horses.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -733,7 +910,6 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
         </div>
       )}
 
-      {/* Actividad reciente */}
       {data.recent_events.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -781,7 +957,6 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
 
   return (
     <div className="space-y-5">
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Mis pacientes</p>
@@ -797,7 +972,6 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
         </div>
       </div>
 
-      {/* Próximos vencimientos médicos */}
       {data.upcoming_medical.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-amber-100">
@@ -836,7 +1010,6 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
         </div>
       )}
 
-      {/* Caballos asignados */}
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">Mis pacientes</h2>
@@ -868,7 +1041,6 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
         </div>
       </div>
 
-      {/* Últimos eventos de salud */}
       {data.recent_health_events.length > 0 && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -908,8 +1080,8 @@ export default function PanelPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-[1.375rem] font-extrabold tracking-tight text-gray-900">{title}</h1>
-        <div className="grid grid-cols-3 gap-3">
-          {[1,2,3].map(i => <SkeletonStat key={i} />)}
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {[1,2,3,4,5,6].map(i => <SkeletonStat key={i} />)}
         </div>
         <PageLoader />
       </div>

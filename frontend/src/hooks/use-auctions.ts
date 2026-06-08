@@ -163,3 +163,40 @@ export function useToggleWatch() {
     },
   });
 }
+
+// ─── Admin ────────────────────────────────────────────────────────────────
+
+export function useAdminAuctions() {
+  return useQuery<Auction[]>({
+    queryKey: ['auctions', 'admin', 'all'],
+    queryFn: async () => (await api.get('/auctions/admin/all')).data,
+  });
+}
+
+export function useAdminCancelAuction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.patch(`/auctions/${id}/cancel`);
+      return data as Auction;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['auctions', 'admin', 'all'] });
+      qc.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+}
+
+export function useAdminPauseAuction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.patch(`/auctions/${id}/pause`);
+      return data as Auction;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['auctions', 'admin', 'all'] });
+      qc.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+}

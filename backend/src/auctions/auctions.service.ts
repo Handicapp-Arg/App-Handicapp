@@ -124,22 +124,30 @@ export class AuctionsService {
     return { ...auction, watching, top_bid: topBid ? Number(topBid.amount) : null };
   }
 
-  async publish(id: string, sellerId: string): Promise<Auction> {
-    const auction = await this.findOneOwned(id, sellerId);
+  async adminFindAll(): Promise<Auction[]> {
+    return this.auctionRepo.find({
+      relations: ['horse', 'seller'],
+      order: { created_at: 'DESC' },
+      take: 200,
+    });
+  }
+
+  async publish(id: string, sellerId: string, isAdmin = false): Promise<Auction> {
+    const auction = await this.findOneOwned(id, sellerId, isAdmin);
     if (auction.status !== 'draft') throw new BadRequestException('Solo se pueden publicar borradores');
     auction.status = 'active';
     return this.auctionRepo.save(auction);
   }
 
-  async pause(id: string, sellerId: string): Promise<Auction> {
-    const auction = await this.findOneOwned(id, sellerId);
+  async pause(id: string, sellerId: string, isAdmin = false): Promise<Auction> {
+    const auction = await this.findOneOwned(id, sellerId, isAdmin);
     if (auction.status !== 'active') throw new BadRequestException('Solo se puede pausar una subasta activa');
     auction.status = 'paused';
     return this.auctionRepo.save(auction);
   }
 
-  async cancel(id: string, sellerId: string): Promise<Auction> {
-    const auction = await this.findOneOwned(id, sellerId);
+  async cancel(id: string, sellerId: string, isAdmin = false): Promise<Auction> {
+    const auction = await this.findOneOwned(id, sellerId, isAdmin);
     if (['sold', 'cancelled'].includes(auction.status)) {
       throw new BadRequestException('No se puede cancelar esta subasta');
     }
@@ -293,10 +301,10 @@ export class AuctionsService {
     }
   }
 
-  private async findOneOwned(id: string, userId: string): Promise<Auction> {
+  private async findOneOwned(id: string, userId: string, isAdmin = false): Promise<Auction> {
     const auction = await this.auctionRepo.findOne({ where: { id } });
     if (!auction) throw new NotFoundException('Subasta no encontrada');
-    if (auction.seller_id !== userId) throw new ForbiddenException('No autorizado');
+    if (!isAdmin && auction.seller_id !== userId) throw new ForbiddenException('No autorizado');
     return auction;
   }
 }

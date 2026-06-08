@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param,
   Query, UseGuards, ParseUUIDPipe, HttpCode, HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuctionsService } from './auctions.service';
@@ -8,10 +9,19 @@ import { CreateAuctionDto } from './dto/create-auction.dto';
 import { PlaceBidDto } from './dto/place-bid.dto';
 import { AuctionsQueryDto } from './dto/auctions-query.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { User } from '../auth/user.entity';
 
 @Controller('auctions')
 export class AuctionsController {
   constructor(private readonly service: AuctionsService) {}
+
+  // ─── Admin: todos los remates ────────────────────────────────────────────
+  @Get('admin/all')
+  @UseGuards(AuthGuard('jwt'))
+  adminAll(@GetUser() user: User) {
+    if (user.role !== 'admin') throw new ForbiddenException('Solo admin');
+    return this.service.adminFindAll();
+  }
 
   // ─── Listado público (autenticado para ver favoritos) ───────────────────
   @Get()
@@ -44,7 +54,7 @@ export class AuctionsController {
     return this.service.getBids(id);
   }
 
-  // ─── Creación y gestión (vendedor) ──────────────────────────────────────
+  // ─── Creación y gestión (vendedor / admin) ──────────────────────────────
   @Post()
   @UseGuards(AuthGuard('jwt'))
   create(@Body() dto: CreateAuctionDto, @GetUser('id') userId: string) {
@@ -53,20 +63,20 @@ export class AuctionsController {
 
   @Patch(':id/publish')
   @UseGuards(AuthGuard('jwt'))
-  publish(@Param('id', ParseUUIDPipe) id: string, @GetUser('id') userId: string) {
-    return this.service.publish(id, userId);
+  publish(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.service.publish(id, user.id, user.role === 'admin');
   }
 
   @Patch(':id/pause')
   @UseGuards(AuthGuard('jwt'))
-  pause(@Param('id', ParseUUIDPipe) id: string, @GetUser('id') userId: string) {
-    return this.service.pause(id, userId);
+  pause(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.service.pause(id, user.id, user.role === 'admin');
   }
 
   @Patch(':id/cancel')
   @UseGuards(AuthGuard('jwt'))
-  cancel(@Param('id', ParseUUIDPipe) id: string, @GetUser('id') userId: string) {
-    return this.service.cancel(id, userId);
+  cancel(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.service.cancel(id, user.id, user.role === 'admin');
   }
 
   @Patch(':id/bids/:bidId/accept')

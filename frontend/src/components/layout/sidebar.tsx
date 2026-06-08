@@ -92,41 +92,56 @@ export function Sidebar() {
   const isProp = user?.role === 'propietario';
   const isVet = user?.role === 'veterinario';
 
-  const sections: NavSection[] = [
-    {
-      label: 'Principal',
-      items: [
-        ...(isAdmin ? [{ href: '/panel', label: 'Panel', icon: icons.panel }] : []),
-        { href: '/muro', label: 'Muro', icon: icons.muro },
-        { href: '/caballos', label: 'Caballos', icon: icons.caballos },
-        { href: '/padron', label: 'Padrón', icon: icons.registro },
-        { href: '/arbol', label: 'Árbol', icon: icons.arbol },
-        ...(!isAdmin ? [{ href: '/eventos', label: 'Eventos', icon: icons.eventos }] : []),
-        { href: '/remates', label: 'Remates', icon: icons.remates },
-        { href: '/notificaciones', label: 'Notificaciones', icon: icons.notificaciones, badge: unreadCount },
-      ],
-    },
-    ...(!isAdmin ? [{
-      label: 'Gestión',
-      items: [
-        { href: '/agenda', label: 'Agenda', icon: icons.agenda },
-        ...(isEst ? [{ href: '/organizacion', label: 'Organización', icon: icons.organizacion }] : []),
-        ...(isEst || isProp ? [{ href: '/contratos', label: 'Contratos', icon: icons.contratos }] : []),
-        ...(isEst || isProp ? [{ href: '/facturacion', label: 'Facturación', icon: icons.facturacion }] : []),
-        ...(isEst ? [{ href: '/solicitudes', label: 'Solicitudes', icon: icons.solicitudes }] : []),
-        ...(isProp ? [{ href: '/directorio', label: 'Directorio', icon: icons.directorio }] : []),
-      ].filter((i) => i !== null),
-    }] : []),
-    ...(isAdmin ? [{
-      label: 'Administración',
-      items: [
-        { href: '/superadmin', label: 'Superadmin', icon: icons.superadmin },
-        { href: '/eventos', label: 'Eventos', icon: icons.eventos },
-        { href: '/catalogo', label: 'Catálogo', icon: icons.catalogo },
-        { href: '/permisos', label: 'Permisos', icon: icons.permisos },
-      ],
-    }] : []),
-  ].filter((s) => s.items.length > 0);
+  const sections: NavSection[] = isAdmin
+    ? [
+        {
+          label: 'Panel',
+          items: [
+            { href: '/panel', label: 'Panel', icon: icons.panel },
+            { href: '/muro', label: 'Muro', icon: icons.muro },
+            { href: '/remates', label: 'Remates', icon: icons.remates },
+            { href: '/notificaciones', label: 'Notificaciones', icon: icons.notificaciones, badge: unreadCount },
+          ],
+        },
+        {
+          label: 'Plataforma',
+          items: [
+            { href: '/catalogo', label: 'Catálogo', icon: icons.catalogo },
+          ],
+        },
+        {
+          label: 'Configuración',
+          items: [
+            { href: '/superadmin', label: 'Organizaciones', icon: icons.organizacion },
+            { href: '/permisos', label: 'Permisos', icon: icons.permisos },
+          ],
+        },
+      ]
+    : [
+        {
+          label: 'Principal',
+          items: [
+            { href: '/muro', label: 'Muro', icon: icons.muro },
+            { href: '/caballos', label: 'Caballos', icon: icons.caballos },
+            { href: '/padron', label: 'Padrón', icon: icons.registro },
+            { href: '/arbol', label: 'Árbol', icon: icons.arbol },
+            { href: '/eventos', label: 'Eventos', icon: icons.eventos },
+            { href: '/remates', label: 'Remates', icon: icons.remates },
+            { href: '/notificaciones', label: 'Notificaciones', icon: icons.notificaciones, badge: unreadCount },
+          ],
+        },
+        {
+          label: 'Gestión',
+          items: [
+            { href: '/agenda', label: 'Agenda', icon: icons.agenda },
+            ...(isEst ? [{ href: '/organizacion', label: 'Organización', icon: icons.organizacion }] : []),
+            ...(isEst || isProp ? [{ href: '/contratos', label: 'Contratos', icon: icons.contratos }] : []),
+            ...(isEst || isProp ? [{ href: '/facturacion', label: 'Facturación', icon: icons.facturacion }] : []),
+            ...(isEst ? [{ href: '/solicitudes', label: 'Solicitudes', icon: icons.solicitudes }] : []),
+            ...(isProp ? [{ href: '/directorio', label: 'Directorio', icon: icons.directorio }] : []),
+          ].filter(Boolean) as NavItem[],
+        },
+      ].filter((s) => s.items.length > 0);
 
   return (
     <aside className="hidden md:flex sticky top-0 h-screen w-[220px] flex-col bg-[#0f1f3d] text-white">
