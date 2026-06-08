@@ -98,7 +98,7 @@ export default function AuctionDetailScreen() {
           <Text style={s.backText}>Volver</Text>
         </TouchableOpacity>
         {!isSeller && (
-          <TouchableOpacity onPress={() => toggleWatch.mutateAsync(id)} style={s.watchBtn}>
+          <TouchableOpacity onPress={() => toggleWatch.mutate(id)} style={s.watchBtn}>
             <Ionicons
               name={auction.watching ? 'star' : 'star-outline'}
               size={20}

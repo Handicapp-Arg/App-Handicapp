@@ -91,7 +91,7 @@ export default function RematesScreen() {
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('active');
 
-  const { data, isLoading, refetch } = useAuctions({
+  const { data, isLoading, refetch, isRefetching } = useAuctions({
     q: q || undefined,
     status: filterStatus || undefined,
   });
@@ -156,7 +156,7 @@ export default function RematesScreen() {
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
-          refreshing={false}
+          refreshing={isRefetching}
           ListEmptyComponent={
             <View style={s.emptyBox}>
               <Ionicons name="trophy-outline" size={52} color={colors.gray300} />

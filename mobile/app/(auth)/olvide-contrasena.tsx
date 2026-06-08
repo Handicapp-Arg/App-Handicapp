@@ -17,6 +17,7 @@ export default function OlvideContrasenaScreen() {
 
   const handleSubmit = async () => {
     if (!email.trim()) { setError('Ingresá tu email'); return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Email inválido'); return; }
     setError('');
     setLoading(true);
     try {

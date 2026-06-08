@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Modal, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -299,19 +299,33 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
   const upsert = useUpsertPedigree(horseId);
   const validate = useValidatePedigree(horseId);
   const [validationResult, setValidationResult] = useState<{ status: string } | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   const [form, setForm] = useState<CreatePedigreeDto>({
-    sire_id: existing?.sire_id ?? undefined,
-    sire_name: existing?.sire_name ?? existing?.sire?.name ?? '',
-    sire_registration_number: existing?.sire_registration_number ?? '',
-    dam_id: existing?.dam_id ?? undefined,
-    dam_name: existing?.dam_name ?? existing?.dam?.name ?? '',
-    dam_registration_number: existing?.dam_registration_number ?? '',
-    paternal_grandsire_name: existing?.paternal_grandsire_name ?? '',
-    paternal_granddam_name: existing?.paternal_granddam_name ?? '',
-    maternal_grandsire_name: existing?.maternal_grandsire_name ?? '',
-    maternal_granddam_name: existing?.maternal_granddam_name ?? '',
+    sire_id: undefined, sire_name: '', sire_registration_number: '',
+    dam_id: undefined, dam_name: '', dam_registration_number: '',
+    paternal_grandsire_name: '', paternal_granddam_name: '',
+    maternal_grandsire_name: '', maternal_granddam_name: '',
   });
+
+  // Populate form once existing data resolves (handles re-open after query settles)
+  useEffect(() => {
+    if (existing && !initialized) {
+      setForm({
+        sire_id: existing.sire_id ?? undefined,
+        sire_name: existing.sire_name ?? existing.sire?.name ?? '',
+        sire_registration_number: existing.sire_registration_number ?? '',
+        dam_id: existing.dam_id ?? undefined,
+        dam_name: existing.dam_name ?? existing.dam?.name ?? '',
+        dam_registration_number: existing.dam_registration_number ?? '',
+        paternal_grandsire_name: existing.paternal_grandsire_name ?? '',
+        paternal_granddam_name: existing.paternal_granddam_name ?? '',
+        maternal_grandsire_name: existing.maternal_grandsire_name ?? '',
+        maternal_granddam_name: existing.maternal_granddam_name ?? '',
+      });
+      setInitialized(true);
+    }
+  }, [existing, initialized]);
 
   const isPending = upsert.isPending || validate.isPending;
 

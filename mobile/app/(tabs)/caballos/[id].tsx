@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
-  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking,
+  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -176,7 +177,8 @@ function EventCard({ event, currentUserId, canEdit }: { event: Event; currentUse
 
 /* ─── Main ─── */
 export default function HorseDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const rawId = useLocalSearchParams<{ id: string }>().id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { can, user } = useAuth();
@@ -238,23 +240,65 @@ export default function HorseDetailScreen() {
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [docName, setDocName] = useState('');
 
-  const handlePickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+  const handlePickImage = () => {
+    const doUpload = async (source: 'camera' | 'gallery') => {
+      if (source === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.85 });
+        if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.85 });
+        if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+      }
+    };
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancelar', 'Tomar foto', 'Elegir de galería'], cancelButtonIndex: 0 },
+        (i) => { if (i === 1) doUpload('camera'); else if (i === 2) doUpload('gallery'); },
+      );
+    } else {
+      Alert.alert('Foto del caballo', '¿De dónde querés actualizar la foto?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: '📷 Tomar foto', onPress: () => doUpload('camera') },
+        { text: '🖼️ Elegir de galería', onPress: () => doUpload('gallery') },
+      ]);
+    }
   };
 
-  const handlePickDocument = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
-    if (!result.canceled && result.assets[0]) {
-      const name = docName.trim() || 'Documento';
-      await uploadDoc.mutateAsync({ uri: result.assets[0].uri, name });
-      setShowUploadDoc(false);
-      setDocName('');
-      haptic.success();
+  const handlePickDocument = () => {
+    const options = ['Imagen de galería', 'Documento (PDF, Word...)', 'Cancelar'];
+    const pick = async (choice: number) => {
+      if (choice === 0) {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+        if (!result.canceled && result.assets[0]) {
+          const name = docName.trim() || 'Documento';
+          await uploadDoc.mutateAsync({ uri: result.assets[0].uri, name });
+          setShowUploadDoc(false); setDocName(''); haptic.success();
+        }
+      } else if (choice === 1) {
+        const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+        if (result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          const name = docName.trim() || asset.name || 'Documento';
+          await uploadDoc.mutateAsync({ uri: asset.uri, name });
+          setShowUploadDoc(false); setDocName(''); haptic.success();
+        }
+      }
+    };
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 2 }, pick);
+    } else {
+      Alert.alert('Subir documento', '¿Qué tipo de archivo querés subir?', [
+        { text: 'Imagen de galería', onPress: () => pick(0) },
+        { text: 'Documento (PDF, Word...)', onPress: () => pick(1) },
+        { text: 'Cancelar', style: 'cancel' },
+      ]);
     }
   };
 
@@ -1115,13 +1159,13 @@ export default function HorseDetailScreen() {
               )}
 
               {/* Evolución mensual */}
-              {financial.monthly.length > 0 && (
+              {(financial.monthly ?? []).length > 0 && (
                 <View style={[s.financialCard, { marginTop: 14 }]}>
                   <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Evolución mensual</Text>
-                  {financial.monthly.slice(0, 6).map((m) => {
+                  {(financial.monthly ?? []).slice(0, 6).map((m) => {
                     const [year, month] = m.month.split('-');
                     const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-                    const maxVal = Math.max(...financial.monthly.map((x) => x.total), 1);
+                    const maxVal = Math.max(...(financial.monthly ?? []).map((x) => x.total), 1);
                     return (
                       <View key={m.month} style={s.barRow}>
                         <Text style={s.barLabel}>{label}</Text>

@@ -64,7 +64,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
     setError('');
     await createEvent.mutateAsync({
       type, description, date, horse_id: horseId,
-      amount: type === 'gasto' && amount ? amount : undefined,
+      amount: type === 'gasto' && amount ? String(parseFloat(amount) || 0) : undefined,
       expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
       currency: type === 'gasto' ? currency : undefined,
       photoUris: photoUris.length > 0 ? photoUris : undefined,

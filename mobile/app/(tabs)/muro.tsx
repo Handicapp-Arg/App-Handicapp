@@ -16,6 +16,7 @@ import {
   useFeedComments, useAddComment, useDeleteComment,
   useTogglePin, useToggleHide,
 } from '../../hooks/use-feed';
+import { useHorses } from '../../hooks/use-horses';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
@@ -295,13 +296,20 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
 // ─── Composer ────────────────────────────────────────────────────────────────
 function Composer({ user }: { user: { name: string; role: string } }) {
   const createPost = useCreatePost();
+  const { data: myHorses } = useHorses();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [media, setMedia] = useState<{ uri: string; isVideo: boolean }[]>([]);
   const [type, setType] = useState<'general' | 'horse_update' | 'announcement'>('general');
+  const [selectedHorseId, setSelectedHorseId] = useState<string | undefined>(undefined);
   const isAdmin = user.role === 'admin';
 
   const pickMedia = async (mediaType: 'images' | 'videos') => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para adjuntar fotos y videos.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: mediaType,
       allowsMultipleSelection: true,
@@ -321,15 +329,22 @@ function Composer({ user }: { user: { name: string; role: string } }) {
   const handlePost = async () => {
     if (!text.trim() && !media.length) return;
     haptic.medium();
-    await createPost.mutateAsync({
-      content: text.trim(),
-      type,
-      photoUris: media.filter((m) => !m.isVideo).map((m) => m.uri),
-      videoUris: media.filter((m) => m.isVideo).map((m) => m.uri),
-    });
-    setText('');
-    setMedia([]);
-    setOpen(false);
+    try {
+      await createPost.mutateAsync({
+        content: text.trim(),
+        type: selectedHorseId ? 'horse_update' : type,
+        horse_id: selectedHorseId,
+        photoUris: media.filter((m) => !m.isVideo).map((m) => m.uri),
+        videoUris: media.filter((m) => m.isVideo).map((m) => m.uri),
+      });
+      setText('');
+      setMedia([]);
+      setSelectedHorseId(undefined);
+      setType('general');
+      setOpen(false);
+    } catch {
+      Alert.alert('Error', 'No se pudo publicar. Intentá de nuevo.');
+    }
   };
 
   if (!open) {
@@ -424,6 +439,32 @@ function Composer({ user }: { user: { name: string; role: string } }) {
               </View>
             )}
           </ScrollView>
+
+          {/* Horse tag picker */}
+          {(myHorses?.length ?? 0) > 0 && (
+            <View style={s.horsePickerRow}>
+              <Ionicons name="paw-outline" size={14} color={colors.gray400} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
+                <TouchableOpacity
+                  style={[s.horseChip, !selectedHorseId && s.horseChipActive]}
+                  onPress={() => setSelectedHorseId(undefined)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.horseChipText, !selectedHorseId && s.horseChipTextActive]}>Sin caballo</Text>
+                </TouchableOpacity>
+                {(myHorses ?? []).map((h) => (
+                  <TouchableOpacity
+                    key={h.id}
+                    style={[s.horseChip, selectedHorseId === h.id && s.horseChipActive]}
+                    onPress={() => setSelectedHorseId(h.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[s.horseChipText, selectedHorseId === h.id && s.horseChipTextActive]}>{h.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           <View style={s.composerFooter}>
             <TouchableOpacity onPress={() => pickMedia('images')} disabled={media.length >= 4} activeOpacity={0.75} style={s.photoBtn}>
@@ -596,6 +637,11 @@ const s = StyleSheet.create({
   typeBtnTextActive: { color: colors.white },
   composerRow: { flexDirection: 'row', gap: space[3], padding: space[4], alignItems: 'flex-start' },
   composerInput: { flex: 1, fontSize: text.base, color: colors.gray900, minHeight: 100 },
+  horsePickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: colors.gray50 },
+  horseChip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: 5, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
+  horseChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  horseChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
+  horseChipTextActive: { color: colors.white },
   composerFooter: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.gray100, paddingHorizontal: space[4], paddingVertical: space[3] },
   photoBtn: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   photoBtnText: { fontSize: text.sm, color: colors.primary, fontWeight: weight.semibold },

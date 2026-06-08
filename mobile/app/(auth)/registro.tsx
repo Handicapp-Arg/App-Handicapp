@@ -34,6 +34,8 @@ export default function RegistroScreen() {
 
   const handleRegister = async () => {
     if (!name || !email || !password || !role) { setError('Completá todos los campos'); return; }
+    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Email inválido'); return; }
     setError('');
     setLoading(true);
     try {

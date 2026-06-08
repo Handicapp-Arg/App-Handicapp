@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, TextInput, FlatList, Image,
+  ActivityIndicator, TextInput, FlatList, Image, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -219,6 +219,162 @@ function MyActivityTab({ userId }: { userId: string }) {
 
 type ProfileTab = 'info' | 'publicaciones';
 
+function EditProfileModal({ visible, user, onClose }: {
+  visible: boolean;
+  user: { name: string; email: string };
+  onClose: () => void;
+}) {
+  const { updateProfile } = useAuth();
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError('El nombre no puede estar vacío'); return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Email inválido'); return; }
+    setError('');
+    setSaving(true);
+    try {
+      await updateProfile({ name: name.trim(), email: email.trim().toLowerCase() });
+      onClose();
+    } catch {
+      setError('No se pudo actualizar el perfil. Intentá de nuevo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
+        <View style={s.editModalSheet}>
+          <View style={s.editModalHandle} />
+          <Text style={s.editModalTitle}>Editar perfil</Text>
+          {error ? <Text style={s.editModalError}>{error}</Text> : null}
+          <View style={s.editField}>
+            <Text style={s.editLabel}>Nombre</Text>
+            <TextInput
+              style={s.editInput}
+              value={name}
+              onChangeText={setName}
+              placeholder="Tu nombre"
+              placeholderTextColor={colors.gray400}
+              autoCapitalize="words"
+            />
+          </View>
+          <View style={s.editField}>
+            <Text style={s.editLabel}>Email</Text>
+            <TextInput
+              style={s.editInput}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="tu@email.com"
+              placeholderTextColor={colors.gray400}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+          <TouchableOpacity
+            style={[s.editSaveBtn, saving && s.editSaveBtnDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.85}
+          >
+            {saving
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={s.editSaveBtnText}>Guardar cambios</Text>
+            }
+          </TouchableOpacity>
+          <TouchableOpacity style={s.editCancelBtn} onPress={onClose} activeOpacity={0.8}>
+            <Text style={s.editCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+function ChangePasswordModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { changePassword } = useAuth();
+  const [current, setCurrent] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    if (!current || !newPass || !confirm) { setError('Completá todos los campos'); return; }
+    if (newPass.length < 6) { setError('La nueva contraseña debe tener al menos 6 caracteres'); return; }
+    if (newPass !== confirm) { setError('Las contraseñas no coinciden'); return; }
+    setError('');
+    setSaving(true);
+    try {
+      await changePassword(current, newPass);
+      Alert.alert('Contraseña actualizada', 'Tu contraseña fue cambiada correctamente.');
+      setCurrent(''); setNewPass(''); setConfirm('');
+      onClose();
+    } catch {
+      setError('Contraseña actual incorrecta o error del servidor.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
+        <View style={s.editModalSheet}>
+          <View style={s.editModalHandle} />
+          <Text style={s.editModalTitle}>Cambiar contraseña</Text>
+          {error ? <Text style={s.editModalError}>{error}</Text> : null}
+          {[
+            { label: 'Contraseña actual', value: current, setter: setCurrent },
+            { label: 'Nueva contraseña', value: newPass, setter: setNewPass },
+            { label: 'Confirmar nueva contraseña', value: confirm, setter: setConfirm },
+          ].map((f) => (
+            <View key={f.label} style={s.editField}>
+              <Text style={s.editLabel}>{f.label}</Text>
+              <TextInput
+                style={s.editInput}
+                value={f.value}
+                onChangeText={f.setter}
+                secureTextEntry
+                placeholderTextColor={colors.gray400}
+                placeholder="••••••••"
+                autoComplete="off"
+                textContentType="oneTimeCode"
+              />
+            </View>
+          ))}
+          <TouchableOpacity
+            style={[s.editSaveBtn, saving && s.editSaveBtnDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.85}
+          >
+            {saving
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={s.editSaveBtnText}>Guardar contraseña</Text>
+            }
+          </TouchableOpacity>
+          <TouchableOpacity style={s.editCancelBtn} onPress={onClose} activeOpacity={0.8}>
+            <Text style={s.editCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
@@ -227,6 +383,8 @@ export default function PerfilScreen() {
   const setPlan = useAdminSetPlan();
   const [adminSearch, setAdminSearch] = useState('');
   const [activeTab, setActiveTab] = useState<ProfileTab>('publicaciones');
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   if (!user) return null;
 
@@ -342,12 +500,57 @@ export default function PerfilScreen() {
             </View>
           )}
 
+          {/* Account settings */}
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Mi cuenta</Text>
+            <View style={s.accountCard}>
+              <TouchableOpacity
+                style={s.accountRow}
+                onPress={() => setShowEditProfile(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="person-outline" size={18} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.accountRowLabel}>Editar datos personales</Text>
+                  <Text style={s.accountRowSub}>{user.name} · {user.email}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+              </TouchableOpacity>
+              <View style={s.accountDivider} />
+              <TouchableOpacity
+                style={s.accountRow}
+                onPress={() => setShowChangePassword(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.accountRowLabel}>Cambiar contraseña</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Logout */}
           <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
             <Ionicons name="log-out-outline" size={18} color={colors.red700} />
             <Text style={s.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </ScrollView>
+      )}
+
+      {user && (
+        <>
+          <EditProfileModal
+            visible={showEditProfile}
+            user={user}
+            onClose={() => setShowEditProfile(false)}
+          />
+          <ChangePasswordModal
+            visible={showChangePassword}
+            onClose={() => setShowChangePassword(false)}
+          />
+        </>
       )}
     </View>
   );
@@ -484,4 +687,49 @@ const s = StyleSheet.create({
     paddingVertical: space[4], marginHorizontal: space[5], marginTop: space[6],
   },
   logoutText: { fontSize: text.base, fontWeight: weight.bold, color: colors.red700 },
+
+  accountCard: {
+    backgroundColor: colors.white, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden',
+  },
+  accountRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    paddingHorizontal: space[4], paddingVertical: space[4],
+  },
+  accountRowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
+  accountRowSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
+  accountDivider: { height: 1, backgroundColor: colors.gray100, marginHorizontal: space[4] },
+
+  modalOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  editModalSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: space[6], paddingBottom: space[8],
+    gap: space[3],
+    marginTop: 'auto',
+  },
+  editModalHandle: {
+    width: 40, height: 4, borderRadius: 2, backgroundColor: colors.gray200,
+    alignSelf: 'center', marginBottom: space[2],
+  },
+  editModalTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900 },
+  editModalError: { fontSize: text.sm, color: colors.red700, backgroundColor: '#fef2f2', padding: space[3], borderRadius: radius.md },
+  editField: { gap: space[1] + 2 },
+  editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
+  editInput: {
+    borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.lg,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
+  },
+  editSaveBtn: {
+    backgroundColor: colors.primary, borderRadius: radius.lg,
+    paddingVertical: space[4], alignItems: 'center', marginTop: space[2],
+  },
+  editSaveBtnDisabled: { opacity: 0.6 },
+  editSaveBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+  editCancelBtn: { alignItems: 'center', paddingVertical: space[2] },
+  editCancelText: { fontSize: text.sm, color: colors.gray400, fontWeight: weight.medium },
 });

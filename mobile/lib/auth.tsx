@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import api, { saveToken, clearToken, getToken } from './api';
+import api, { saveToken, clearToken, getToken, setAuthFailureCallback } from './api';
 import { registerForPushNotifications, savePushToken } from './push-notifications';
 import type { User } from '../../packages/shared/src';
 
@@ -12,6 +12,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: { name?: string; email?: string }) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -21,6 +23,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
+
+  const forceLogout = useCallback(() => {
+    setUser(null);
+    router.replace('/(auth)/login');
+  }, [router]);
+
+  useEffect(() => {
+    setAuthFailureCallback(forceLogout);
+  }, [forceLogout]);
 
   const fetchUser = useCallback(async () => {
     const token = await getToken();
@@ -65,6 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user.permissions.includes(`${resource}:${action}`);
   }, [user]);
 
+  const updateProfile = async (data: { name?: string; email?: string }) => {
+    const { data: updated } = await api.patch('/auth/profile', data);
+    setUser(updated);
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    await api.post('/auth/change-password', { currentPassword, newPassword });
+  };
+
   const logout = async () => {
     const rt = await SecureStore.getItemAsync('refreshToken');
     if (rt) api.post('/auth/logout', { refreshToken: rt }).catch(() => {});
@@ -74,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, can, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, can, login, register, logout, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

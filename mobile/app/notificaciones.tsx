@@ -25,6 +25,10 @@ const TYPE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['n
   invitation_received:{ icon: 'person-add-outline',    bg: '#eff6ff', color: '#3b82f6' },
   invitation_accepted:{ icon: 'people-outline',        bg: '#ecfdf5', color: '#10b981' },
   boarding_request:   { icon: 'home-outline',          bg: '#fff7ed', color: '#f97316' },
+  bid_placed:         { icon: 'trophy-outline',        bg: '#fff7ed', color: '#f97316' },
+  auction_won:        { icon: 'ribbon-outline',        bg: '#ecfdf5', color: '#10b981' },
+  auction_closed:     { icon: 'lock-closed-outline',  bg: '#f3f4f6', color: '#6b7280' },
+  auction_outbid:     { icon: 'arrow-up-outline',     bg: '#fef2f2', color: '#ef4444' },
   default:            { icon: 'notifications-outline', bg: colors.gray100, color: colors.gray500 },
 };
 
@@ -115,8 +119,11 @@ export default function NotificacionesScreen() {
 
   const handlePress = (n: NotificationItem) => {
     if (!n.read) void markOneRead(n.id);
-    // Navegar según el tipo
-    if (n.event_id) {
+    if (['bid_placed', 'auction_won', 'auction_closed', 'auction_outbid'].includes(n.type)) {
+      router.push('/(tabs)/remates' as never);
+    } else if (n.type === 'boarding_request') {
+      router.push('/(tabs)/perfil' as never);
+    } else if (n.event_id) {
       router.push('/(tabs)/eventos' as never);
     }
   };

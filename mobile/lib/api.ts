@@ -1,7 +1,10 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.100:3001/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+let onAuthFailure: (() => void) | null = null;
+export function setAuthFailureCallback(cb: () => void) { onAuthFailure = cb; }
 
 const api = axios.create({ baseURL: API_URL });
 
@@ -58,6 +61,7 @@ api.interceptors.response.use(
       processQueue(refreshError, null);
       await SecureStore.deleteItemAsync('token');
       await SecureStore.deleteItemAsync('refreshToken');
+      onAuthFailure?.();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

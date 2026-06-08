@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import api from '../lib/api';
+import api, { getToken } from '../lib/api';
 
 export interface MedicalRecord {
   id: string;
@@ -73,17 +73,19 @@ export function useDownloadMedicalPdf(horseId: string, horseName: string) {
     setLoading(true);
     try {
       const baseUrl = (api.defaults.baseURL ?? '').replace(/\/$/, '');
-      const token = api.defaults.headers.common?.['Authorization'] as string | undefined;
+      const token = await getToken();
       const url = `${baseUrl}/horses/${horseId}/medical/pdf`;
       const safeName = horseName.replace(/[^a-zA-Z0-9]/g, '_');
       const localUri = `${FileSystem.cacheDirectory}historial-medico-${safeName}.pdf`;
 
       const result = await FileSystem.downloadAsync(url, localUri, {
-        headers: token ? { Authorization: token } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       if (result.status === 200) {
         await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+      } else {
+        throw new Error(`PDF download failed with status ${result.status}`);
       }
     } finally {
       setLoading(false);

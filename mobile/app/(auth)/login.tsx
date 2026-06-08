@@ -142,7 +142,7 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} />
+          {__DEV__ && <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} />}
 
           <TouchableOpacity
             style={[s.btn, loading && s.btnDisabled]}
