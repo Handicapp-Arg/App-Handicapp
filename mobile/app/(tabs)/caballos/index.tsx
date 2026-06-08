@@ -2,13 +2,14 @@ import { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Image, TextInput, RefreshControl, Modal, KeyboardAvoidingView,
-  Platform, ScrollView, ActivityIndicator,
+  Platform, ScrollView, ActivityIndicator, ActionSheetIOS, Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useHorses, useCreateHorse } from '../../../hooks/use-horses';
+import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
@@ -69,21 +70,57 @@ function HorseCard({ horse }: { horse: Horse }) {
 
 function CreateHorseModal({ onClose }: { onClose: () => void }) {
   const createHorse = useCreateHorse();
+  const uploadImage = useUploadHorseImage();
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [microchip, setMicrochip] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState('');
+
+  const pickPhoto = async (source: 'camera' | 'gallery') => {
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.85, allowsEditing: true, aspect: [4, 3] });
+      if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.85, allowsEditing: true, aspect: [4, 3] });
+      if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    }
+  };
+
+  const handlePickPhoto = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancelar', 'Tomar foto', 'Elegir de galería'], cancelButtonIndex: 0 },
+        (i) => { if (i === 1) pickPhoto('camera'); else if (i === 2) pickPhoto('gallery'); },
+      );
+    } else {
+      Alert.alert('Foto del caballo', '¿De dónde querés subir la foto?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: '📷 Tomar foto', onPress: () => pickPhoto('camera') },
+        { text: '🖼️ Elegir de galería', onPress: () => pickPhoto('gallery') },
+      ]);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es obligatorio'); return; }
     setError('');
-    await createHorse.mutateAsync({
+    const horse = await createHorse.mutateAsync({
       name: name.trim(),
       birth_date: birthDate || undefined,
       microchip: microchip || undefined,
     });
+    if (photoUri) {
+      await uploadImage.mutateAsync({ id: horse.id, uri: photoUri });
+    }
     onClose();
   };
+
+  const isBusy = createHorse.isPending || uploadImage.isPending;
 
   return (
     <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -93,6 +130,25 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
           <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={styles.modalBody}>
+
+          {/* Foto */}
+          <TouchableOpacity style={styles.photoPickerBtn} onPress={handlePickPhoto} activeOpacity={0.8}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Ionicons name="camera-outline" size={28} color={colors.gray400} />
+                <Text style={styles.photoPlaceholderText}>Agregar foto</Text>
+                <Text style={styles.photoPlaceholderSub}>Cámara o galería</Text>
+              </View>
+            )}
+            {photoUri && (
+              <View style={styles.photoEditBadge}>
+                <Ionicons name="camera" size={13} color="#fff" />
+              </View>
+            )}
+          </TouchableOpacity>
+
           <Text style={styles.fieldLabel}>Nombre *</Text>
           <TextInput
             style={styles.input}
@@ -118,18 +174,18 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
             keyboardType="numeric"
           />
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          {createHorse.isError ? <Text style={styles.errorText}>No se pudo crear el caballo.</Text> : null}
+          {(createHorse.isError || uploadImage.isError) ? <Text style={styles.errorText}>No se pudo crear el caballo.</Text> : null}
         </ScrollView>
         <View style={styles.modalFooter}>
           <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
             <Text style={styles.cancelBtnText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitBtn, createHorse.isPending && { opacity: 0.6 }]}
+            style={[styles.submitBtn, isBusy && { opacity: 0.6 }]}
             onPress={handleSubmit}
-            disabled={createHorse.isPending}
+            disabled={isBusy}
           >
-            {createHorse.isPending
+            {isBusy
               ? <ActivityIndicator color={colors.white} size="small" />
               : <Text style={styles.submitBtnText}>Crear</Text>
             }
@@ -331,4 +387,10 @@ const styles = StyleSheet.create({
   cancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
   submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 13, alignItems: 'center' },
   submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  photoPickerBtn: { alignSelf: 'center', marginBottom: 6, position: 'relative' },
+  photoPreview: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: colors.primary },
+  photoPlaceholder: { width: 110, height: 110, borderRadius: 55, backgroundColor: colors.gray100, borderWidth: 2, borderColor: colors.gray200, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 4 },
+  photoPlaceholderText: { fontSize: 12, fontWeight: '700', color: colors.gray500 },
+  photoPlaceholderSub: { fontSize: 10, color: colors.gray400 },
+  photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 });
