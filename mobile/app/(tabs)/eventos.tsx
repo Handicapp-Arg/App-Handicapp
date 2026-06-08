@@ -121,7 +121,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
           </View>
 
           {/* Fecha */}
-          <DatePicker label="Fecha" value={date} onChange={setDate} maxDate={new Date()} />
+          <DatePicker label="Fecha" value={date} onChange={setDate} />
 
           {/* Monto, moneda y categoría */}
           {type === 'gasto' && (
