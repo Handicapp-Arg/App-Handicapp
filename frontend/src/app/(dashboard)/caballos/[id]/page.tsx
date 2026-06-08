@@ -43,6 +43,26 @@ const typeOptions = [
 const inputClass =
   'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#0f1f3d] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/10';
 
+const EXPENSE_CATEGORIES = [
+  { value: 'alimentacion',  label: 'Alimentación', icon: '🌾' },
+  { value: 'veterinario',   label: 'Veterinario',  icon: '💉' },
+  { value: 'herradero',     label: 'Herradero',    icon: '🔨' },
+  { value: 'entrenamiento', label: 'Entrenamiento',icon: '🏇' },
+  { value: 'mantenimiento', label: 'Mantenimiento',icon: '🔧' },
+  { value: 'transporte',    label: 'Transporte',   icon: '🚛' },
+  { value: 'otros',         label: 'Otros',        icon: '📦' },
+];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  alimentacion:  '#16a34a',
+  veterinario:   '#dc2626',
+  herradero:     '#d97706',
+  entrenamiento: '#7c3aed',
+  mantenimiento: '#0284c7',
+  transporte:    '#0891b2',
+  otros:         '#6b7280',
+};
+
 /* ─── Helpers ─── */
 
 function formatDate(date: string): string {
@@ -72,6 +92,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
   const [description, setDescription] = useState(event.description);
   const [date, setDate] = useState(event.date);
   const [amount, setAmount] = useState(event.amount != null ? String(event.amount) : '');
+  const [expenseCategory, setExpenseCategory] = useState((event as unknown as { expense_category?: string }).expense_category ?? '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +102,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       description,
       date,
       amount: type === 'gasto' && amount ? amount : undefined,
+      expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
     });
     onClose();
   };
@@ -108,10 +130,26 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
         <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
       </div>
       {type === 'gasto' && (
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">Monto ($)</label>
-          <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={inputCls} />
-        </div>
+        <>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Monto ($)</label>
+            <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={inputCls} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Categoría</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {EXPENSE_CATEGORIES.map((cat) => (
+                <button key={cat.value} type="button" onClick={() => setExpenseCategory(cat.value)}
+                  className={`rounded-lg border py-1.5 text-[11px] font-medium transition cursor-pointer ${
+                    expenseCategory === cat.value ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {cat.icon} {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Descripción</label>
@@ -381,6 +419,7 @@ function CreateEventModal({
     return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
   });
   const [amount, setAmount] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('weekly');
@@ -398,6 +437,7 @@ function CreateEventModal({
       date: mode === 'now' ? today : date,
       horse_id: horseId,
       amount: type === 'gasto' && amount ? amount : undefined,
+      expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
       is_public: isPublic,
       event_time: mode !== 'now' ? eventTime : undefined,
       recurrence_type: mode === 'recurring' ? recurrenceType : undefined,
@@ -504,12 +544,28 @@ function CreateEventModal({
         </div>
       )}
 
-      {/* Monto */}
+      {/* Monto + Categoría */}
       {type === 'gasto' && (
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">Monto</label>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={inputClass} />
-        </div>
+        <>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Monto</label>
+            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={inputClass} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Categoría</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {EXPENSE_CATEGORIES.map((cat) => (
+                <button key={cat.value} type="button" onClick={() => setExpenseCategory(cat.value)}
+                  className={`rounded-lg border py-1.5 text-[11px] font-medium transition cursor-pointer ${
+                    expenseCategory === cat.value ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {cat.icon} {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Fotos */}
@@ -790,6 +846,149 @@ function PedigreeSectionWrapper({ horse, isOwner, isAdmin }: { horse: import('@/
   return <PedigreeSection horse={horse} canEdit={canEdit} />;
 }
 
+/* ─── Financial Dashboard ─── */
+
+function FinancialDashboard({
+  financial,
+  onExportCSV,
+}: {
+  financial: import('@/hooks/use-financial-summary').FinancialSummary | undefined;
+  onExportCSV: () => void;
+}) {
+  if (!financial) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center">
+        <p className="text-sm text-gray-400">Cargando datos financieros...</p>
+      </div>
+    );
+  }
+
+  if (financial.total === 0 && financial.monthly.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 shadow-sm text-center">
+        <span className="text-3xl">💰</span>
+        <p className="mt-2 text-sm font-medium text-gray-500">Sin gastos registrados</p>
+        <p className="mt-1 text-xs text-gray-400">Los gastos de tipo "Gasto" aparecerán aquí con su categoría</p>
+      </div>
+    );
+  }
+
+  const maxMonthly = Math.max(...financial.monthly.map((m) => m.total), 1);
+  const maxCategory = Math.max(...financial.by_category.map((c) => c.total), 1);
+
+  return (
+    <div className="space-y-4">
+      {/* KPIs */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">Dashboard financiero</h2>
+          <button onClick={onExportCSV}
+            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Exportar CSV
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-purple-50 p-4">
+            <p className="text-[11px] font-semibold text-purple-500 uppercase tracking-wide">Total acumulado</p>
+            <p className="mt-1 text-2xl font-bold text-purple-900">${financial.total.toLocaleString('es-AR')}</p>
+          </div>
+          <div className="rounded-xl bg-blue-50 p-4">
+            <p className="text-[11px] font-semibold text-blue-500 uppercase tracking-wide">Promedio mensual</p>
+            <p className="mt-1 text-2xl font-bold text-blue-900">${financial.average_monthly.toLocaleString('es-AR')}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Categorías */}
+      {financial.by_category.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-sm font-bold text-gray-900">Gasto por categoría</h3>
+          <div className="space-y-3">
+            {financial.by_category.map((c) => {
+              const cat = EXPENSE_CATEGORIES.find((x) => x.value === c.category);
+              const pct = (c.total / financial.total) * 100;
+              return (
+                <div key={c.category}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                      <span>{cat?.icon ?? '📦'}</span>
+                      {cat?.label ?? c.category}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900">${c.total.toLocaleString('es-AR')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${(c.total / maxCategory) * 100}%`,
+                          backgroundColor: CATEGORY_COLORS[c.category] ?? '#6b7280',
+                        }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-[11px] text-gray-400">{pct.toFixed(0)}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Evolución mensual */}
+      {financial.monthly.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-sm font-bold text-gray-900">Evolución mensual</h3>
+          <div className="space-y-2">
+            {financial.monthly.slice(0, 12).map((m) => {
+              const [year, month] = m.month.split('-');
+              const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+              return (
+                <div key={m.month} className="flex items-center gap-3">
+                  <span className="w-14 shrink-0 text-right text-[11px] text-gray-400">{label}</span>
+                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-purple-400" style={{ width: `${(m.total / maxMonthly) * 100}%` }} />
+                  </div>
+                  <span className="w-24 shrink-0 text-right text-[11px] font-medium text-gray-700">${m.total.toLocaleString('es-AR')}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Gastos recientes */}
+      {financial.recent_expenses.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-3 text-sm font-bold text-gray-900">Últimos gastos</h3>
+          <div className="space-y-2">
+            {financial.recent_expenses.map((exp) => {
+              const cat = EXPENSE_CATEGORIES.find((x) => x.value === exp.expense_category);
+              return (
+                <div key={exp.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2.5">
+                  <span className="text-base">{cat?.icon ?? '📦'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{exp.description}</p>
+                    <p className="text-[11px] text-gray-400">
+                      {new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {cat && <> · <span style={{ color: CATEGORY_COLORS[exp.expense_category ?? ''] ?? '#6b7280' }}>{cat.label}</span></>}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm font-bold text-gray-900">${exp.amount.toLocaleString('es-AR')}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Send to Establishment Modal ─── */
 
 interface EstabItem { id: string; name: string; horse_count: number; }
@@ -988,7 +1187,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [newWeightNotes, setNewWeightNotes] = useState('');
   const [showQR, setShowQR] = useState(false);
   const [showSendEstab, setShowSendEstab] = useState(false);
-  const [contentTab, setContentTab] = useState<'historial' | 'medico' | 'fotos' | 'rutina' | 'galeria'>('historial');
+  const [contentTab, setContentTab] = useState<'historial' | 'medico' | 'fotos' | 'rutina' | 'galeria' | 'finanzas'>('historial');
   const shareEvent = useShareEvent();
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
@@ -1514,10 +1713,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className="rounded-2xl border border-gray-100 bg-white p-1 shadow-sm flex gap-1">
           {([
             { key: 'historial', label: 'Historial', count: sortedEvents.length },
-            { key: 'galeria', label: 'Galería', count: galleryEvents.length },
-            { key: 'medico', label: 'Médico', count: medicalRecords?.length },
-            { key: 'fotos', label: 'Fotos', count: activityPhotos?.length },
-            { key: 'rutina', label: 'Rutina', count: null },
+            { key: 'galeria',   label: 'Galería',   count: galleryEvents.length },
+            { key: 'medico',    label: 'Médico',    count: medicalRecords?.length },
+            { key: 'fotos',     label: 'Fotos',     count: activityPhotos?.length },
+            { key: 'rutina',    label: 'Rutina',    count: null },
+            { key: 'finanzas',  label: 'Finanzas',  count: null },
           ] as const).map(({ key, label, count }) => (
             <button
               key={key}
@@ -1665,58 +1865,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
-        {/* Resumen financiero (mobile) */}
-        {financial && (financial.total > 0 || financial.monthly.length > 0) && (
-          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-              </span>
-              <h2 className="text-base font-bold text-gray-900">Resumen financiero</h2>
-              </div>
-              <button onClick={handleExportCSV}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-                title="Exportar CSV"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                CSV
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-xl bg-purple-50 p-3">
-                <p className="text-[11px] font-medium text-purple-500 uppercase tracking-wide">Total gastos</p>
-                <p className="mt-0.5 text-lg font-bold text-purple-900">${financial.total.toLocaleString('es-AR')}</p>
-              </div>
-              <div className="rounded-xl bg-gray-50 p-3">
-                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Promedio/mes</p>
-                <p className="mt-0.5 text-lg font-bold text-gray-900">${financial.average_monthly.toLocaleString('es-AR')}</p>
-              </div>
-            </div>
-            {financial.monthly.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Últimos meses</p>
-                {financial.monthly.slice(0, 6).map((m) => {
-                  const [year, month] = m.month.split('-');
-                  const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-                  const maxVal = Math.max(...financial.monthly.slice(0, 6).map((x) => x.total));
-                  return (
-                    <div key={m.month} className="flex items-center gap-2">
-                      <span className="w-12 text-right text-[11px] text-gray-400">{label}</span>
-                      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-purple-400" style={{ width: `${maxVal > 0 ? (m.total / maxVal) * 100 : 0}%` }} />
-                      </div>
-                      <span className="w-20 text-right text-[11px] font-medium text-gray-700">${m.total.toLocaleString('es-AR')}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        {/* Dashboard financiero (mobile) */}
+        {contentTab === 'finanzas' && (
+          <FinancialDashboard financial={financial} onExportCSV={handleExportCSV} />
         )}
 
         {/* Rutina diaria (mobile) */}
@@ -2194,18 +2345,15 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
 
-          {/* ─── Resumen financiero (desktop) ─── */}
-          {financial && (financial.total > 0 || financial.monthly.length > 0) && (
+          {/* ─── Resumen financiero (desktop sidebar) ─── */}
+          {financial && financial.total > 0 && (
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-900">Resumen financiero</h2>
-                <button onClick={handleExportCSV}
-                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                <h2 className="text-sm font-semibold text-gray-900">Finanzas</h2>
+                <button onClick={() => setContentTab('finanzas')}
+                  className="text-[10px] font-medium text-purple-600 hover:text-purple-800 transition cursor-pointer"
                 >
-                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                  </svg>
-                  CSV
+                  Ver detalle →
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -2218,19 +2366,18 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   <p className="mt-0.5 text-base font-bold text-gray-900">${financial.average_monthly.toLocaleString('es-AR')}</p>
                 </div>
               </div>
-              {financial.monthly.length > 0 && (
+              {financial.by_category.length > 0 && (
                 <div className="space-y-1.5">
-                  {financial.monthly.slice(0, 5).map((m) => {
-                    const [year, month] = m.month.split('-');
-                    const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-                    const maxVal = Math.max(...financial.monthly.slice(0, 5).map((x) => x.total));
+                  {financial.by_category.slice(0, 4).map((c) => {
+                    const cat = EXPENSE_CATEGORIES.find((x) => x.value === c.category);
+                    const maxVal = Math.max(...financial.by_category.map((x) => x.total));
                     return (
-                      <div key={m.month} className="flex items-center gap-2">
-                        <span className="w-10 text-right text-[10px] text-gray-400">{label}</span>
+                      <div key={c.category} className="flex items-center gap-2">
+                        <span className="w-5 text-center text-[11px]">{cat?.icon ?? '📦'}</span>
                         <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                          <div className="h-full rounded-full bg-purple-400" style={{ width: `${maxVal > 0 ? (m.total / maxVal) * 100 : 0}%` }} />
+                          <div className="h-full rounded-full" style={{ width: `${maxVal > 0 ? (c.total / maxVal) * 100 : 0}%`, backgroundColor: CATEGORY_COLORS[c.category] ?? '#6b7280' }} />
                         </div>
-                        <span className="w-16 text-right text-[10px] font-medium text-gray-600">${m.total.toLocaleString('es-AR')}</span>
+                        <span className="w-16 text-right text-[10px] font-medium text-gray-600">${c.total.toLocaleString('es-AR')}</span>
                       </div>
                     );
                   })}
@@ -2262,6 +2409,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             { key: 'medico',    label: 'Médico',    count: medicalRecords?.length },
             { key: 'fotos',     label: 'Fotos',     count: activityPhotos?.length },
             { key: 'rutina',    label: 'Rutina',    count: null },
+            { key: 'finanzas',  label: 'Finanzas',  count: null },
           ] as const).map(({ key, label, count }) => (
             <button
               key={key}
@@ -2536,6 +2684,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
           </div>
+        )}
+
+        {/* Dashboard financiero (desktop) */}
+        {contentTab === 'finanzas' && (
+          <FinancialDashboard financial={financial} onExportCSV={handleExportCSV} />
         )}
 
         </div>{/* cierre space-y-4 col derecha */}

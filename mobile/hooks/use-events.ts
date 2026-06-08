@@ -80,7 +80,7 @@ export function useCreateEvent() {
   return useMutation({
     mutationFn: async (payload: {
       type: string; description: string; date: string; horse_id: string;
-      amount?: string; currency?: string; photoUris?: string[];
+      amount?: string; expense_category?: string; currency?: string; photoUris?: string[];
     }) => {
       const { photoUris, ...fields } = payload;
       if (photoUris && photoUris.length > 0) {

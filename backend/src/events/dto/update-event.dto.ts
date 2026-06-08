@@ -1,5 +1,5 @@
 import { IsEnum, IsDateString, IsOptional, IsNumberString, IsNotEmpty, IsIn, IsBoolean } from 'class-validator';
-import { EventType } from '../event.entity';
+import { EventType, ExpenseCategory } from '../event.entity';
 
 export class UpdateEventDto {
   @IsOptional()
@@ -25,4 +25,8 @@ export class UpdateEventDto {
   @IsOptional()
   @IsBoolean()
   is_public?: boolean;
+
+  @IsOptional()
+  @IsEnum(ExpenseCategory)
+  expense_category?: ExpenseCategory;
 }

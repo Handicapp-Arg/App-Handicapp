@@ -29,7 +29,7 @@ import { colors } from '../../../lib/colors';
 import { space, text, radius, weight } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
 
-type Tab = 'info' | 'historial' | 'medico' | 'fotos' | 'pedigree';
+type Tab = 'info' | 'historial' | 'medico' | 'fotos' | 'pedigree' | 'finanzas';
 
 const TABS: { key: Tab; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
   { key: 'info',      label: 'Info',      icon: 'information-circle-outline' },
@@ -37,7 +37,18 @@ const TABS: { key: Tab; label: string; icon: React.ComponentProps<typeof Ionicon
   { key: 'medico',    label: 'Médico',    icon: 'medkit-outline' },
   { key: 'fotos',     label: 'Fotos',     icon: 'images-outline' },
   { key: 'pedigree',  label: 'Pedigrí',   icon: 'git-network-outline' },
+  { key: 'finanzas',  label: 'Finanzas',  icon: 'cash-outline' },
 ];
+
+const EXPENSE_CATEGORY_META: Record<string, { icon: string; color: string }> = {
+  alimentacion:  { icon: '🌾', color: '#16a34a' },
+  veterinario:   { icon: '💉', color: '#dc2626' },
+  herradero:     { icon: '🔨', color: '#d97706' },
+  entrenamiento: { icon: '🏇', color: '#7c3aed' },
+  mantenimiento: { icon: '🔧', color: '#0284c7' },
+  transporte:    { icon: '🚛', color: '#0891b2' },
+  otros:         { icon: '📦', color: '#6b7280' },
+};
 
 /* ─── EditHorseModal ─── */
 function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void }) {
@@ -429,7 +440,12 @@ export default function HorseDetailScreen() {
           {/* Resumen financiero */}
           {financial && financial.total > 0 && (
             <View style={s.section}>
-              <Text style={s.sectionTitle}>Resumen financiero</Text>
+              <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+                <Text style={s.sectionTitle}>Finanzas</Text>
+                <TouchableOpacity onPress={() => setActiveTab('finanzas')}>
+                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>Ver detalle →</Text>
+                </TouchableOpacity>
+              </View>
               <View style={s.financialCard}>
                 <View style={s.financialGrid}>
                   <View style={[s.financialStat, { backgroundColor: '#faf5ff' }]}>
@@ -445,16 +461,15 @@ export default function HorseDetailScreen() {
                     <Text style={s.financialStatLabel}>Promedio/mes</Text>
                   </View>
                 </View>
-                {financial.monthly.slice(0, 5).map((m) => {
-                  const [year, month] = m.month.split('-');
-                  const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-                  const maxVal = Math.max(...financial.monthly.slice(0, 5).map((x) => x.total));
-                  const pct = maxVal > 0 ? (m.total / maxVal) * 100 : 0;
+                {(financial.by_category ?? []).slice(0, 4).map((c) => {
+                  const meta = EXPENSE_CATEGORY_META[c.category] ?? { icon: '📦', color: '#6b7280' };
+                  const maxVal = Math.max(...(financial.by_category ?? []).map((x) => x.total), 1);
+                  const pct = (c.total / maxVal) * 100;
                   return (
-                    <View key={m.month} style={s.barRow}>
-                      <Text style={s.barLabel}>{label}</Text>
-                      <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%` as any }]} /></View>
-                      <Text style={s.barValue}>${m.total.toLocaleString('es-AR')}</Text>
+                    <View key={c.category} style={s.barRow}>
+                      <Text style={[s.barLabel, { fontSize: 13 }]}>{meta.icon}</Text>
+                      <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%` as any, backgroundColor: meta.color }]} /></View>
+                      <Text style={s.barValue}>${c.total.toLocaleString('es-AR')}</Text>
                     </View>
                   );
                 })}
@@ -1044,6 +1059,105 @@ export default function HorseDetailScreen() {
           canEdit={can('horses', 'update') || (user?.role === 'propietario' && horse.owner_id === user.id) || user?.role === 'admin'}
         />
       )}
+
+      {activeTab === 'finanzas' && (
+        <View style={s.section}>
+          {!financial || financial.total === 0 ? (
+            <View style={s.emptyBox}>
+              <Text style={{ fontSize: 32 }}>💰</Text>
+              <Text style={s.emptyTitle}>Sin gastos registrados</Text>
+              <Text style={s.emptyText}>Creá un evento de tipo "Gasto" para ver el dashboard</Text>
+            </View>
+          ) : (
+            <>
+              {/* KPIs */}
+              <View style={s.financialGrid}>
+                <View style={[s.financialStat, { backgroundColor: '#faf5ff' }]}>
+                  <Text style={[s.financialStatValue, { color: colors.purple700 }]} numberOfLines={1} adjustsFontSizeToFit>
+                    ${financial.total.toLocaleString('es-AR')}
+                  </Text>
+                  <Text style={[s.financialStatLabel, { color: colors.purple700 }]}>Total acumulado</Text>
+                </View>
+                <View style={[s.financialStat, { backgroundColor: '#eff6ff' }]}>
+                  <Text style={[s.financialStatValue, { color: '#1d4ed8' }]} numberOfLines={1} adjustsFontSizeToFit>
+                    ${financial.average_monthly.toLocaleString('es-AR')}
+                  </Text>
+                  <Text style={[s.financialStatLabel, { color: '#1d4ed8' }]}>Promedio/mes</Text>
+                </View>
+              </View>
+
+              {/* Por categoría */}
+              {(financial.by_category ?? []).length > 0 && (
+                <View style={[s.financialCard, { marginTop: 14 }]}>
+                  <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Por categoría</Text>
+                  {financial.by_category.map((c) => {
+                    const meta = EXPENSE_CATEGORY_META[c.category] ?? { icon: '📦', color: '#6b7280' };
+                    const pct = financial.total > 0 ? (c.total / financial.total) * 100 : 0;
+                    const maxVal = Math.max(...financial.by_category.map((x) => x.total), 1);
+                    return (
+                      <View key={c.category} style={{ marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>
+                            {meta.icon} {EXPENSE_CATEGORY_META[c.category] ? c.category.charAt(0).toUpperCase() + c.category.slice(1) : c.category}
+                          </Text>
+                          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 11, color: '#9ca3af' }}>{pct.toFixed(0)}%</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>${c.total.toLocaleString('es-AR')}</Text>
+                          </View>
+                        </View>
+                        <View style={s.barTrack}>
+                          <View style={[s.barFill, { width: `${(c.total / maxVal) * 100}%` as any, backgroundColor: meta.color }]} />
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Evolución mensual */}
+              {financial.monthly.length > 0 && (
+                <View style={[s.financialCard, { marginTop: 14 }]}>
+                  <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Evolución mensual</Text>
+                  {financial.monthly.slice(0, 6).map((m) => {
+                    const [year, month] = m.month.split('-');
+                    const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+                    const maxVal = Math.max(...financial.monthly.map((x) => x.total), 1);
+                    return (
+                      <View key={m.month} style={s.barRow}>
+                        <Text style={s.barLabel}>{label}</Text>
+                        <View style={s.barTrack}><View style={[s.barFill, { width: `${(m.total / maxVal) * 100}%` as any }]} /></View>
+                        <Text style={s.barValue}>${m.total.toLocaleString('es-AR')}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Últimos gastos */}
+              {(financial.recent_expenses ?? []).length > 0 && (
+                <View style={[s.financialCard, { marginTop: 14 }]}>
+                  <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Últimos gastos</Text>
+                  {financial.recent_expenses.map((exp) => {
+                    const meta = EXPENSE_CATEGORY_META[exp.expense_category ?? ''] ?? { icon: '📦', color: '#6b7280' };
+                    return (
+                      <View key={exp.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                        <Text style={{ fontSize: 20 }}>{meta.icon}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: '#1f2937' }} numberOfLines={1}>{exp.description}</Text>
+                          <Text style={{ fontSize: 11, color: '#9ca3af' }}>
+                            {new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>${exp.amount.toLocaleString('es-AR')}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -1096,6 +1210,8 @@ const s = StyleSheet.create({
   countText: { fontSize: 11, fontWeight: '700', color: colors.gray600 },
   emptyText: { fontSize: 13, color: colors.gray400 },
   empty: { alignItems: 'center', paddingVertical: 24 },
+  emptyBox: { alignItems: 'center', paddingVertical: 32, gap: 8 },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.gray700 },
 
   /* Info */
   infoGrid: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, padding: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

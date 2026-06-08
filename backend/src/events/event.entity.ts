@@ -13,11 +13,22 @@ import { Horse } from '../horses/horse.entity';
 import { User } from '../auth/user.entity';
 import { EventPhoto } from './event-photo.entity';
 
+
 export enum EventType {
   SALUD = 'salud',
   ENTRENAMIENTO = 'entrenamiento',
   GASTO = 'gasto',
   NOTA = 'nota',
+}
+
+export enum ExpenseCategory {
+  ALIMENTACION = 'alimentacion',
+  VETERINARIO = 'veterinario',
+  HERRADERO = 'herradero',
+  ENTRENAMIENTO = 'entrenamiento',
+  MANTENIMIENTO = 'mantenimiento',
+  TRANSPORTE = 'transporte',
+  OTROS = 'otros',
 }
 
 @Entity('events')
@@ -36,6 +47,9 @@ export class Event {
 
   @Column({ type: 'varchar', length: 3, default: 'ARS' })
   currency: 'ARS' | 'USD';
+
+  @Column({ type: 'enum', enum: ExpenseCategory, nullable: true })
+  expense_category: ExpenseCategory | null;
 
   @Column({ type: 'date' })
   date: string;

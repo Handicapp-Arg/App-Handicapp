@@ -299,9 +299,9 @@ export class HorsesService implements OnModuleInit {
     if (!horse) throw new NotFoundException('Caballo no encontrado');
     await this.assertAccess(horse, user);
 
-    const rows: { date: string; type: string; description: string; amount: string | null }[] =
+    const rows: { date: string; type: string; description: string; amount: string | null; expense_category: string | null }[] =
       await this.horseRepository.query(
-        `SELECT date, type, description, amount::text
+        `SELECT date, type, description, amount::text, expense_category
          FROM events
          WHERE horse_id = $1 AND deleted_at IS NULL
          ORDER BY date DESC`,
@@ -315,13 +315,24 @@ export class HorsesService implements OnModuleInit {
       nota: 'Nota',
     };
 
+    const categoryLabels: Record<string, string> = {
+      alimentacion: 'Alimentación',
+      veterinario: 'Veterinario',
+      herradero: 'Herradero',
+      entrenamiento: 'Entrenamiento',
+      mantenimiento: 'Mantenimiento',
+      transporte: 'Transporte',
+      otros: 'Otros',
+    };
+
     const escapeCell = (v: string) => `"${v.replace(/"/g, '""')}"`;
 
-    const header = ['Fecha', 'Tipo', 'Descripción', 'Monto'].map(escapeCell).join(',');
+    const header = ['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Monto'].map(escapeCell).join(',');
     const lines = rows.map((r) =>
       [
         escapeCell(r.date),
         escapeCell(typeLabels[r.type] ?? r.type),
+        escapeCell(r.expense_category ? (categoryLabels[r.expense_category] ?? r.expense_category) : ''),
         escapeCell(r.description),
         r.amount != null ? escapeCell(parseFloat(r.amount).toFixed(2)) : '""',
       ].join(','),
@@ -345,13 +356,24 @@ export class HorsesService implements OnModuleInit {
       [id],
     );
 
-    const byType: { type: string; total: string }[] = await this.horseRepository.query(
-      `SELECT type, SUM(amount)::text AS total
+    const byCategory: { category: string; total: string }[] = await this.horseRepository.query(
+      `SELECT COALESCE(expense_category, 'otros') AS category, SUM(amount)::text AS total
        FROM events
-       WHERE horse_id = $1 AND amount IS NOT NULL AND deleted_at IS NULL
-       GROUP BY type`,
+       WHERE horse_id = $1 AND type = 'gasto' AND amount IS NOT NULL AND deleted_at IS NULL
+       GROUP BY category
+       ORDER BY total DESC`,
       [id],
     );
+
+    const recentExpenses: { id: string; date: string; description: string; amount: string; expense_category: string | null }[] =
+      await this.horseRepository.query(
+        `SELECT id, date, description, amount::text, expense_category
+         FROM events
+         WHERE horse_id = $1 AND type = 'gasto' AND amount IS NOT NULL AND deleted_at IS NULL
+         ORDER BY date DESC
+         LIMIT 10`,
+        [id],
+      );
 
     const total = rows.reduce((acc, r) => acc + parseFloat(r.total), 0);
     const months = rows.length;
@@ -360,8 +382,15 @@ export class HorsesService implements OnModuleInit {
     return {
       total: parseFloat(total.toFixed(2)),
       average_monthly: parseFloat(average_monthly.toFixed(2)),
-      by_type: byType.map((r) => ({ type: r.type, total: parseFloat(r.total) })),
+      by_category: byCategory.map((r) => ({ category: r.category, total: parseFloat(r.total) })),
       monthly: rows.map((r) => ({ month: r.month, total: parseFloat(r.total) })),
+      recent_expenses: recentExpenses.map((r) => ({
+        id: r.id,
+        date: r.date,
+        description: r.description,
+        amount: parseFloat(r.amount),
+        expense_category: r.expense_category,
+      })),
     };
   }
 

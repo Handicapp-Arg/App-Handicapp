@@ -88,8 +88,16 @@ export function useHorseDocuments(horseId: string) {
   });
 }
 
+export interface FinancialSummary {
+  total: number;
+  average_monthly: number;
+  by_category: { category: string; total: number }[];
+  monthly: { month: string; total: number }[];
+  recent_expenses: { id: string; date: string; description: string; amount: number; expense_category: string | null }[];
+}
+
 export function useFinancialSummary(horseId: string) {
-  return useQuery<{ total: number; average_monthly: number; monthly: { month: string; total: number }[] }>({
+  return useQuery<FinancialSummary>({
     queryKey: ['horses', horseId, 'financial-summary'],
     queryFn: async () => (await api.get(`/horses/${horseId}/financial-summary`)).data,
     enabled: !!horseId,

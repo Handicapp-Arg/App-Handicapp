@@ -67,6 +67,7 @@ export function useCreateEvent(horseId: string) {
       date: string;
       horse_id: string;
       amount?: string;
+      expense_category?: string;
       is_public?: boolean;
       event_time?: string;
       recurrence_type?: string;
@@ -79,6 +80,7 @@ export function useCreateEvent(horseId: string) {
       formData.append('date', payload.date);
       formData.append('horse_id', payload.horse_id);
       if (payload.amount) formData.append('amount', payload.amount);
+      if (payload.expense_category) formData.append('expense_category', payload.expense_category);
       if (payload.is_public !== undefined) formData.append('is_public', String(payload.is_public));
       if (payload.event_time) formData.append('event_time', payload.event_time);
       if (payload.recurrence_type) formData.append('recurrence_type', payload.recurrence_type);
@@ -112,6 +114,7 @@ export function useUpdateEvent() {
       description?: string;
       date?: string;
       amount?: string;
+      expense_category?: string;
       currency?: 'ARS' | 'USD';
       is_public?: boolean;
     }) => {

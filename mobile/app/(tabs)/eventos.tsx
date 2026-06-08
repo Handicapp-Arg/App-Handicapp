@@ -22,6 +22,16 @@ import { layout, typography, input as inputStyle, modal as modalStyle, button } 
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'gasto', 'nota'] as const;
 
+const EXPENSE_CATEGORIES_MOBILE = [
+  { value: 'alimentacion',  label: 'Alimento',     icon: '🌾' },
+  { value: 'veterinario',   label: 'Veterinario',  icon: '💉' },
+  { value: 'herradero',     label: 'Herradero',    icon: '🔨' },
+  { value: 'entrenamiento', label: 'Entreno',      icon: '🏇' },
+  { value: 'mantenimiento', label: 'Mant.',        icon: '🔧' },
+  { value: 'transporte',    label: 'Transporte',   icon: '🚛' },
+  { value: 'otros',         label: 'Otros',        icon: '📦' },
+];
+
 /* ─── Modal crear evento ─── */
 
 function CreateEventModal({ onClose }: { onClose: () => void }) {
@@ -32,6 +42,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('');
   const [currency, setCurrency] = useState<Currency>('ARS');
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -54,6 +65,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
     await createEvent.mutateAsync({
       type, description, date, horse_id: horseId,
       amount: type === 'gasto' && amount ? amount : undefined,
+      expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
       currency: type === 'gasto' ? currency : undefined,
       photoUris: photoUris.length > 0 ? photoUris : undefined,
     });
@@ -111,33 +123,51 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
           {/* Fecha */}
           <DatePicker label="Fecha" value={date} onChange={setDate} maxDate={new Date()} />
 
-          {/* Monto y moneda */}
+          {/* Monto, moneda y categoría */}
           {type === 'gasto' && (
-            <View style={{ gap: space[2] }}>
-              <Text style={typography.label}>Monto</Text>
-              <View style={{ flexDirection: 'row', gap: space[2] }}>
-                {CURRENCY_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[styles.currencyBtn, currency === opt.value && styles.currencyBtnActive]}
-                    onPress={() => setCurrency(opt.value)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.currencyBtnText, currency === opt.value && styles.currencyBtnTextActive]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            <>
+              <View style={{ gap: space[2] }}>
+                <Text style={typography.label}>Monto</Text>
+                <View style={{ flexDirection: 'row', gap: space[2] }}>
+                  {CURRENCY_OPTIONS.map((opt) => (
+                    <TouchableOpacity
+                      key={opt.value}
+                      style={[styles.currencyBtn, currency === opt.value && styles.currencyBtnActive]}
+                      onPress={() => setCurrency(opt.value)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.currencyBtnText, currency === opt.value && styles.currencyBtnTextActive]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  style={inputStyle.base}
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.gray400}
+                  keyboardType="decimal-pad"
+                />
               </View>
-              <TextInput
-                style={inputStyle.base}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor={colors.gray400}
-                keyboardType="decimal-pad"
-              />
-            </View>
+              <View style={{ gap: space[2] }}>
+                <Text style={typography.label}>Categoría</Text>
+                <View style={styles.categoryGrid}>
+                  {EXPENSE_CATEGORIES_MOBILE.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.value}
+                      style={[styles.categoryBtn, expenseCategory === cat.value && { backgroundColor: '#7c3aed', borderColor: '#7c3aed' }]}
+                      onPress={() => setExpenseCategory(expenseCategory === cat.value ? '' : cat.value)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
+                      <Text style={[styles.categoryBtnText, expenseCategory === cat.value && { color: '#fff' }]}>{cat.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </>
           )}
 
           {/* Fotos opcionales */}
@@ -352,4 +382,7 @@ const styles = StyleSheet.create({
   photoAdd: { width: 72, height: 72, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.gray200, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2, backgroundColor: colors.gray50 },
   photoAddIcon: { fontSize: 20 },
   photoAddText: { fontSize: 10, color: colors.gray400, fontWeight: weight.semibold },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  categoryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
+  categoryBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
 });

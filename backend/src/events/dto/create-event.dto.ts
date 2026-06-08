@@ -1,6 +1,6 @@
 import { IsEnum, IsNotEmpty, IsDateString, IsUUID, IsOptional, IsNumberString, IsIn, IsBoolean, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EventType } from '../event.entity';
+import { EventType, ExpenseCategory } from '../event.entity';
 
 export class CreateEventDto {
   @IsEnum(EventType)
@@ -39,4 +39,8 @@ export class CreateEventDto {
   @IsOptional()
   @IsDateString()
   recurrence_end?: string;
+
+  @IsOptional()
+  @IsEnum(ExpenseCategory)
+  expense_category?: ExpenseCategory;
 }
