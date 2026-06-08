@@ -60,7 +60,7 @@ export class FeedService {
   }
 
   async findAll(user: User, query: FeedQueryDto = {}) {
-    const { page = 1, limit = 20, include_hidden, horse_id } = query;
+    const { page = 1, limit = 20, include_hidden, horse_id, author_id } = query;
 
     const qb = this.posts.createQueryBuilder('p')
       .leftJoinAndSelect('p.author', 'author')
@@ -76,6 +76,10 @@ export class FeedService {
 
     if (horse_id) {
       qb.andWhere('p.horse_id = :horse_id', { horse_id });
+    }
+
+    if (author_id) {
+      qb.andWhere('p.author_id = :author_id', { author_id });
     }
 
     const [data, total] = await qb.getManyAndCount();

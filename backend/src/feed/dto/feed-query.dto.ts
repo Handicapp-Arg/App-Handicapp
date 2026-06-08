@@ -21,4 +21,7 @@ export class FeedQueryDto {
 
   @IsOptional()
   horse_id?: string;
+
+  @IsOptional()
+  author_id?: string;
 }

@@ -12,7 +12,7 @@ interface FeedPage {
   limit: number;
 }
 
-export function useFeedPosts(params?: { horse_id?: string; include_hidden?: boolean }) {
+export function useFeedPosts(params?: { horse_id?: string; include_hidden?: boolean; author_id?: string }) {
   const [page, setPage] = useState(1);
   const [posts, setPosts] = useState<FeedPost[]>([]);
 
@@ -22,6 +22,7 @@ export function useFeedPosts(params?: { horse_id?: string; include_hidden?: bool
       const qs = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
       if (params?.horse_id) qs.set('horse_id', params.horse_id);
       if (params?.include_hidden) qs.set('include_hidden', 'true');
+      if (params?.author_id) qs.set('author_id', params.author_id);
       const { data } = await api.get(`/feed?${qs}`);
       return data;
     },

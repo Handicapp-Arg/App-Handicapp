@@ -8,15 +8,15 @@ import { useNotifications } from '../../lib/notifications';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TABS: Record<string, { active: IoniconsName; inactive: IoniconsName; label: string; color: string }> = {
-  index:            { active: 'home',      inactive: 'home-outline',      label: 'Inicio',   color: colors.primary },
   muro:             { active: 'newspaper', inactive: 'newspaper-outline', label: 'Muro',     color: '#0284c7' },
   'caballos/index': { active: 'paw',       inactive: 'paw-outline',       label: 'Caballos', color: '#059669' },
   remates:          { active: 'trophy',    inactive: 'trophy-outline',    label: 'Remates',  color: '#7c3aed' },
+  perfil:           { active: 'person',    inactive: 'person-outline',    label: 'Perfil',   color: colors.primary },
   mas:              { active: 'grid',      inactive: 'grid-outline',      label: 'Más',      color: '#374151' },
 };
 
 function TabIcon({ name, focused, badge }: { name: string; focused: boolean; badge?: number }) {
-  const meta = TABS[name] ?? TABS.index;
+  const meta = TABS[name] ?? TABS.muro;
   const iconColor = focused ? meta.color : '#94a3b8';
 
   return (
@@ -45,7 +45,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={({ route }) => {
-        const meta = TABS[route.name] ?? TABS.index;
+        const meta = TABS[route.name] ?? TABS.muro;
         return {
           headerShown: false,
           tabBarActiveTintColor: meta.color,
@@ -80,10 +80,10 @@ export default function TabsLayout() {
         };
       }}
     >
-      <Tabs.Screen name="index"           options={{ title: 'Inicio' }} />
       <Tabs.Screen name="muro"            options={{ title: 'Muro' }} />
       <Tabs.Screen name="caballos/index"  options={{ title: 'Caballos' }} />
       <Tabs.Screen name="remates"         options={{ title: 'Remates' }} />
+      <Tabs.Screen name="perfil"          options={{ title: 'Perfil' }} />
       <Tabs.Screen
         name="mas"
         options={{
@@ -92,10 +92,10 @@ export default function TabsLayout() {
           tabBarBadgeStyle: { backgroundColor: '#ef4444', fontSize: 9, minWidth: 15, height: 15 },
         }}
       />
+      <Tabs.Screen name="index"          options={{ href: null }} />
       <Tabs.Screen name="caballos/[id]"  options={{ href: null }} />
       <Tabs.Screen name="eventos"         options={{ href: null }} />
       <Tabs.Screen name="facturacion"     options={{ href: null }} />
-      <Tabs.Screen name="perfil"          options={{ href: null }} />
       <Tabs.Screen name="agenda"          options={{ href: null }} />
     </Tabs>
   );

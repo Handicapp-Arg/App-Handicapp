@@ -1,13 +1,20 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
+  ActivityIndicator, TextInput, FlatList, Image,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
-import { space, text, radius, weight } from '../../styles/tokens';
+import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
+import { useFeedPosts } from '../../hooks/use-feed';
+import type { FeedPost } from '../../../packages/shared/src/types';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -22,6 +29,14 @@ const MONTHS_OPTIONS = [
   { label: '6 meses', value: 6 },
   { label: '12 meses', value: 12 },
 ];
+
+function timeAgo(date: string) {
+  try {
+    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: es });
+  } catch { return ''; }
+}
+
+/* ─── Plan Card ─── */
 
 function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
   plan: string; horseCount: number; horseLimit: number | null; isLimited: boolean;
@@ -44,15 +59,13 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
           <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.primary }]} />
         </View>
       )}
-      {isLimited && (
-        <Text style={s.planWarning}>Límite alcanzado. Pedile al administrador que active el plan Pro.</Text>
-      )}
-      {isPro && (
-        <Text style={s.planProMsg}>Acceso ilimitado a todas las funciones.</Text>
-      )}
+      {isLimited && <Text style={s.planWarning}>Límite alcanzado.</Text>}
+      {isPro && <Text style={s.planProMsg}>Acceso ilimitado a todas las funciones.</Text>}
     </View>
   );
 }
+
+/* ─── Admin User Row ─── */
 
 function AdminUserRow({ u, onActivate, onRevoke, isPending }: {
   u: AdminPlanUser;
@@ -127,6 +140,85 @@ function AdminUserRow({ u, onActivate, onRevoke, isPending }: {
   );
 }
 
+/* ─── My Post Card ─── */
+
+function MyPostCard({ post }: { post: FeedPost }) {
+  const hasMedia = (post.image_urls?.length ?? 0) + (post.video_urls?.length ?? 0) > 0;
+  const firstImage = post.image_urls?.[0];
+
+  return (
+    <View style={s.postCard}>
+      {firstImage && (
+        <Image source={{ uri: firstImage }} style={s.postThumb} resizeMode="cover" />
+      )}
+      <View style={s.postBody}>
+        <Text style={s.postContent} numberOfLines={2}>{post.content}</Text>
+        {post.horse && (
+          <Text style={s.postHorse}>🐴 {post.horse.name}</Text>
+        )}
+        <View style={s.postMeta}>
+          <View style={s.postStat}>
+            <Ionicons name="heart" size={13} color="#ef4444" />
+            <Text style={s.postStatText}>{post.likes_count}</Text>
+          </View>
+          <View style={s.postStat}>
+            <Ionicons name="chatbubble-outline" size={13} color={colors.gray400} />
+            <Text style={s.postStatText}>{post.comments_count}</Text>
+          </View>
+          <Text style={s.postTime}>{timeAgo(post.created_at)}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* ─── My Activity Tab ─── */
+
+function MyActivityTab({ userId }: { userId: string }) {
+  const { posts, isLoading, loadMore, hasMore, isFetchingMore, refresh, isRefreshing } =
+    useFeedPosts({ author_id: userId });
+
+  if (isLoading) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!posts.length) {
+    return (
+      <View style={s.emptyActivity}>
+        <Ionicons name="newspaper-outline" size={48} color={colors.gray300} />
+        <Text style={s.emptyActivityTitle}>Sin publicaciones aún</Text>
+        <Text style={s.emptyActivitySub}>Tus posts del muro van a aparecer acá.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={posts}
+      keyExtractor={(p) => p.id}
+      renderItem={({ item }) => <MyPostCard post={item} />}
+      contentContainerStyle={s.postsList}
+      showsVerticalScrollIndicator={false}
+      onEndReached={() => hasMore && loadMore()}
+      onEndReachedThreshold={0.3}
+      onRefresh={refresh}
+      refreshing={isRefreshing}
+      ListFooterComponent={isFetchingMore
+        ? <ActivityIndicator color={colors.primary} style={{ margin: space[4] }} />
+        : null
+      }
+    />
+  );
+}
+
+/* ─── Main Screen ─── */
+
+type ProfileTab = 'info' | 'publicaciones';
+
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
@@ -134,6 +226,7 @@ export default function PerfilScreen() {
   const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers();
   const setPlan = useAdminSetPlan();
   const [adminSearch, setAdminSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<ProfileTab>('publicaciones');
 
   if (!user) return null;
 
@@ -143,7 +236,8 @@ export default function PerfilScreen() {
 
   const filteredAdminUsers = adminUsers?.filter((u) =>
     adminSearch
-      ? u.name.toLowerCase().includes(adminSearch.toLowerCase()) || u.email.toLowerCase().includes(adminSearch.toLowerCase())
+      ? u.name.toLowerCase().includes(adminSearch.toLowerCase()) ||
+        u.email.toLowerCase().includes(adminSearch.toLowerCase())
       : true,
   );
 
@@ -155,13 +249,9 @@ export default function PerfilScreen() {
   };
 
   return (
-    <ScrollView
-      style={s.root}
-      contentContainerStyle={{ paddingBottom: space[10] }}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {/* Hero */}
-      <View style={[s.hero, { paddingTop: insets.top + space[5] }]}>
+      <View style={s.hero}>
         <View style={s.avatar}>
           <Text style={s.avatarText}>{initials}</Text>
         </View>
@@ -172,59 +262,94 @@ export default function PerfilScreen() {
         </View>
       </View>
 
-      {/* Plan */}
-      {showPlan && planStatus && (
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Mi plan</Text>
-          <PlanCard
-            plan={planStatus.plan}
-            horseCount={planStatus.horse_count}
-            horseLimit={planStatus.horse_limit}
-            isLimited={planStatus.is_limited}
-          />
-        </View>
+      {/* Tab bar */}
+      <View style={s.tabBar}>
+        {([
+          { key: 'publicaciones', label: 'Publicaciones', icon: 'newspaper-outline' },
+          { key: 'info', label: 'Mi cuenta', icon: 'person-outline' },
+        ] as { key: ProfileTab; label: string; icon: string }[]).map((t) => (
+          <TouchableOpacity
+            key={t.key}
+            style={[s.tabBtn, activeTab === t.key && s.tabBtnActive]}
+            onPress={() => { haptic.selection(); setActiveTab(t.key); }}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={t.icon as any}
+              size={15}
+              color={activeTab === t.key ? colors.primary : colors.gray400}
+            />
+            <Text style={[s.tabLabel, activeTab === t.key && s.tabLabelActive]}>{t.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Content */}
+      {activeTab === 'publicaciones' && (
+        <MyActivityTab userId={user.id} />
       )}
 
-      {/* Gestión de planes (solo admin) */}
-      {isAdmin && (
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Gestión de planes</Text>
-          <Text style={s.sectionSubtitle}>Activá o revocá el plan Pro para propietarios y establecimientos.</Text>
-          <TextInput
-            style={s.searchInput}
-            value={adminSearch}
-            onChangeText={setAdminSearch}
-            placeholder="Buscar por nombre o email..."
-            placeholderTextColor={colors.gray400}
-            autoCapitalize="none"
-            clearButtonMode="while-editing"
-          />
-          {loadingAdminUsers ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: space[3] }} />
-          ) : !filteredAdminUsers?.length ? (
-            <Text style={s.emptyText}>No hay usuarios registrados.</Text>
-          ) : (
-            <View style={{ gap: space[3] }}>
-              {filteredAdminUsers.map((u) => (
-                <AdminUserRow
-                  key={u.id}
-                  u={u}
-                  onActivate={(userId, months) => setPlan.mutate({ userId, plan: 'pro', months })}
-                  onRevoke={(userId) => setPlan.mutate({ userId, plan: 'free' })}
-                  isPending={setPlan.isPending}
-                />
-              ))}
+      {activeTab === 'info' && (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: space[10] }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Plan */}
+          {showPlan && planStatus && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Mi plan</Text>
+              <PlanCard
+                plan={planStatus.plan}
+                horseCount={planStatus.horse_count}
+                horseLimit={planStatus.horse_limit}
+                isLimited={planStatus.is_limited}
+              />
             </View>
           )}
-        </View>
-      )}
 
-      {/* Logout */}
-      <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-        <Ionicons name="log-out-outline" size={18} color={colors.red700} />
-        <Text style={s.logoutText}>Cerrar sesión</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          {/* Gestión de planes (solo admin) */}
+          {isAdmin && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Gestión de planes</Text>
+              <Text style={s.sectionSubtitle}>Activá o revocá el plan Pro para propietarios y establecimientos.</Text>
+              <TextInput
+                style={s.searchInput}
+                value={adminSearch}
+                onChangeText={setAdminSearch}
+                placeholder="Buscar por nombre o email..."
+                placeholderTextColor={colors.gray400}
+                autoCapitalize="none"
+                clearButtonMode="while-editing"
+              />
+              {loadingAdminUsers ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: space[3] }} />
+              ) : !filteredAdminUsers?.length ? (
+                <Text style={s.emptyText}>No hay usuarios registrados.</Text>
+              ) : (
+                <View style={{ gap: space[3] }}>
+                  {filteredAdminUsers.map((u) => (
+                    <AdminUserRow
+                      key={u.id}
+                      u={u}
+                      onActivate={(userId, months) => setPlan.mutate({ userId, plan: 'pro', months })}
+                      onRevoke={(userId) => setPlan.mutate({ userId, plan: 'free' })}
+                      isPending={setPlan.isPending}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Logout */}
+          <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+            <Ionicons name="log-out-outline" size={18} color={colors.red700} />
+            <Text style={s.logoutText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
@@ -233,26 +358,65 @@ const s = StyleSheet.create({
 
   hero: {
     alignItems: 'center',
-    gap: space[2],
+    gap: space[1] + 2,
     backgroundColor: colors.primary,
-    paddingBottom: space[6],
+    paddingBottom: space[4],
+    paddingTop: space[5],
     paddingHorizontal: space[5],
   },
   avatar: {
-    width: 80, height: 80, borderRadius: 40,
+    width: 68, height: 68, borderRadius: 34,
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarText: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.white },
-  userName: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
+  avatarText: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.white },
+  userName: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.white },
   userEmail: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)' },
   roleBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
-    paddingHorizontal: space[4], paddingVertical: space[1] + 2,
+    paddingHorizontal: space[3], paddingVertical: space[1],
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
-  roleText: { fontSize: text.xs, fontWeight: weight.bold, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  roleText: { fontSize: 10, fontWeight: weight.bold, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
+  tabBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: space[1] + 2, paddingVertical: space[3],
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
+  },
+  tabBtnActive: { borderBottomColor: colors.primary },
+  tabLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray400 },
+  tabLabelActive: { color: colors.primary },
+
+  /* My posts */
+  postsList: { padding: space[4], gap: space[3] },
+  postCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    borderWidth: 1, borderColor: colors.gray100,
+    overflow: 'hidden',
+    ...shadow.sm,
+  },
+  postThumb: { width: '100%', height: 160 },
+  postBody: { padding: space[3], gap: space[1] + 2 },
+  postContent: { fontSize: text.sm, color: colors.gray800, lineHeight: 20 },
+  postHorse: { fontSize: text.xs, color: colors.gray500 },
+  postMeta: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[1] },
+  postStat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  postStatText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
+  postTime: { fontSize: text.xs, color: colors.gray400, marginLeft: 'auto' },
+
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyActivity: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[2], paddingHorizontal: space[8], paddingTop: 60 },
+  emptyActivityTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray700 },
+  emptyActivitySub: { fontSize: text.sm, color: colors.gray400, textAlign: 'center', lineHeight: 20 },
 
   section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
   sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
