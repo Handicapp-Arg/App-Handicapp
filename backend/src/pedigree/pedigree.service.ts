@@ -65,7 +65,7 @@ export class PedigreeService {
 
     const pedigree = await this.pedigreeRepo.findOne({
       where: { horse_id: horseId },
-      relations: ['sire', 'dam', 'breed'],
+      relations: ['sire', 'dam'],
     });
     if (!pedigree) throw new NotFoundException('El caballo no tiene pedigrí registrado aún');
 

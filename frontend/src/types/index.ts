@@ -195,10 +195,13 @@ export interface EventPhoto {
   id: string;
   url: string;
   public_id: string;
-  file_type: 'image' | 'pdf';
+  file_type: 'image' | 'pdf' | 'video';
+  caption: string | null;
   event_id: string;
   created_at: string;
 }
+
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
 
 export interface Event {
   id: string;
@@ -207,6 +210,13 @@ export interface Event {
   amount: number | null;
   currency: 'ARS' | 'USD';
   date: string;
+  event_time: string | null;
+  author_id: string | null;
+  is_public: boolean;
+  feed_post_id: string | null;
+  recurrence_type: RecurrenceType;
+  recurrence_end: string | null;
+  recurrence_parent_id: string | null;
   horse_id: string;
   horse?: Horse;
   photos?: EventPhoto[];

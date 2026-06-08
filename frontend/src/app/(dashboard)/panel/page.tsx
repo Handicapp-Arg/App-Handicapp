@@ -17,18 +17,20 @@ import {
 } from '@/components/panel';
 import { PlanBanner } from '@/components/plan-banner';
 import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest } from '@/hooks/use-boarding-requests';
+import { useAuditQueue, useRevokeClaim, useApproveClaim, type AuditClaim, type FraudSignal } from '@/hooks/use-horse-records';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 
 /* ─── tipos ─── */
 
-type Tab = 'propietarios' | 'establecimientos' | 'caballos' | 'planes';
+type Tab = 'propietarios' | 'establecimientos' | 'caballos' | 'planes' | 'fraudes';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'propietarios', label: 'Propietarios' },
   { key: 'establecimientos', label: 'Establecimientos' },
   { key: 'caballos', label: 'Caballos' },
   { key: 'planes', label: 'Planes' },
+  { key: 'fraudes', label: '🚨 Fraudes' },
 ];
 
 const roleForTab: Record<Tab, string | undefined> = {
@@ -36,6 +38,7 @@ const roleForTab: Record<Tab, string | undefined> = {
   establecimientos: 'establecimiento',
   caballos: undefined,
   planes: undefined,
+  fraudes: undefined,
 };
 
 const typeBadge: Record<string, string> = {
@@ -65,10 +68,11 @@ function AdminPanel() {
 
   const isHorsesTab = tab === 'caballos';
   const isPlanesTab = tab === 'planes';
+  const isFraudesTab = tab === 'fraudes';
 
   const { data: stats, isLoading: loadingStats } = useAdminStats();
   const { data: usersResult, isLoading: loadingUsers } = useAdminUsers({
-    search: (isHorsesTab || isPlanesTab) ? undefined : search,
+    search: (isHorsesTab || isPlanesTab || isFraudesTab) ? undefined : search,
     role: roleForTab[tab],
     page: userPage,
     limit,
@@ -95,7 +99,7 @@ function AdminPanel() {
     setHorsePage(1);
   };
 
-  const loading = loadingStats || (isPlanesTab ? loadingPlans : isHorsesTab ? loadingHorses : loadingUsers);
+  const loading = loadingStats || (isFraudesTab ? false : isPlanesTab ? loadingPlans : isHorsesTab ? loadingHorses : loadingUsers);
 
   const filteredPlanUsers = planUsers?.filter((u) =>
     search ? u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) : true,
@@ -121,7 +125,7 @@ function AdminPanel() {
         ))}
       </div>
 
-      {!isPlanesTab && (
+      {!isPlanesTab && !isFraudesTab && (
         <SearchInput value={search} onChange={handleSearch}
           placeholder={isHorsesTab ? 'Buscar por nombre, propietario o establecimiento...' : 'Buscar por nombre o correo...'}
         />
@@ -132,7 +136,9 @@ function AdminPanel() {
 
       {loading && <PageLoader />}
 
-      {!loading && !isHorsesTab && !isPlanesTab && usersResult?.data && (
+      {isFraudesTab && <FraudesTab />}
+
+      {!loading && !isHorsesTab && !isPlanesTab && !isFraudesTab && usersResult?.data && (
         <div className="space-y-3">
           <UserTable
             users={usersResult.data}
@@ -157,6 +163,226 @@ function AdminPanel() {
           onSetPlan={(userId, plan, months) => setPlan.mutate({ userId, plan, months })}
           isPending={setPlan.isPending}
         />
+      )}
+    </div>
+  );
+}
+
+/* ─── Fraudes Tab ─── */
+
+const FRAUD_SIGNAL_LABELS: Record<string, string> = {
+  velocity:              'Alta velocidad de claims',
+  competing_claim:       'Claim en competencia',
+  doc_reuse:             'Documento reutilizado',
+  repeated_attempt:      'Intento previo rechazado',
+  registration_mismatch: 'Registro no coincide',
+  high_volume_claimer:   'Reclamador de alto volumen',
+};
+
+const RISK_CONFIG = {
+  none:   { label: 'Sin riesgo',    cls: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400'  },
+  low:    { label: 'Riesgo bajo',   cls: 'bg-blue-50 text-blue-700',    dot: 'bg-blue-400'  },
+  medium: { label: 'Riesgo medio',  cls: 'bg-amber-50 text-amber-700',  dot: 'bg-amber-500' },
+  high:   { label: 'Riesgo alto',   cls: 'bg-red-50 text-red-700',      dot: 'bg-red-500'   },
+};
+
+const APPROVAL_REASON_LABELS: Record<string, string> = {
+  registration_number_match: 'Nº registro coincide',
+  doc_plus_birthdate:        'Doc + fecha de nac.',
+  doc_only:                  'Solo documento',
+  birthdate_only:            'Solo fecha de nac.',
+  microchip_only_pending:    'Solo microchip (pendiente)',
+  no_evidence_pending:       'Sin evidencia (pendiente)',
+};
+
+function FraudesTab() {
+  const { data, isLoading } = useAuditQueue(50, 0);
+  const revoke = useRevokeClaim();
+  const approve = useApproveClaim();
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const claims = data?.items ?? [];
+
+  if (isLoading) return <PageLoader />;
+
+  if (claims.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center">
+        <p className="text-3xl mb-2">✅</p>
+        <p className="font-medium text-gray-700">Sin claims para auditar</p>
+        <p className="text-sm text-gray-400 mt-1">
+          Todos los claims auto-aprobados tienen evidencia fuerte o ya fueron revisados.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {data?.total ?? 0} claim{(data?.total ?? 0) !== 1 ? 's' : ''} requieren revisión
+        </p>
+        <p className="text-xs text-gray-400">
+          Estos claims fueron auto-aprobados con evidencia débil o tienen señales de fraude.
+          Revisá y revocá si encontrás un problema.
+        </p>
+      </div>
+
+      {claims.map((claim) => {
+        const risk = RISK_CONFIG[claim.fraud_risk ?? 'none'];
+        const isOpen = expanded === claim.id;
+        const signals = claim.fraud_signals ?? [];
+        const approvalLabel = APPROVAL_REASON_LABELS[claim.matched_fields?.[0] ?? ''] ?? '—';
+
+        return (
+          <div key={claim.id} className={`rounded-xl border bg-white overflow-hidden ${claim.fraud_risk === 'high' ? 'border-red-200' : claim.fraud_risk === 'medium' ? 'border-amber-200' : 'border-gray-200'}`}>
+            {/* Banda de color según riesgo */}
+            {claim.fraud_risk !== 'none' && (
+              <div className={`h-1 w-full ${claim.fraud_risk === 'high' ? 'bg-red-400' : claim.fraud_risk === 'medium' ? 'bg-amber-400' : 'bg-blue-300'}`} />
+            )}
+
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${risk.cls}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />
+                      {risk.label}
+                    </span>
+                    {claim.needs_audit && (
+                      <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 font-medium">
+                        Auditoría pendiente
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400">
+                      {claim.status === 'auto_approved' ? 'Auto-aprobado' : claim.status === 'approved' ? 'Aprobado' : claim.status}
+                    </span>
+                  </div>
+
+                  <p className="mt-1.5 font-semibold text-gray-900 text-sm truncate">
+                    {claim.horse_record?.name ?? '—'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {claim.claimant?.name ?? 'Usuario'} · {claim.claimant?.email ?? ''}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(claim.created_at).toLocaleString('es-AR')} · Evidencia: {approvalLabel} · Score: {claim.match_score ?? 0}/100
+                  </p>
+                </div>
+
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => setExpanded(isOpen ? null : claim.id)}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    {isOpen ? 'Ocultar' : 'Ver detalle'}
+                  </button>
+                  {(claim.status === 'auto_approved' || claim.status === 'approved') && (
+                    <button
+                      onClick={() => { setRevokeTarget({ id: claim.id, name: claim.horse_record?.name ?? '' }); setRevokeReason(''); }}
+                      className="text-xs font-medium text-red-600 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition cursor-pointer"
+                    >
+                      Revocar
+                    </button>
+                  )}
+                  {claim.status === 'pending' && (
+                    <button
+                      onClick={() => approve.mutate(claim.id)}
+                      disabled={approve.isPending}
+                      className="text-xs font-medium text-green-700 hover:text-green-800 px-2 py-1 rounded border border-green-200 hover:bg-green-50 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Aprobar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Señales de fraude */}
+              {signals.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {signals.map((s) => (
+                    <span key={s.key} title={s.detail}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium cursor-help ${
+                        s.weight >= 3 ? 'bg-red-50 text-red-700' : s.weight === 2 ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                      {s.weight >= 3 ? '⚠️' : s.weight === 2 ? '⚡' : 'ℹ️'}
+                      {FRAUD_SIGNAL_LABELS[s.key] ?? s.key}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Detalle expandido */}
+              {isOpen && (
+                <div className="mt-3 pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600">
+                  {signals.map((s) => (
+                    <div key={s.key} className="flex items-start gap-2">
+                      <span className={`shrink-0 font-medium ${s.weight >= 3 ? 'text-red-600' : s.weight === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
+                        {FRAUD_SIGNAL_LABELS[s.key] ?? s.key}:
+                      </span>
+                      <span className="text-gray-500">{s.detail}</span>
+                    </div>
+                  ))}
+                  {claim.document_url && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gray-400">Documento:</span>
+                      <a href={claim.document_url} target="_blank" rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline truncate max-w-xs">
+                        Ver archivo adjunto ↗
+                      </a>
+                    </div>
+                  )}
+                  {claim.registration_number && (
+                    <p><span className="text-gray-400">Registro declarado:</span> {claim.registration_number}</p>
+                  )}
+                  {claim.claimed_birth_date && (
+                    <p><span className="text-gray-400">Fecha declarada:</span> {new Date(claim.claimed_birth_date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Modal de revocación */}
+      {revokeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="font-bold text-gray-900 mb-1">Revocar claim</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Vas a revocar la propiedad de <strong>{revokeTarget.name}</strong>.
+              El caballo será eliminado de la cuenta del usuario y el registro quedará disponible para nuevas solicitudes.
+            </p>
+            <textarea
+              value={revokeReason}
+              onChange={(e) => setRevokeReason(e.target.value)}
+              placeholder="Motivo de la revocación (requerido)..."
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 outline-none resize-none"
+              rows={3}
+            />
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setRevokeTarget(null)}
+                className="flex-1 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!revokeReason.trim()) return;
+                  await revoke.mutateAsync({ claimId: revokeTarget.id, reason: revokeReason });
+                  setRevokeTarget(null);
+                }}
+                disabled={!revokeReason.trim() || revoke.isPending}
+                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 transition cursor-pointer disabled:opacity-50"
+              >
+                {revoke.isPending ? 'Revocando...' : 'Confirmar revocación'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

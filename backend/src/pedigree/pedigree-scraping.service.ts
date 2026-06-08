@@ -149,6 +149,7 @@ export class PedigreeScrapingService {
     if (statuses.includes(ValidationStatus.VALIDATED)) return 'verified';
     if (statuses.includes(ValidationStatus.PARTIAL)) return 'partial';
     if (statuses.some((s) => s === ValidationStatus.DISPUTED)) return 'disputed';
+    if (statuses.every((s) => s === ValidationStatus.FAILED)) return 'unverified';
     return 'pending';
   }
 }

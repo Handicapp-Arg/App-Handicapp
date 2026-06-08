@@ -655,6 +655,7 @@ export class HorsesService implements OnModuleInit {
       .getRepository('events')
       .find({
         where: { horse_id: horse.id, deleted_at: null },
+        relations: ['photos'],
         order: { date: 'DESC' },
         take: 30,
       } as any);
@@ -686,6 +687,10 @@ export class HorsesService implements OnModuleInit {
       events: events.map((e: any) => ({
         id: e.id, type: e.type, description: e.description, date: e.date,
         amount: e.type === 'gasto' ? e.amount : null,
+        is_public: e.is_public,
+        photos: (e.photos ?? [])
+          .filter((p: any) => p.file_type === 'image' || p.file_type === 'video')
+          .map((p: any) => ({ id: p.id, url: p.url, file_type: p.file_type })),
       })),
       weights: weights.map((w) => ({
         id: w.id, weight_kg: w.weight_kg, body_condition: w.body_condition, date: w.date,

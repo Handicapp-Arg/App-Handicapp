@@ -1,6 +1,7 @@
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { useNotifications } from '../../lib/notifications';
@@ -77,6 +78,13 @@ export default function MasScreen() {
       desc: 'Pedigree global de caballos desde 1990',
       path: Routes.arbol,
       iconColor: '#059669',
+    },
+    {
+      icon: 'book-outline',
+      label: 'Padrón de caballos',
+      desc: 'Registro oficial, pedigree y propietarios',
+      path: Routes.padron,
+      iconColor: '#7c3aed',
     },
     {
       icon: 'document-text-outline',
@@ -171,13 +179,52 @@ export default function MasScreen() {
     }] : []),
   ];
 
+  const ROLE_LABEL: Record<string, string> = {
+    propietario: 'Propietario', establecimiento: 'Establecimiento',
+    veterinario: 'Veterinario', admin: 'Administrador',
+  };
+  const ROLE_COLOR: Record<string, [string, string]> = {
+    propietario:    ['#92400e', '#78350f'],
+    establecimiento:['#065f46', '#064e3b'],
+    veterinario:    ['#4c1d95', '#3b0764'],
+    admin:          ['#1e3a8a', '#1e40af'],
+  };
+  const gradColors = ROLE_COLOR[role] ?? ['#1e3a8a', '#0f1f3d'];
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '?';
+
   return (
     <ScrollView
       style={s.root}
-      contentContainerStyle={[s.content, { paddingTop: insets.top + space[4] }]}
+      contentContainerStyle={[s.content]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={s.screenTitle}>Más</Text>
+      {/* ── Profile card ── */}
+      <LinearGradient
+        colors={['#0a1628', '#0f1f3d', '#132548']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[s.profileCard, { paddingTop: insets.top + space[4] }]}
+      >
+        <View style={s.profileRow}>
+          <View style={[s.profileAvatar, { backgroundColor: gradColors[0] }]}>
+            <Text style={s.profileAvatarText}>{initials}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Usuario'}</Text>
+            <Text style={s.profileEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
+            <View style={s.profileRolePill}>
+              <Text style={s.profileRoleText}>{ROLE_LABEL[role] ?? role}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={s.profileEditBtn}
+            onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="pencil-outline" size={15} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Banner vender caballo (propietarios) */}
       {isProp && (
@@ -209,17 +256,36 @@ export default function MasScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.gray50 },
-  content: { paddingHorizontal: space[4], paddingBottom: space[10], gap: space[1] },
+  content: { paddingBottom: space[10], gap: space[1] },
 
-  screenTitle: {
-    fontSize: text['2xl'],
-    fontWeight: weight.extrabold,
-    color: colors.gray900,
-    letterSpacing: -0.5,
-    marginBottom: space[5],
+  profileCard: {
+    paddingHorizontal: space[5],
+    paddingBottom: space[5],
+    marginBottom: space[4],
+  },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  profileAvatar: {
+    width: 52, height: 52, borderRadius: 26,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
+  },
+  profileAvatarText: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
+  profileName: { fontSize: text.base, fontWeight: weight.bold, color: colors.white, letterSpacing: -0.2 },
+  profileEmail: { fontSize: text.xs, color: 'rgba(255,255,255,0.45)', marginTop: 1 },
+  profileRolePill: {
+    alignSelf: 'flex-start', marginTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2,
+  },
+  profileRoleText: { fontSize: 10, fontWeight: weight.semibold, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  profileEditBtn: {
+    width: 34, height: 34, borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
 
-  section: { marginBottom: space[4] },
+  section: { marginBottom: space[4], paddingHorizontal: space[4] },
   sectionTitle: {
     fontSize: text.xs,
     fontWeight: weight.bold,

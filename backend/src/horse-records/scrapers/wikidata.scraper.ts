@@ -9,7 +9,7 @@ SELECT ?horseName ?birthYear ?birthDate ?sireName ?damName ?sexLabel ?countryNam
   ?horse rdfs:label ?horseName FILTER(LANG(?horseName) = "en")
   FILTER(LCASE(?horseName) = "${name.toLowerCase().replace(/"/g, '\\"')}")
   OPTIONAL { ?horse wdt:P569 ?bd . BIND(YEAR(?bd) AS ?birthYear) BIND(STR(?bd) AS ?birthDate) }
-  OPTIONAL { ?horse wdt:P1038 ?sire . ?sire rdfs:label ?sireName FILTER(LANG(?sireName) = "en") }
+  OPTIONAL { ?horse wdt:P22 ?sire . ?sire rdfs:label ?sireName FILTER(LANG(?sireName) = "en") }
   OPTIONAL { ?horse wdt:P25 ?dam  . ?dam rdfs:label ?damName  FILTER(LANG(?damName)  = "en") }
   OPTIONAL { ?horse wdt:P21 ?sex  . ?sex rdfs:label ?sexLabel  FILTER(LANG(?sexLabel)  = "en") }
   OPTIONAL { ?horse wdt:P17 ?cnt  . ?cnt rdfs:label ?countryName FILTER(LANG(?countryName) = "en") }
@@ -25,7 +25,7 @@ SELECT ?horseName ?birthYear ?sireName ?damName ?sexLabel ?countryName WHERE {
   BIND(YEAR(?bd) AS ?birthYear)
   FILTER(?birthYear >= ${minYear} && ?birthYear <= ${maxYear})
   ?horse rdfs:label ?horseName FILTER(LANG(?horseName) = "en")
-  OPTIONAL { ?horse wdt:P1038 ?sire . ?sire rdfs:label ?sireName FILTER(LANG(?sireName) = "en") }
+  OPTIONAL { ?horse wdt:P22 ?sire . ?sire rdfs:label ?sireName FILTER(LANG(?sireName) = "en") }
   OPTIONAL { ?horse wdt:P25 ?dam  . ?dam rdfs:label ?damName  FILTER(LANG(?damName)  = "en") }
   OPTIONAL { ?horse wdt:P21 ?sex  . ?sex rdfs:label ?sexLabel  FILTER(LANG(?sexLabel)  = "en") }
   OPTIONAL { ?horse wdt:P17 ?cnt  . ?cnt rdfs:label ?countryName FILTER(LANG(?countryName) = "en") }

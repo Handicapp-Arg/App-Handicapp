@@ -94,11 +94,58 @@ export function useUploadClaimDocument() {
   });
 }
 
+// ─── Import jobs ─────────────────────────────────────────────────────────────
+
+export interface ImportJob {
+  jobId: string;
+  source: string;
+  status: 'running' | 'done' | 'error';
+  startedAt: string;
+  finishedAt?: string;
+  processed: number;
+  imported: number;
+  updated: number;
+  errors: number;
+  currentPage?: number;
+  message?: string;
+}
+
+export function useImportJobs() {
+  return useQuery<ImportJob[]>({
+    queryKey: ['horse-records', 'import-jobs'],
+    queryFn: () => api.get('/horse-records/admin/import-jobs').then(r => r.data),
+    refetchInterval: (query) => {
+      const jobs: ImportJob[] = query.state.data ?? [];
+      return jobs.some(j => j.status === 'running') ? 3000 : 15_000;
+    },
+  });
+}
+
+export function useImportJob(jobId: string | null) {
+  return useQuery<ImportJob>({
+    queryKey: ['horse-records', 'import-jobs', jobId],
+    queryFn: () => api.get(`/horse-records/admin/import-jobs/${jobId}`).then(r => r.data),
+    enabled: !!jobId,
+    refetchInterval: (query) => {
+      const job: ImportJob | undefined = query.state.data;
+      return job?.status === 'running' ? 2000 : false;
+    },
+  });
+}
+
+export function useAdminImportStudbookAR() {
+  const qc = useQueryClient();
+  return useMutation<{ jobId: string }, Error, void>({
+    mutationFn: () => api.post('/horse-records/admin/import-studbook-ar').then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horse-records', 'import-jobs'] }),
+  });
+}
+
 export function useAdminImportWikidata() {
   const qc = useQueryClient();
-  return useMutation<{ imported: number }, Error, { minYear?: number; maxYear?: number }>({
+  return useMutation<{ jobId: string }, Error, { minYear?: number; maxYear?: number }>({
     mutationFn: (payload) => api.post('/horse-records/admin/import-wikidata', payload).then(r => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['horse-records'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horse-records', 'import-jobs'] }),
   });
 }
 
@@ -108,6 +155,18 @@ export function useAdminRetryFailed() {
     mutationFn: () => api.post('/horse-records/admin/retry-failed').then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['horse-records', 'stats'] }),
   });
+}
+
+export interface FraudSignal {
+  key: string;
+  weight: number;
+  detail: string;
+}
+
+export interface AuditClaim extends HorseOwnershipClaim {
+  fraud_signals: FraudSignal[] | null;
+  fraud_risk: 'none' | 'low' | 'medium' | 'high';
+  needs_audit: boolean;
 }
 
 // Admin hooks
@@ -144,6 +203,27 @@ export function useRejectClaim() {
   return useMutation<HorseOwnershipClaim, Error, { claimId: string; reason: string }>({
     mutationFn: ({ claimId, reason }) =>
       api.post(`/horse-records/claims/${claimId}/reject`, { reason }).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['horse-records', 'claims'] });
+      qc.invalidateQueries({ queryKey: ['horse-records', 'stats'] });
+    },
+  });
+}
+
+export function useAuditQueue(limit = 50, offset = 0) {
+  return useQuery<{ items: AuditClaim[]; total: number }>({
+    queryKey: ['horse-records', 'claims', 'audit', limit, offset],
+    queryFn: () => api.get('/horse-records/claims/audit', { params: { limit, offset } }).then(r => r.data),
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useRevokeClaim() {
+  const qc = useQueryClient();
+  return useMutation<HorseOwnershipClaim, Error, { claimId: string; reason: string }>({
+    mutationFn: ({ claimId, reason }) =>
+      api.post(`/horse-records/claims/${claimId}/revoke`, { reason }).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['horse-records', 'claims'] });
       qc.invalidateQueries({ queryKey: ['horse-records', 'stats'] });

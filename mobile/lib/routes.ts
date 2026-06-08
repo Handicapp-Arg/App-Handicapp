@@ -10,7 +10,6 @@ export const Routes = {
   tabsCaballos:        '/(tabs)/caballos',
   tabsEventos:         '/(tabs)/eventos',
   tabsAgenda:          '/(tabs)/agenda',
-  tabsEventos:         '/(tabs)/eventos',
   tabsFacturacion:     '/(tabs)/facturacion',
   authLogin:           '/(auth)/login',
   buscar:              '/buscar',
@@ -28,6 +27,7 @@ export const Routes = {
   invitacion:          (token: string) => `/invitacion/${token}`,
   caballo:             (id: string) => `/(tabs)/caballos/${id}`,
   arbol:               '/arbol',
+  padron:              '/padron',
 } as const;
 
 /** Wrappers tipados para no esparcir `as never` por la app. */

@@ -15,7 +15,8 @@ import {
   useHorseRecordsSearch, useHorseRecord, useHorseRecordTree,
   useHorseRecordProgeny, useMyHorseRecordClaims, useSubmitClaim,
   useUploadClaimDocument, useHorseRecordStats, useAdminImportWikidata,
-  useAdminRetryFailed,
+  useAdminRetryFailed, useAdminImportStudbookAR, useImportJobs,
+  type ImportJob,
 } from '@/hooks/use-horse-records';
 import type { HorseRecord, HorseRecordNode, HorseOwnershipClaim } from '@/types';
 
@@ -69,7 +70,7 @@ function PedigreeNode({
         className={cn(
           'text-left px-3 py-2 rounded-lg border text-xs font-medium transition',
           depth === 0
-            ? 'bg-black text-white border-black text-sm'
+            ? 'bg-black text-white border-black text-sm cursor-default'
             : node.id
             ? 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-sm cursor-pointer'
             : 'bg-gray-50 border-gray-100 text-gray-400 cursor-default',
@@ -273,7 +274,7 @@ function RecordDetail({
                 <button
                   key={p.id}
                   onClick={() => onNavigate(p.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition group"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition group cursor-pointer"
                 >
                   <div className="text-left">
                     <div className="text-sm font-medium text-gray-900">{p.name}</div>
@@ -465,7 +466,7 @@ function RecordCard({ record, selected, onClick }: {
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition group',
+        'w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition group cursor-pointer',
         selected && 'bg-blue-50/60',
       )}
     >
@@ -490,66 +491,127 @@ function RecordCard({ record, selected, onClick }: {
 
 // ─── Admin Stats Bar ──────────────────────────────────────────────────────────
 
+function JobProgressBar({ job }: { job: ImportJob }) {
+  const isRunning = job.status === 'running';
+  const pct = job.processed > 0 && job.imported + job.updated > 0
+    ? Math.min(100, Math.round(((job.imported + job.updated) / job.processed) * 100))
+    : null;
+
+  return (
+    <div className="rounded-lg bg-gray-800 px-3 py-2 text-xs space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          {isRunning
+            ? <RefreshCw className="h-3 w-3 text-blue-400 animate-spin" />
+            : job.status === 'done'
+            ? <CheckCircle2 className="h-3 w-3 text-green-400" />
+            : <AlertCircle className="h-3 w-3 text-red-400" />
+          }
+          <span className="font-medium text-gray-200 capitalize">{job.source.replace('_', ' ')}</span>
+        </div>
+        <span className="text-gray-400 tabular-nums">
+          {job.imported} new · {job.updated} upd · {job.errors} err
+        </span>
+      </div>
+      {job.message && <p className="text-gray-400 truncate">{job.message}</p>}
+      {isRunning && (
+        <div className="h-1 w-full rounded-full bg-gray-700 overflow-hidden">
+          {pct != null
+            ? <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+            : <div className="h-full w-1/3 bg-blue-500 animate-pulse" />
+          }
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminBar() {
   const { user } = useAuth();
   const { data: stats } = useHorseRecordStats();
+  const { data: jobs = [] } = useImportJobs();
+  const importStudbook = useAdminImportStudbookAR();
   const importWikidata = useAdminImportWikidata();
   const retryFailed = useAdminRetryFailed();
   const [open, setOpen] = useState(false);
 
   if (user?.role !== 'admin') return null;
 
+  const hasRunning = jobs.some(j => j.status === 'running');
+
   return (
     <div className="bg-gray-900 text-white rounded-xl p-4 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium">Admin · Scraping</span>
+          <span className="text-sm font-semibold">Admin · Padrón</span>
+          {hasRunning && (
+            <span className="text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full animate-pulse">
+              Importando…
+            </span>
+          )}
         </div>
         <button onClick={() => setOpen(v => !v)} className="text-gray-400 hover:text-white transition">
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       </div>
 
+      {/* Stats de la BD */}
       {stats && (
-        <div className="grid grid-cols-4 gap-3 mt-3">
+        <div className="grid grid-cols-5 gap-2 mt-3">
           {[
             { label: 'Total', value: stats.total, color: 'text-white' },
-            { label: 'Scraped', value: stats.done, color: 'text-green-400' },
+            { label: 'Con datos', value: stats.done, color: 'text-green-400' },
             { label: 'Pendiente', value: stats.pending, color: 'text-amber-400' },
             { label: 'Fallidos', value: stats.failed, color: 'text-red-400' },
+            { label: 'Saltados', value: stats.skipped, color: 'text-gray-400' },
           ].map(s => (
             <div key={s.label} className="text-center">
-              <div className={cn('text-xl font-bold', s.color)}>{s.value ?? 0}</div>
-              <div className="text-xs text-gray-400">{s.label}</div>
+              <div className={cn('text-lg font-bold tabular-nums', s.color)}>{(s.value ?? 0).toLocaleString('es-AR')}</div>
+              <div className="text-[10px] text-gray-500">{s.label}</div>
             </div>
           ))}
         </div>
       )}
 
       {open && (
-        <div className="mt-3 pt-3 border-t border-gray-700 flex flex-wrap gap-2">
-          <button
-            onClick={() => importWikidata.mutate({ minYear: 1990, maxYear: 2020 })}
-            disabled={importWikidata.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition disabled:opacity-40"
-          >
-            <Download className="h-3.5 w-3.5" />
-            {importWikidata.isPending ? 'Importando…' : 'Importar Wikidata 1990-2020'}
-          </button>
-          <button
-            onClick={() => retryFailed.mutate()}
-            disabled={retryFailed.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition disabled:opacity-40"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            {retryFailed.isPending ? 'Reintentando…' : 'Reintentar fallidos'}
-          </button>
-          {importWikidata.data && (
-            <span className="text-xs text-green-400 self-center">✓ {importWikidata.data.imported} importados</span>
-          )}
-          {retryFailed.data && (
-            <span className="text-xs text-amber-400 self-center">✓ {retryFailed.data.reset} reiniciados</span>
+        <div className="mt-3 pt-3 border-t border-gray-700 space-y-3">
+          {/* Botones de acción */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => importStudbook.mutate()}
+              disabled={importStudbook.isPending || hasRunning}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-xs font-semibold transition disabled:opacity-40"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Importar Studbook AR
+            </button>
+            <button
+              onClick={() => importWikidata.mutate({ minYear: 1990, maxYear: 2020 })}
+              disabled={importWikidata.isPending || hasRunning}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition disabled:opacity-40"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Importar Wikidata
+            </button>
+            <button
+              onClick={() => retryFailed.mutate()}
+              disabled={retryFailed.isPending}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition disabled:opacity-40"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              {retryFailed.data ? `${retryFailed.data.reset} reiniciados` : 'Reintentar fallidos'}
+            </button>
+          </div>
+
+          {/* Jobs recientes */}
+          {jobs.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Jobs recientes</p>
+              {jobs.slice(0, 5).map(job => (
+                <JobProgressBar key={job.jobId} job={job} />
+              ))}
+            </div>
           )}
         </div>
       )}

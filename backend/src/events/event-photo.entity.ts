@@ -20,7 +20,10 @@ export class EventPhoto {
   public_id: string;
 
   @Column({ type: 'varchar', default: 'image' })
-  file_type: 'image' | 'pdf';
+  file_type: 'image' | 'pdf' | 'video';
+
+  @Column({ type: 'varchar', nullable: true })
+  caption: string | null;
 
   @Column('uuid')
   event_id: string;

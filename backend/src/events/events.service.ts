@@ -9,6 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Event } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { EventComment } from './event-comment.entity';
+import { FeedPost } from '../feed/feed-post.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
 import { TrainingMetrics } from './training-metrics.entity';
@@ -36,6 +37,8 @@ export class EventsService {
     private readonly metricsRepository: Repository<TrainingMetrics>,
     @InjectRepository(EventComment)
     private readonly commentRepository: Repository<EventComment>,
+    @InjectRepository(FeedPost)
+    private readonly feedPostRepository: Repository<FeedPost>,
     private readonly eventEmitter: EventEmitter2,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -59,27 +62,40 @@ export class EventsService {
       ...dto,
       amount: dto.amount ? parseFloat(dto.amount) : null,
       currency: dto.currency ?? 'ARS',
+      author_id: user.id,
+      is_public: dto.is_public ?? false,
     });
 
     if (files?.length) {
       const uploaded = await Promise.all(
         files.map((file) => {
           const isPdf = file.mimetype === 'application/pdf';
+          const isVideo = file.mimetype.startsWith('video/');
+          if (isVideo) {
+            return this.cloudinaryService
+              .uploadVideo(file, 'handicapp/events')
+              .then((result) => ({ result, isPdf: false, isVideo: true }));
+          }
           return this.cloudinaryService
             .upload(file, 'handicapp/events', { isPdf })
-            .then((result) => ({ result, isPdf }));
+            .then((result) => ({ result, isPdf, isVideo: false }));
         }),
       );
-      event.photos = uploaded.map(({ result, isPdf }) =>
+      event.photos = uploaded.map(({ result, isPdf, isVideo }) =>
         this.photoRepository.create({
           url: result.secure_url,
           public_id: result.public_id,
-          file_type: isPdf ? 'pdf' : 'image',
+          file_type: isVideo ? 'video' : isPdf ? 'pdf' : 'image',
         }),
       );
     }
 
     const savedEvent = await this.eventRepository.save(event);
+
+    if (dto.recurrence_type && dto.recurrence_type !== 'none' && dto.recurrence_end) {
+      const children = this.generateRecurrences(savedEvent, dto.recurrence_type, dto.recurrence_end);
+      if (children.length) await this.eventRepository.save(children);
+    }
 
     this.eventEmitter.emit(
       'event.created',
@@ -87,6 +103,47 @@ export class EventsService {
     );
 
     return savedEvent;
+  }
+
+  private generateRecurrences(
+    parent: Event,
+    recurrenceType: 'daily' | 'weekly' | 'biweekly' | 'monthly',
+    recurrenceEnd: string,
+  ): Event[] {
+    const results: Event[] = [];
+    const endDate = new Date(recurrenceEnd + 'T12:00:00');
+    let current = new Date(parent.date + 'T12:00:00');
+    const MAX = 52;
+
+    const advance = (d: Date) => {
+      const next = new Date(d);
+      if (recurrenceType === 'daily') next.setDate(next.getDate() + 1);
+      else if (recurrenceType === 'weekly') next.setDate(next.getDate() + 7);
+      else if (recurrenceType === 'biweekly') next.setDate(next.getDate() + 14);
+      else if (recurrenceType === 'monthly') next.setMonth(next.getMonth() + 1);
+      return next;
+    };
+
+    current = advance(current);
+    while (current <= endDate && results.length < MAX) {
+      const dateStr = current.toISOString().split('T')[0];
+      results.push(this.eventRepository.create({
+        type: parent.type,
+        description: parent.description,
+        date: dateStr,
+        event_time: parent.event_time,
+        horse_id: parent.horse_id,
+        author_id: parent.author_id,
+        amount: parent.amount,
+        currency: parent.currency,
+        is_public: parent.is_public,
+        recurrence_type: parent.recurrence_type,
+        recurrence_end: parent.recurrence_end,
+        recurrence_parent_id: parent.id,
+      }));
+      current = advance(current);
+    }
+    return results;
   }
 
   async createBulk(dto: CreateBulkEventDto, user: User): Promise<Event[]> {
@@ -198,6 +255,45 @@ export class EventsService {
     return event;
   }
 
+  // ─── Compartir evento al feed ────────────────────────────────────────────
+  async shareToFeed(eventId: string, user: User): Promise<FeedPost> {
+    const event = await this.eventRepository.findOne({
+      where: { id: eventId },
+      relations: ['horse', 'photos'],
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    await this.assertAccess(event.horse, user);
+
+    if (event.feed_post_id) {
+      const existing = await this.feedPostRepository.findOne({ where: { id: event.feed_post_id } });
+      if (existing) return existing;
+    }
+
+    const TYPE_LABELS: Record<string, string> = {
+      salud: '🩺 Salud',
+      entrenamiento: '🏇 Entrenamiento',
+      gasto: '💰 Gasto',
+      nota: '📝 Nota',
+    };
+
+    const content = `${TYPE_LABELS[event.type] ?? event.type} · ${event.horse.name}\n\n${event.description}`;
+    const imageUrls = event.photos.filter(p => p.file_type === 'image').map(p => p.url);
+    const videoUrls = event.photos.filter(p => p.file_type === 'video').map(p => p.url);
+
+    const post = this.feedPostRepository.create({
+      content,
+      author_id: user.id,
+      horse_id: event.horse_id,
+      type: 'horse_update',
+      image_urls: imageUrls.length ? imageUrls : null,
+      video_urls: videoUrls.length ? videoUrls : null,
+    });
+
+    const saved = await this.feedPostRepository.save(post);
+    await this.eventRepository.update(eventId, { feed_post_id: saved.id, is_public: true });
+    return saved;
+  }
+
   async upsertTrainingMetrics(eventId: string, dto: TrainingMetricsDto, user: User): Promise<TrainingMetrics> {
     const event = await this.eventRepository.findOne({ where: { id: eventId }, relations: ['horse'] });
     if (!event) throw new NotFoundException('Evento no encontrado');
@@ -245,6 +341,7 @@ export class EventsService {
       event.amount = dto.amount ? parseFloat(dto.amount) : null;
     }
     if (dto.currency !== undefined) event.currency = dto.currency;
+    if (dto.is_public !== undefined) event.is_public = dto.is_public;
 
     return this.eventRepository.save(event);
   }

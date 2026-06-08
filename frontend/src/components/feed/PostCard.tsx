@@ -14,25 +14,30 @@ import {
   useFeedComments, useAddComment, useDeleteComment,
 } from '@/hooks/use-feed';
 
-const ROLE_BADGES: Record<string, { label: string; color: string }> = {
-  propietario: { label: 'Propietario', color: 'bg-blue-50 text-blue-700' },
-  establecimiento: { label: 'Establecimiento', color: 'bg-green-50 text-green-700' },
-  veterinario: { label: 'Veterinario', color: 'bg-purple-50 text-purple-700' },
-  admin: { label: 'Admin', color: 'bg-gray-100 text-gray-700' },
+// ─── Role config ───────────────────────────────────────────────────────────────
+const ROLE_CONFIG: Record<string, { label: string; gradient: string; badge: string }> = {
+  propietario:    { label: 'Propietario',    gradient: 'from-blue-500 to-blue-700',     badge: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100' },
+  establecimiento:{ label: 'Establecimiento',gradient: 'from-emerald-500 to-emerald-700',badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' },
+  veterinario:    { label: 'Veterinario',    gradient: 'from-violet-500 to-violet-700', badge: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100' },
+  admin:          { label: 'Admin',          gradient: 'from-slate-500 to-slate-700',   badge: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' },
 };
 
-function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
+// ─── Avatar ────────────────────────────────────────────────────────────────────
+function Avatar({ name, role, size = 'md' }: { name: string; role?: string; size?: 'sm' | 'md' }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const gradClass = ROLE_CONFIG[role ?? '']?.gradient ?? 'from-slate-500 to-slate-700';
   return (
     <div className={cn(
-      'rounded-full bg-black text-white font-semibold flex items-center justify-center flex-shrink-0',
-      size === 'md' ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-xs',
+      'rounded-full bg-gradient-to-br text-white font-bold flex items-center justify-center flex-shrink-0 shadow-sm',
+      gradClass,
+      size === 'md' ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]',
     )}>
       {initials}
     </div>
   );
 }
 
+// ─── Image grid ────────────────────────────────────────────────────────────────
 function ImageGrid({ urls }: { urls: string[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const count = urls.length;
@@ -40,22 +45,22 @@ function ImageGrid({ urls }: { urls: string[] }) {
   return (
     <>
       <div className={cn(
-        'grid gap-1 rounded-lg overflow-hidden',
+        'grid gap-1 rounded-xl overflow-hidden',
         count === 1 ? 'grid-cols-1' : count === 2 ? 'grid-cols-2' : count === 3 ? 'grid-cols-3' : 'grid-cols-2',
       )}>
         {urls.slice(0, 4).map((url, i) => (
           <div
             key={i}
             className={cn(
-              'relative bg-gray-100 cursor-pointer overflow-hidden',
+              'relative bg-gray-100 cursor-pointer overflow-hidden group',
               count === 1 ? 'aspect-video' : 'aspect-square',
               count === 3 && i === 0 ? 'col-span-2 aspect-video' : '',
             )}
             onClick={() => setLightbox(url)}
           >
-            <img src={url} alt="" className="w-full h-full object-cover hover:opacity-95 transition" />
+            <img src={url} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-300" />
             {i === 3 && count > 4 && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-xl">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-xl backdrop-blur-sm">
                 +{count - 4}
               </div>
             )}
@@ -65,19 +70,20 @@ function ImageGrid({ urls }: { urls: string[] }) {
 
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/92 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setLightbox(null)}
         >
-          <button className="absolute top-4 right-4 text-white hover:text-gray-300 transition">
-            <X className="h-6 w-6" />
+          <button className="absolute top-5 right-5 h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+            <X className="h-5 w-5" />
           </button>
-          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
     </>
   );
 }
 
+// ─── Comments ──────────────────────────────────────────────────────────────────
 function CommentsSection({ postId, currentUserId }: { postId: string; currentUserId: string }) {
   const { data: comments = [], isLoading } = useFeedComments(postId);
   const addComment = useAddComment(postId);
@@ -96,45 +102,51 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
     <div className="pt-3 border-t border-gray-100 space-y-3">
       {isLoading ? (
         <div className="space-y-2">
-          {[1, 2].map((i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}
+          {[1, 2].map((i) => <div key={i} className="h-9 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
       ) : (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
           {comments.map((c: FeedComment) => (
-            <div key={c.id} className="flex gap-2 group">
-              <Avatar name={c.user?.name ?? 'U'} size="sm" />
-              <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm">
-                <span className="font-semibold text-gray-900 text-xs">{c.user?.name}</span>
-                <p className="text-gray-700 mt-0.5">{c.content}</p>
+            <div key={c.id} className="flex gap-2.5 group">
+              <Avatar name={c.user?.name ?? 'U'} role={c.user?.role} size="sm" />
+              <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
+                <div className="flex items-baseline gap-1.5 mb-0.5">
+                  <span className="text-xs font-semibold text-gray-900">{c.user?.name}</span>
+                  <span className="text-[10px] text-gray-400">{formatDistanceToNow(new Date(c.created_at), { addSuffix: false, locale: es })}</span>
+                </div>
+                <p className="text-sm text-gray-700 leading-snug">{c.content}</p>
               </div>
               {(c.user_id === currentUserId || user?.role === 'admin') && (
                 <button
                   onClick={() => deleteComment.mutate(c.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition"
+                  className="opacity-0 group-hover:opacity-100 self-center p-1 text-gray-300 hover:text-red-400 transition shrink-0"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           ))}
+          {comments.length === 0 && (
+            <p className="text-xs text-gray-400 text-center py-2">Todavía no hay comentarios. ¡Sé el primero!</p>
+          )}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="flex gap-2">
-        {user && <Avatar name={user.name} size="sm" />}
+        {user && <Avatar name={user.name} role={user.role} size="sm" />}
         <div className="flex-1 flex gap-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Escribí un comentario…"
-            className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-full px-4 py-1.5 outline-none focus:border-gray-400 transition"
+            className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-1.5 outline-none focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-50 transition"
           />
           <button
             type="submit"
             disabled={!text.trim() || addComment.isPending}
-            className="px-3 py-1.5 bg-black text-white text-xs font-semibold rounded-full hover:bg-gray-800 transition disabled:opacity-40"
+            className="px-3.5 py-1.5 bg-[#0f1f3d] text-white text-xs font-semibold rounded-xl hover:bg-[#1a3366] transition disabled:opacity-40"
           >
-            Comentar
+            Enviar
           </button>
         </div>
       </form>
@@ -142,9 +154,8 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
   );
 }
 
-interface Props {
-  post: FeedPost;
-}
+// ─── PostCard ──────────────────────────────────────────────────────────────────
+interface Props { post: FeedPost; }
 
 export default function PostCard({ post }: Props) {
   const { user } = useAuth();
@@ -158,44 +169,50 @@ export default function PostCard({ post }: Props) {
   const isOwner = user?.id === post.author_id;
   const isAdmin = user?.role === 'admin';
   const authorName = post.author?.name ?? 'Usuario';
-  const roleBadge = ROLE_BADGES[post.author?.role ?? ''];
+  const authorRole = post.author?.role ?? '';
+  const roleConfig = ROLE_CONFIG[authorRole];
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
 
   return (
     <article className={cn(
-      'bg-white rounded-xl border shadow-sm overflow-hidden',
-      post.is_pinned ? 'border-amber-200 bg-amber-50/30' : 'border-gray-200',
-      post.is_hidden ? 'opacity-60 ring-1 ring-red-200' : '',
+      'bg-white rounded-xl border shadow-sm overflow-hidden transition-shadow hover:shadow-md',
+      post.is_pinned ? 'border-amber-200' : 'border-gray-200',
+      post.is_hidden ? 'opacity-60' : '',
     )}>
+      {/* Pinned top strip */}
+      {post.is_pinned && (
+        <div className="h-0.5 bg-gradient-to-r from-amber-400 to-amber-300" />
+      )}
+
       <div className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <Avatar name={authorName} />
-            <div>
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar name={authorName} role={authorRole} />
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-gray-900">{authorName}</span>
-                {roleBadge && (
-                  <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', roleBadge.color)}>
-                    {roleBadge.label}
+                <span className="font-semibold text-sm text-gray-900 truncate">{authorName}</span>
+                {roleConfig && (
+                  <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium leading-tight', roleConfig.badge)}>
+                    {roleConfig.label}
                   </span>
                 )}
                 {post.is_pinned && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex items-center gap-1">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 ring-1 ring-amber-100 font-medium flex items-center gap-1 leading-tight">
                     <Pin className="h-3 w-3" /> Fijado
                   </span>
                 )}
                 {post.is_hidden && isAdmin && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-500 ring-1 ring-red-100 font-medium leading-tight">
                     Oculto
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-xs text-gray-400">{timeAgo}</span>
                 {post.horse && (
-                  <span className="text-xs text-gray-400">
-                    · 🐴 {post.horse.name}
+                  <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                    · <span className="text-gray-300">🐴</span> <span className="text-gray-500 font-medium">{post.horse.name}</span>
                   </span>
                 )}
               </div>
@@ -204,10 +221,10 @@ export default function PostCard({ post }: Props) {
 
           {/* Actions menu */}
           {(isOwner || isAdmin) && (
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition"
+                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
@@ -219,16 +236,19 @@ export default function PostCard({ post }: Props) {
                       <>
                         <button
                           onClick={() => { togglePin.mutate(post.id); setMenuOpen(false); }}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                         >
-                          <Pin className="h-4 w-4" />
+                          <Pin className="h-4 w-4 text-amber-500" />
                           {post.is_pinned ? 'Desfijar' : 'Fijar post'}
                         </button>
                         <button
                           onClick={() => { toggleHide.mutate(post.id); setMenuOpen(false); }}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                         >
-                          {post.is_hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                          {post.is_hidden
+                            ? <Eye className="h-4 w-4 text-emerald-500" />
+                            : <EyeOff className="h-4 w-4 text-orange-400" />
+                          }
                           {post.is_hidden ? 'Mostrar' : 'Ocultar'}
                         </button>
                         <div className="border-t border-gray-100 my-1" />
@@ -237,7 +257,7 @@ export default function PostCard({ post }: Props) {
                     {(isOwner || isAdmin) && (
                       <button
                         onClick={() => { if (confirm('¿Eliminar este post?')) deletePost.mutate(post.id); setMenuOpen(false); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition"
                       >
                         <Trash2 className="h-4 w-4" />
                         Eliminar
@@ -266,7 +286,7 @@ export default function PostCard({ post }: Props) {
                 key={i}
                 src={url}
                 controls
-                className="w-full rounded-lg max-h-72 bg-black"
+                className="w-full rounded-xl max-h-72 bg-black"
                 preload="metadata"
               />
             ))}
@@ -274,24 +294,31 @@ export default function PostCard({ post }: Props) {
         )}
 
         {/* Actions bar */}
-        <div className="flex items-center gap-4 pt-1">
+        <div className="flex items-center gap-1 pt-0.5 -mx-1">
           <button
             onClick={() => toggleLike.mutate(post.id)}
             className={cn(
-              'flex items-center gap-1.5 text-sm font-medium transition',
-              post.liked_by_me ? 'text-red-500' : 'text-gray-400 hover:text-red-400',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition',
+              post.liked_by_me
+                ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
             )}
           >
             <Heart className={cn('h-4 w-4 transition-transform active:scale-125', post.liked_by_me && 'fill-current')} />
-            {post.likes_count > 0 && <span>{post.likes_count}</span>}
+            <span className="text-xs">{post.likes_count > 0 ? post.likes_count : 'Me gusta'}</span>
           </button>
 
           <button
             onClick={() => setShowComments((v) => !v)}
-            className="flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-gray-600 transition"
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition',
+              showComments
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
+            )}
           >
             <MessageCircle className="h-4 w-4" />
-            {post.comments_count > 0 && <span>{post.comments_count}</span>}
+            <span className="text-xs">{post.comments_count > 0 ? post.comments_count : 'Comentar'}</span>
           </button>
         </div>
 
@@ -303,3 +330,5 @@ export default function PostCard({ post }: Props) {
     </article>
   );
 }
+
+export { Avatar };

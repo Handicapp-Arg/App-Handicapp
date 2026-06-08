@@ -24,9 +24,8 @@ function HorseCard({ horse }: { horse: Horse }) {
     <TouchableOpacity
       style={styles.card}
       onPress={() => { haptic.light(); router.push(`/(tabs)/caballos/${horse.id}`); }}
-      activeOpacity={0.88}
+      activeOpacity={0.85}
     >
-      {/* Imagen con overlay gradiente */}
       <View style={styles.imgWrap}>
         {horse.image_url
           ? <Image source={{ uri: horse.image_url }} style={styles.img} resizeMode="cover" />
@@ -36,32 +35,34 @@ function HorseCard({ horse }: { horse: Horse }) {
             </View>
           )
         }
-        {/* Overlay gradiente inferior */}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.65)']}
+          colors={['transparent', 'rgba(0,0,0,0.75)']}
           style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0.4 }}
+          start={{ x: 0, y: 0.35 }}
           end={{ x: 0, y: 1 }}
         />
-        {/* Nombre sobre la imagen */}
         <View style={styles.imgFooter}>
           <Text style={styles.imgName} numberOfLines={1}>{horse.name}</Text>
           {horse.breed && <Text style={styles.imgBreed} numberOfLines={1}>{horse.breed.name}</Text>}
         </View>
-        {/* Badge actividad arriba derecha */}
         {horse.activity && (
           <View style={styles.activityBadge}>
             <Text style={styles.activityText}>{horse.activity.name}</Text>
           </View>
         )}
       </View>
-      {/* Solo establecimiento si aplica */}
-      {horse.establishment && (
-        <View style={styles.cardFooter}>
-          <Ionicons name="business-outline" size={11} color={colors.gray400} />
-          <Text style={styles.cardSub} numberOfLines={1}>{horse.establishment.name}</Text>
+      <View style={styles.cardFooter}>
+        {horse.establishment
+          ? <>
+              <Ionicons name="business-outline" size={11} color={colors.gray400} />
+              <Text style={styles.cardSub} numberOfLines={1}>{horse.establishment.name}</Text>
+            </>
+          : <Text style={styles.cardSubEmpty}>Sin establecimiento</Text>
+        }
+        <View style={styles.arrowWrap}>
+          <Ionicons name="chevron-forward" size={11} color={colors.gray300} />
         </View>
-      )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 16, marginVertical: 10,
-    backgroundColor: colors.white, borderRadius: 14,
+    backgroundColor: colors.gray100, borderRadius: 14,
     borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 2, gap: 8,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: colors.gray900 },
@@ -305,8 +306,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 3,
   },
   activityText: { fontSize: 10, fontWeight: '700', color: colors.white },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: colors.gray50 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.gray100 },
   cardSub: { fontSize: 11, color: colors.gray400, flex: 1 },
+  cardSubEmpty: { fontSize: 11, color: colors.gray300, flex: 1, fontStyle: 'italic' },
+  arrowWrap: { marginLeft: 'auto' },
   filterRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

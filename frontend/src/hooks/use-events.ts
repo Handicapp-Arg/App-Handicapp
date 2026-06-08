@@ -67,6 +67,10 @@ export function useCreateEvent(horseId: string) {
       date: string;
       horse_id: string;
       amount?: string;
+      is_public?: boolean;
+      event_time?: string;
+      recurrence_type?: string;
+      recurrence_end?: string;
       photos?: File[];
     }) => {
       const formData = new FormData();
@@ -75,6 +79,10 @@ export function useCreateEvent(horseId: string) {
       formData.append('date', payload.date);
       formData.append('horse_id', payload.horse_id);
       if (payload.amount) formData.append('amount', payload.amount);
+      if (payload.is_public !== undefined) formData.append('is_public', String(payload.is_public));
+      if (payload.event_time) formData.append('event_time', payload.event_time);
+      if (payload.recurrence_type) formData.append('recurrence_type', payload.recurrence_type);
+      if (payload.recurrence_end) formData.append('recurrence_end', payload.recurrence_end);
 
       if (payload.photos) {
         payload.photos.forEach((file) => formData.append('photos', file));
@@ -105,6 +113,7 @@ export function useUpdateEvent() {
       date?: string;
       amount?: string;
       currency?: 'ARS' | 'USD';
+      is_public?: boolean;
     }) => {
       const { data } = await api.patch(`/events/${id}`, payload);
       return data as Event;
@@ -160,5 +169,19 @@ export function useUpsertTrainingMetrics(eventId: string) {
       return data as TrainingMetrics;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events', eventId, 'training-metrics'] }),
+  });
+}
+
+export function useShareEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (eventId: string) => {
+      const { data } = await api.post(`/events/${eventId}/share`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    },
   });
 }

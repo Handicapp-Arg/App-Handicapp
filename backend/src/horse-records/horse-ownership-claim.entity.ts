@@ -7,6 +7,13 @@ import { User } from '../auth/user.entity';
 import { HorseRecord } from './horse-record.entity';
 
 export type ClaimStatus = 'pending' | 'auto_approved' | 'approved' | 'rejected';
+export type FraudRisk = 'none' | 'low' | 'medium' | 'high';
+
+export interface FraudSignal {
+  key: string;
+  weight: number; // 1 low · 2 medium · 3 high
+  detail: string;
+}
 
 @Entity('horse_ownership_claims')
 export class HorseOwnershipClaim {
@@ -76,6 +83,19 @@ export class HorseOwnershipClaim {
 
   @Column({ type: 'text', nullable: true })
   notes: string | null;
+
+  // Señales de fraude detectadas automáticamente al momento del claim
+  @Column({ type: 'jsonb', nullable: true })
+  fraud_signals: FraudSignal[] | null;
+
+  // Suma de pesos de señales: none=0, low=1-2, medium=3-4, high=5+
+  @Column({ type: 'varchar', length: 10, default: 'none' })
+  fraud_risk: FraudRisk;
+
+  // true si fue auto-aprobado con evidencia débil (una sola prueba sin número de registro)
+  // el admin puede auditar y revocar si considera que el claim es fraudulento
+  @Column({ type: 'boolean', default: false })
+  needs_audit: boolean;
 
   @CreateDateColumn()
   created_at: Date;

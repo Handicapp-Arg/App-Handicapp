@@ -8,10 +8,12 @@ import { HorseRecordsController } from './horse-records.controller';
 import { HorseRecordsScrapingService } from './horse-records-scraping.service';
 import { HorseRecordsBootstrapService } from './horse-records-bootstrap.service';
 import { PuppeteerScraperService } from './scrapers/puppeteer-scraper.service';
+import { Horse } from '../horses/horse.entity';
+import { CatalogItem } from '../catalog-items/catalog-item.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([HorseRecord, HorseOwnershipClaim]),
+    TypeOrmModule.forFeature([HorseRecord, HorseOwnershipClaim, Horse, CatalogItem]),
     ScheduleModule,
   ],
   providers: [

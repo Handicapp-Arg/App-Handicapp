@@ -1,0 +1,603 @@
+import { useState, useEffect } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity, TextInput,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Modal,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import RNDateTimePicker from '@react-native-community/datetimepicker';
+import { useHorses } from '../../hooks/use-horses';
+import { useCreateAuction } from '../../hooks/use-auctions';
+import { haptic } from '../../lib/haptics';
+import { colors } from '../../lib/colors';
+import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import type { Horse } from '../../../packages/shared/src';
+
+type AuctionType = 'venta_directa' | 'remate';
+type Currency = 'ARS' | 'USD';
+
+function HorseSelector({ horses, selected, onSelect }: {
+  horses: Horse[];
+  selected: string;
+  onSelect: (id: string, name: string) => void;
+}) {
+  return (
+    <View style={s.horseGrid}>
+      {horses.map((h) => (
+        <TouchableOpacity
+          key={h.id}
+          style={[s.horseOption, selected === h.id && s.horseOptionActive]}
+          onPress={() => { haptic.selection(); onSelect(h.id, h.name); }}
+          activeOpacity={0.75}
+        >
+          <View style={[s.horseOptionAvatar, selected === h.id && s.horseOptionAvatarActive]}>
+            <Text style={[s.horseOptionAvatarText, selected === h.id && { color: colors.white }]}>
+              {h.name[0]?.toUpperCase()}
+            </Text>
+          </View>
+          <Text style={[s.horseOptionName, selected === h.id && s.horseOptionNameActive]} numberOfLines={2}>
+            {h.name}
+          </Text>
+          {selected === h.id && (
+            <View style={s.horseCheckMark}>
+              <Ionicons name="checkmark" size={12} color={colors.white} />
+            </View>
+          )}
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+function TypeOption({ type, selected, onSelect }: {
+  type: AuctionType;
+  selected: AuctionType;
+  onSelect: (t: AuctionType) => void;
+}) {
+  const isSelected = type === selected;
+  const config = type === 'venta_directa'
+    ? { icon: 'pricetag-outline' as const, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: '#0369a1' }
+    : { icon: 'trophy-outline' as const, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#7c3aed' };
+
+  return (
+    <TouchableOpacity
+      style={[s.typeOption, isSelected && { borderColor: config.color, backgroundColor: isSelected ? `${config.color}0d` : colors.white }]}
+      onPress={() => { haptic.selection(); onSelect(type); }}
+      activeOpacity={0.8}
+    >
+      <View style={[s.typeIcon, { backgroundColor: `${config.color}18` }]}>
+        <Ionicons name={config.icon} size={24} color={config.color} />
+      </View>
+      <View style={s.typeBody}>
+        <Text style={[s.typeTitle, isSelected && { color: config.color }]}>{config.title}</Text>
+        <Text style={s.typeDesc}>{config.desc}</Text>
+      </View>
+      <View style={[s.typeRadio, isSelected && { backgroundColor: config.color, borderColor: config.color }]}>
+        {isSelected && <View style={s.typeRadioInner} />}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+export default function CrearRemateScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { horse: preselectedHorseId } = useLocalSearchParams<{ horse?: string }>();
+  const { data: horses } = useHorses();
+  const createAuction = useCreateAuction();
+
+  const [horseId, setHorseId] = useState(preselectedHorseId ?? '');
+  const [horseName, setHorseName] = useState('');
+  const [type, setType] = useState<AuctionType>('venta_directa');
+  const [title, setTitle] = useState('');
+  const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState<Currency>('USD');
+  const [location, setLocation] = useState('');
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [endHour, setEndHour] = useState(20); // default 20:00
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
+  const [hasHealthCert, setHasHealthCert] = useState(false);
+  const [hasOwnershipDocs, setHasOwnershipDocs] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleHorseSelect = (id: string, name: string) => {
+    setHorseId(id);
+    setHorseName(name);
+    if (!title) setTitle(`${name} en venta`);
+  };
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!horseId) { setError('Seleccioná un caballo'); return; }
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+      setError('Ingresá un precio válido');
+      return;
+    }
+    if (type === 'remate' && !endDate) {
+      setError('Elegí la fecha de cierre del remate');
+      return;
+    }
+
+    const buildAuctionEnd = () => {
+      if (!endDate) return undefined;
+      const d = new Date(endDate);
+      d.setHours(endHour, 0, 0, 0);
+      return d.toISOString();
+    };
+
+    const payload: Parameters<typeof createAuction.mutateAsync>[0] = {
+      horse_id: horseId,
+      type,
+      title: title || `${horseName} en venta`,
+      currency,
+      location: location || undefined,
+      has_health_cert: hasHealthCert,
+      has_ownership_docs: hasOwnershipDocs,
+      ...(type === 'venta_directa'
+        ? { asking_price: Number(price) }
+        : {
+            starting_bid: Number(price),
+            bid_increment: Math.max(100, Math.round(Number(price) * 0.02)),
+            auction_end: buildAuctionEnd(),
+          }
+      ),
+    };
+
+    try {
+      const auction = await createAuction.mutateAsync(payload);
+      haptic.success();
+      router.replace(`/remates/${auction.id}` as never);
+    } catch {
+      setError('No se pudo publicar. Verificá los datos e intentá de nuevo.');
+    }
+  };
+
+  // Pre-fill horse name when coming from horse detail
+  useEffect(() => {
+    if (preselectedHorseId && horses) {
+      const h = horses.find((x) => x.id === preselectedHorseId);
+      if (h && !horseName) {
+        setHorseName(h.name);
+        if (!title) setTitle(`${h.name} en venta`);
+      }
+    }
+  }, [preselectedHorseId, horses]);
+
+  const myHorses = horses ?? [];
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={22} color={colors.gray900} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Publicar caballo</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={s.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Paso 1: Elegir caballo */}
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>¿Cuál caballo querés vender?</Text>
+            {myHorses.length === 0 ? (
+              <View style={s.emptyHorses}>
+                <Ionicons name="paw-outline" size={32} color={colors.gray300} />
+                <Text style={s.emptyHorsesText}>No tenés caballos registrados</Text>
+              </View>
+            ) : (
+              <HorseSelector
+                horses={myHorses}
+                selected={horseId}
+                onSelect={handleHorseSelect}
+              />
+            )}
+          </View>
+
+          {/* Paso 2: Tipo de venta */}
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>Tipo de publicación</Text>
+            <TypeOption type="venta_directa" selected={type} onSelect={setType} />
+            <TypeOption type="remate" selected={type} onSelect={setType} />
+          </View>
+
+          {/* Paso 3: Precio */}
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>
+              {type === 'venta_directa' ? 'Precio de venta' : 'Precio base de la subasta'}
+            </Text>
+            <View style={s.priceRow}>
+              {/* Moneda */}
+              <View style={s.currencyToggle}>
+                {(['USD', 'ARS'] as Currency[]).map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[s.currencyBtn, currency === c && s.currencyBtnActive]}
+                    onPress={() => { haptic.selection(); setCurrency(c); }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[s.currencyBtnText, currency === c && s.currencyBtnTextActive]}>{c}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {/* Monto */}
+              <TextInput
+                style={s.priceInput}
+                value={price}
+                onChangeText={(v) => setPrice(v.replace(/[^0-9.]/g, ''))}
+                placeholder="0"
+                placeholderTextColor={colors.gray300}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* Fecha y hora de cierre (solo remate) */}
+          {type === 'remate' && (
+            <View style={s.section}>
+              <Text style={s.sectionLabel}>¿Cuándo cierra el remate?</Text>
+
+              {/* Botón que abre el calendario */}
+              <TouchableOpacity
+                style={[s.dateTrigger, endDate && s.dateTriggerFilled]}
+                onPress={() => { haptic.light(); setTempDate(endDate ?? new Date()); setShowDatePicker(true); }}
+                activeOpacity={0.8}
+              >
+                <View style={s.dateTriggerIcon}>
+                  <Ionicons name="calendar-outline" size={22} color={endDate ? colors.primary : colors.gray400} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.dateTriggerLabel, !endDate && { color: colors.gray400 }]}>
+                    {endDate
+                      ? endDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                      : 'Elegí una fecha'}
+                  </Text>
+                  {endDate && (
+                    <Text style={s.dateTriggerSub}>Tocá para cambiar</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
+              </TouchableOpacity>
+
+              {/* Android: picker inline */}
+              {showDatePicker && Platform.OS === 'android' && (
+                <RNDateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display="default"
+                  minimumDate={new Date()}
+                  onChange={(_, selected) => {
+                    setShowDatePicker(false);
+                    if (selected) { setEndDate(selected); haptic.selection(); }
+                  }}
+                />
+              )}
+
+              {/* iOS: modal con spinner */}
+              {Platform.OS === 'ios' && (
+                <Modal visible={showDatePicker} transparent animationType="slide">
+                  <View style={s.pickerOverlay}>
+                    <View style={s.pickerSheet}>
+                      <View style={s.pickerHeader}>
+                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                          <Text style={s.pickerCancel}>Cancelar</Text>
+                        </TouchableOpacity>
+                        <Text style={s.pickerTitle}>Fecha de cierre</Text>
+                        <TouchableOpacity onPress={() => { setEndDate(tempDate); setShowDatePicker(false); haptic.selection(); }}>
+                          <Text style={s.pickerConfirm}>Listo</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <RNDateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display="spinner"
+                        minimumDate={new Date()}
+                        onChange={(_, selected) => { if (selected) setTempDate(selected); }}
+                        locale="es-AR"
+                        style={{ height: 200 }}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+              )}
+
+              {/* Horario de cierre — chips predefinidos */}
+              {endDate && (
+                <View style={s.timeSection}>
+                  <Text style={s.timeSectionLabel}>Hora de cierre</Text>
+                  <View style={s.timeChips}>
+                    {[10, 14, 18, 20, 22].map((h) => (
+                      <TouchableOpacity
+                        key={h}
+                        style={[s.timeChip, endHour === h && s.timeChipActive]}
+                        onPress={() => { haptic.selection(); setEndHour(h); }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[s.timeChipText, endHour === h && s.timeChipTextActive]}>
+                          {`${String(h).padStart(2, '0')}:00`}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {/* Resumen fecha+hora */}
+                  <View style={s.dateTimeSummary}>
+                    <Ionicons name="time-outline" size={14} color={colors.primary} />
+                    <Text style={s.dateTimeSummaryText}>
+                      Cierra el {endDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} a las {String(endHour).padStart(2, '0')}:00 hs
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Título */}
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>Título del anuncio</Text>
+            <TextInput
+              style={s.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder={horseName ? `${horseName} en venta` : 'Ej: Cuarteron Polo 10 años'}
+              placeholderTextColor={colors.gray400}
+              autoCapitalize="sentences"
+            />
+          </View>
+
+          {/* Ubicación */}
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>Ubicación (opcional)</Text>
+            <TextInput
+              style={s.input}
+              value={location}
+              onChangeText={setLocation}
+              placeholder="Ej: Buenos Aires, Argentina"
+              placeholderTextColor={colors.gray400}
+            />
+          </View>
+
+          {/* Documentación */}
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>Documentación disponible</Text>
+            <TouchableOpacity
+              style={[s.checkRow, hasHealthCert && s.checkRowActive]}
+              onPress={() => { haptic.selection(); setHasHealthCert(!hasHealthCert); }}
+              activeOpacity={0.8}
+            >
+              <View style={[s.checkbox, hasHealthCert && s.checkboxActive]}>
+                {hasHealthCert && <Ionicons name="checkmark" size={14} color={colors.white} />}
+              </View>
+              <Text style={s.checkLabel}>Certificado sanitario SENASA</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.checkRow, hasOwnershipDocs && s.checkRowActive]}
+              onPress={() => { haptic.selection(); setHasOwnershipDocs(!hasOwnershipDocs); }}
+              activeOpacity={0.8}
+            >
+              <View style={[s.checkbox, hasOwnershipDocs && s.checkboxActive]}>
+                {hasOwnershipDocs && <Ionicons name="checkmark" size={14} color={colors.white} />}
+              </View>
+              <Text style={s.checkLabel}>Documentos de propiedad</Text>
+            </TouchableOpacity>
+          </View>
+
+          {error ? (
+            <View style={s.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.red500} />
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          <View style={{ height: space[4] }} />
+        </ScrollView>
+
+        {/* Footer con botón */}
+        <View style={[s.footer, { paddingBottom: insets.bottom + space[3] }]}>
+          <TouchableOpacity
+            style={[s.publishBtn, (!horseId || createAuction.isPending) && s.publishBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={!horseId || createAuction.isPending}
+            activeOpacity={0.85}
+          >
+            {createAuction.isPending ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <>
+                <Ionicons name="megaphone-outline" size={20} color={colors.white} />
+                <Text style={s.publishBtnText}>Publicar caballo</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.gray50 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: space[4], paddingVertical: space[3],
+    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray100,
+  },
+  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900 },
+
+  scroll: { flex: 1 },
+  content: { padding: space[4], gap: space[5] },
+
+  section: { gap: space[3] },
+  sectionLabel: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray700 },
+
+  /* Horse selector */
+  horseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
+  horseOption: {
+    width: '30%',
+    alignItems: 'center',
+    padding: space[3],
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: colors.gray200,
+    gap: space[2],
+    position: 'relative',
+    ...shadow.sm,
+  },
+  horseOptionActive: { borderColor: colors.primary, backgroundColor: '#e8ecf4' },
+  horseOptionAvatar: {
+    width: 52, height: 52, borderRadius: radius.full,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  horseOptionAvatarActive: { backgroundColor: colors.primary },
+  horseOptionAvatarText: { fontSize: text.xl, fontWeight: weight.bold, color: colors.primary },
+  horseOptionName: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray700, textAlign: 'center' },
+  horseOptionNameActive: { color: colors.primary },
+  horseCheckMark: {
+    position: 'absolute', top: 6, right: 6,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
+  },
+  emptyHorses: { alignItems: 'center', padding: space[8], gap: space[3] },
+  emptyHorsesText: { fontSize: text.sm, color: colors.gray400 },
+
+  /* Type options */
+  typeOption: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: colors.white, borderRadius: radius.xl,
+    borderWidth: 2, borderColor: colors.gray200,
+    padding: space[4],
+    ...shadow.sm,
+  },
+  typeIcon: { width: 48, height: 48, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center' },
+  typeBody: { flex: 1 },
+  typeTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
+  typeDesc: { fontSize: text.xs, color: colors.gray500, marginTop: 2, lineHeight: 16 },
+  typeRadio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.gray300, justifyContent: 'center', alignItems: 'center' },
+  typeRadioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.white },
+
+  /* Price */
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  currencyToggle: {
+    flexDirection: 'row', borderRadius: radius.lg, overflow: 'hidden',
+    borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.gray100,
+  },
+  currencyBtn: { paddingHorizontal: space[4], paddingVertical: space[3] },
+  currencyBtnActive: { backgroundColor: colors.primary },
+  currencyBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray500 },
+  currencyBtnTextActive: { color: colors.white },
+  priceInput: {
+    flex: 1, fontSize: 28, fontWeight: weight.extrabold, color: colors.gray900,
+    backgroundColor: colors.white, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: colors.gray200,
+    paddingHorizontal: space[4], paddingVertical: space[3],
+    textAlign: 'right',
+    ...shadow.sm,
+  },
+
+  row: { flexDirection: 'row', gap: space[3] },
+  input: {
+    backgroundColor: colors.white, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.gray200,
+    paddingHorizontal: space[4], paddingVertical: space[3] + 2,
+    fontSize: text.base, color: colors.gray900,
+    ...shadow.sm,
+  },
+
+  /* Date picker */
+  dateTrigger: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: colors.white, borderRadius: radius.xl,
+    borderWidth: 2, borderColor: colors.gray200,
+    padding: space[4],
+    ...shadow.sm,
+  },
+  dateTriggerFilled: { borderColor: colors.primary, backgroundColor: '#f0f4ff' },
+  dateTriggerIcon: { width: 44, height: 44, borderRadius: radius.lg, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
+  dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: colors.gray900 },
+  dateTriggerSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
+
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pickerSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  pickerHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: space[5], paddingVertical: space[4],
+    borderBottomWidth: 1, borderBottomColor: colors.gray100,
+  },
+  pickerTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
+  pickerCancel: { fontSize: text.base, color: colors.gray500 },
+  pickerConfirm: { fontSize: text.base, fontWeight: weight.bold, color: colors.primary },
+
+  /* Time chips */
+  timeSection: { gap: space[2], marginTop: space[1] },
+  timeSectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray500, textTransform: 'uppercase', letterSpacing: 0.5 },
+  timeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  timeChip: {
+    paddingHorizontal: space[4], paddingVertical: space[2] + 2,
+    borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.gray200,
+    backgroundColor: colors.white,
+  },
+  timeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  timeChipText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray600 },
+  timeChipTextActive: { color: colors.white },
+
+  dateTimeSummary: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2],
+    backgroundColor: '#e8ecf4', borderRadius: radius.lg, padding: space[3],
+  },
+  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.primary },
+
+  /* Checks */
+  checkRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: colors.white, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.gray200,
+    padding: space[4],
+  },
+  checkRowActive: { borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  checkbox: {
+    width: 24, height: 24, borderRadius: 6,
+    borderWidth: 2, borderColor: colors.gray300,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  checkboxActive: { backgroundColor: '#10b981', borderColor: '#10b981' },
+  checkLabel: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray700, flex: 1 },
+
+  /* Error */
+  errorBox: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2],
+    backgroundColor: colors.red50, borderRadius: radius.lg,
+    padding: space[3], borderWidth: 1, borderColor: '#fca5a5',
+  },
+  errorText: { fontSize: text.sm, color: colors.red500, flex: 1 },
+
+  /* Footer */
+  footer: {
+    backgroundColor: colors.white,
+    paddingHorizontal: space[4],
+    paddingTop: space[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.gray100,
+    ...shadow.sm,
+  },
+  publishBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: space[2], backgroundColor: colors.primary,
+    borderRadius: radius.xl, paddingVertical: space[4],
+    ...shadow.sm,
+  },
+  publishBtnDisabled: { backgroundColor: colors.gray300 },
+  publishBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+});

@@ -12,6 +12,10 @@ export function calcAge(birthDate: string): string {
   return years === 1 ? '1 año' : `${years} años`;
 }
 
+export function formatCurrency(amount: number, currency = 'ARS'): string {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+}
+
 export function formatDate(
   date: string,
   opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' },

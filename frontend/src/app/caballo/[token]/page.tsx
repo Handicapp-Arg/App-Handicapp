@@ -4,6 +4,8 @@ import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 
+interface PublicPhoto { id: string; url: string; file_type: 'image' | 'video'; }
+
 interface PublicProfile {
   id: string;
   name: string;
@@ -14,9 +16,39 @@ interface PublicProfile {
   activity: { name: string } | null;
   owner: { name: string };
   establishment: { name: string } | null;
-  events: Array<{ id: string; type: string; description: string; date: string; amount: number | null }>;
+  events: Array<{ id: string; type: string; description: string; date: string; amount: number | null; is_public: boolean; photos: PublicPhoto[] }>;
   weights: Array<{ id: string; weight_kg: number; body_condition: number | null; date: string }>;
   medical: Array<{ id: string; type: string; name: string; date: string; next_due: string | null }>;
+}
+
+function MediaGrid({ photos }: { photos: PublicPhoto[] }) {
+  if (!photos.length) return null;
+  const cols = photos.length === 1 ? 'grid-cols-1' : photos.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+  return (
+    <div className={`grid ${cols} gap-0.5`}>
+      {photos.slice(0, 6).map((p, i) => (
+        <div key={p.id} className={`relative bg-gray-900 ${photos.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+          {p.file_type === 'video' ? (
+            <>
+              <video src={p.url} className="h-full w-full object-cover opacity-70" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80">
+                  <svg className="h-5 w-5 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                </div>
+              </div>
+            </>
+          ) : (
+            <img src={p.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          )}
+          {i === 5 && photos.length > 6 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <span className="text-xl font-bold text-white">+{photos.length - 6}</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const TYPE_BADGE: Record<string, string> = {
@@ -74,6 +106,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
     : null;
 
   const upcomingVaccines = data.medical.filter((m) => m.next_due && new Date(m.next_due) >= new Date());
+  const publicFeed = data.events.filter((ev) => ev.is_public && ev.photos.length > 0);
   const lastWeight = data.weights[0] ?? null;
 
   return (
@@ -145,6 +178,31 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
             </div>
           </div>
         </div>
+
+        {/* Feed público — fotos/videos de eventos */}
+        {publicFeed.length > 0 && (
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="px-5 pt-4 pb-2">
+              <h2 className="text-base font-bold text-gray-900">Publicaciones recientes</h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {publicFeed.map((ev) => (
+                <div key={ev.id}>
+                  <MediaGrid photos={ev.photos} />
+                  <div className="px-4 py-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${TYPE_BADGE[ev.type] ?? TYPE_BADGE.nota}`}>
+                        {TYPE_LABEL[ev.type] ?? ev.type}
+                      </span>
+                      <span className="text-[11px] text-gray-400">{fmt(ev.date)}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{ev.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Próximas vacunas/dosis */}
         {upcomingVaccines.length > 0 && (

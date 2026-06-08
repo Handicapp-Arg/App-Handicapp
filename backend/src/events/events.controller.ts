@@ -123,6 +123,12 @@ export class EventsController {
     return this.eventsService.remove(id, user);
   }
 
+  @Post(':id/share')
+  @UseGuards(AuthGuard('jwt'))
+  shareToFeed(@Param('id') id: string, @GetUser() user: User) {
+    return this.eventsService.shareToFeed(id, user);
+  }
+
   @Get(':id/comments')
   @UseGuards(AuthGuard('jwt'))
   getComments(@Param('id') id: string, @GetUser() user: User) {

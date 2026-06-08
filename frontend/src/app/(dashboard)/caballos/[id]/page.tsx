@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord, useHorseMovements, type HorseMovement } from '@/hooks/use-horses';
-import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/use-events';
+import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent, useShareEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '@/hooks/use-event-comments';
+import { useCreateBoardingRequest, useBoardingRequests } from '@/hooks/use-boarding-requests';
+import { useQuery } from '@tanstack/react-query';
 import QRCode from 'react-qr-code';
 import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
 import PedigreeSection from '@/components/pedigree/PedigreeSection';
@@ -225,24 +227,45 @@ function EventCard({
   event,
   onEdit,
   onDelete,
+  onShare,
+  onTogglePublic,
   canEditMetrics,
   currentUserId,
 }: {
   event: Event;
   onEdit?: (e: Event) => void;
   onDelete?: (id: string) => void;
+  onShare?: (id: string) => void;
+  onTogglePublic?: (id: string, val: boolean) => void;
   canEditMetrics?: boolean;
   currentUserId?: string;
 }) {
   const badge = typeBadge[event.type] ?? typeBadge.nota;
+  const hasMedia = (event.photos?.length ?? 0) > 0;
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-3.5">
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.cls}`}>
-          {badge.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.cls}`}>
+            {badge.label}
+          </span>
+          {event.is_public && (
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">Público</span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <span className="text-[11px] text-gray-400">{formatDate(event.date)}</span>
+          {onShare && hasMedia && (
+            <button onClick={() => onShare(event.id)}
+              className="rounded-md p-1 text-gray-300 hover:bg-blue-50 hover:text-blue-400 transition cursor-pointer"
+              title={event.feed_post_id ? 'Ya compartido' : 'Compartir al feed'}
+              disabled={!!event.feed_post_id}
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+              </svg>
+            </button>
+          )}
           {onEdit && (
             <button onClick={() => onEdit(event)}
               className="rounded-md p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-500 transition cursor-pointer"
@@ -273,13 +296,54 @@ function EventCard({
       )}
       {event.photos && event.photos.length > 0 && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto">
-          {event.photos.map((p) => (
+          {event.photos.map((p) => p.file_type === 'video' ? (
+            <div key={p.id} className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-gray-900">
+              <video src={p.url} className="h-full w-full object-cover opacity-70" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          ) : (
             <img key={p.id} src={p.url} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" loading="lazy" />
           ))}
         </div>
       )}
+      {/* Hora / recurrencia */}
+      {(event.event_time || (event.recurrence_type && event.recurrence_type !== 'none')) && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {event.event_time && (
+            <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+              {event.event_time}
+            </span>
+          )}
+          {event.recurrence_type && event.recurrence_type !== 'none' && (
+            <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-600">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+              {{ daily: 'Diario', weekly: 'Semanal', biweekly: 'Quincenal', monthly: 'Mensual' }[event.recurrence_type]}
+            </span>
+          )}
+        </div>
+      )}
       {event.type === 'entrenamiento' && (
         <TrainingMetricsPanel eventId={event.id} canEdit={canEditMetrics ?? false} />
+      )}
+      {/* Toggle publicar (solo propietario) */}
+      {onTogglePublic && (
+        <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-2">
+          <span className="text-[11px] text-gray-400">{event.is_public ? 'Visible en perfil público' : 'Solo para vos'}</span>
+          <button
+            type="button"
+            onClick={() => onTogglePublic(event.id, !event.is_public)}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              event.is_public ? 'bg-blue-500' : 'bg-gray-200'
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${event.is_public ? 'translate-x-4' : 'translate-x-0'}`} />
+          </button>
+        </div>
       )}
       <EventCommentThread eventId={event.id} currentUserId={currentUserId} />
     </div>
@@ -287,6 +351,15 @@ function EventCard({
 }
 
 /* ─── Create Event Modal ─── */
+
+type EventMode = 'now' | 'scheduled' | 'recurring';
+
+const RECURRENCE_OPTIONS = [
+  { value: 'daily',    label: 'Cada día' },
+  { value: 'weekly',   label: 'Cada semana' },
+  { value: 'biweekly', label: 'Cada 2 semanas' },
+  { value: 'monthly',  label: 'Cada mes' },
+];
 
 function CreateEventModal({
   horseId,
@@ -298,45 +371,85 @@ function CreateEventModal({
   onClose: () => void;
 }) {
   const createEvent = useCreateEvent(horseId);
+  const [mode, setMode] = useState<EventMode>('now');
   const [type, setType] = useState('salud');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const today = new Date().toISOString().split('T')[0];
+  const [date, setDate] = useState(today);
+  const [eventTime, setEventTime] = useState(() => {
+    const n = new Date();
+    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+  });
   const [amount, setAmount] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('weekly');
+  const [recurrenceEnd, setRecurrenceEnd] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!description.trim()) {
-      setError('La descripcion es obligatoria');
-      return;
-    }
+    if (!description.trim()) { setError('La descripción es obligatoria'); return; }
+    if (mode === 'recurring' && !recurrenceEnd) { setError('Seleccioná hasta cuándo se repite'); return; }
     setError('');
     await createEvent.mutateAsync({
       type,
       description,
-      date,
+      date: mode === 'now' ? today : date,
       horse_id: horseId,
       amount: type === 'gasto' && amount ? amount : undefined,
+      is_public: isPublic,
+      event_time: mode !== 'now' ? eventTime : undefined,
+      recurrence_type: mode === 'recurring' ? recurrenceType : undefined,
+      recurrence_end: mode === 'recurring' ? recurrenceEnd : undefined,
       photos: photos.length > 0 ? photos : undefined,
     });
     onClose();
   };
 
+  const modeBtn = (m: EventMode, label: string, icon: React.ReactNode) => (
+    <button
+      type="button"
+      onClick={() => setMode(m)}
+      className={`flex flex-1 flex-col items-center gap-1 rounded-xl border py-3 text-xs font-semibold transition cursor-pointer ${
+        mode === m ? 'border-[#0f1f3d] bg-[#0f1f3d] text-white' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+
   const formContent = (
     <div className="space-y-4">
+      {/* Modo */}
+      <div className="flex gap-2">
+        {modeBtn('now', 'Ahora',
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" /></svg>
+        )}
+        {modeBtn('scheduled', 'Programar',
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+        )}
+        {modeBtn('recurring', 'Repetir',
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+        )}
+      </div>
+
+      {/* Modo NOW: hint de cámara */}
+      {mode === 'now' && (
+        <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5 text-xs text-blue-600">
+          Se registrará con la fecha y hora actuales. Podés adjuntar una foto tomada en el momento.
+        </div>
+      )}
+
+      {/* Tipo */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Tipo</label>
         <div className="grid grid-cols-4 gap-2">
           {typeOptions.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setType(opt.value)}
+            <button key={opt.value} type="button" onClick={() => setType(opt.value)}
               className={`rounded-lg border py-2 text-xs font-medium transition cursor-pointer ${
-                type === opt.value
-                  ? 'border-[#0f1f3d] bg-[#0f1f3d] text-white'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                type === opt.value ? 'border-[#0f1f3d] bg-[#0f1f3d] text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
               {opt.label}
@@ -344,37 +457,84 @@ function CreateEventModal({
           ))}
         </div>
       </div>
+
+      {/* Descripción */}
       <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">Descripcion</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          className={inputClass}
-          placeholder="Detalle del evento..."
-        />
+        <label className="block text-sm font-medium text-gray-700">Descripción</label>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+          rows={3} className={inputClass} placeholder="Detalle del evento..." />
       </div>
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">Fecha</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
-      </div>
+
+      {/* Fecha + Hora (scheduled / recurring) */}
+      {mode !== 'now' && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Fecha</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Hora</label>
+            <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className={inputClass} />
+          </div>
+        </div>
+      )}
+
+      {/* Recurrencia */}
+      {mode === 'recurring' && (
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 space-y-3">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-amber-700 uppercase tracking-wide">Frecuencia</label>
+            <div className="grid grid-cols-2 gap-2">
+              {RECURRENCE_OPTIONS.map((opt) => (
+                <button key={opt.value} type="button" onClick={() => setRecurrenceType(opt.value)}
+                  className={`rounded-lg border py-2 text-xs font-medium transition cursor-pointer ${
+                    recurrenceType === opt.value ? 'border-amber-500 bg-amber-500 text-white' : 'border-amber-200 bg-white text-amber-700 hover:border-amber-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-amber-700 uppercase tracking-wide">Repetir hasta</label>
+            <input type="date" value={recurrenceEnd} onChange={(e) => setRecurrenceEnd(e.target.value)}
+              min={date} className={inputClass} />
+          </div>
+        </div>
+      )}
+
+      {/* Monto */}
       {type === 'gasto' && (
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-700">Monto</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0"
-            className={inputClass}
-          />
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={inputClass} />
         </div>
       )}
+
+      {/* Fotos */}
       <ImagePicker files={photos} onChange={setPhotos} label="Fotos (opcional)" />
+
+      {/* Publicar */}
+      <button type="button" onClick={() => setIsPublic((p) => !p)}
+        className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
+          isPublic ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+        }`}
+      >
+        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${isPublic ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+          {isPublic && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
+        </span>
+        Publicar en el perfil público del caballo
+      </button>
+
       {error && <p className="text-xs text-red-500">{error}</p>}
       {createEvent.isError && <p className="text-xs text-red-500">Error al crear el evento</p>}
     </div>
   );
+
+  const submitLabel = mode === 'recurring'
+    ? (createEvent.isPending ? 'Creando...' : 'Crear serie')
+    : (createEvent.isPending ? 'Creando...' : 'Crear evento');
 
   return createPortal(
     <>
@@ -385,27 +545,17 @@ function CreateEventModal({
             <p className="font-bold text-white">Nuevo evento</p>
             <p className="text-xs text-white/50">{horseName}</p>
           </div>
-          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">
-            ✕
-          </button>
+          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5">{formContent}</div>
           <div className="border-t border-gray-100 p-5 space-y-3">
-            <button
-              type="submit"
-              disabled={createEvent.isPending}
+            <button type="submit" disabled={createEvent.isPending}
               className="w-full rounded-xl bg-[#0f1f3d] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer"
-            >
-              {createEvent.isPending ? 'Creando...' : 'Crear evento'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
+            >{submitLabel}</button>
+            <button type="button" onClick={onClose}
               className="w-full rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 cursor-pointer"
-            >
-              Cancelar
-            </button>
+            >Cancelar</button>
           </div>
         </form>
       </div>
@@ -413,36 +563,23 @@ function CreateEventModal({
       {/* Desktop */}
       <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-        <div
-          className="relative flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
-          style={{ maxHeight: '88dvh' }}
-        >
+        <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
           <div className="flex items-center justify-between rounded-t-2xl bg-[#0f1f3d] px-6 py-4">
             <div>
               <p className="font-bold text-white">Nuevo evento</p>
               <p className="text-xs text-white/50">{horseName}</p>
             </div>
-            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">
-              ✕
-            </button>
+            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
             <div className="overflow-y-auto p-6">{formContent}</div>
             <div className="flex gap-2 border-t border-gray-100 p-4">
-              <button
-                type="submit"
-                disabled={createEvent.isPending}
+              <button type="submit" disabled={createEvent.isPending}
                 className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer"
-              >
-                {createEvent.isPending ? 'Creando...' : 'Crear evento'}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
+              >{submitLabel}</button>
+              <button type="button" onClick={onClose}
                 className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 cursor-pointer"
-              >
-                Cancelar
-              </button>
+              >Cancelar</button>
             </div>
           </form>
         </div>
@@ -653,6 +790,149 @@ function PedigreeSectionWrapper({ horse, isOwner, isAdmin }: { horse: import('@/
   return <PedigreeSection horse={horse} canEdit={canEdit} />;
 }
 
+/* ─── Send to Establishment Modal ─── */
+
+interface EstabItem { id: string; name: string; horse_count: number; }
+
+function SendToEstabModal({ horseId, horseName, onClose }: {
+  horseId: string; horseName: string; onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [selectedEstab, setSelectedEstab] = useState<EstabItem | null>(null);
+  const [message, setMessage] = useState('');
+  const [sent, setSent] = useState(false);
+
+  const { data: estabs = [] } = useQuery<EstabItem[]>({
+    queryKey: ['directorio', search],
+    queryFn: async () => {
+      const url = search ? `/auth/directorio?search=${encodeURIComponent(search)}` : '/auth/directorio';
+      return (await api.get(url)).data;
+    },
+  });
+
+  const { data: requests = [] } = useBoardingRequests();
+  const create = useCreateBoardingRequest();
+
+  const alreadyPending = (estabId: string) =>
+    requests.some((r) => r.horse_id === horseId && r.establishment_id === estabId && r.status === 'pending');
+
+  const handleSubmit = async () => {
+    if (!selectedEstab) return;
+    await create.mutateAsync({ horse_id: horseId, establishment_id: selectedEstab.id, message: message.trim() || undefined });
+    setSent(true);
+  };
+
+  if (sent) return createPortal(
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-xl">
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+            <svg className="h-7 w-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </div>
+        </div>
+        <p className="text-base font-bold text-gray-900">¡Solicitud enviada!</p>
+        <p className="mt-2 text-sm text-gray-400">
+          <strong>{selectedEstab?.name}</strong> recibirá una notificación y podrá aceptar o rechazar la solicitud para <strong>{horseName}</strong>.
+        </p>
+        <button onClick={onClose} className="mt-6 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-[#1a3366] transition">
+          Cerrar
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-[998] bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between bg-[#0f1f3d] px-6 py-4">
+            <p className="font-bold text-white">Enviar a establecimiento</p>
+            <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-500">
+              Enviás una solicitud de pensión para <span className="font-semibold text-gray-800">{horseName}</span>.
+            </p>
+
+            {/* Search establishments */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Buscar establecimiento *</label>
+              <input
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setSelectedEstab(null); }}
+                placeholder="Nombre del establecimiento..."
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#0f1f3d] focus:bg-white focus:outline-none transition"
+              />
+              {estabs.length > 0 && !selectedEstab && (
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                  {estabs.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => { setSelectedEstab(e); setSearch(e.name); }}
+                      disabled={alreadyPending(e.id)}
+                      className="flex items-center justify-between w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition"
+                    >
+                      <span className="font-medium text-gray-800">{e.name}</span>
+                      {alreadyPending(e.id)
+                        ? <span className="text-[11px] text-amber-600 font-medium">Pendiente</span>
+                        : <span className="text-[11px] text-gray-400">{e.horse_count} caballos</span>
+                      }
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedEstab && (
+                <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+                  <svg className="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                  <span className="text-sm font-medium text-emerald-800">{selectedEstab.name}</span>
+                  <button onClick={() => { setSelectedEstab(null); setSearch(''); }} className="ml-auto text-emerald-400 hover:text-emerald-600 cursor-pointer">✕</button>
+                </div>
+              )}
+            </div>
+
+            {/* Message */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Mensaje (opcional)</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={3}
+                placeholder="Presentate o aclará lo que necesitás..."
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm resize-none focus:border-[#0f1f3d] focus:bg-white focus:outline-none transition"
+              />
+            </div>
+
+            {create.isError && (
+              <p className="text-xs text-red-500">No se pudo enviar la solicitud. Intentá de nuevo.</p>
+            )}
+          </div>
+
+          <div className="flex gap-2 border-t border-gray-100 px-4 py-3">
+            <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition">
+              Cancelar
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!selectedEstab || create.isPending}
+              className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#1a3366] transition"
+            >
+              {create.isPending ? 'Enviando…' : 'Enviar solicitud'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}
+
 export default function HorseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -686,6 +966,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const todayRoutine = routines?.find((r) => r.date === todayISO);
   const deleteHorse = useDeleteHorse();
   const deleteEvent = useDeleteEvent();
+  const updateEvent = useUpdateEvent();
   const transferHorse = useTransferHorse();
 
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -706,7 +987,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [newBodyCondition, setNewBodyCondition] = useState('');
   const [newWeightNotes, setNewWeightNotes] = useState('');
   const [showQR, setShowQR] = useState(false);
-  const [contentTab, setContentTab] = useState<'historial' | 'medico' | 'fotos' | 'rutina'>('historial');
+  const [showSendEstab, setShowSendEstab] = useState(false);
+  const [contentTab, setContentTab] = useState<'historial' | 'medico' | 'fotos' | 'rutina' | 'galeria'>('historial');
+  const shareEvent = useShareEvent();
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({
     type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0],
@@ -796,6 +1079,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const sortedEvents = events
     ? [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [];
+
+  const galleryEvents = sortedEvents.filter((ev) => (ev.photos?.length ?? 0) > 0);
 
   const infoItems: { label: string; value: string }[] = [];
   if (horse.birth_date) infoItems.push({ label: 'Nacimiento', value: `${formatDate(horse.birth_date)} (${calcAge(horse.birth_date)})` });
@@ -923,6 +1208,15 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </>,
         document.body,
+      )}
+
+      {/* Modal enviar a establecimiento */}
+      {showSendEstab && horse && (
+        <SendToEstabModal
+          horseId={horse.id}
+          horseName={horse.name}
+          onClose={() => setShowSendEstab(false)}
+        />
       )}
 
       {/* Modal asignar veterinario */}
@@ -1107,6 +1401,14 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   Transferir
                 </button>
               )}
+              {isOwner && (
+                <button
+                  onClick={() => setShowSendEstab(true)}
+                  className="flex-1 rounded-xl border border-[#0f1f3d]/20 py-2.5 text-xs font-semibold text-[#0f1f3d] transition hover:border-[#0f1f3d]/40 hover:bg-[#0f1f3d]/5 cursor-pointer"
+                >
+                  Establecimiento
+                </button>
+              )}
               <button
                 onClick={handleShare}
                 className="flex-1 rounded-xl border border-blue-100 py-2.5 text-xs font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
@@ -1212,6 +1514,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className="rounded-2xl border border-gray-100 bg-white p-1 shadow-sm flex gap-1">
           {([
             { key: 'historial', label: 'Historial', count: sortedEvents.length },
+            { key: 'galeria', label: 'Galería', count: galleryEvents.length },
             { key: 'medico', label: 'Médico', count: medicalRecords?.length },
             { key: 'fotos', label: 'Fotos', count: activityPhotos?.length },
             { key: 'rutina', label: 'Rutina', count: null },
@@ -1501,6 +1804,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   event={ev}
                   onEdit={canEditEvent ? setEditingEvent : undefined}
                   onDelete={canDeleteEvent ? setDeletingEventId : undefined}
+                  onShare={isOwner ? (id) => shareEvent.mutate(id) : undefined}
+                  onTogglePublic={isOwner ? (id, val) => updateEvent.mutate({ id, is_public: val }) : undefined}
                   canEditMetrics={canEditEvent}
                   currentUserId={user?.id}
                 />
@@ -1508,6 +1813,76 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>
+
+        {/* Galería de eventos (mobile) */}
+        {contentTab === 'galeria' && (
+          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-bold text-gray-900">Galería</h2>
+              {isOwner && galleryEvents.length > 0 && (
+                <span className="text-[11px] text-gray-400">Tocá Compartir para publicar en el feed</span>
+              )}
+            </div>
+            {galleryEvents.length === 0 ? (
+              <p className="text-xs text-gray-400">Aún no hay eventos con fotos o videos.</p>
+            ) : (
+              <div className="space-y-4">
+                {galleryEvents.map((ev) => {
+                  const badge = typeBadge[ev.type] ?? typeBadge.nota;
+                  return (
+                    <div key={ev.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                      <div className={`grid ${ev.photos!.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-0.5`}>
+                        {ev.photos!.slice(0, 4).map((p, i) => p.file_type === 'video' ? (
+                          <div key={p.id} className={`relative bg-gray-900 ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'} ${i === 3 && ev.photos!.length > 4 ? 'relative' : ''}`}>
+                            <video src={p.url} className="h-full w-full object-cover opacity-70" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80">
+                                <svg className="h-4 w-4 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                              </div>
+                            </div>
+                            {i === 3 && ev.photos!.length > 4 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                <span className="text-lg font-bold text-white">+{ev.photos!.length - 4}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div key={p.id} className={`relative ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+                            <img src={p.url} alt="" className="h-full w-full object-cover" />
+                            {i === 3 && ev.photos!.length > 4 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                <span className="text-lg font-bold text-white">+{ev.photos!.length - 4}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>{badge.label}</span>
+                          <span className="text-xs text-gray-400">{formatDate(ev.date)}</span>
+                          {ev.is_public && <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-500">Publicado</span>}
+                        </div>
+                        {isOwner && !ev.feed_post_id && (
+                          <button
+                            onClick={() => shareEvent.mutate(ev.id)}
+                            disabled={shareEvent.isPending}
+                            className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-100 transition cursor-pointer disabled:opacity-50"
+                          >
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                            </svg>
+                            Compartir
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Fotos de actividad (mobile) */}
         <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'fotos' ? 'hidden' : ''}`}>
@@ -1690,6 +2065,14 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     className="flex-1 rounded-lg border border-amber-100 py-2 text-xs font-medium text-amber-600 transition hover:border-amber-300 hover:bg-amber-50 cursor-pointer"
                   >
                     Transferir
+                  </button>
+                )}
+                {isOwner && (
+                  <button
+                    onClick={() => setShowSendEstab(true)}
+                    className="flex-1 rounded-lg border border-[#0f1f3d]/20 py-2 text-xs font-medium text-[#0f1f3d] transition hover:border-[#0f1f3d]/40 hover:bg-[#0f1f3d]/5 cursor-pointer"
+                  >
+                    Establecimiento
                   </button>
                 )}
                 {canDelete && (
@@ -1875,6 +2258,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
           {([
             { key: 'historial', label: 'Historial', count: sortedEvents.length },
+            { key: 'galeria',   label: 'Galería',   count: galleryEvents.length },
             { key: 'medico',    label: 'Médico',    count: medicalRecords?.length },
             { key: 'fotos',     label: 'Fotos',     count: activityPhotos?.length },
             { key: 'rutina',    label: 'Rutina',    count: null },
@@ -2008,6 +2392,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   event={ev}
                   onEdit={canEditEvent ? setEditingEvent : undefined}
                   onDelete={canDeleteEvent ? setDeletingEventId : undefined}
+                  onShare={isOwner ? (id) => shareEvent.mutate(id) : undefined}
+                  onTogglePublic={isOwner ? (id, val) => updateEvent.mutate({ id, is_public: val }) : undefined}
                   canEditMetrics={canEditEvent}
                   currentUserId={user?.id}
                 />
@@ -2015,6 +2401,78 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>}
+
+        {/* Galería (desktop) */}
+        {contentTab === 'galeria' && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Galería
+                {galleryEvents.length > 0 && <span className="ml-1.5 text-xs font-normal text-gray-400">({galleryEvents.length} eventos)</span>}
+              </h2>
+              {isOwner && <span className="text-[11px] text-gray-400">Compartí eventos con fotos al feed del caballo</span>}
+            </div>
+            {galleryEvents.length === 0 ? (
+              <p className="py-6 text-center text-xs text-gray-400">Aún no hay eventos con fotos o videos.</p>
+            ) : (
+              <div className="space-y-4">
+                {galleryEvents.map((ev) => {
+                  const badge = typeBadge[ev.type] ?? typeBadge.nota;
+                  return (
+                    <div key={ev.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                      <div className={`grid ${ev.photos!.length === 1 ? 'grid-cols-1' : ev.photos!.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-0.5`}>
+                        {ev.photos!.slice(0, 6).map((p, i) => p.file_type === 'video' ? (
+                          <div key={p.id} className={`relative bg-gray-900 ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+                            <video src={p.url} className="h-full w-full object-cover opacity-70" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80">
+                                <svg className="h-5 w-5 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                              </div>
+                            </div>
+                            {i === 5 && ev.photos!.length > 6 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                <span className="text-xl font-bold text-white">+{ev.photos!.length - 6}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div key={p.id} className={`relative ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+                            <img src={p.url} alt="" className="h-full w-full object-cover" />
+                            {i === 5 && ev.photos!.length > 6 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                <span className="text-xl font-bold text-white">+{ev.photos!.length - 6}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>{badge.label}</span>
+                          <span className="text-xs text-gray-500 line-clamp-1">{ev.description}</span>
+                          <span className="text-[10px] text-gray-400">{formatDate(ev.date)}</span>
+                          {ev.is_public && <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-500">Publicado</span>}
+                        </div>
+                        {isOwner && !ev.feed_post_id && (
+                          <button
+                            onClick={() => shareEvent.mutate(ev.id)}
+                            disabled={shareEvent.isPending}
+                            className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition cursor-pointer disabled:opacity-50 shrink-0"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                            </svg>
+                            Compartir al feed
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Historial médico (desktop) */}
         {contentTab === 'medico' && <MedicalSection

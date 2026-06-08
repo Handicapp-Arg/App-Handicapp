@@ -24,20 +24,19 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}
-      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
         active
-          ? 'bg-white/12 text-white'
-          : 'text-white/50 hover:bg-white/7 hover:text-white/85'
+          ? 'bg-white/[0.13] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
+          : 'text-white/45 hover:bg-white/[0.06] hover:text-white/90'
       }`}
     >
-      {/* Acento activo izquierdo */}
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] rounded-full bg-[#c4922a]" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#c4922a]" />
       )}
-      <span className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-white/45 group-hover:text-white/75'}`}>
+      <span className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-white/40 group-hover:text-white/75'}`}>
         {item.icon}
       </span>
-      <span className="flex-1 truncate tracking-[-0.01em]">{item.label}</span>
+      <span className="flex-1 truncate tracking-[-0.01em] leading-none">{item.label}</span>
       {item.badge != null && item.badge > 0 && (
         <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
           {item.badge > 9 ? '9+' : item.badge}
@@ -49,8 +48,11 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 
 function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="px-3 pt-5 pb-1.5">
-      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-white/22">{label}</p>
+    <div className="px-3 pt-5 pb-2">
+      <div className="flex items-center gap-2">
+        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/20">{label}</p>
+        <div className="flex-1 h-px bg-white/[0.06]" />
+      </div>
     </div>
   );
 }
@@ -97,7 +99,7 @@ export function Sidebar() {
         ...(isAdmin ? [{ href: '/panel', label: 'Panel', icon: icons.panel }] : []),
         { href: '/muro', label: 'Muro', icon: icons.muro },
         { href: '/caballos', label: 'Caballos', icon: icons.caballos },
-        { href: '/registro', label: 'Registro', icon: icons.registro },
+        { href: '/padron', label: 'Padrón', icon: icons.registro },
         { href: '/arbol', label: 'Árbol', icon: icons.arbol },
         ...(!isAdmin ? [{ href: '/eventos', label: 'Eventos', icon: icons.eventos }] : []),
         { href: '/remates', label: 'Remates', icon: icons.remates },
@@ -189,34 +191,39 @@ export function Sidebar() {
       </nav>
 
       {/* Footer: usuario + salir */}
-      <div className="border-t border-white/8 p-2 space-y-px">
+      <div className="border-t border-white/8 p-3 space-y-1">
         <Link
           href="/perfil"
-          className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all duration-150 ${
-            pathname === '/perfil' ? 'bg-white/12 text-white' : 'text-white/50 hover:bg-white/7 hover:text-white/85'
+          className={`group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ${
+            pathname === '/perfil'
+              ? 'bg-white/[0.13] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
+              : 'hover:bg-white/[0.06]'
           }`}
         >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#c4922a]/80 text-[11px] font-bold text-white uppercase ring-1 ring-[#c4922a]/40">
-            {user?.name?.charAt(0) ?? '?'}
+          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#c4922a] to-[#a37320] text-[12px] font-bold text-white uppercase ring-1 ring-[#c4922a]/30">
+            {user?.name?.split(' ').map(n => n[0]).join('').slice(0,2) ?? '?'}
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0f1f3d] bg-emerald-400" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
             <span className="truncate text-[13px] font-semibold text-white/90 tracking-[-0.01em]">{user?.name}</span>
-            <span className="truncate text-[10px] font-medium text-white/35 tracking-[0.03em]">
+            <span className="truncate text-[10px] font-medium text-white/35">
               {roleLabel[user?.role || ''] || user?.role}
             </span>
           </span>
-        </Link>
-        <button
-          onClick={logout}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/35 transition-all duration-150 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
-        >
-          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+          <svg className="h-3.5 w-3.5 shrink-0 text-white/20 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
-          Cerrar sesión
-        </button>
-        <div className="flex justify-between items-center px-2 pt-2">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">Tema</span>
+        </Link>
+        <div className="flex items-center gap-1 px-1">
+          <button
+            onClick={logout}
+            className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] font-medium text-white/30 transition-all duration-150 hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+          >
+            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+            </svg>
+            Salir
+          </button>
           <ThemeToggle />
         </div>
       </div>

@@ -10,18 +10,19 @@ import { EventComment } from './event-comment.entity';
 import { TrainingMetrics } from './training-metrics.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
+import { FeedPost } from '../feed/feed-post.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Event, EventPhoto, EventComment, TrainingMetrics, Horse, HorseUser]),
+    TypeOrmModule.forFeature([Event, EventPhoto, EventComment, TrainingMetrics, Horse, HorseUser, FeedPost]),
     MulterModule.register({
       storage: multer.memoryStorage(),
       fileFilter: (_req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
+        if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
           cb(null, true);
         } else {
-          cb(new Error('Solo se permiten imágenes'), false);
+          cb(new Error('Solo se permiten imágenes y videos'), false);
         }
       },
       limits: { fileSize: 10 * 1024 * 1024 },

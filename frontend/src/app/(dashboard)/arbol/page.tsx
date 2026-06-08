@@ -18,7 +18,7 @@ const ROW_SLOT = NODE_H + 14; // vertical slot per leaf
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface PlacedNode {
-  node: HorseRecordNode;
+  node: HorseRecordNode | null;
   gen: number;
   index: number; // 0-based position within generation
   x: number;
@@ -29,6 +29,7 @@ interface Edge {
   x1: number; y1: number; // right-center of parent
   x2: number; y2: number; // left-center of child
   isSire: boolean;
+  dashed?: boolean;
 }
 
 // ─── Layout builder ──────────────────────────────────────────────────────────
@@ -59,21 +60,22 @@ function buildPedigreeLayout(root: HorseRecordNode, maxGen: number) {
     const x = gen * (NODE_W + COL_GAP);
     const y = slotY(gen, index);
 
-    if (node) {
-      nodes.push({ node, gen, index, x, y });
+    // Siempre empujamos el nodo (null = placeholder "Sin datos")
+    nodes.push({ node, gen, index, x, y });
 
-      if (parentX !== null && parentY !== null) {
-        edges.push({
-          x1: parentX + NODE_W, y1: parentY + NODE_H / 2,
-          x2: x,               y2: y + NODE_H / 2,
-          isSire,
-        });
-      }
+    if (parentX !== null && parentY !== null) {
+      edges.push({
+        x1: parentX + NODE_W, y1: parentY + NODE_H / 2,
+        x2: x,               y2: y + NODE_H / 2,
+        isSire,
+        dashed: !node,
+      });
+    }
 
-      if (gen < maxGen) {
-        visit(node.sire, gen + 1, index * 2,     x, y, true);
-        visit(node.dam,  gen + 1, index * 2 + 1, x, y, false);
-      }
+    // Solo recursamos si el nodo existe
+    if (node && gen < maxGen) {
+      visit(node.sire, gen + 1, index * 2,     x, y, true);
+      visit(node.dam,  gen + 1, index * 2 + 1, x, y, false);
     }
   }
 
@@ -133,6 +135,20 @@ function PedigreeCard({
   onClick: (id: string) => void;
 }) {
   const { node } = placed;
+
+  // Placeholder para padres sin datos en el registro
+  if (!node) {
+    return (
+      <div
+        style={{ left: placed.x, top: placed.y, width: NODE_W, height: NODE_H }}
+        className="absolute flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60"
+      >
+        <Info className="h-4 w-4 text-gray-300 mb-1" />
+        <span className="text-[10px] text-gray-300 font-medium">Sin datos</span>
+      </div>
+    );
+  }
+
   const own = OWN[node.ownership_status] ?? OWN.unverified;
 
   if (isSubject) {
@@ -210,9 +226,10 @@ function EdgeLayer({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; t
             key={i}
             d={path}
             fill="none"
-            stroke={e.isSire ? 'url(#sire-grad)' : 'url(#dam-grad)'}
-            strokeWidth="1.5"
+            stroke={e.dashed ? '#d1d5db' : (e.isSire ? 'url(#sire-grad)' : 'url(#dam-grad)')}
+            strokeWidth={e.dashed ? '1' : '1.5'}
             strokeLinecap="round"
+            strokeDasharray={e.dashed ? '4 3' : undefined}
           />
         );
       })}
@@ -492,12 +509,23 @@ export default function ArbolPage() {
         )}
 
         {selectedId && !isLoading && tree && (
-          <PedigreeCanvas
-            root={tree}
-            maxGen={maxGen}
-            zoom={zoom}
-            onNodeClick={handleNodeClick}
-          />
+          <>
+            {!tree.sire && !tree.dam && (
+              <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+                <Info className="h-4 w-4 shrink-0" />
+                <span>
+                  No se encontraron padres para este caballo en el padrón. Los datos se completan
+                  automáticamente vía scraping — puede demorar unos minutos.
+                </span>
+              </div>
+            )}
+            <PedigreeCanvas
+              root={tree}
+              maxGen={maxGen}
+              zoom={zoom}
+              onNodeClick={handleNodeClick}
+            />
+          </>
         )}
 
         {selectedId && !isLoading && !tree && (
