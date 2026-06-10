@@ -47,6 +47,12 @@ function HorseCard({ horse }: { horse: Horse }) {
           <Text style={styles.imgName} numberOfLines={1}>{horse.name}</Text>
           {horse.breed && <Text style={styles.imgBreed} numberOfLines={1}>{horse.breed.name}</Text>}
         </View>
+        {horse.horse_record_id && (
+          <View style={styles.verifiedBadge}>
+            <Ionicons name="shield-checkmark" size={12} color="#fff" />
+            <Text style={styles.verifiedText}>Verificado</Text>
+          </View>
+        )}
         {horse.activity && (
           <View style={styles.activityBadge}>
             <Text style={styles.activityText}>{horse.activity.name}</Text>
@@ -602,6 +608,13 @@ const styles = StyleSheet.create({
   imgFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10, paddingTop: 28 },
   imgName: { fontSize: 14, fontWeight: '800', color: colors.white, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   imgBreed: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.75)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  verifiedBadge: {
+    position: 'absolute', top: 8, left: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: 'rgba(16,163,127,0.9)', borderRadius: 8,
+    paddingHorizontal: 7, paddingVertical: 3,
+  },
+  verifiedText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   activityBadge: {
     position: 'absolute', top: 8, right: 8,
     backgroundColor: 'rgba(15,31,61,0.75)', borderRadius: 8,
