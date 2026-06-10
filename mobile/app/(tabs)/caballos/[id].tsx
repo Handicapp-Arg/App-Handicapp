@@ -424,6 +424,12 @@ export default function HorseDetailScreen() {
         <View style={s.heroContent}>
           <Text style={s.horseName} numberOfLines={2}>{horse.name}</Text>
           <View style={s.heroBadges}>
+            {horse.horse_record_id && (
+              <View style={[s.heroBadge, s.heroBadgeVerified]}>
+                <Ionicons name="shield-checkmark" size={11} color="#fff" />
+                <Text style={s.heroBadgeText}>Verificado en padrón</Text>
+              </View>
+            )}
             {horse.breed && <View style={s.heroBadge}><Text style={s.heroBadgeText} numberOfLines={1}>{horse.breed.name}</Text></View>}
             {horse.activity && <View style={[s.heroBadge, s.heroBadgeAmber]}><Text style={s.heroBadgeText} numberOfLines={1}>{horse.activity.name}</Text></View>}
           </View>
@@ -1225,6 +1231,7 @@ const s = StyleSheet.create({
   heroBadges: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   heroBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   heroBadgeAmber: { backgroundColor: 'rgba(245,158,11,0.35)' },
+  heroBadgeVerified: { backgroundColor: 'rgba(16,163,127,0.9)', flexDirection: 'row', alignItems: 'center', gap: 4 },
   heroBadgeText: { fontSize: 11, fontWeight: '600', color: colors.white },
 
   /* Tab bar */
