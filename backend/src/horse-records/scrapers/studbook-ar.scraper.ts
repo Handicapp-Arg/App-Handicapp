@@ -34,74 +34,98 @@ interface AutocompleteItem {
  * Scraper para www.studbook.org.ar — Stud Book Argentino (SPC).
  *
  * El sitio es una SPA: el listado carga vía /ejemplares/autocomplete (JSON).
- * bulkList() itera términos de búsqueda A–Z + AA–ZZ para cubrir la BD.
- * fetchProfile() parsea el HTML del perfil individual (funciona por links internos).
+ * collectAll() usa expansión adaptiva: si un término devuelve exactamente
+ * MAX_RESULTS resultados (el límite del endpoint), se subdivide en subprefijos
+ * hasta que cada nodo devuelva < MAX_RESULTS, garantizando cobertura completa.
  */
 export class StudbookArScraper extends BaseRecordScraper {
   static readonly BASE = 'https://www.studbook.org.ar';
 
-  // Todos los términos de búsqueda: letras sueltas + pares → ~702 queries × ≤15 resultados
-  private static readonly SEARCH_TERMS = StudbookArScraper.buildSearchTerms();
-
-  private static buildSearchTerms(): string[] {
-    const LETTERS = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
-    const terms: string[] = [...LETTERS];
-    for (const a of LETTERS) {
-      for (const b of LETTERS) {
-        terms.push(a + b);
-      }
-    }
-    return terms;
-  }
+  private static readonly MAX_RESULTS = 15;
+  private static readonly MAX_DEPTH = 12;
+  // Letras válidas en nombres del SBA + espacio para nombres compuestos
+  private static readonly EXPAND_CHARS = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ '.split('');
+  private static readonly ROOT_CHARS   = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
 
   constructor() {
     super('studbook_ar', 'www.studbook.org.ar', 1000);
   }
 
-  // ─── Listado via autocomplete (reemplaza el viejo HTML paginado) ──────────
-  // page 1..N mapea al término de búsqueda de ese índice.
-  async bulkList(page: number): Promise<{ items: StudbookListItem[]; hasMore: boolean }> {
-    const idx = page - 1;
-    if (idx >= StudbookArScraper.SEARCH_TERMS.length) return { items: [], hasMore: false };
+  // ─── Expansión adaptiva — cobertura completa sin perder registros ──────────
+  // Por cada prefijo que satura el límite del endpoint (MAX_RESULTS), se expande
+  // con un carácter adicional hasta que todos los nodos devuelvan < MAX_RESULTS.
+  async collectAll(
+    onItem: (item: StudbookListItem) => Promise<void>,
+    onProgress?: (term: string, found: number, total: number) => void,
+  ): Promise<{ total: number; queries: number }> {
+    const seen = new Set<number>();
+    let total = 0;
+    let queries = 0;
 
-    const term = StudbookArScraper.SEARCH_TERMS[idx];
-    const raw = await this.queryAutocomplete(term);
+    const expand = async (term: string, depth: number): Promise<void> => {
+      if (depth > StudbookArScraper.MAX_DEPTH) return;
 
-    const items: StudbookListItem[] = raw
-      .filter(r => r.text?.trim())
-      .map(r => {
-        const birth_date_match = r.nacimiento?.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        return {
-          profileUrl: `${StudbookArScraper.BASE}/ejemplares/perfil/${r.id}/${r.url_friendly ?? r.text.toLowerCase().replace(/\s+/g, '-')}`,
-          name: r.text.trim(),
-          prefetched: {
-            sire_name: r.padre?.trim() || null,
-            dam_name: r.madre?.trim() || null,
-            birth_year: r.nacimiento ? extractYear(r.nacimiento) : null,
-            birth_date: birth_date_match
-              ? `${birth_date_match[3]}-${birth_date_match[2].padStart(2,'0')}-${birth_date_match[1].padStart(2,'0')}`
-              : null,
-            sex: r.sexo ? this.parseSexES(r.sexo) : null,
-            color: r.pelo?.toLowerCase() ?? null,
-            registration_number: r.tomo ? `T${r.tomo}-F${r.folio}` : null,
-          },
-        };
-      });
+      const raw = await this.queryAutocomplete(term);
+      queries++;
 
-    const hasMore = idx + 1 < StudbookArScraper.SEARCH_TERMS.length;
-    return { items, hasMore };
+      for (const r of raw) {
+        if (!r.text?.trim() || seen.has(r.id)) continue;
+        seen.add(r.id);
+        total++;
+        await onItem(this.mapRawToListItem(r));
+      }
+
+      onProgress?.(term, raw.length, total);
+
+      if (raw.length >= StudbookArScraper.MAX_RESULTS) {
+        for (const ch of StudbookArScraper.EXPAND_CHARS) {
+          await this.delay(150);
+          await expand(term + ch, depth + 1);
+        }
+      }
+    };
+
+    for (const ch of StudbookArScraper.ROOT_CHARS) {
+      await expand(ch, 1);
+      await this.delay(300);
+    }
+
+    return { total, queries };
   }
 
-  // Mantener firma compatible con el código existente — no se usa en el nuevo flujo
+  private mapRawToListItem(r: AutocompleteItem): StudbookListItem {
+    const birth_date_match = r.nacimiento?.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    return {
+      profileUrl: `${StudbookArScraper.BASE}/ejemplares/perfil/${r.id}/${r.url_friendly ?? r.text.toLowerCase().replace(/\s+/g, '-')}`,
+      name: r.text.trim(),
+      prefetched: {
+        sire_name: r.padre?.trim() || null,
+        dam_name: r.madre?.trim() || null,
+        birth_year: r.nacimiento ? extractYear(r.nacimiento) : null,
+        birth_date: birth_date_match
+          ? `${birth_date_match[3]}-${birth_date_match[2].padStart(2,'0')}-${birth_date_match[1].padStart(2,'0')}`
+          : null,
+        sex: r.sexo ? this.parseSexES(r.sexo) : null,
+        color: r.pelo?.toLowerCase() ?? null,
+        registration_number: r.tomo ? `T${r.tomo}-F${r.folio}` : null,
+      },
+    };
+  }
+
+  // Compatibilidad con código legacy — usa el método adaptivo internamente
+  async bulkList(page: number): Promise<{ items: StudbookListItem[]; hasMore: boolean }> {
+    if (page > 1) return { items: [], hasMore: false };
+    const items: StudbookListItem[] = [];
+    await this.collectAll(async (item) => { items.push(item); });
+    return { items, hasMore: false };
+  }
+
   async listByLetter(letter: string, page = 1): Promise<{ items: StudbookListItem[]; hasMore: boolean }> {
     if (page > 1) return { items: [], hasMore: false };
     const raw = await this.queryAutocomplete(letter);
     const items = raw
       .filter(r => r.text?.trim())
-      .map(r => ({
-        profileUrl: `${StudbookArScraper.BASE}/ejemplares/perfil/${r.id}/${r.url_friendly ?? ''}`,
-        name: r.text.trim(),
-      }));
+      .map(r => this.mapRawToListItem(r));
     return { items, hasMore: false };
   }
 

@@ -34,6 +34,10 @@ export class HorseOwnershipClaim {
   @JoinColumn({ name: 'claimant_id' })
   claimant: User;
 
+  // Horse HandicApp ya creado que se vincula al record al aprobar
+  @Column('uuid', { nullable: true })
+  horse_id: string | null;
+
   // Lo que el usuario proporciona como prueba de propiedad
   @Column({ type: 'varchar', nullable: true })
   registration_number: string | null;

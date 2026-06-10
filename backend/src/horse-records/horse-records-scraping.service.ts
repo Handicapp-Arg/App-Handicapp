@@ -90,14 +90,17 @@ export class HorseRecordsScrapingService {
   }
 
   private async runFullImport(progress: ImportProgress): Promise<void> {
-    this.logger.log('Full import — fase 1/3: Studbook AR');
+    this.logger.log('Full import — fase 1/3: Studbook AR (adaptive)');
     progress.message = 'Fase 1/3: Studbook AR…';
-    const firstPage = await this.studbookAr.bulkList(1);
-    if (firstPage.items.length > 0) {
-      await this.importByPagination(progress);
-    } else {
-      await this.importByLetter(progress);
-    }
+    await this.studbookAr.collectAll(
+      async (item) => {
+        await this.importListItem(item, progress);
+        await this.delay(100);
+      },
+      (term, found, total) => {
+        progress.message = `Fase 1/3: explorando "${term}" — ${total} acumulados`;
+      },
+    );
 
     this.logger.log('Full import — fase 2/3: Wikidata 1900–hoy');
     progress.message = 'Fase 2/3: Wikidata…';
@@ -174,72 +177,23 @@ export class HorseRecordsScrapingService {
   }
 
   private async runStudbookImport(progress: ImportProgress): Promise<void> {
-    this.logger.log('Starting StudbookAR bulk import');
+    this.logger.log('Starting StudbookAR bulk import (adaptive)');
 
-    // Estrategia: primero intentar listado paginado general.
-    // Si la primera página devuelve 0 resultados, usar búsqueda por letra.
-    const firstPage = await this.studbookAr.bulkList(1);
-
-    if (firstPage.items.length > 0) {
-      await this.importByPagination(progress);
-    } else {
-      await this.importByLetter(progress);
-    }
+    await this.studbookAr.collectAll(
+      async (item) => {
+        await this.importListItem(item, progress);
+        await this.delay(100);
+      },
+      (term, found, total) => {
+        progress.message = `Explorando "${term}" — ${found} resultados — ${total} acumulados`;
+        this.logger.debug(`Studbook adaptive: term="${term}" found=${found} total=${total}`);
+      },
+    );
 
     progress.status = 'done';
     progress.finishedAt = new Date();
     progress.message = `Importación completada. ${progress.imported} nuevos, ${progress.updated} actualizados.`;
     this.logger.log(`StudbookAR import done: ${progress.imported} new, ${progress.updated} updated`);
-  }
-
-  // Estrategia A: listado general paginado
-  private async importByPagination(progress: ImportProgress): Promise<void> {
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      progress.currentPage = page;
-      progress.message = `Procesando página ${page}…`;
-
-      const { items, hasMore: more } = await this.studbookAr.bulkList(page);
-      hasMore = more && items.length > 0;
-
-      for (const item of items) {
-        // Si el item trae datos pre-fetched (autocomplete), los usamos directamente
-        // sin hacer una request adicional al perfil → 10x más rápido
-        await this.importListItem(item, progress);
-        await this.delay(300);
-      }
-
-      page++;
-      if (!hasMore) break;
-    }
-  }
-
-  // Estrategia B: búsqueda letra por letra (A-Z + Ñ) — fallback legacy
-  private async importByLetter(progress: ImportProgress): Promise<void> {
-    const letters = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
-
-    for (const letter of letters) {
-      let page = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        progress.currentPage = page;
-        progress.message = `Letra ${letter}, página ${page}…`;
-
-        const { items, hasMore: more } = await this.studbookAr.listByLetter(letter, page);
-        hasMore = more && items.length > 0;
-
-        for (const item of items) {
-          await this.importListItem(item, progress);
-          await this.delay(300);
-        }
-
-        page++;
-        if (!hasMore) break;
-      }
-    }
   }
 
   // Importa un item de listado — usa datos pre-fetched si están disponibles,
@@ -470,31 +424,20 @@ export class HorseRecordsScrapingService {
   }
 
   private async checkStudbookForNewHorses(): Promise<void> {
-    let page = 1;
-    let hasMore = true;
     let newCount = 0;
 
-    while (hasMore) {
-      const { items, hasMore: more } = await this.studbookAr.bulkList(page);
-      hasMore = more && items.length > 0;
-
-      for (const item of items) {
-        const existing = await this.findByNameFuzzy(item.name);
-        if (!existing) {
-          const dummy: ImportProgress = {
-            jobId: '', source: 'studbook_ar_weekly', status: 'running',
-            startedAt: new Date(), processed: 0, imported: 0, updated: 0, errors: 0,
-          };
-          await this.importProfileUrl(item.profileUrl, item.name, dummy);
-          if (dummy.imported > 0) newCount++;
-          await this.delay(1500);
-        }
+    await this.studbookAr.collectAll(async (item) => {
+      const existing = await this.findByNameFuzzy(item.name);
+      if (!existing) {
+        const dummy: ImportProgress = {
+          jobId: '', source: 'studbook_ar_weekly', status: 'running',
+          startedAt: new Date(), processed: 0, imported: 0, updated: 0, errors: 0,
+        };
+        await this.importListItem(item, dummy);
+        if (dummy.imported > 0) newCount++;
+        await this.delay(500);
       }
-
-      page++;
-      if (!hasMore) break;
-      await this.delay(2000); // pausa entre páginas para no saturar
-    }
+    });
 
     this.logger.log(`Studbook weekly scan: ${newCount} new horses imported`);
   }

@@ -22,6 +22,7 @@ export interface HorseRecord {
   country_code: string | null;
   sex: 'macho' | 'hembra' | 'castrado' | null;
   color: string | null;
+  registration_source: string | null;
   ownership_status: 'unverified' | 'pending_claim' | 'verified' | 'disputed';
   scrape_status: 'pending' | 'scraping' | 'done' | 'failed' | 'skipped';
   verified_owner?: { id: string; name: string; email: string } | null;
@@ -46,5 +47,41 @@ export function useHorseRecordTree(id: string | null, depth = 4) {
     queryFn: () => api.get(`/horse-records/${id}/tree`, { params: { depth } }).then(r => r.data),
     enabled: !!id,
     staleTime: 120_000,
+  });
+}
+
+export interface SubmitClaimPayload {
+  horse_record_id: string;
+  horse_id?: string;
+  microchip?: string;
+  claimed_birth_date?: string;
+  registration_number?: string;
+  document_url?: string;
+  document_public_id?: string;
+}
+
+export function useUploadClaimDocument() {
+  return useMutation({
+    mutationFn: async (uri: string): Promise<{ url: string; public_id: string }> => {
+      const formData = new FormData();
+      const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const mime = ext === 'pdf' ? 'application/pdf' : 'image/jpeg';
+      formData.append('file', { uri, name: `doc.${ext}`, type: mime } as unknown as Blob);
+      const { data } = await api.post('/horse-records/claims/upload-document', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data as { url: string; public_id: string };
+    },
+  });
+}
+
+export function useSubmitClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SubmitClaimPayload) =>
+      api.post('/horse-records/claims', payload).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['horse-records'] });
+    },
   });
 }

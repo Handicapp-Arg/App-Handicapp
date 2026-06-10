@@ -231,6 +231,7 @@ export class HorseRecordsService {
 
     const claim = this.claimRepo.create({
       horse_record_id: dto.horse_record_id,
+      horse_id: dto.horse_id ?? null,
       claimant_id: userId,
       registration_number: dto.registration_number ?? null,
       microchip: dto.microchip ?? null,
@@ -248,7 +249,7 @@ export class HorseRecordsService {
     const saved = await this.claimRepo.save(claim);
 
     if (saved.status === 'auto_approved') {
-      await this.applyVerification(record, userId, saved.id);
+      await this.applyVerification(record, userId, saved.id, dto.horse_id);
       this.logger.log(
         `Auto-approved claim for ${record.name} (user ${userId}) · reason: ${approvalReason} · fraud: ${fraudRisk}`,
       );
@@ -418,7 +419,7 @@ export class HorseRecordsService {
     const record = await this.recordRepo.findOne({ where: { id: claim.horse_record_id } });
     if (!record) throw new NotFoundException('horse_record not found');
 
-    await this.applyVerification(record, claim.claimant_id, claimId);
+    await this.applyVerification(record, claim.claimant_id, claimId, claim.horse_id ?? undefined);
 
     await this.claimRepo.update(claimId, {
       status: 'approved',
@@ -488,7 +489,7 @@ export class HorseRecordsService {
 
   // ─── Helpers privados ────────────────────────────────────────────────────
 
-  private async applyVerification(record: HorseRecord, userId: string, _claimId: string): Promise<void> {
+  private async applyVerification(record: HorseRecord, userId: string, _claimId: string, horseId?: string): Promise<void> {
     await this.recordRepo.update(record.id, {
       verified_owner_id: userId,
       verified_at: new Date(),
@@ -502,6 +503,22 @@ export class HorseRecordsService {
       .set({ status: 'rejected', rejection_reason: 'Another claim was approved for this horse' })
       .where('horse_record_id = :hid AND status = :s', { hid: record.id, s: 'pending' })
       .execute();
+
+    // Si el usuario ya tiene un Horse creado manualmente, vincularlo al record
+    if (horseId) {
+      await this.horseRepo.update(horseId, {
+        horse_record_id: record.id,
+        owner_id: userId,
+        sex: record.sex ?? undefined,
+        color: record.color ?? undefined,
+        registration_number: record.registration_number ?? undefined,
+        registration_source: record.registration_source
+          ? (HORSE_REGISTRATION_SOURCE[record.registration_source] ?? 'other')
+          : undefined,
+      });
+      this.logger.log(`Linked existing horse ${horseId} to record ${record.id} (user ${userId})`);
+      return;
+    }
 
     // Crear Horse en HandicApp si todavía no existe uno vinculado a este registro
     const existing = await this.horseRepo.findOne({ where: { horse_record_id: record.id } });

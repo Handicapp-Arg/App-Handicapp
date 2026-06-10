@@ -17,12 +17,19 @@ export function useHorse(id: string) {
   });
 }
 
+import type { HorseRecord } from './use-horse-records';
+
+export interface CreateHorseResult {
+  horse: Horse;
+  record_matches: HorseRecord[];
+}
+
 export function useCreateHorse() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (dto: { name: string; birth_date?: string; establishment_id?: string; microchip?: string }) => {
       const { data } = await api.post('/horses', dto);
-      return data as Horse;
+      return data as CreateHorseResult;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['horses'] }),
   });

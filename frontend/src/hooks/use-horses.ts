@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { Horse, HorseOwnership } from '@/types';
+import type { Horse, HorseOwnership, HorseRecord } from '@/types';
+
+export interface CreateHorseResult {
+  horse: Horse;
+  record_matches: HorseRecord[];
+}
 
 export function useEstablishments() {
   return useQuery<{ id: string; name: string }[]>({
@@ -47,7 +52,7 @@ export function useCreateHorse() {
       activity_id?: string;
     }) => {
       const { data } = await api.post('/horses', dto);
-      return data;
+      return data as CreateHorseResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });

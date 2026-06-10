@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
+import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../hooks/use-horse-records';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
@@ -68,6 +69,232 @@ function HorseCard({ horse }: { horse: Horse }) {
   );
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  studbook_ar: 'Studbook AR',
+  sra: 'SRA',
+  aqha: 'AQHA',
+  allbreed: 'AllBreed',
+  pedigreequery: 'PedigreeQuery',
+  manual: 'Manual',
+};
+
+function RecordMatchModal({
+  matches,
+  microchip,
+  birthDate,
+  horseId,
+  onClose,
+}: {
+  matches: HorseRecord[];
+  microchip: string;
+  birthDate: string;
+  horseId: string;
+  onClose: () => void;
+}) {
+  const submitClaim = useSubmitClaim();
+  const uploadDoc = useUploadClaimDocument();
+  const [step, setStep] = useState<'list' | 'form' | 'done'>('list');
+  const [selectedRecord, setSelectedRecord] = useState<HorseRecord | null>(null);
+  const [docUri, setDocUri] = useState<string | null>(null);
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [error, setError] = useState('');
+
+  const pickDoc = async (source: 'camera' | 'gallery') => {
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.9, allowsEditing: false });
+      if (!result.canceled) setDocUri(result.assets[0].uri);
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.9, allowsEditing: false });
+      if (!result.canceled) setDocUri(result.assets[0].uri);
+    }
+  };
+
+  const handlePickDoc = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancelar', 'Tomar foto', 'Elegir de galería'], cancelButtonIndex: 0 },
+        (i) => { if (i === 1) pickDoc('camera'); else if (i === 2) pickDoc('gallery'); },
+      );
+    } else {
+      Alert.alert('Documento', '¿Cómo querés adjuntar el documento?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: '📷 Tomar foto', onPress: () => pickDoc('camera') },
+        { text: '🖼️ Elegir de galería', onPress: () => pickDoc('gallery') },
+      ]);
+    }
+  };
+
+  const handleSendClaim = async () => {
+    if (!docUri && !registrationNumber.trim()) {
+      setError('Subí un documento o ingresá el número de registro para continuar.');
+      return;
+    }
+    setError('');
+    try {
+      let document_url: string | undefined;
+      let document_public_id: string | undefined;
+      if (docUri) {
+        const uploaded = await uploadDoc.mutateAsync(docUri);
+        document_url = uploaded.url;
+        document_public_id = uploaded.public_id;
+      }
+      await submitClaim.mutateAsync({
+        horse_record_id: selectedRecord!.id,
+        horse_id: horseId,
+        microchip: microchip || undefined,
+        claimed_birth_date: birthDate || undefined,
+        registration_number: registrationNumber.trim() || undefined,
+        document_url,
+        document_public_id,
+      });
+      setStep('done');
+    } catch {
+      setError('No se pudo enviar el reclamo. Intentá de nuevo.');
+    }
+  };
+
+  const isBusy = uploadDoc.isPending || submitClaim.isPending;
+
+  if (step === 'done') {
+    return (
+      <View style={styles.matchCard}>
+        <View style={styles.matchDoneWrap}>
+          <Ionicons name="checkmark-circle" size={52} color="#047857" />
+          <Text style={styles.matchDoneTitle}>¡Reclamo aprobado!</Text>
+          <Text style={styles.matchDoneSub}>Tu caballo quedó vinculado al registro oficial del padrón.</Text>
+          <TouchableOpacity style={styles.submitBtn} onPress={onClose}>
+            <Text style={styles.submitBtnText}>Listo</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (step === 'form' && selectedRecord) {
+    return (
+      <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.matchCard}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Validar posesión</Text>
+              <Text style={styles.matchSubtitle}>{selectedRecord.name}</Text>
+            </View>
+            <TouchableOpacity onPress={() => { setStep('list'); setDocUri(null); setRegistrationNumber(''); setError(''); }}>
+              <Text style={styles.modalClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
+            <View style={styles.claimInfoBox}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.gray500} />
+              <Text style={styles.claimInfoText}>
+                Necesitamos al menos un documento oficial o el número de registro para validar la posesión.
+              </Text>
+            </View>
+
+            {/* Número de registro */}
+            <Text style={styles.fieldLabel}>Número de registro (opcional)</Text>
+            <TextInput
+              style={styles.input}
+              value={registrationNumber}
+              onChangeText={setRegistrationNumber}
+              placeholder="Ej: STB-2018-00142"
+              placeholderTextColor={colors.gray400}
+              autoCapitalize="characters"
+            />
+
+            {/* Upload documento */}
+            <Text style={styles.fieldLabel}>Documento de propiedad</Text>
+            <TouchableOpacity style={styles.docPickerBtn} onPress={handlePickDoc} activeOpacity={0.8}>
+              {docUri ? (
+                <View style={styles.docPreviewRow}>
+                  <Image source={{ uri: docUri }} style={styles.docThumb} resizeMode="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.docPickedText}>Documento adjunto</Text>
+                    <Text style={styles.docPickedSub}>Tocá para cambiar</Text>
+                  </View>
+                  <Ionicons name="checkmark-circle" size={20} color="#047857" />
+                </View>
+              ) : (
+                <View style={styles.docPlaceholder}>
+                  <Ionicons name="document-attach-outline" size={28} color={colors.gray400} />
+                  <Text style={styles.photoPlaceholderText}>Adjuntar certificado</Text>
+                  <Text style={styles.photoPlaceholderSub}>Foto del certificado del Studbook, DNE u otro</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </ScrollView>
+          <View style={styles.modalFooter}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => { setStep('list'); setDocUri(null); setRegistrationNumber(''); }}>
+              <Text style={styles.cancelBtnText}>Volver</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.submitBtn, isBusy && { opacity: 0.6 }]}
+              onPress={handleSendClaim}
+              disabled={isBusy}
+            >
+              {isBusy
+                ? <ActivityIndicator color={colors.white} size="small" />
+                : <Text style={styles.submitBtnText}>Enviar reclamo</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return (
+    <View style={styles.matchCard}>
+      <View style={styles.modalHeader}>
+        <View>
+          <Text style={styles.modalTitle}>Posibles coincidencias</Text>
+          <Text style={styles.matchSubtitle}>Encontramos este caballo en el padrón</Text>
+        </View>
+        <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+      </View>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+        {matches.map((r) => (
+          <View key={r.id} style={styles.matchRow}>
+            <View style={styles.matchInfo}>
+              <Text style={styles.matchName}>{r.name}</Text>
+              <View style={styles.matchMeta}>
+                {r.birth_year && <Text style={styles.matchDetail}>{r.birth_year}</Text>}
+                {r.sex && <Text style={styles.matchDetail}>{r.sex}</Text>}
+                {r.breed && <Text style={styles.matchDetail}>{r.breed}</Text>}
+                {r.color && <Text style={styles.matchDetail}>{r.color}</Text>}
+              </View>
+              <View style={styles.matchSourceRow}>
+                <Ionicons name="document-text-outline" size={11} color={colors.gray400} />
+                <Text style={styles.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
+                {r.ownership_status === 'pending_claim' && (
+                  <Text style={styles.matchPending}>· Reclamo pendiente</Text>
+                )}
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.claimBtn}
+              onPress={() => { setSelectedRecord(r); setStep('form'); }}
+            >
+              <Text style={styles.claimBtnText}>Reclamar</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+      <View style={styles.modalFooter}>
+        <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+          <Text style={styles.cancelBtnText}>Omitir por ahora</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function CreateHorseModal({ onClose }: { onClose: () => void }) {
   const createHorse = useCreateHorse();
   const uploadImage = useUploadHorseImage();
@@ -76,6 +303,7 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
   const [microchip, setMicrochip] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [matches, setMatches] = useState<{ records: HorseRecord[]; horseId: string } | null>(null);
 
   const pickPhoto = async (source: 'camera' | 'gallery') => {
     if (source === 'camera') {
@@ -109,18 +337,36 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es obligatorio'); return; }
     setError('');
-    const horse = await createHorse.mutateAsync({
+    const result = await createHorse.mutateAsync({
       name: name.trim(),
       birth_date: birthDate || undefined,
       microchip: microchip || undefined,
     });
     if (photoUri) {
-      await uploadImage.mutateAsync({ id: horse.id, uri: photoUri });
+      await uploadImage.mutateAsync({ id: result.horse.id, uri: photoUri });
     }
-    onClose();
+    if (result.record_matches.length > 0) {
+      setMatches({ records: result.record_matches, horseId: result.horse.id });
+    } else {
+      onClose();
+    }
   };
 
   const isBusy = createHorse.isPending || uploadImage.isPending;
+
+  if (matches !== null) {
+    return (
+      <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <RecordMatchModal
+          matches={matches.records}
+          microchip={microchip}
+          birthDate={birthDate}
+          horseId={matches.horseId}
+          onClose={onClose}
+        />
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -393,4 +639,28 @@ const styles = StyleSheet.create({
   photoPlaceholderText: { fontSize: 12, fontWeight: '700', color: colors.gray500 },
   photoPlaceholderSub: { fontSize: 10, color: colors.gray400 },
   photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  // Match modal
+  matchCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
+  matchSubtitle: { fontSize: 12, color: colors.gray400, marginTop: 1 },
+  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.gray50, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.gray200 },
+  matchInfo: { flex: 1, gap: 4 },
+  matchName: { fontSize: 15, fontWeight: '700', color: colors.gray900 },
+  matchMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  matchDetail: { fontSize: 12, color: colors.gray500, backgroundColor: colors.gray200, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  matchSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  matchSource: { fontSize: 11, color: colors.gray400 },
+  matchPending: { fontSize: 11, color: colors.amber600 },
+  claimBtn: { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, minWidth: 80, alignItems: 'center' },
+  claimBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  matchDoneWrap: { alignItems: 'center', padding: 32, gap: 12 },
+  matchDoneTitle: { fontSize: 18, fontWeight: '700', color: colors.gray900 },
+  matchDoneSub: { fontSize: 14, color: colors.gray500, textAlign: 'center', lineHeight: 20 },
+  claimInfoBox: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.gray100, borderRadius: 10, padding: 12 },
+  claimInfoText: { flex: 1, fontSize: 12, color: colors.gray600, lineHeight: 17 },
+  docPickerBtn: { borderWidth: 1.5, borderColor: colors.gray200, borderRadius: 14, borderStyle: 'dashed', overflow: 'hidden' },
+  docPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 24, gap: 6 },
+  docPreviewRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
+  docThumb: { width: 56, height: 56, borderRadius: 8 },
+  docPickedText: { fontSize: 13, fontWeight: '600', color: colors.gray900 },
+  docPickedSub: { fontSize: 11, color: colors.gray400, marginTop: 2 },
 });

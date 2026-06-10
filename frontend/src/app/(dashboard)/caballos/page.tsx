@@ -18,6 +18,8 @@ import {
 import { useBreeds, useActivities } from '@/hooks/use-catalog-items';
 import { useAuth } from '@/lib/auth-context';
 import { getErrorMessage } from '@/lib/errors';
+import { useSubmitClaim } from '@/hooks/use-horse-records';
+import type { HorseRecord } from '@/types';
 import { cldTransform } from '@/lib/cloudinary';
 import { calcAge } from '@/lib/utils';
 import ImagePicker from '@/components/image-picker';
@@ -490,11 +492,13 @@ export default function CaballosPage() {
   const [breedId, setBreedId] = useState('');
   const [activityId, setActivityId] = useState('');
 
+  const submitClaim = useSubmitClaim();
   const [editingHorse, setEditingHorse] = useState<Horse | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [confirmRemoveImage, setConfirmRemoveImage] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [recordMatches, setRecordMatches] = useState<{ matches: HorseRecord[]; microchip: string; birthDate: string } | null>(null);
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -507,7 +511,7 @@ export default function CaballosPage() {
     }
 
     try {
-      const horse = await createHorse.mutateAsync({
+      const result = await createHorse.mutateAsync({
         name,
         birth_date: birthDate || undefined,
         owner_id: ownerId || undefined,
@@ -518,7 +522,7 @@ export default function CaballosPage() {
       });
       if (imageFiles.length > 0) {
         try {
-          await uploadImage.mutateAsync({ id: horse.id, file: imageFiles[0] });
+          await uploadImage.mutateAsync({ id: result.horse.id, file: imageFiles[0] });
         } catch (imgErr) {
           setCreateError(getErrorMessage(imgErr, 'El caballo se creó pero falló la subida de la foto'));
           return;
@@ -527,6 +531,9 @@ export default function CaballosPage() {
       setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId(''); setOwnerId('');
       setMicrochip(''); setBreedId(''); setActivityId('');
       setShowForm(false);
+      if (result.record_matches.length > 0) {
+        setRecordMatches({ matches: result.record_matches, microchip, birthDate });
+      }
     } catch (err) {
       setCreateError(getErrorMessage(err, 'No se pudo crear el caballo'));
     }
@@ -604,6 +611,62 @@ export default function CaballosPage() {
           }}
           onCancel={() => setConfirmRemoveImage(false)}
         />
+      )}
+
+      {/* Modal coincidencias en padrón */}
+      {recordMatches && createPortal(
+        <>
+          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setRecordMatches(null)} />
+          <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+              <div className="flex items-start justify-between px-5 pt-5 pb-3">
+                <div>
+                  <p className="font-bold text-gray-900">Posibles coincidencias</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Encontramos este caballo en el padrón oficial</p>
+                </div>
+                <button onClick={() => setRecordMatches(null)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
+              </div>
+              <div className="px-5 pb-3 space-y-3 max-h-72 overflow-y-auto">
+                {recordMatches.matches.map((r) => (
+                  <div key={r.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 truncate">{r.name}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {r.birth_year && <span className="text-[10px] bg-gray-200 rounded px-1.5 py-0.5 text-gray-600">{r.birth_year}</span>}
+                        {r.sex && <span className="text-[10px] bg-gray-200 rounded px-1.5 py-0.5 text-gray-600">{r.sex}</span>}
+                        {r.breed && <span className="text-[10px] bg-gray-200 rounded px-1.5 py-0.5 text-gray-600">{r.breed}</span>}
+                        {r.color && <span className="text-[10px] bg-gray-200 rounded px-1.5 py-0.5 text-gray-600">{r.color}</span>}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">{r.registration_source ?? 'Padrón'}{r.ownership_status === 'pending_claim' ? ' · Reclamo pendiente' : ''}</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await submitClaim.mutateAsync({
+                          horse_record_id: r.id,
+                          microchip: recordMatches.microchip || undefined,
+                          claimed_birth_date: recordMatches.birthDate || undefined,
+                        });
+                        setRecordMatches(null);
+                      }}
+                      disabled={submitClaim.isPending}
+                      className="shrink-0 rounded-lg bg-[#0f1f3d] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer"
+                    >
+                      {submitClaim.isPending ? '...' : 'Reclamar'}
+                    </button>
+                  </div>
+                ))}
+                {submitClaim.isError && <p className="text-xs text-red-500">No se pudo enviar el reclamo.</p>}
+                {submitClaim.isSuccess && <p className="text-xs text-emerald-600">Reclamo enviado. Te notificamos cuando esté aprobado.</p>}
+              </div>
+              <div className="px-5 pb-5 pt-2">
+                <button onClick={() => setRecordMatches(null)} className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer">
+                  Omitir por ahora
+                </button>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
       )}
 
       {/* Modal edición */}

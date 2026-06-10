@@ -24,6 +24,7 @@ import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { User } from '../auth/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PlansService } from '../plans/plans.service';
+import { HorseRecordsService } from '../horse-records/horse-records.service';
 
 @Injectable()
 export class HorsesService implements OnModuleInit {
@@ -42,6 +43,7 @@ export class HorsesService implements OnModuleInit {
     private readonly movementRepository: Repository<HorseMovement>,
     private readonly cloudinaryService: CloudinaryService,
     private readonly plansService: PlansService,
+    private readonly horseRecordsService: HorseRecordsService,
   ) {}
 
   private async logMovement(horseId: string, type: MovementType, description: string, actorId?: string): Promise<void> {
@@ -81,7 +83,7 @@ export class HorsesService implements OnModuleInit {
     }
   }
 
-  async create(dto: CreateHorseDto, user: User): Promise<Horse> {
+  async create(dto: CreateHorseDto, user: User): Promise<{ horse: Horse; record_matches: import('../horse-records/horse-record.entity').HorseRecord[] }> {
     let owner_id: string;
     let establishment_id: string | null = null;
     let organization_id: string | null = null;
@@ -133,6 +135,18 @@ export class HorsesService implements OnModuleInit {
       }
     }
 
+    const nameDupe = await this.horseRepository
+      .createQueryBuilder('h')
+      .where('LOWER(h.name) = LOWER(:name)', { name: dto.name })
+      .andWhere('h.owner_id = :owner_id', { owner_id })
+      .select('h.id')
+      .getOne();
+    if (nameDupe) {
+      throw new BadRequestException(
+        `Ya tenés un caballo registrado con ese nombre`,
+      );
+    }
+
     if (dto.microchip) {
       const exists = await this.horseRepository.findOne({
         where: { microchip: dto.microchip },
@@ -170,7 +184,18 @@ export class HorsesService implements OnModuleInit {
     }
     await this.syncHorseUsers(saved);
     await this.logMovement(saved.id, 'created', 'Caballo registrado en HandicApp', user.id);
-    return saved;
+
+    const birthYear = dto.birth_date ? new Date(dto.birth_date).getFullYear() : undefined;
+    const { items: record_matches } = await this.horseRecordsService.search({
+      name: dto.name,
+      birth_year: birthYear,
+      limit: 3,
+      offset: 0,
+    }).then(({ items }) => ({
+      items: items.filter(r => r.ownership_status !== 'verified'),
+    })).catch(() => ({ items: [] }));
+
+    return { horse: saved, record_matches };
   }
 
   async findAll(user: User, query: HorsesQueryDto = {}): Promise<Horse[]> {

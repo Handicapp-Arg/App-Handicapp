@@ -4,6 +4,10 @@ export class SubmitClaimDto {
   @IsUUID()
   horse_record_id: string;
 
+  @IsUUID()
+  @IsOptional()
+  horse_id?: string;
+
   @IsString()
   @IsOptional()
   registration_number?: string;

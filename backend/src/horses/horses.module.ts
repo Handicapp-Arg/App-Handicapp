@@ -13,6 +13,7 @@ import { WeightRecord } from './weight-record.entity';
 import { ShareToken } from './share-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { PlansModule } from '../plans/plans.module';
+import { HorseRecordsModule } from '../horse-records/horse-records.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PlansModule } from '../plans/plans.module';
     MulterModule.register({ storage: multer.memoryStorage() }),
     AuthModule,
     PlansModule,
+    HorseRecordsModule,
   ],
   controllers: [HorsesController, HorsesPublicController],
   providers: [HorsesService],
