@@ -80,6 +80,13 @@ export default function MasScreen() {
       iconColor: '#7c3aed',
     },
     {
+      icon: 'calendar-outline',
+      label: 'Agenda',
+      desc: 'Calendario de turnos y citas',
+      path: Routes.tabsAgenda,
+      iconColor: '#0284c7',
+    },
+    {
       icon: 'git-branch-outline',
       label: 'Árbol Genealógico',
       desc: 'Pedigree global de caballos desde 1990',
@@ -156,13 +163,6 @@ export default function MasScreen() {
   ];
 
   const cuenta: MenuItem[] = [
-    {
-      icon: 'person-outline',
-      label: 'Mi perfil',
-      desc: 'Datos personales y plan',
-      path: '/(tabs)/perfil',
-      iconColor: colors.gray600,
-    },
     ...(isAdmin ? [{
       icon: 'settings-outline' as IoniconsName,
       label: 'Config. notificaciones',
