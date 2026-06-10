@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Image, TextInput, RefreshControl, Modal, KeyboardAvoidingView,
@@ -8,9 +8,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useQueryClient } from '@tanstack/react-query';
 import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
 import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../hooks/use-horse-records';
+import { useCreateEvent } from '../../../hooks/use-events';
+import { useDashboard } from '../../../hooks/use-dashboard';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
@@ -20,58 +22,230 @@ import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import type { Horse } from '../../../../packages/shared/src';
 
-function HorseCard({ horse }: { horse: Horse }) {
+function HorseCard({ horse, monthlySpend, onQuickExpense }: {
+  horse: Horse;
+  monthlySpend?: number;
+  onQuickExpense: (h: Horse) => void;
+}) {
   const router = useRouter();
+  const sexLabel: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
+  const subtitle = [horse.breed?.name, horse.sex ? sexLabel[horse.sex] : null].filter(Boolean).join(' · ');
+
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={() => { haptic.light(); router.push(`/(tabs)/caballos/${horse.id}`); }}
-      activeOpacity={0.85}
+      activeOpacity={0.88}
     >
-      <View style={styles.imgWrap}>
+      {/* Photo */}
+      <View style={styles.cardPhotoWrap}>
         {horse.image_url
-          ? <Image source={{ uri: horse.image_url }} style={styles.img} resizeMode="cover" />
+          ? <Image source={{ uri: horse.image_url }} style={styles.cardPhoto} resizeMode="cover" />
           : (
-            <View style={styles.imgPlaceholder}>
-              <Text style={styles.imgPlaceholderText}>{horse.name[0]?.toUpperCase()}</Text>
+            <View style={styles.cardPhotoPlaceholder}>
+              <Text style={styles.cardPhotoInitial}>{horse.name[0]?.toUpperCase()}</Text>
             </View>
           )
         }
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.75)']}
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0.35 }}
-          end={{ x: 0, y: 1 }}
-        />
-        <View style={styles.imgFooter}>
-          <Text style={styles.imgName} numberOfLines={1}>{horse.name}</Text>
-          {horse.breed && <Text style={styles.imgBreed} numberOfLines={1}>{horse.breed.name}</Text>}
-        </View>
         {horse.horse_record_id && (
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={12} color="#fff" />
-            <Text style={styles.verifiedText}>Verificado</Text>
-          </View>
-        )}
-        {horse.activity && (
-          <View style={styles.activityBadge}>
-            <Text style={styles.activityText}>{horse.activity.name}</Text>
+          <View style={styles.cardVerifiedDot}>
+            <Ionicons name="shield-checkmark" size={9} color="#fff" />
           </View>
         )}
       </View>
-      <View style={styles.cardFooter}>
-        {horse.establishment
-          ? <>
-              <Ionicons name="business-outline" size={11} color={colors.gray400} />
-              <Text style={styles.cardSub} numberOfLines={1}>{horse.establishment.name}</Text>
-            </>
-          : <Text style={styles.cardSubEmpty}>Sin establecimiento</Text>
-        }
-        <View style={styles.arrowWrap}>
-          <Ionicons name="chevron-forward" size={11} color={colors.gray300} />
+
+      {/* Info */}
+      <View style={styles.cardBody}>
+        <View style={styles.cardNameRow}>
+          <Text style={styles.cardName} numberOfLines={1}>{horse.name}</Text>
+          {horse.activity && (
+            <View style={styles.cardActivityPill}>
+              <Text style={styles.cardActivityText}>{horse.activity.name}</Text>
+            </View>
+          )}
         </View>
+        {subtitle ? <Text style={styles.cardBreed} numberOfLines={1}>{subtitle}</Text> : null}
+        {horse.establishment && (
+          <View style={styles.cardEstabRow}>
+            <Ionicons name="business-outline" size={11} color={colors.gray400} />
+            <Text style={styles.cardEstab} numberOfLines={1}>{horse.establishment.name}</Text>
+          </View>
+        )}
+        {monthlySpend != null && monthlySpend > 0 && (
+          <View style={styles.cardSpendRow}>
+            <Ionicons name="trending-up-outline" size={12} color="#059669" />
+            <Text style={styles.cardSpend}>${monthlySpend.toLocaleString('es-AR')} este mes</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Actions */}
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.cardQuickBtn}
+          onPress={(e) => { e.stopPropagation(); haptic.medium(); onQuickExpense(horse); }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="add-circle" size={28} color={colors.primary} />
+        </TouchableOpacity>
+        <Ionicons name="chevron-forward" size={15} color={colors.gray300} />
       </View>
     </TouchableOpacity>
+  );
+}
+
+const GASTO_CATEGORIES = [
+  { key: 'alimentacion', icon: '🌾', label: 'Alimentación' },
+  { key: 'veterinario', icon: '💉', label: 'Veterinario' },
+  { key: 'herradero', icon: '🔨', label: 'Herradero' },
+  { key: 'entrenamiento', icon: '🏇', label: 'Entrenamiento' },
+  { key: 'mantenimiento', icon: '🔧', label: 'Mantenimiento' },
+  { key: 'transporte', icon: '🚛', label: 'Transporte' },
+  { key: 'otros', icon: '📦', label: 'Otros' },
+];
+
+function QuickGastoModal({
+  horses,
+  initialHorse,
+  onClose,
+}: {
+  horses: Horse[];
+  initialHorse?: Horse | null;
+  onClose: () => void;
+}) {
+  const createEvent = useCreateEvent();
+  const qc = useQueryClient();
+  const today = new Date().toISOString().split('T')[0];
+  const [selectedHorse, setSelectedHorse] = useState<Horse | null>(
+    initialHorse ?? (horses.length === 1 ? horses[0] : null),
+  );
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('otros');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!selectedHorse) { setError('Seleccioná un caballo'); return; }
+    const parsed = parseFloat(amount.replace(',', '.'));
+    if (!amount.trim() || isNaN(parsed) || parsed <= 0) { setError('Ingresá un monto válido'); return; }
+    setError('');
+    try {
+      const catLabel = GASTO_CATEGORIES.find((c) => c.key === category)?.label ?? 'Gasto';
+      await createEvent.mutateAsync({
+        type: 'gasto',
+        description: description.trim() || catLabel,
+        date: today,
+        horse_id: selectedHorse.id,
+        amount: String(parsed),
+        expense_category: category,
+        currency: 'ARS',
+      });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      haptic.success();
+      onClose();
+    } catch {
+      setError('No se pudo registrar. Intentá de nuevo.');
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={styles.modalCard}>
+        <View style={styles.modalHeader}>
+          <View>
+            <Text style={styles.modalTitle}>Registrar gasto</Text>
+            {selectedHorse && <Text style={styles.quickModalSub}>{selectedHorse.name}</Text>}
+          </View>
+          <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.quickModalBody} keyboardShouldPersistTaps="handled">
+          {/* Horse selector */}
+          {!initialHorse && horses.length > 1 && (
+            <>
+              <Text style={styles.fieldLabel}>¿Para qué caballo?</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
+                  {horses.map((h) => (
+                    <TouchableOpacity
+                      key={h.id}
+                      style={[styles.horseChip, selectedHorse?.id === h.id && styles.horseChipActive]}
+                      onPress={() => { haptic.selection(); setSelectedHorse(h); }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.horseChipText, selectedHorse?.id === h.id && styles.horseChipTextActive]}>
+                        {h.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </>
+          )}
+
+          {/* Amount */}
+          <Text style={styles.fieldLabel}>Monto *</Text>
+          <View style={styles.amountRow}>
+            <View style={styles.amountPrefix}><Text style={styles.amountPrefixText}>$</Text></View>
+            <TextInput
+              style={[styles.input, styles.amountInput]}
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="0"
+              placeholderTextColor={colors.gray400}
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+          </View>
+
+          {/* Category */}
+          <Text style={styles.fieldLabel}>Categoría</Text>
+          <View style={styles.categoryGrid}>
+            {GASTO_CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat.key}
+                style={[styles.catChip, category === cat.key && styles.catChipActive]}
+                onPress={() => { haptic.selection(); setCategory(cat.key); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.catIcon}>{cat.icon}</Text>
+                <Text style={[styles.catLabel, category === cat.key && styles.catLabelActive]}>{cat.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Description */}
+          <Text style={styles.fieldLabel}>Descripción (opcional)</Text>
+          <TextInput
+            style={styles.input}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Ej: Consulta Dr. García, alimento marca X..."
+            placeholderTextColor={colors.gray400}
+            autoCapitalize="sentences"
+          />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </ScrollView>
+
+        <View style={styles.modalFooter}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.submitBtn, createEvent.isPending && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={createEvent.isPending}
+          >
+            {createEvent.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={styles.submitBtnText}>Registrar gasto</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -451,11 +625,19 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
 export default function CaballosScreen() {
   const { can } = useAuth();
   const { data: horses, isLoading, refetch, isRefetching } = useHorses();
+  const { data: dashboard } = useDashboard();
   const [search, setSearch] = useState('');
   const [filterActivity, setFilterActivity] = useState('');
   const [filterEstab, setFilterEstab] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [quickGastoHorse, setQuickGastoHorse] = useState<Horse | null | undefined>(undefined);
   const insets = useSafeAreaInsets();
+
+  const spendMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const s of dashboard?.spend_by_horse ?? []) map[s.horse_id] = s.total;
+    return map;
+  }, [dashboard?.spend_by_horse]);
 
   // Opciones de filtro dinámicas según los datos disponibles
   const activityOptions = [...new Set((horses ?? []).map((h) => h.activity?.name).filter(Boolean))] as string[];
@@ -481,12 +663,8 @@ export default function CaballosScreen() {
           title="Caballos"
           right={can('horses', 'create') ? <HeaderButton label="+ Nuevo" onPress={() => setShowCreate(true)} /> : undefined}
         />
-        <View style={styles.skeletonGrid}>
-          {[1, 2, 3, 4].map((i) => (
-            <View key={i} style={{ flex: 1, maxWidth: '50%' }}>
-              <HorseCardSkeleton />
-            </View>
-          ))}
+        <View style={{ padding: 16, gap: 12 }}>
+          {[1, 2, 3].map((i) => <HorseCardSkeleton key={i} />)}
         </View>
       </View>
     );
@@ -563,10 +741,14 @@ export default function CaballosScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(h) => h.id}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <HorseCard horse={item} />}
+          renderItem={({ item }) => (
+            <HorseCard
+              horse={item}
+              monthlySpend={spendMap[item.id]}
+              onQuickExpense={(h) => setQuickGastoHorse(h)}
+            />
+          )}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
           }
@@ -574,9 +756,40 @@ export default function CaballosScreen() {
         />
       )}
 
+      {/* FAB — agregar gasto rápido */}
+      {(horses?.length ?? 0) > 0 && (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: insets.bottom + 16 }]}
+          onPress={() => { haptic.medium(); setQuickGastoHorse(null); }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add" size={26} color="#fff" />
+          <Text style={styles.fabLabel}>Gasto</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Modal: crear caballo */}
       <Modal visible={showCreate} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <CreateHorseModal onClose={() => setShowCreate(false)} />
+        </View>
+      </Modal>
+
+      {/* Modal: registrar gasto rápido */}
+      <Modal
+        visible={quickGastoHorse !== undefined}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setQuickGastoHorse(undefined)}
+      >
+        <View style={styles.modalOverlay}>
+          {quickGastoHorse !== undefined && (
+            <QuickGastoModal
+              horses={horses ?? []}
+              initialHorse={quickGastoHorse}
+              onClose={() => setQuickGastoHorse(undefined)}
+            />
+          )}
         </View>
       </Modal>
     </View>
@@ -592,39 +805,80 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 2, gap: 8,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: colors.gray900 },
-  skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 12 },
-  list: { padding: 12, paddingBottom: 32, gap: 12 },
-  row: { gap: 12 },
-  // Card mejorada
+  list: { padding: 12, paddingBottom: 100, gap: 10 },
+  // ─── Horse Card (list style) ───────────────────────────────────────────────
   card: {
-    flex: 1, backgroundColor: colors.white, borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.white, borderRadius: 16,
+    padding: 12, gap: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
-  imgWrap: { position: 'relative', aspectRatio: 1 },
-  img: { width: '100%', height: '100%' },
-  imgPlaceholder: { flex: 1, backgroundColor: '#e8ecf4', justifyContent: 'center', alignItems: 'center' },
-  imgPlaceholderText: { fontSize: 36, fontWeight: '800', color: colors.primary, opacity: 0.4 },
-  imgFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10, paddingTop: 28 },
-  imgName: { fontSize: 14, fontWeight: '800', color: colors.white, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-  imgBreed: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.75)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  verifiedBadge: {
-    position: 'absolute', top: 8, left: 8,
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: 'rgba(16,163,127,0.9)', borderRadius: 8,
-    paddingHorizontal: 7, paddingVertical: 3,
+  cardPhotoWrap: { position: 'relative' },
+  cardPhoto: { width: 68, height: 68, borderRadius: 12 },
+  cardPhotoPlaceholder: {
+    width: 68, height: 68, borderRadius: 12,
+    backgroundColor: '#e8ecf4', justifyContent: 'center', alignItems: 'center',
   },
-  verifiedText: { fontSize: 10, fontWeight: '700', color: '#fff' },
-  activityBadge: {
-    position: 'absolute', top: 8, right: 8,
-    backgroundColor: 'rgba(15,31,61,0.75)', borderRadius: 8,
-    paddingHorizontal: 8, paddingVertical: 3,
+  cardPhotoInitial: { fontSize: 26, fontWeight: '800', color: colors.primary, opacity: 0.5 },
+  cardVerifiedDot: {
+    position: 'absolute', bottom: -3, right: -3,
+    width: 18, height: 18, borderRadius: 9,
+    backgroundColor: '#059669', borderWidth: 2, borderColor: colors.white,
+    justifyContent: 'center', alignItems: 'center',
   },
-  activityText: { fontSize: 10, fontWeight: '700', color: colors.white },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.gray100 },
-  cardSub: { fontSize: 11, color: colors.gray400, flex: 1 },
-  cardSubEmpty: { fontSize: 11, color: colors.gray300, flex: 1, fontStyle: 'italic' },
-  arrowWrap: { marginLeft: 'auto' },
+  cardBody: { flex: 1, gap: 3 },
+  cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardName: { fontSize: 15, fontWeight: '700', color: colors.gray900, flex: 1 },
+  cardActivityPill: {
+    backgroundColor: '#eff6ff', borderRadius: 6,
+    paddingHorizontal: 7, paddingVertical: 2, flexShrink: 0,
+  },
+  cardActivityText: { fontSize: 10, fontWeight: '700', color: '#1d4ed8' },
+  cardBreed: { fontSize: 12, color: colors.gray500 },
+  cardEstabRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardEstab: { fontSize: 12, color: colors.gray400, flex: 1 },
+  cardSpendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  cardSpend: { fontSize: 12, fontWeight: '600', color: '#059669' },
+  cardActions: { alignItems: 'center', gap: 6 },
+  cardQuickBtn: { padding: 2 },
+  // ─── FAB ──────────────────────────────────────────────────────────────────
+  fab: {
+    position: 'absolute', right: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: colors.primary, borderRadius: 28,
+    paddingVertical: 12, paddingHorizontal: 18,
+    shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
+  },
+  fabLabel: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  // ─── Quick gasto modal ─────────────────────────────────────────────────────
+  quickModalBody: { padding: 20, gap: 14, paddingBottom: 8 },
+  quickModalSub: { fontSize: 12, color: colors.gray400, marginTop: 1 },
+  horseChip: {
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200,
+  },
+  horseChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  horseChipText: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  horseChipTextActive: { color: colors.white },
+  amountRow: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  amountPrefix: {
+    height: 46, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200,
+    borderTopLeftRadius: 10, borderBottomLeftRadius: 10, borderRightWidth: 0,
+  },
+  amountPrefixText: { fontSize: 16, fontWeight: '700', color: colors.gray500 },
+  amountInput: { flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0, fontSize: 18, fontWeight: '700' },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  catChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7,
+    backgroundColor: colors.gray50, borderWidth: 1.5, borderColor: colors.gray200,
+  },
+  catChipActive: { backgroundColor: '#eff6ff', borderColor: '#3b82f6' },
+  catIcon: { fontSize: 14 },
+  catLabel: { fontSize: 12, fontWeight: '600', color: colors.gray600 },
+  catLabelActive: { color: '#1d4ed8' },
+  // ─── Filtros ───────────────────────────────────────────────────────────────
   filterRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

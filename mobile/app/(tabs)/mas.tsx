@@ -1,7 +1,6 @@
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { useNotifications } from '../../lib/notifications';
@@ -68,8 +67,13 @@ export default function MasScreen() {
   const isProp  = role === 'propietario';
   const isEstab = role === 'establecimiento';
   const isAdmin = role === 'admin';
+  const ROLE_LABEL: Record<string, string> = {
+    propietario: 'Propietario', establecimiento: 'Establecimiento',
+    veterinario: 'Veterinario', admin: 'Administrador',
+  };
 
   const push = (path: string) => nav.push(router, path);
+  const roleLabel = ROLE_LABEL[role] ?? role;
 
   const principal: MenuItem[] = [
     {
@@ -179,52 +183,27 @@ export default function MasScreen() {
     }] : []),
   ];
 
-  const ROLE_LABEL: Record<string, string> = {
-    propietario: 'Propietario', establecimiento: 'Establecimiento',
-    veterinario: 'Veterinario', admin: 'Administrador',
-  };
-  const ROLE_COLOR: Record<string, [string, string]> = {
-    propietario:    ['#92400e', '#78350f'],
-    establecimiento:['#065f46', '#064e3b'],
-    veterinario:    ['#4c1d95', '#3b0764'],
-    admin:          ['#1e3a8a', '#1e40af'],
-  };
-  const gradColors = ROLE_COLOR[role] ?? ['#1e3a8a', '#0f1f3d'];
-  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '?';
-
   return (
     <ScrollView
       style={s.root}
-      contentContainerStyle={[s.content]}
+      contentContainerStyle={[s.content, { paddingTop: insets.top + space[4] }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* ── Profile card ── */}
-      <LinearGradient
-        colors={['#0a1628', '#0f1f3d', '#132548']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[s.profileCard, { paddingTop: insets.top + space[4] }]}
-      >
-        <View style={s.profileRow}>
-          <View style={[s.profileAvatar, { backgroundColor: gradColors[0] }]}>
-            <Text style={s.profileAvatarText}>{initials}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Usuario'}</Text>
-            <Text style={s.profileEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
-            <View style={s.profileRolePill}>
-              <Text style={s.profileRoleText}>{ROLE_LABEL[role] ?? role}</Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={s.profileEditBtn}
-            onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="pencil-outline" size={15} color="rgba(255,255,255,0.7)" />
-          </TouchableOpacity>
+      {/* Encabezado sección "Más" */}
+      <View style={s.masHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.masGreeting}>{user?.name?.split(' ')[0] ?? 'Hola'}</Text>
+          <Text style={s.masRoleLabel}>{roleLabel}</Text>
         </View>
-      </LinearGradient>
+        <TouchableOpacity
+          style={s.masPerfilBtn}
+          onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="person-circle-outline" size={22} color={colors.primary} />
+          <Text style={s.masPerfilBtnText}>Mi perfil</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Banner vender caballo (propietarios) */}
       {isProp && (
@@ -258,32 +237,19 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.gray50 },
   content: { paddingBottom: space[10], gap: space[1] },
 
-  profileCard: {
-    paddingHorizontal: space[5],
-    paddingBottom: space[5],
-    marginBottom: space[4],
+  masHeader: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: space[4], marginBottom: space[3],
   },
-  profileRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  profileAvatar: {
-    width: 52, height: 52, borderRadius: 26,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
+  masGreeting: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900 },
+  masRoleLabel: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
+  masPerfilBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.white, borderRadius: radius.full,
+    paddingHorizontal: space[3], paddingVertical: space[2],
+    borderWidth: 1, borderColor: colors.gray200,
   },
-  profileAvatarText: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
-  profileName: { fontSize: text.base, fontWeight: weight.bold, color: colors.white, letterSpacing: -0.2 },
-  profileEmail: { fontSize: text.xs, color: 'rgba(255,255,255,0.45)', marginTop: 1 },
-  profileRolePill: {
-    alignSelf: 'flex-start', marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2,
-  },
-  profileRoleText: { fontSize: 10, fontWeight: weight.semibold, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  profileEditBtn: {
-    width: 34, height: 34, borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-  },
+  masPerfilBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.primary },
 
   section: { marginBottom: space[4], paddingHorizontal: space[4] },
   sectionTitle: {
@@ -340,7 +306,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#f5f3ff', borderRadius: radius.xl,
     borderWidth: 1.5, borderColor: '#ddd6fe',
-    padding: space[4], marginBottom: space[4],
+    padding: space[4], marginBottom: space[4], marginHorizontal: space[4],
   },
   sellBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: space[3], flex: 1 },
   sellBannerTitle: { fontSize: text.sm, fontWeight: weight.bold, color: '#4c1d95' },
