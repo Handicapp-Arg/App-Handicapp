@@ -36,6 +36,16 @@ function formatCurrency(n: number) {
   return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 }
 
+const CATEGORY_META: Record<string, { icon: string; color: string }> = {
+  alimentacion:   { icon: '🌾', color: '#16a34a' },
+  veterinario:    { icon: '💉', color: '#dc2626' },
+  herradero:      { icon: '🔨', color: '#d97706' },
+  entrenamiento:  { icon: '🏇', color: '#7c3aed' },
+  mantenimiento:  { icon: '🔧', color: '#0284c7' },
+  transporte:     { icon: '🚛', color: '#0891b2' },
+  otros:          { icon: '📦', color: '#6b7280' },
+};
+
 // ─── Horse Story Chip ────────────────────────────────────────────────────────
 function HorseStory({ horse }: { horse: Horse }) {
   const router = useRouter();
@@ -140,6 +150,9 @@ export default function HomeScreen() {
   const recentPosts = feedPosts.slice(0, 2);
   const monthlySpend = dash?.monthly_spend ?? 0;
   const monthlyEvents = dash?.monthly_events_count ?? 0;
+  const spendByHorse = dash?.spend_by_horse ?? [];
+  const spendByCategory = dash?.spend_by_category ?? [];
+  const recentExpenses = dash?.recent_expenses ?? [];
 
   return (
     <ScrollView
@@ -261,29 +274,118 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* ─── Resumen del mes ─── */}
-      {monthlySpend > 0 && (
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Resumen del mes</Text>
-          <View style={s.spendCard}>
-            <LinearGradient
-              colors={['#0f2d5a', '#1a3366']}
-              style={s.spendGrad}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={s.spendLeft}>
-                <Text style={s.spendLabel}>Gastos totales</Text>
-                <Text style={s.spendAmount}>{formatCurrency(monthlySpend)}</Text>
-                <Text style={s.spendSub}>{horses.length} {horses.length === 1 ? 'caballo' : 'caballos'} · {monthlyEvents} eventos</Text>
-              </View>
-              <View style={s.spendIcon}>
-                <Ionicons name="cash-outline" size={32} color="rgba(255,255,255,0.25)" />
-              </View>
-            </LinearGradient>
-          </View>
+      {/* ─── Gastos del mes ─── */}
+      <View style={s.section}>
+        <View style={s.sectionHeader}>
+          <Text style={s.sectionTitle}>Gastos este mes</Text>
+          <TouchableOpacity
+            onPress={() => { haptic.light(); router.push('/(tabs)/caballos'); }}
+            activeOpacity={0.7}
+          >
+            <Text style={s.sectionLink}>Ver caballos</Text>
+          </TouchableOpacity>
         </View>
-      )}
+
+        {/* Total header */}
+        <View style={s.spendCard}>
+          <LinearGradient
+            colors={['#0f2d5a', '#1a3366']}
+            style={s.spendGrad}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={s.spendLeft}>
+              <Text style={s.spendLabel}>Total del mes</Text>
+              <Text style={s.spendAmount}>{monthlySpend > 0 ? formatCurrency(monthlySpend) : '—'}</Text>
+              <Text style={s.spendSub}>{horses.length} {horses.length === 1 ? 'caballo' : 'caballos'}</Text>
+            </View>
+            <View style={s.spendIcon}>
+              <Ionicons name="cash-outline" size={32} color="rgba(255,255,255,0.25)" />
+            </View>
+          </LinearGradient>
+        </View>
+
+        {monthlySpend > 0 && (
+          <>
+            {/* Por caballo */}
+            {spendByHorse.length > 0 && (
+              <View style={[s.card, { marginTop: space[3] }]}>
+                <Text style={s.subSectionTitle}>Por caballo</Text>
+                {spendByHorse.map((h, i) => {
+                  const pct = Math.round((h.total / monthlySpend) * 100);
+                  return (
+                    <View key={h.horse_id}>
+                      {i > 0 && <View style={s.divider} />}
+                      <View style={s.spendRow}>
+                        <View style={s.spendRowLeft}>
+                          <Text style={s.spendRowName} numberOfLines={1}>{h.horse_name}</Text>
+                          <View style={s.spendBar}>
+                            <View style={[s.spendBarFill, { width: `${pct}%` as any }]} />
+                          </View>
+                        </View>
+                        <Text style={s.spendRowAmount}>{formatCurrency(h.total)}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Por categoría */}
+            {spendByCategory.length > 0 && (
+              <View style={[s.card, { marginTop: space[3] }]}>
+                <Text style={s.subSectionTitle}>Por categoría</Text>
+                <View style={s.categoryGrid}>
+                  {spendByCategory.slice(0, 6).map((c) => {
+                    const meta = CATEGORY_META[c.category] ?? CATEGORY_META.otros;
+                    return (
+                      <View key={c.category} style={s.categoryChip}>
+                        <Text style={s.categoryIcon}>{meta.icon}</Text>
+                        <Text style={s.categoryName} numberOfLines={1}>{c.category}</Text>
+                        <Text style={[s.categoryAmount, { color: meta.color }]}>{formatCurrency(c.total)}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Últimos gastos */}
+            {recentExpenses.length > 0 && (
+              <View style={[s.card, { marginTop: space[3] }]}>
+                <Text style={s.subSectionTitle}>Últimos gastos</Text>
+                {recentExpenses.map((e: any, i: number) => (
+                  <View key={e.id}>
+                    {i > 0 && <View style={s.divider} />}
+                    <View style={s.expenseRow}>
+                      <Text style={s.expenseIcon}>
+                        {CATEGORY_META[e.expense_category ?? 'otros']?.icon ?? '📦'}
+                      </Text>
+                      <View style={s.expenseBody}>
+                        <Text style={s.expenseDesc} numberOfLines={1}>{e.description || e.title}</Text>
+                        <Text style={s.expenseMeta} numberOfLines={1}>
+                          {e.horse?.name} · {new Date(e.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                        </Text>
+                      </View>
+                      <Text style={s.expenseAmount}>{formatCurrency(e.amount)}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+
+        {monthlySpend === 0 && (
+          <View style={[s.card, { marginTop: space[3] }]}>
+            <View style={s.emptyAgenda}>
+              <Ionicons name="receipt-outline" size={24} color={colors.gray300} />
+              <Text style={s.emptyAgendaText}>Sin gastos registrados este mes</Text>
+              <Text style={s.emptyAgendaSub}>Registralos desde el detalle de cada caballo</Text>
+            </View>
+          </View>
+        )}
+      </View>
 
       {/* ─── Del muro ─── */}
       {recentPosts.length > 0 && (
@@ -376,6 +478,24 @@ const s = StyleSheet.create({
   spendAmount: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: '#fff' },
   spendSub: { fontSize: text.xs, color: 'rgba(255,255,255,0.5)', marginTop: 4 },
   spendIcon: { marginLeft: space[4] },
+  subSectionTitle: { fontSize: 11, fontWeight: weight.bold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: space[4], paddingTop: space[4], paddingBottom: space[2] },
+  spendRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3] },
+  spendRowLeft: { flex: 1, gap: 5 },
+  spendRowName: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
+  spendBar: { height: 4, backgroundColor: colors.gray100, borderRadius: 2, overflow: 'hidden' },
+  spendBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },
+  spendRowAmount: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900, flexShrink: 0 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: space[3], gap: space[2] },
+  categoryChip: { width: '30%', flexGrow: 1, backgroundColor: colors.gray50, borderRadius: radius.md, padding: space[3], alignItems: 'center', gap: 3 },
+  categoryIcon: { fontSize: 20 },
+  categoryName: { fontSize: 10, fontWeight: weight.semibold, color: colors.gray500, textTransform: 'capitalize', textAlign: 'center' },
+  categoryAmount: { fontSize: 12, fontWeight: weight.bold, textAlign: 'center' },
+  expenseRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3] },
+  expenseIcon: { fontSize: 20 },
+  expenseBody: { flex: 1, minWidth: 0 },
+  expenseDesc: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
+  expenseMeta: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  expenseAmount: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900, flexShrink: 0 },
 
   // Mini posts
   miniPost: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], gap: space[3] },

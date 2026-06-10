@@ -52,7 +52,7 @@ export class DashboardService {
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 
-    const [horses, recentEvents, monthlySpend] = await Promise.all([
+    const [horses, recentEvents, monthlySpend, spendByHorse, spendByCategory, recentExpenses] = await Promise.all([
       this.horseRepository.find({
         where: { owner_id: userId },
         relations: ['breed', 'activity', 'establishment'],
@@ -75,6 +75,42 @@ export class DashboardService {
         .andWhere('e.date >= :from', { from: firstOfMonth })
         .andWhere('e.amount IS NOT NULL')
         .getRawOne<{ total: string | null }>(),
+      this.eventRepository
+        .createQueryBuilder('e')
+        .select('horse.id', 'horse_id')
+        .addSelect('horse.name', 'horse_name')
+        .addSelect('SUM(e.amount)', 'total')
+        .leftJoin('e.horse', 'horse')
+        .where('horse.owner_id = :uid', { uid: userId })
+        .andWhere('e.type = :type', { type: 'gasto' })
+        .andWhere('e.date >= :from', { from: firstOfMonth })
+        .andWhere('e.amount IS NOT NULL')
+        .groupBy('horse.id')
+        .addGroupBy('horse.name')
+        .orderBy('SUM(e.amount)', 'DESC')
+        .getRawMany<{ horse_id: string; horse_name: string; total: string }>(),
+      this.eventRepository
+        .createQueryBuilder('e')
+        .select('e.expense_category', 'category')
+        .addSelect('SUM(e.amount)', 'total')
+        .leftJoin('e.horse', 'horse')
+        .where('horse.owner_id = :uid', { uid: userId })
+        .andWhere('e.type = :type', { type: 'gasto' })
+        .andWhere('e.date >= :from', { from: firstOfMonth })
+        .andWhere('e.amount IS NOT NULL')
+        .groupBy('e.expense_category')
+        .orderBy('SUM(e.amount)', 'DESC')
+        .getRawMany<{ category: string | null; total: string }>(),
+      this.eventRepository
+        .createQueryBuilder('e')
+        .leftJoin('e.horse', 'horse')
+        .addSelect(['horse.id', 'horse.name'])
+        .where('horse.owner_id = :uid', { uid: userId })
+        .andWhere('e.type = :type', { type: 'gasto' })
+        .andWhere('e.amount IS NOT NULL')
+        .orderBy('e.date', 'DESC')
+        .limit(6)
+        .getMany(),
     ]);
 
     return {
@@ -82,6 +118,16 @@ export class DashboardService {
       horses,
       recent_events: recentEvents,
       monthly_spend: parseFloat(monthlySpend?.total ?? '0') || 0,
+      spend_by_horse: spendByHorse.map((r) => ({
+        horse_id: r.horse_id,
+        horse_name: r.horse_name,
+        total: parseFloat(r.total) || 0,
+      })),
+      spend_by_category: spendByCategory.map((r) => ({
+        category: r.category ?? 'otros',
+        total: parseFloat(r.total) || 0,
+      })),
+      recent_expenses: recentExpenses,
     };
   }
 
