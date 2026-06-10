@@ -73,6 +73,13 @@ export default function MasScreen() {
 
   const principal: MenuItem[] = [
     {
+      icon: 'trophy-outline',
+      label: 'Remates',
+      desc: 'Comprá y vendé caballos en subastas',
+      path: Routes.remates,
+      iconColor: '#7c3aed',
+    },
+    {
       icon: 'git-branch-outline',
       label: 'Árbol Genealógico',
       desc: 'Pedigree global de caballos desde 1990',
@@ -84,7 +91,7 @@ export default function MasScreen() {
       label: 'Padrón de caballos',
       desc: 'Registro oficial, pedigree y propietarios',
       path: Routes.padron,
-      iconColor: '#7c3aed',
+      iconColor: '#0f1f3d',
     },
     {
       icon: 'document-text-outline',
@@ -92,13 +99,6 @@ export default function MasScreen() {
       desc: 'Historial de carreras y actividades',
       path: Routes.tabsEventos,
       iconColor: '#0369a1',
-    },
-    {
-      icon: 'calendar-outline',
-      label: 'Agenda',
-      desc: 'Calendario de turnos y citas',
-      path: Routes.tabsAgenda,
-      iconColor: '#0284c7',
     },
     {
       icon: 'receipt-outline',
