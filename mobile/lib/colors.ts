@@ -32,4 +32,5 @@ export const eventTypeColors: Record<string, { bg: string; text: string; label: 
   entrenamiento: { bg: colors.yellow50, text: colors.yellow700, label: 'Entrenamiento' },
   gasto:         { bg: colors.purple50, text: colors.purple700, label: 'Gasto' },
   nota:          { bg: colors.gray100,  text: colors.gray700,   label: 'Nota' },
+  carrera:       { bg: '#fef3c7',       text: '#92400e',        label: 'Carrera' },
 };

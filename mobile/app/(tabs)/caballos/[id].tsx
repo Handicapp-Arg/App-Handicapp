@@ -16,7 +16,7 @@ import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
-import { useEventsByHorse } from '../../../hooks/use-events';
+import { useEventsByHorse, useCreateEvent } from '../../../hooks/use-events';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
 import { PedigreeTab } from '../../../components/PedigreeTab';
 import { formatCurrency } from '../../../lib/currency';
@@ -213,6 +213,9 @@ export default function HorseDetailScreen() {
   const uploadDoc = useUploadDocument(id);
   const deleteDoc = useDeleteDocument(id);
 
+  // Crear evento
+  const createEvent = useCreateEvent();
+
   const todayISO = new Date().toISOString().split('T')[0];
   const todayRoutine = routines?.find((r) => r.date === todayISO);
   const deleteHorse = useDeleteHorse();
@@ -239,6 +242,33 @@ export default function HorseDetailScreen() {
   // Doc upload modal
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [docName, setDocName] = useState('');
+
+  // Add event modal
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEventType, setNewEventType] = useState<'salud' | 'entrenamiento' | 'carrera' | 'nota'>('nota');
+  const [newEventDesc, setNewEventDesc] = useState('');
+  const [newEventDate, setNewEventDate] = useState(todayISO);
+  const [newEventError, setNewEventError] = useState('');
+
+  const handleAddEvent = async () => {
+    if (!newEventDesc.trim()) { setNewEventError('La descripción es obligatoria'); return; }
+    setNewEventError('');
+    try {
+      await createEvent.mutateAsync({
+        type: newEventType,
+        description: newEventDesc.trim(),
+        date: newEventDate,
+        horse_id: id,
+      });
+      haptic.success();
+      setShowAddEvent(false);
+      setNewEventDesc('');
+      setNewEventType('nota');
+      setNewEventDate(todayISO);
+    } catch {
+      setNewEventError('No se pudo guardar el evento.');
+    }
+  };
 
   const handlePickImage = () => {
     const doUpload = async (source: 'camera' | 'gallery') => {
@@ -725,10 +755,17 @@ export default function HorseDetailScreen() {
       {/* ════════════════ TAB: HISTORIAL ════════════════ */}
       {activeTab === 'historial' && (
         <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Historial de eventos</Text>
-            {sortedEvents.length > 0 && (
-              <View style={s.countBadge}><Text style={s.countText}>{sortedEvents.length}</Text></View>
+          <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionTitle}>Historial de eventos</Text>
+              {sortedEvents.length > 0 && (
+                <View style={s.countBadge}><Text style={s.countText}>{sortedEvents.length}</Text></View>
+              )}
+            </View>
+            {can('events', 'create') && (
+              <TouchableOpacity onPress={() => { haptic.light(); setShowAddEvent(true); }} style={s.smallBtn}>
+                <Text style={s.smallBtnText}>+ Agregar</Text>
+              </TouchableOpacity>
             )}
           </View>
           {sortedEvents.length === 0 ? (
@@ -1101,6 +1138,80 @@ export default function HorseDetailScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* ════════════════ MODAL: AGREGAR EVENTO ════════════════ */}
+      <Modal visible={showAddEvent} animationType="slide" transparent onRequestClose={() => setShowAddEvent(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={s.modalCard}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Registrar evento</Text>
+              <TouchableOpacity onPress={() => setShowAddEvent(false)}>
+                <Ionicons name="close" size={22} color={colors.gray400} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={s.modalBody}>
+              {/* Tipo */}
+              <Text style={s.fieldLabel}>Tipo de evento</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+                {([
+                  { key: 'nota', label: '📝 Nota', color: '#6b7280' },
+                  { key: 'entrenamiento', label: '🏇 Entrenamiento', color: '#7c3aed' },
+                  { key: 'salud', label: '💉 Salud', color: '#dc2626' },
+                  { key: 'carrera', label: '🏁 Carrera', color: '#d97706' },
+                ] as const).map((t) => (
+                  <TouchableOpacity
+                    key={t.key}
+                    style={[
+                      s.typeChip,
+                      newEventType === t.key && { backgroundColor: t.color + '18', borderColor: t.color },
+                    ]}
+                    onPress={() => { haptic.selection(); setNewEventType(t.key); }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.typeChipText, newEventType === t.key && { color: t.color }]}>{t.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Fecha */}
+              <DatePicker label="Fecha" value={newEventDate} onChange={setNewEventDate} maxDate={new Date()} />
+
+              {/* Descripción */}
+              <Text style={s.fieldLabel}>Descripción *</Text>
+              <TextInput
+                style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={newEventDesc}
+                onChangeText={setNewEventDesc}
+                placeholder={
+                  newEventType === 'nota' ? 'Ej: El caballo come bien, buen estado general' :
+                  newEventType === 'entrenamiento' ? 'Ej: Galope 1200m, tiempo 1:14, buena respuesta' :
+                  newEventType === 'salud' ? 'Ej: Vacunación influenza equina Dr. García' :
+                  'Ej: Gran Premio Palermo 1200m - 3° puesto'
+                }
+                placeholderTextColor={colors.gray400}
+                multiline
+                autoCapitalize="sentences"
+              />
+              {newEventError ? <Text style={s.fieldError}>{newEventError}</Text> : null}
+            </ScrollView>
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddEvent(false)}>
+                <Text style={s.btnSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, s.btnPrimary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
+                onPress={handleAddEvent}
+                disabled={createEvent.isPending}
+              >
+                {createEvent.isPending
+                  ? <ActivityIndicator color={colors.white} size="small" />
+                  : <Text style={s.btnPrimaryText}>Guardar</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* ════════════════ TAB: PEDIGRÍ ════════════════ */}
       {activeTab === 'pedigree' && (
         <PedigreeTab
@@ -1363,6 +1474,8 @@ const s = StyleSheet.create({
   /* Botones pequeños */
   smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white },
   smallBtnText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: colors.gray50 },
+  typeChipText: { fontSize: 13, fontWeight: '600', color: colors.gray600 },
   pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white, minWidth: 44, justifyContent: 'center' },
   pdfBtnText: { fontSize: 11, fontWeight: '700', color: colors.primary },
 

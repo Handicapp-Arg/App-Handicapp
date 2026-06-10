@@ -11,4 +11,9 @@ export class HorsesPublicController {
   getPublicProfile(@Param('publicToken') publicToken: string) {
     return this.horsesService.getPublicProfile(publicToken);
   }
+
+  @Get('shared/:token')
+  getPublicHistory(@Param('token') token: string) {
+    return this.horsesService.getPublicHorseHistory(token);
+  }
 }

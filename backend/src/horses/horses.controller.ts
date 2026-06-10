@@ -121,11 +121,6 @@ export class HorsesController {
     return this.horsesService.createShareToken(id, user);
   }
 
-  @Get('shared/:token')
-  getPublicHistory(@Param('token') token: string) {
-    return this.horsesService.getPublicHorseHistory(token);
-  }
-
   @Get(':id/documents')
   @RequirePermission('horses', 'read')
   getDocuments(@Param('id') id: string, @GetUser() user: User) {

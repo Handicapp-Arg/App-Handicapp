@@ -168,6 +168,9 @@ export class HorsesService implements OnModuleInit {
       microchip: dto.microchip ?? null,
       breed_id: dto.breed_id ?? null,
       activity_id: dto.activity_id ?? null,
+      sex: dto.sex ?? null,
+      color: dto.color ?? null,
+      height_cm: dto.height_cm ?? null,
     });
 
     let saved: Horse;

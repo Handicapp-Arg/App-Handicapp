@@ -22,8 +22,8 @@ export class FeedService {
   ) {}
 
   async create(dto: CreatePostDto, user: User, files: Express.Multer.File[] = []) {
-    if (dto.type === 'announcement' && user.role !== 'admin') {
-      throw new ForbiddenException('Solo admins pueden publicar anuncios');
+    if (dto.type === 'announcement' && !['admin', 'establecimiento'].includes(user.role)) {
+      throw new ForbiddenException('Solo admins y establecimientos pueden publicar anuncios');
     }
 
     const post = this.posts.create({
@@ -31,7 +31,7 @@ export class FeedService {
       author_id: user.id,
       horse_id: dto.horse_id ?? null,
       type: dto.type ?? 'general',
-      is_pinned: dto.type === 'announcement',
+      is_pinned: dto.type === 'announcement' && user.role === 'admin',
     });
 
     if (files.length) {

@@ -158,7 +158,7 @@ export class AuctionsService {
 
   async placeBid(auctionId: string, dto: PlaceBidDto, bidderId: string): Promise<AuctionBid> {
     return this.dataSource.transaction(async (em) => {
-      const auction = await em.findOne(Auction, { where: { id: auctionId }, lock: { mode: 'pessimistic_write' } });
+      const auction = await em.findOne(Auction, { where: { id: auctionId }, lock: { mode: 'pessimistic_write' }, loadEagerRelations: false });
       if (!auction) throw new NotFoundException('Subasta no encontrada');
       if (auction.status !== 'active') throw new BadRequestException('La subasta no está activa');
       if (auction.seller_id === bidderId) throw new ForbiddenException('No podés pujar en tu propia subasta');
@@ -206,7 +206,7 @@ export class AuctionsService {
 
   async acceptBid(auctionId: string, bidId: string, sellerId: string): Promise<Auction> {
     return this.dataSource.transaction(async (em) => {
-      const auction = await em.findOne(Auction, { where: { id: auctionId }, lock: { mode: 'pessimistic_write' } });
+      const auction = await em.findOne(Auction, { where: { id: auctionId }, lock: { mode: 'pessimistic_write' }, loadEagerRelations: false });
       if (!auction) throw new NotFoundException('Subasta no encontrada');
       if (auction.seller_id !== sellerId) throw new ForbiddenException('No autorizado');
       if (auction.status !== 'active') throw new BadRequestException('La subasta no está activa');

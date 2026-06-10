@@ -20,7 +20,7 @@ import { colors, eventTypeColors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { layout, typography, input as inputStyle, modal as modalStyle, button } from '../../styles/common';
 
-const TYPE_OPTIONS = ['salud', 'entrenamiento', 'gasto', 'nota'] as const;
+const TYPE_OPTIONS = ['salud', 'entrenamiento', 'carrera', 'gasto', 'nota'] as const;
 
 const EXPENSE_CATEGORIES_MOBILE = [
   { value: 'alimentacion',  label: 'Alimento',     icon: '🌾' },

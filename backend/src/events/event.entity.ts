@@ -19,6 +19,7 @@ export enum EventType {
   ENTRENAMIENTO = 'entrenamiento',
   GASTO = 'gasto',
   NOTA = 'nota',
+  CARRERA = 'carrera',
 }
 
 export enum ExpenseCategory {

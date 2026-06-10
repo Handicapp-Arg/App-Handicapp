@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
-  Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Pressable,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '../../hooks/use-agenda';
 import { useHorses } from '../../hooks/use-horses';
@@ -66,16 +67,18 @@ function CreateModal({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState('veterinario');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('09:00');
+  const [timeDate, setTimeDate] = useState(() => { const d = new Date(); d.setHours(9, 0, 0, 0); return d; });
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+
+  const timeStr = timeDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
   const handleSubmit = async () => {
     if (!horseId || !title.trim() || !date) { setError('Completá todos los campos obligatorios'); return; }
     setError('');
-    const [h, m] = time.split(':');
     const dt = new Date(date + 'T12:00:00');
-    dt.setHours(parseInt(h), parseInt(m));
+    dt.setHours(timeDate.getHours(), timeDate.getMinutes());
     await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString(), notes: notes || undefined });
     onClose();
   };
@@ -128,7 +131,25 @@ function CreateModal({ onClose }: { onClose: () => void }) {
           <DatePicker label="Fecha *" value={date} onChange={setDate} />
           <View style={{ gap: space[2] }}>
             <Text style={typography.label}>Hora</Text>
-            <TextInput style={inputStyle.base} value={time} onChangeText={setTime} placeholder="09:00" placeholderTextColor={colors.gray400} keyboardType="numbers-and-punctuation" />
+            <Pressable
+              onPress={() => setShowTimePicker(true)}
+              style={[inputStyle.base, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+            >
+              <Text style={{ fontSize: 15, color: colors.gray900 }}>{timeStr}</Text>
+              <Text style={{ fontSize: 18 }}>🕐</Text>
+            </Pressable>
+            {showTimePicker && (
+              <DateTimePicker
+                value={timeDate}
+                mode="time"
+                is24Hour
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(_, selected) => {
+                  setShowTimePicker(Platform.OS === 'ios');
+                  if (selected) setTimeDate(selected);
+                }}
+              />
+            )}
           </View>
 
           {/* Notas */}
