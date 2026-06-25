@@ -3,9 +3,13 @@ import {
   ActivityIndicator, TextInput, FlatList, Image, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { useState, type ReactNode } from 'react';
+import {
+  Heart, MessageCircle, Newspaper, User, ChevronRight, Lock, LogOut,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '../../lib/auth';
@@ -56,7 +60,7 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
       </View>
       {!isPro && horseLimit && (
         <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.primary }]} />
+          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.brand }]} />
         </View>
       )}
       {isLimited && <Text style={s.planWarning}>Límite alcanzado.</Text>}
@@ -158,11 +162,11 @@ function MyPostCard({ post }: { post: FeedPost }) {
         )}
         <View style={s.postMeta}>
           <View style={s.postStat}>
-            <Ionicons name="heart" size={13} color="#ef4444" />
+            <Heart size={13} color="#ef4444" strokeWidth={2} />
             <Text style={s.postStatText}>{post.likes_count}</Text>
           </View>
           <View style={s.postStat}>
-            <Ionicons name="chatbubble-outline" size={13} color={colors.gray400} />
+            <MessageCircle size={13} color={colors.gray400} strokeWidth={2} />
             <Text style={s.postStatText}>{post.comments_count}</Text>
           </View>
           <Text style={s.postTime}>{timeAgo(post.created_at)}</Text>
@@ -174,25 +178,31 @@ function MyPostCard({ post }: { post: FeedPost }) {
 
 /* ─── My Activity Tab ─── */
 
-function MyActivityTab({ userId }: { userId: string }) {
+function MyActivityTab({ userId, header }: { userId: string; header?: ReactNode }) {
   const { posts, isLoading, loadMore, hasMore, isFetchingMore, refresh, isRefreshing } =
     useFeedPosts({ author_id: userId });
 
   if (isLoading) {
     return (
-      <View style={s.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {header}
+        <View style={s.center}>
+          <ActivityIndicator color={colors.brand} />
+        </View>
+      </ScrollView>
     );
   }
 
   if (!posts.length) {
     return (
-      <View style={s.emptyActivity}>
-        <Ionicons name="newspaper-outline" size={48} color={colors.gray300} />
-        <Text style={s.emptyActivityTitle}>Sin publicaciones aún</Text>
-        <Text style={s.emptyActivitySub}>Tus posts del muro van a aparecer acá.</Text>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {header}
+        <View style={s.emptyActivity}>
+          <Newspaper size={48} color={colors.gray300} strokeWidth={2} />
+          <Text style={s.emptyActivityTitle}>Sin publicaciones aún</Text>
+          <Text style={s.emptyActivitySub}>Tus posts del muro van a aparecer acá.</Text>
+        </View>
+      </ScrollView>
     );
   }
 
@@ -200,7 +210,12 @@ function MyActivityTab({ userId }: { userId: string }) {
     <FlatList
       data={posts}
       keyExtractor={(p) => p.id}
-      renderItem={({ item }) => <MyPostCard post={item} />}
+      ListHeaderComponent={<>{header}</>}
+      renderItem={({ item, index }) => (
+        <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+          <MyPostCard post={item} />
+        </Animated.View>
+      )}
       contentContainerStyle={s.postsList}
       showsVerticalScrollIndicator={false}
       onEndReached={() => hasMore && loadMore()}
@@ -208,7 +223,7 @@ function MyActivityTab({ userId }: { userId: string }) {
       onRefresh={refresh}
       refreshing={isRefreshing}
       ListFooterComponent={isFetchingMore
-        ? <ActivityIndicator color={colors.primary} style={{ margin: space[4] }} />
+        ? <ActivityIndicator color={colors.brand} style={{ margin: space[4] }} />
         : null
       }
     />
@@ -379,7 +394,7 @@ export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const { data: planStatus } = usePlanStatus();
-  const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers();
+  const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers(user?.role === 'admin');
   const setPlan = useAdminSetPlan();
   const [adminSearch, setAdminSearch] = useState('');
   const [activeTab, setActiveTab] = useState<ProfileTab>('publicaciones');
@@ -400,14 +415,19 @@ export default function PerfilScreen() {
   );
 
   const handleLogout = () => {
+    // En web (preview), Alert.alert no ejecuta los botones — usamos confirm del navegador.
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('¿Querés cerrar tu sesión?')) logout();
+      return;
+    }
     Alert.alert('Cerrar sesión', '¿Querés cerrar tu sesión?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Cerrar sesión', style: 'destructive', onPress: logout },
     ]);
   };
 
-  return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+  const Header = (
+    <>
       {/* Hero */}
       <View style={s.hero}>
         <View style={s.avatar}>
@@ -423,28 +443,35 @@ export default function PerfilScreen() {
       {/* Tab bar */}
       <View style={s.tabBar}>
         {([
-          { key: 'publicaciones', label: 'Publicaciones', icon: 'newspaper-outline' },
-          { key: 'info', label: 'Mi cuenta', icon: 'person-outline' },
-        ] as { key: ProfileTab; label: string; icon: string }[]).map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[s.tabBtn, activeTab === t.key && s.tabBtnActive]}
-            onPress={() => { haptic.selection(); setActiveTab(t.key); }}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name={t.icon as any}
-              size={15}
-              color={activeTab === t.key ? colors.primary : colors.gray400}
-            />
-            <Text style={[s.tabLabel, activeTab === t.key && s.tabLabelActive]}>{t.label}</Text>
-          </TouchableOpacity>
-        ))}
+          { key: 'publicaciones', label: 'Publicaciones', icon: Newspaper },
+          { key: 'info', label: 'Mi cuenta', icon: User },
+        ] as { key: ProfileTab; label: string; icon: LucideIcon }[]).map((t) => {
+          const TabIcon = t.icon;
+          return (
+            <TouchableOpacity
+              key={t.key}
+              style={[s.tabBtn, activeTab === t.key && s.tabBtnActive]}
+              onPress={() => { haptic.selection(); setActiveTab(t.key); }}
+              activeOpacity={0.8}
+            >
+              <TabIcon
+                size={15}
+                color={activeTab === t.key ? colors.brand : colors.gray400}
+                strokeWidth={2}
+              />
+              <Text style={[s.tabLabel, activeTab === t.key && s.tabLabelActive]}>{t.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
+    </>
+  );
 
+  return (
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {/* Content */}
       {activeTab === 'publicaciones' && (
-        <MyActivityTab userId={user.id} />
+        <MyActivityTab userId={user.id} header={Header} />
       )}
 
       {activeTab === 'info' && (
@@ -453,6 +480,7 @@ export default function PerfilScreen() {
           contentContainerStyle={{ paddingBottom: space[10] }}
           showsVerticalScrollIndicator={false}
         >
+          {Header}
           {/* Plan */}
           {showPlan && planStatus && (
             <View style={s.section}>
@@ -481,19 +509,20 @@ export default function PerfilScreen() {
                 clearButtonMode="while-editing"
               />
               {loadingAdminUsers ? (
-                <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: space[3] }} />
+                <ActivityIndicator size="small" color={colors.brand} style={{ marginTop: space[3] }} />
               ) : !filteredAdminUsers?.length ? (
                 <Text style={s.emptyText}>No hay usuarios registrados.</Text>
               ) : (
                 <View style={{ gap: space[3] }}>
-                  {filteredAdminUsers.map((u) => (
-                    <AdminUserRow
-                      key={u.id}
-                      u={u}
-                      onActivate={(userId, months) => setPlan.mutate({ userId, plan: 'pro', months })}
-                      onRevoke={(userId) => setPlan.mutate({ userId, plan: 'free' })}
-                      isPending={setPlan.isPending}
-                    />
+                  {filteredAdminUsers.map((u, index) => (
+                    <Animated.View key={u.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                      <AdminUserRow
+                        u={u}
+                        onActivate={(userId, months) => setPlan.mutate({ userId, plan: 'pro', months })}
+                        onRevoke={(userId) => setPlan.mutate({ userId, plan: 'free' })}
+                        isPending={setPlan.isPending}
+                      />
+                    </Animated.View>
                   ))}
                 </View>
               )}
@@ -509,12 +538,12 @@ export default function PerfilScreen() {
                 onPress={() => setShowEditProfile(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="person-outline" size={18} color={colors.primary} />
+                <User size={18} color={colors.brand} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.accountRowLabel}>Editar datos personales</Text>
                   <Text style={s.accountRowSub}>{user.name} · {user.email}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+                <ChevronRight size={16} color={colors.gray400} strokeWidth={2} />
               </TouchableOpacity>
               <View style={s.accountDivider} />
               <TouchableOpacity
@@ -522,18 +551,18 @@ export default function PerfilScreen() {
                 onPress={() => setShowChangePassword(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
+                <Lock size={18} color={colors.brand} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.accountRowLabel}>Cambiar contraseña</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+                <ChevronRight size={16} color={colors.gray400} strokeWidth={2} />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Logout */}
           <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-            <Ionicons name="log-out-outline" size={18} color={colors.red700} />
+            <LogOut size={18} color={colors.red700} strokeWidth={2} />
             <Text style={s.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -562,7 +591,7 @@ const s = StyleSheet.create({
   hero: {
     alignItems: 'center',
     gap: space[1] + 2,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
     paddingBottom: space[4],
     paddingTop: space[5],
     paddingHorizontal: space[5],
@@ -594,9 +623,9 @@ const s = StyleSheet.create({
     gap: space[1] + 2, paddingVertical: space[3],
     borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
-  tabBtnActive: { borderBottomColor: colors.primary },
+  tabBtnActive: { borderBottomColor: colors.brand },
   tabLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray400 },
-  tabLabelActive: { color: colors.primary },
+  tabLabelActive: { color: colors.brand },
 
   /* My posts */
   postsList: { padding: space[4], gap: space[3] },
@@ -635,7 +664,7 @@ const s = StyleSheet.create({
   planCardFree: { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' },
   planCardPro: { backgroundColor: colors.amber50, borderColor: '#fde68a' },
   planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  planBadge: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
+  planBadge: { backgroundColor: colors.brand, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
   planBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
   planUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: '#1e40af' },
   planUsagePro: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.amber600 },
@@ -670,9 +699,9 @@ const s = StyleSheet.create({
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200,
     paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.white,
   },
-  monthsOptionActive: { borderColor: colors.primary, backgroundColor: '#eff6ff' },
+  monthsOptionActive: { borderColor: colors.brand, backgroundColor: '#eff6ff' },
   monthsOptionText: { fontSize: text.sm, color: colors.gray600 },
-  monthsOptionTextActive: { color: colors.primary, fontWeight: weight.semibold },
+  monthsOptionTextActive: { color: colors.brand, fontWeight: weight.semibold },
   activateBtn: { backgroundColor: colors.amber600, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   activateBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   revokeBtn: {
@@ -725,7 +754,7 @@ const s = StyleSheet.create({
     fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
   },
   editSaveBtn: {
-    backgroundColor: colors.primary, borderRadius: radius.lg,
+    backgroundColor: colors.brand, borderRadius: radius.lg,
     paddingVertical: space[4], alignItems: 'center', marginTop: space[2],
   },
   editSaveBtnDisabled: { opacity: 0.6 },

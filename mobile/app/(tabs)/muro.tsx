@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView, Platform, Alert, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import { formatDistanceToNow } from 'date-fns';
@@ -20,14 +20,16 @@ import { useHorses } from '../../hooks/use-horses';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import { fontFamily } from '../../styles/fonts';
+import {
+  Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
+  Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check,
+} from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { HorseIcon } from '../../components/icons/equine';
+import { PostSkeleton } from '../../components/Skeleton';
+import { InlineSearch } from '../../components/InlineSearch';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
-
-const ROLE_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  propietario: { label: 'Propietario', bg: '#eff6ff', color: '#1d4ed8' },
-  establecimiento: { label: 'Establecimiento', bg: '#f0fdf4', color: '#15803d' },
-  veterinario: { label: 'Veterinario', bg: '#faf5ff', color: '#7e22ce' },
-  admin: { label: 'Admin', bg: '#f3f4f6', color: '#374151' },
-};
 
 function Avatar({ name, size = 38 }: { name: string; size?: number }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -70,12 +72,12 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
       <View style={s.sheetHeader}>
         <Text style={s.sheetTitle}>Comentarios</Text>
         <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-          <Ionicons name="close" size={22} color={colors.gray500} />
+          <X size={22} color={colors.gray500} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.primary} style={{ margin: space[6] }} />
+        <ActivityIndicator color={colors.brand} style={{ margin: space[6] }} />
       ) : (
         <ScrollView contentContainerStyle={s.commentsList} showsVerticalScrollIndicator={false}>
           {comments.length === 0 && (
@@ -94,7 +96,7 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
                   activeOpacity={0.7}
                   style={s.commentDelete}
                 >
-                  <Ionicons name="trash-outline" size={14} color={colors.gray300} />
+                  <Trash2 size={14} color={colors.gray300} strokeWidth={2} />
                 </TouchableOpacity>
               )}
             </View>
@@ -117,7 +119,7 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
           activeOpacity={0.75}
           style={[s.sendBtn, (!text.trim() || addComment.isPending) && { opacity: 0.4 }]}
         >
-          <Ionicons name="send" size={16} color={colors.white} />
+          <Send size={16} color={colors.white} strokeWidth={2} />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -138,7 +140,6 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isOwner = post.author_id === currentUserId;
-  const badge = ROLE_BADGE[post.author?.role ?? ''];
 
   const handleLike = () => {
     haptic.selection();
@@ -165,14 +166,9 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
         <View style={s.authorInfo}>
           <View style={s.authorRow}>
             <Text style={s.authorName}>{post.author?.name ?? 'Usuario'}</Text>
-            {badge && (
-              <View style={[s.roleBadge, { backgroundColor: badge.bg }]}>
-                <Text style={[s.roleBadgeText, { color: badge.color }]}>{badge.label}</Text>
-              </View>
-            )}
             {post.is_pinned && (
               <View style={s.pinnedBadge}>
-                <Ionicons name="pin" size={10} color="#b45309" />
+                <Pin size={10} color="#b45309" strokeWidth={2} />
                 <Text style={s.pinnedText}>Fijado</Text>
               </View>
             )}
@@ -184,7 +180,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
 
         {(isOwner || isAdmin) && (
           <TouchableOpacity onPress={() => setMenuOpen(true)} activeOpacity={0.7} style={s.menuBtn}>
-            <Ionicons name="ellipsis-horizontal" size={18} color={colors.gray400} />
+            <MoreHorizontal size={18} color={colors.gray400} strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
@@ -231,10 +227,11 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
       {/* Actions */}
       <View style={s.actions}>
         <TouchableOpacity onPress={handleLike} activeOpacity={0.7} style={s.actionBtn}>
-          <Ionicons
-            name={post.liked_by_me ? 'heart' : 'heart-outline'}
+          <Heart
             size={20}
             color={post.liked_by_me ? '#ef4444' : colors.gray400}
+            fill={post.liked_by_me ? '#ef4444' : 'none'}
+            strokeWidth={2}
           />
           {post.likes_count > 0 && (
             <Text style={[s.actionCount, post.liked_by_me && { color: '#ef4444' }]}>
@@ -248,7 +245,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
           activeOpacity={0.7}
           style={s.actionBtn}
         >
-          <Ionicons name="chatbubble-outline" size={19} color={colors.gray400} />
+          <MessageCircle size={19} color={colors.gray400} strokeWidth={2} />
           {post.comments_count > 0 && (
             <Text style={s.actionCount}>{post.comments_count}</Text>
           )}
@@ -266,7 +263,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
                   onPress={() => { haptic.light(); togglePin.mutate(post.id); setMenuOpen(false); }}
                   activeOpacity={0.75}
                 >
-                  <Ionicons name="pin-outline" size={18} color={colors.gray700} />
+                  <Pin size={18} color={colors.gray700} strokeWidth={2} />
                   <Text style={s.menuItemText}>{post.is_pinned ? 'Desfijar' : 'Fijar post'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -274,7 +271,9 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
                   onPress={() => { haptic.light(); toggleHide.mutate(post.id); setMenuOpen(false); }}
                   activeOpacity={0.75}
                 >
-                  <Ionicons name={post.is_hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={colors.gray700} />
+                  {post.is_hidden
+                    ? <Eye size={18} color={colors.gray700} strokeWidth={2} />
+                    : <EyeOff size={18} color={colors.gray700} strokeWidth={2} />}
                   <Text style={s.menuItemText}>{post.is_hidden ? 'Mostrar' : 'Ocultar'}</Text>
                 </TouchableOpacity>
                 <View style={s.menuDivider} />
@@ -282,7 +281,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
             )}
             {(isOwner || isAdmin) && (
               <TouchableOpacity style={s.menuItem} onPress={handleDelete} activeOpacity={0.75}>
-                <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                <Trash2 size={18} color="#ef4444" strokeWidth={2} />
                 <Text style={[s.menuItemText, { color: '#ef4444' }]}>Eliminar</Text>
               </TouchableOpacity>
             )}
@@ -302,28 +301,43 @@ function Composer({ user }: { user: { name: string; role: string } }) {
   const [media, setMedia] = useState<{ uri: string; isVideo: boolean }[]>([]);
   const [type, setType] = useState<'general' | 'horse_update' | 'announcement'>('general');
   const [selectedHorseId, setSelectedHorseId] = useState<string | undefined>(undefined);
+  const [showHorseSelect, setShowHorseSelect] = useState(false);
+  const selectedHorse = (myHorses ?? []).find((h) => h.id === selectedHorseId);
   const isAdmin = user.role === 'admin';
 
-  const pickMedia = async (mediaType: 'images' | 'videos') => {
+  const addAssets = (assets: ImagePicker.ImagePickerAsset[]) => {
+    const newItems = assets.map((a) => ({ uri: a.uri, isVideo: a.type === 'video' }));
+    setMedia((p) => [...p, ...newItems].slice(0, 4));
+  };
+
+  const pickFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para adjuntar fotos y videos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: mediaType,
+      mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: true,
       quality: 0.8,
       selectionLimit: 4 - media.length,
       videoMaxDuration: 120,
     });
-    if (!result.canceled) {
-      const newItems = result.assets.map((a) => ({
-        uri: a.uri,
-        isVideo: a.type === 'video',
-      }));
-      setMedia((p) => [...p, ...newItems].slice(0, 4));
+    if (!result.canceled) addAssets(result.assets);
+  };
+
+  const openCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para sacar fotos y videos.');
+      return;
     }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images', 'videos'],
+      quality: 0.8,
+      videoMaxDuration: 120,
+    });
+    if (!result.canceled) addAssets(result.assets);
   };
 
   const handlePost = async () => {
@@ -352,12 +366,13 @@ function Composer({ user }: { user: { name: string; role: string } }) {
       <TouchableOpacity style={s.composerClosed} onPress={() => setOpen(true)} activeOpacity={0.8}>
         <Avatar name={user.name} size={34} />
         <Text style={s.composerPlaceholder}>¿Qué querés compartir?</Text>
-        <Ionicons name="image-outline" size={20} color={colors.gray300} />
+        <Images size={20} color={colors.gray300} strokeWidth={2} />
       </TouchableOpacity>
     );
   }
 
   return (
+    <>
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={s.composerModal}>
@@ -424,7 +439,7 @@ function Composer({ user }: { user: { name: string; role: string } }) {
                     )}
                     {item.isVideo && (
                       <View style={s.videoIndicator}>
-                        <Ionicons name="play-circle" size={28} color="rgba(255,255,255,0.9)" />
+                        <PlayCircle size={28} color="rgba(255,255,255,0.9)" strokeWidth={2} />
                       </View>
                     )}
                     <TouchableOpacity
@@ -432,7 +447,7 @@ function Composer({ user }: { user: { name: string; role: string } }) {
                       onPress={() => setMedia((p) => p.filter((_, idx) => idx !== i))}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="close" size={14} color={colors.white} />
+                      <X size={14} color={colors.white} strokeWidth={2} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -440,87 +455,122 @@ function Composer({ user }: { user: { name: string; role: string } }) {
             )}
           </ScrollView>
 
-          {/* Horse tag picker */}
-          {(myHorses?.length ?? 0) > 0 && (
-            <View style={s.horsePickerRow}>
-              <Ionicons name="paw-outline" size={14} color={colors.gray400} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
-                <TouchableOpacity
-                  style={[s.horseChip, !selectedHorseId && s.horseChipActive]}
-                  onPress={() => setSelectedHorseId(undefined)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[s.horseChipText, !selectedHorseId && s.horseChipTextActive]}>Sin caballo</Text>
-                </TouchableOpacity>
-                {(myHorses ?? []).map((h) => (
-                  <TouchableOpacity
-                    key={h.id}
-                    style={[s.horseChip, selectedHorseId === h.id && s.horseChipActive]}
-                    onPress={() => setSelectedHorseId(h.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[s.horseChipText, selectedHorseId === h.id && s.horseChipTextActive]}>{h.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
 
           <View style={s.composerFooter}>
-            <TouchableOpacity onPress={() => pickMedia('images')} disabled={media.length >= 4} activeOpacity={0.75} style={s.photoBtn}>
-              <Ionicons name="image-outline" size={22} color={media.length >= 4 ? colors.gray300 : colors.primary} />
-              <Text style={[s.photoBtnText, media.length >= 4 && { color: colors.gray300 }]}>Foto</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => pickMedia('videos')} disabled={media.length >= 4} activeOpacity={0.75} style={[s.photoBtn, { marginLeft: space[4] }]}>
-              <Ionicons name="videocam-outline" size={22} color={media.length >= 4 ? colors.gray300 : colors.primary} />
-              <Text style={[s.photoBtnText, media.length >= 4 && { color: colors.gray300 }]}>Video</Text>
-            </TouchableOpacity>
+            <View style={s.footerLeft}>
+              <TouchableOpacity onPress={pickFromLibrary} disabled={media.length >= 4} activeOpacity={0.7} style={s.photoBtn}>
+                <Images size={20} strokeWidth={2} color={media.length >= 4 ? colors.gray300 : colors.gray600} />
+                <Text style={[s.photoBtnText, media.length >= 4 && { color: colors.gray300 }]}>Galería</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={openCamera} disabled={media.length >= 4} activeOpacity={0.7} style={[s.photoBtn, { marginLeft: space[5] }]}>
+                <Camera size={20} strokeWidth={2} color={media.length >= 4 ? colors.gray300 : colors.gray600} />
+                <Text style={[s.photoBtnText, media.length >= 4 && { color: colors.gray300 }]}>Cámara</Text>
+              </TouchableOpacity>
+            </View>
+            {(myHorses?.length ?? 0) > 0 && (
+              <TouchableOpacity onPress={() => setShowHorseSelect(true)} activeOpacity={0.7} style={s.tagBtn}>
+                <HorseIcon size={16} color={colors.gray600} />
+                <Text style={[s.tagBtnText, selectedHorse && { color: colors.gray800 }]} numberOfLines={1}>
+                  {selectedHorse ? selectedHorse.name : 'Etiquetar caballo'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
+
+    <Modal visible={showHorseSelect} transparent animationType="slide" onRequestClose={() => setShowHorseSelect(false)}>
+      <TouchableOpacity style={s.selectOverlay} activeOpacity={1} onPress={() => setShowHorseSelect(false)}>
+        <View style={s.selectSheet}>
+          <View style={s.selectHandle} />
+          <Text style={s.selectTitle}>Etiquetar un caballo</Text>
+          <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
+            <TouchableOpacity style={s.selectRow} activeOpacity={0.7} onPress={() => { setSelectedHorseId(undefined); setShowHorseSelect(false); }}>
+              <View style={[s.selectThumb, s.selectThumbNone]}>
+                <X size={18} color={colors.gray400} strokeWidth={2} />
+              </View>
+              <Text style={[s.selectRowText, !selectedHorseId && s.selectRowTextActive]}>Ninguno</Text>
+              {!selectedHorseId && <Check size={20} color={colors.brand} strokeWidth={2} />}
+            </TouchableOpacity>
+            {(myHorses ?? []).map((h) => (
+              <TouchableOpacity key={h.id} style={s.selectRow} activeOpacity={0.7} onPress={() => { setSelectedHorseId(h.id); setShowHorseSelect(false); }}>
+                <View style={s.selectThumb}>
+                  {h.image_url
+                    ? <Image source={{ uri: h.image_url }} style={s.selectThumbImg} resizeMode="cover" />
+                    : <Text style={s.selectThumbInitial}>{h.name[0]?.toUpperCase()}</Text>}
+                </View>
+                <Text style={[s.selectRowText, selectedHorseId === h.id && s.selectRowTextActive]} numberOfLines={1}>{h.name}</Text>
+                {selectedHorseId === h.id && <Check size={20} color={colors.brand} strokeWidth={2} />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+    </>
   );
 }
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function MuroTab() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const { posts, isLoading, isFetchingMore, isRefreshing, loadMore, refresh } = useFeedPosts(
     isAdmin ? { include_hidden: true } : undefined,
   );
   const [commentPost, setCommentPost] = useState<FeedPost | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  const renderItem = useCallback(({ item }: { item: FeedPost }) => (
-    <PostItem
-      post={item}
-      currentUserId={user?.id ?? ''}
-      isAdmin={isAdmin}
-      onComment={setCommentPost}
-    />
+  const renderItem = useCallback(({ item, index }: { item: FeedPost; index: number }) => (
+    <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+      <PostItem
+        post={item}
+        currentUserId={user?.id ?? ''}
+        isAdmin={isAdmin}
+        onComment={setCommentPost}
+      />
+    </Animated.View>
   ), [user?.id, isAdmin]);
 
-  const ListHeader = (
-    <View style={{ paddingHorizontal: space[4], paddingBottom: space[3] }}>
-      <View style={s.screenHeader}>
-        <Text style={s.screenTitle}>Muro</Text>
-        {isAdmin && (
-          <View style={s.adminBadge}>
-            <Ionicons name="shield-checkmark" size={12} color="#7e22ce" />
-            <Text style={s.adminBadgeText}>Moderación</Text>
-          </View>
-        )}
+  const Navbar = (
+    <View style={s.navbar}>
+      <Text style={s.navTitle}>Muro</Text>
+      <View style={s.navActions}>
+        <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={8} activeOpacity={0.7}>
+          <Search size={24} color={colors.gray700} strokeWidth={2} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/notificaciones')} hitSlop={8} activeOpacity={0.7}>
+          <Bell size={24} color={colors.gray700} strokeWidth={2} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/perfil')} hitSlop={8} activeOpacity={0.7}>
+          <Avatar name={user?.name ?? 'U'} size={30} />
+        </TouchableOpacity>
       </View>
-      {user && <Composer user={user} />}
+    </View>
+  );
+
+  const ListHeader = (
+    <View>
+      {Navbar}
+      <View style={{ paddingHorizontal: space[4], paddingBottom: space[3], paddingTop: space[2] }}>
+        {user && <Composer user={user} />}
+      </View>
     </View>
   );
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       {isLoading ? (
-        <View style={s.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+        <View>
+          {Navbar}
+          <View style={{ paddingTop: space[2] }}>
+            <PostSkeleton />
+            <PostSkeleton />
+            <PostSkeleton />
+          </View>
         </View>
       ) : (
         <FlatList
@@ -541,7 +591,7 @@ export default function MuroTab() {
           }
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <Ionicons name="newspaper-outline" size={52} color={colors.gray300} />
+              <Newspaper size={52} color={colors.gray300} strokeWidth={2} />
               <Text style={s.emptyTitle}>Todavía no hay publicaciones</Text>
               <Text style={s.emptySub}>¡Sé el primero en compartir algo!</Text>
             </View>
@@ -565,6 +615,10 @@ export default function MuroTab() {
           />
         )}
       </Modal>
+
+      {searchOpen && (
+        <InlineSearch topInset={insets.top} onClose={() => setSearchOpen(false)} />
+      )}
     </View>
   );
 }
@@ -574,13 +628,17 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingBottom: space[10] },
 
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[3] },
+  navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: colors.gray900, letterSpacing: -0.3 },
+  navActions: { flexDirection: 'row', alignItems: 'center', gap: space[5] },
+
   screenHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] },
   screenTitle: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.gray900, letterSpacing: -0.5 },
   adminBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#faf5ff', paddingHorizontal: space[2] + 2, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: '#e9d5ff' },
   adminBadgeText: { fontSize: 11, fontWeight: weight.semibold, color: '#7e22ce' },
 
   // Avatar
-  avatar: { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatar: { backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   avatarText: { color: colors.white, fontWeight: weight.bold },
 
   // Card
@@ -628,23 +686,37 @@ const s = StyleSheet.create({
   composerModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   composerModalTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
   composerCancel: { fontSize: text.sm, color: colors.gray500 },
-  postBtn: { backgroundColor: colors.primary, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.full },
+  postBtn: { backgroundColor: colors.brand, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.full },
   postBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   typeRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
   typeBtn: { paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  typeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  typeBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
   typeBtnTextActive: { color: colors.white },
   composerRow: { flexDirection: 'row', gap: space[3], padding: space[4], alignItems: 'flex-start' },
   composerInput: { flex: 1, fontSize: text.base, color: colors.gray900, minHeight: 100 },
   horsePickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: colors.gray50 },
   horseChip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: 5, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  horseChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  horseChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   horseChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
   horseChipTextActive: { color: colors.white },
-  composerFooter: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.gray100, paddingHorizontal: space[4], paddingVertical: space[3] },
+  composerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.gray100, paddingHorizontal: space[4], paddingVertical: space[3] },
+  footerLeft: { flexDirection: 'row', alignItems: 'center' },
+  tagBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: 160, backgroundColor: colors.gray50, borderRadius: 20, paddingHorizontal: space[3], paddingVertical: space[2] },
+  tagBtnText: { fontSize: text.sm, color: colors.gray500, fontWeight: weight.medium, fontFamily: fontFamily.medium },
+  selectOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  selectSheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: space[4], paddingBottom: 36, paddingHorizontal: space[4] },
+  selectTitle: { fontSize: text.base, fontWeight: weight.bold, fontFamily: fontFamily.semibold, color: colors.gray900, marginBottom: space[2], paddingHorizontal: space[2] },
+  selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  selectRowText: { fontSize: text.base, color: colors.gray700, fontFamily: fontFamily.medium, flex: 1 },
+  selectRowTextActive: { color: colors.gray900, fontFamily: fontFamily.semibold },
+  selectHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.gray200, marginBottom: space[3] },
+  selectThumb: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.gray100, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', marginRight: space[3] },
+  selectThumbNone: { backgroundColor: colors.gray100 },
+  selectThumbImg: { width: '100%', height: '100%' },
+  selectThumbInitial: { color: colors.gray500, fontWeight: '800', fontSize: 15, fontFamily: fontFamily.bold },
   photoBtn: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  photoBtnText: { fontSize: text.sm, color: colors.primary, fontWeight: weight.semibold },
+  photoBtnText: { fontSize: text.sm, color: colors.gray600, fontWeight: weight.medium, fontFamily: fontFamily.medium },
   removePhoto: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: radius.full, padding: 3 },
   videoIndicator: { position: 'absolute', inset: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
   videoPlayer: { width: '100%', height: 220, backgroundColor: '#000', borderRadius: radius.lg },
@@ -661,7 +733,7 @@ const s = StyleSheet.create({
   commentDelete: { padding: space[1], marginTop: space[2] },
   commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: colors.gray100, alignItems: 'flex-end' },
   commentInputField: { flex: 1, backgroundColor: colors.gray50, borderRadius: radius.xl, paddingHorizontal: space[3], paddingVertical: space[2] + 2, fontSize: text.sm, color: colors.gray900, maxHeight: 100 },
-  sendBtn: { backgroundColor: colors.primary, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { backgroundColor: colors.brand, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
 
   // Empty
   emptyBox: { alignItems: 'center', paddingTop: 60, paddingHorizontal: space[6], gap: space[3] },

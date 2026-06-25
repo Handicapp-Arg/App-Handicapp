@@ -4,8 +4,9 @@ import {
   TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
   Image, Alert,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
@@ -157,7 +158,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
                   {EXPENSE_CATEGORIES_MOBILE.map((cat) => (
                     <TouchableOpacity
                       key={cat.value}
-                      style={[styles.categoryBtn, expenseCategory === cat.value && { backgroundColor: '#7c3aed', borderColor: '#7c3aed' }]}
+                      style={[styles.categoryBtn, expenseCategory === cat.value && { backgroundColor: '#9d6c35', borderColor: '#9d6c35' }]}
                       onPress={() => setExpenseCategory(expenseCategory === cat.value ? '' : cat.value)}
                       activeOpacity={0.75}
                     >
@@ -249,10 +250,10 @@ export default function EventosScreen() {
 
   useEffect(() => { reset(); }, [filterType]);
 
-  return (
-    <View style={[layout.screen, { paddingTop: insets.top }]}>
-
+  const headerChrome = (
+    <>
       <ScreenHeader
+        scrollable
         title={total > 0 ? `Eventos (${total})` : 'Eventos'}
         right={canCreate ? (
           <HeaderButton label="+ Nuevo" onPress={() => { haptic.medium(); setShowCreate(true); }} />
@@ -283,42 +284,56 @@ export default function EventosScreen() {
       {total > 0 && (
         <Text style={styles.counter}>{events.length} de {total}</Text>
       )}
+    </>
+  );
+
+  return (
+    <View style={[layout.screen, { paddingTop: insets.top }]}>
 
       {/* Lista */}
       {isLoading ? (
-        <View style={{ paddingHorizontal: space[4], paddingTop: space[3], gap: space[2] }}>
-          {[1,2,3,4,5].map((i) => <EventRowSkeleton key={i} />)}
+        <View>
+          {headerChrome}
+          <View style={{ paddingHorizontal: space[4], paddingTop: space[3], gap: space[2] }}>
+            {[1,2,3,4,5].map((i) => <EventRowSkeleton key={i} />)}
+          </View>
         </View>
       ) : !events.length ? (
-        <EmptyState
-          icon={filterType ? 'filter-outline' : 'document-text-outline'}
-          title={filterType ? 'Sin eventos de este tipo' : 'Sin eventos registrados'}
-          message={filterType
-            ? `No hay eventos de "${eventTypeColors[filterType]?.label}". Probá con otro filtro.`
-            : 'Los eventos registrados de salud, entrenamiento y gastos aparecerán aquí.'}
-          actionLabel={canCreate && !filterType ? 'Crear primer evento' : undefined}
-          onAction={() => { haptic.medium(); setShowCreate(true); }}
-        />
+        <View>
+          {headerChrome}
+          <EmptyState
+            icon={filterType ? 'filter-outline' : 'document-text-outline'}
+            title={filterType ? 'Sin eventos de este tipo' : 'Sin eventos registrados'}
+            message={filterType
+              ? `No hay eventos de "${eventTypeColors[filterType]?.label}". Probá con otro filtro.`
+              : 'Los eventos registrados de salud, entrenamiento y gastos aparecerán aquí.'}
+            actionLabel={canCreate && !filterType ? 'Crear primer evento' : undefined}
+            onAction={() => { haptic.medium(); setShowCreate(true); }}
+          />
+        </View>
       ) : (
         <FlatList
           data={events}
           keyExtractor={(e) => e.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={headerChrome}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
-          renderItem={({ item }) => (
-            <EventCard
-              event={item}
-              showHorse
-              canEditMetrics={canCreate}
-              onDelete={canDelete ? (id) => deleteEvent.mutate(id) : undefined}
-            />
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ paddingHorizontal: space[4] }}>
+              <EventCard
+                event={item}
+                showHorse
+                canEditMetrics={canCreate}
+                onDelete={canDelete ? (id) => deleteEvent.mutate(id) : undefined}
+              />
+            </Animated.View>
           )}
           onEndReached={() => { if (hasMore) loadMore(); }}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
             isFetchingMore ? (
               <View style={styles.footer}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.brand} />
               </View>
             ) : !hasMore && total > 0 ? (
               <View style={styles.footer}>
@@ -326,7 +341,7 @@ export default function EventosScreen() {
               </View>
             ) : null
           }
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.brand} />}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -343,25 +358,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[1],
   },
-  newBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] },
+  newBtn: { backgroundColor: colors.brand, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] },
   newBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   filterRow: { paddingHorizontal: space[4], paddingVertical: space[2], gap: space[2] },
   filterChip: {
     borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[1] + 2,
-    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray300,
   },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
   filterChipTextActive: { color: colors.white },
   counter: { fontSize: text.xs, color: colors.gray400, paddingHorizontal: space[4], paddingBottom: space[1] },
-  list: { padding: space[4], paddingBottom: space[8] },
+  list: { paddingBottom: space[8] },
   footer: { padding: space[5], alignItems: 'center' },
   // Modal form
   chip: {
     borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2],
     backgroundColor: colors.gray100,
   },
-  chipActive: { backgroundColor: colors.primary },
+  chipActive: { backgroundColor: colors.brand },
   chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
   chipTextActive: { color: colors.white },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
@@ -372,7 +387,7 @@ const styles = StyleSheet.create({
   typeBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
   errorText: { fontSize: text.sm, color: colors.red500 },
   currencyBtn: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
-  currencyBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  currencyBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   currencyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
   currencyBtnTextActive: { color: colors.white },
   photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },

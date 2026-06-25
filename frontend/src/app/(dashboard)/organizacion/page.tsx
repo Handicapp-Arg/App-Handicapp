@@ -41,7 +41,7 @@ function Kpi({
   tone?: 'neutral' | 'gold' | 'success' | 'danger';
 }) {
   const accent = {
-    neutral: 'text-navy-900',
+    neutral: 'text-gray-900',
     gold:    'text-gold-600',
     success: 'text-success-700',
     danger:  'text-danger-700',
@@ -69,7 +69,7 @@ function PlanPanel({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Plan actual</p>
-          <p className="mt-1 text-xl font-bold tracking-tight text-navy-900">{meta.price}</p>
+          <p className="mt-1 text-xl font-bold tracking-tight text-gray-900">{meta.price}</p>
           <p className="mt-0.5 text-sm text-slate-500">{meta.horses}</p>
           {expiresAt && isPro && (
             <p className="mt-2 text-xs text-slate-500">
@@ -374,7 +374,7 @@ export default function OrganizacionPage() {
             {invitations.map((inv) => (
               <li key={inv.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-navy-900">{inv.email}</p>
+                  <p className="truncate text-sm font-semibold text-gray-900">{inv.email}</p>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {ROLE_LABELS[inv.role_in_org]} · expira el {new Date(inv.expires_at).toLocaleDateString('es-AR')}
                   </p>
@@ -407,7 +407,7 @@ export default function OrganizacionPage() {
       {/* Miembros */}
       <Card padded={false} className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-          <h2 className="text-sm font-semibold text-navy-900">
+          <h2 className="text-sm font-semibold text-gray-900">
             Miembros <span className="font-normal text-slate-400">({org.members.length})</span>
           </h2>
         </div>
@@ -421,7 +421,7 @@ export default function OrganizacionPage() {
                   {member.user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-navy-900">
+                  <p className="truncate text-sm font-semibold text-gray-900">
                     {member.user.name}
                     {isMe && <span className="ml-2 text-[10px] font-normal text-slate-400">(vos)</span>}
                   </p>

@@ -6,11 +6,14 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   ValidationPipe,
   ForbiddenException,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -85,8 +88,24 @@ export class AuthController {
       role: user.role,
       plan: user.plan ?? 'free',
       plan_expires_at: user.plan_expires_at,
+      avatar_url: user.avatar_url ?? null,
+      cover_url: user.cover_url ?? null,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
+  }
+
+  @Post('avatar')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 8 * 1024 * 1024 } }))
+  uploadAvatar(@UploadedFile() file: Express.Multer.File, @GetUser() user: User) {
+    return this.authService.uploadProfileImage(user, file, 'avatar');
+  }
+
+  @Post('cover')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 8 * 1024 * 1024 } }))
+  uploadCover(@UploadedFile() file: Express.Multer.File, @GetUser() user: User) {
+    return this.authService.uploadProfileImage(user, file, 'cover');
   }
 
   @Get('admin/overview')

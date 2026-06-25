@@ -7,7 +7,13 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  X, MessageCircle, ArrowUp, ChevronLeft, MoreHorizontal, QrCode,
+  ShieldCheck, Megaphone, ChevronRight, User, XCircle, FileText,
+  Trash2, CheckCircle2, Camera, Pencil, Stethoscope, Network,
+  Info, Clock, Images, Banknote,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 
@@ -32,20 +38,21 @@ import type { Event, Horse } from '../../../../packages/shared/src';
 
 type Tab = 'info' | 'historial' | 'medico' | 'fotos' | 'pedigree' | 'finanzas';
 
-const TABS: { key: Tab; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-  { key: 'info',      label: 'Info',      icon: 'information-circle-outline' },
-  { key: 'historial', label: 'Historial', icon: 'time-outline' },
-  { key: 'medico',    label: 'Médico',    icon: 'medkit-outline' },
-  { key: 'fotos',     label: 'Fotos',     icon: 'images-outline' },
-  { key: 'pedigree',  label: 'Pedigrí',   icon: 'git-network-outline' },
-  { key: 'finanzas',  label: 'Finanzas',  icon: 'cash-outline' },
+type TabIcon = LucideIcon;
+const TABS: { key: Tab; label: string; icon: TabIcon }[] = [
+  { key: 'info',      label: 'Info',      icon: Info },
+  { key: 'historial', label: 'Historial', icon: Clock },
+  { key: 'medico',    label: 'Médico',    icon: Stethoscope },
+  { key: 'fotos',     label: 'Fotos',     icon: Images },
+  { key: 'pedigree',  label: 'Pedigrí',   icon: Network },
+  { key: 'finanzas',  label: 'Finanzas',  icon: Banknote },
 ];
 
 const EXPENSE_CATEGORY_META: Record<string, { icon: string; color: string }> = {
   alimentacion:  { icon: '🌾', color: '#16a34a' },
   veterinario:   { icon: '💉', color: '#dc2626' },
   herradero:     { icon: '🔨', color: '#d97706' },
-  entrenamiento: { icon: '🏇', color: '#7c3aed' },
+  entrenamiento: { icon: '🏇', color: '#a16207' },
   mantenimiento: { icon: '🔧', color: '#0284c7' },
   transporte:    { icon: '🚛', color: '#0891b2' },
   otros:         { icon: '📦', color: '#6b7280' },
@@ -71,7 +78,7 @@ function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void 
       <View style={s.modalCard}>
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Editar {horse.name}</Text>
-          <TouchableOpacity onPress={onClose}><Ionicons name="close" size={22} color={colors.gray400} /></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><X size={22} color={colors.gray400} strokeWidth={2} /></TouchableOpacity>
         </View>
         <View style={s.modalBody}>
           <Text style={s.fieldLabel}>Nombre *</Text>
@@ -113,7 +120,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
   return (
     <View style={s.commentRoot}>
       <TouchableOpacity style={s.commentToggle} onPress={() => setOpen((p) => !p)} activeOpacity={0.7}>
-        <Ionicons name="chatbubble-outline" size={12} color={colors.gray400} />
+        <MessageCircle size={12} color={colors.gray400} strokeWidth={2} />
         <Text style={s.commentToggleText}>
           {open ? 'Ocultar' : 'Comentarios'}{comments && comments.length > 0 ? ` (${comments.length})` : ''}
         </Text>
@@ -132,7 +139,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
               </View>
               {c.user_id === currentUserId && (
                 <TouchableOpacity onPress={() => del.mutate(c.id)} style={{ paddingLeft: 6 }}>
-                  <Ionicons name="close" size={14} color={colors.gray300} />
+                  <X size={14} color={colors.gray300} strokeWidth={2} />
                 </TouchableOpacity>
               )}
             </View>
@@ -145,7 +152,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
               onPress={async () => { await add.mutateAsync(text.trim()); setText(''); }}
               activeOpacity={0.8}
             >
-              <Ionicons name="arrow-up" size={16} color={colors.white} />
+              <ArrowUp size={16} color={colors.white} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -156,7 +163,9 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
 
 /* ─── EventCard ─── */
 function EventCard({ event, currentUserId, canEdit }: { event: Event; currentUserId?: string; canEdit?: boolean }) {
-  const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  let _ed = new Date(event.date + 'T12:00:00');
+  if (isNaN(_ed.getTime())) _ed = new Date(event.date);
+  const date = isNaN(_ed.getTime()) ? '' : _ed.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
     <View style={s.eventCard}>
       <View style={s.eventHeader}>
@@ -224,6 +233,7 @@ export default function HorseDetailScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [showEdit, setShowEdit] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [showAddWeight, setShowAddWeight] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(todayISO);
@@ -376,7 +386,7 @@ export default function HorseDetailScreen() {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
         <Text style={{ fontSize: 15, color: colors.gray500 }}>Caballo no encontrado</Text>
-        <TouchableOpacity onPress={() => router.back()}><Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>← Volver</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}><Text style={{ fontSize: 14, fontWeight: '600', color: colors.brand }}>← Volver</Text></TouchableOpacity>
       </View>
     );
   }
@@ -399,7 +409,7 @@ export default function HorseDetailScreen() {
       style={s.root}
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
     >
       {/* ─── Hero: aspect ratio, Dynamic Island safe ─── */}
       <View style={s.heroWrap}>
@@ -416,47 +426,35 @@ export default function HorseDetailScreen() {
 
         {/* Back */}
         <TouchableOpacity style={[s.heroPill, { top: insets.top + 10, left: 14 }]} onPress={() => { haptic.light(); router.back(); }} activeOpacity={0.8}>
-          <Ionicons name="chevron-back" size={20} color={colors.white} />
+          <ChevronLeft size={20} color={colors.white} strokeWidth={2} />
         </TouchableOpacity>
 
-        {/* Acciones */}
+        {/* Acciones — menú de 3 puntitos */}
         {(can('horses', 'update') || can('horses', 'delete')) && (
           <View style={[s.heroActions, { top: insets.top + 10 }]}>
-            {can('horses', 'update') && (
-              <TouchableOpacity style={[s.heroPill, uploadImage.isPending && { opacity: 0.6 }]} onPress={handlePickImage} disabled={uploadImage.isPending} activeOpacity={0.8}>
-                <Ionicons name="camera-outline" size={18} color={colors.white} />
-              </TouchableOpacity>
-            )}
-            {can('horses', 'update') && (
-              <TouchableOpacity style={s.heroPill} onPress={() => setShowEdit(true)} activeOpacity={0.8}>
-                <Ionicons name="pencil-outline" size={18} color={colors.white} />
-              </TouchableOpacity>
-            )}
-            {can('horses', 'delete') && (
-              <TouchableOpacity style={[s.heroPill, s.heroPillDanger]} onPress={handleDelete} activeOpacity={0.8}>
-                <Ionicons name="trash-outline" size={18} color={colors.white} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={[s.heroPill, s.heroPillStatic]} onPress={() => { haptic.light(); setShowMenu(true); }} activeOpacity={0.8}>
+              <MoreHorizontal size={20} color={colors.white} strokeWidth={2} />
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* QR */}
-        {horse.public_token && (
-          <TouchableOpacity
-            style={[s.heroPill, { position: 'absolute', left: 14, bottom: 52 }, { backgroundColor: 'rgba(5,150,105,0.85)' }]}
-            onPress={() => setShowQR(true)} activeOpacity={0.8}
-          >
-            <Ionicons name="qr-code-outline" size={18} color={colors.white} />
-          </TouchableOpacity>
-        )}
-
-        {/* Nombre + badges */}
+        {/* Nombre + QR + badges */}
         <View style={s.heroContent}>
-          <Text style={s.horseName} numberOfLines={2}>{horse.name}</Text>
+          <View style={s.heroNameRow}>
+            <Text style={[s.horseName, { flex: 1 }]} numberOfLines={2}>{horse.name}</Text>
+            {horse.public_token && (
+              <TouchableOpacity
+                style={[s.heroPill, s.heroPillStatic, { backgroundColor: 'rgba(157,108,53,0.9)' }]}
+                onPress={() => { haptic.light(); setShowQR(true); }} activeOpacity={0.8}
+              >
+                <QrCode size={18} color={colors.white} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
+          </View>
           <View style={s.heroBadges}>
             {horse.horse_record_id && (
               <View style={[s.heroBadge, s.heroBadgeVerified]}>
-                <Ionicons name="shield-checkmark" size={11} color="#fff" />
+                <ShieldCheck size={11} color="#fff" strokeWidth={2} />
                 <Text style={s.heroBadgeText}>Verificado en padrón</Text>
               </View>
             )}
@@ -466,19 +464,26 @@ export default function HorseDetailScreen() {
         </View>
       </View>
 
+      {/* ─── Hoja de contenido (se monta sobre la imagen) ─── */}
+      <View style={s.sheet}>
+
       {/* ─── Tab bar ─── */}
       <View style={s.tabBar}>
-        {TABS.map(({ key, label, icon }) => (
-          <TouchableOpacity
-            key={key}
-            style={[s.tabItem, activeTab === key && s.tabItemActive]}
-            onPress={() => { haptic.selection(); setActiveTab(key); }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name={icon} size={15} color={activeTab === key ? colors.primary : colors.gray400} />
-            <Text style={[s.tabLabel, activeTab === key && s.tabLabelActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+        {TABS.map(({ key, label, icon }) => {
+          const TabIconCmp = icon;
+          const tabColor = activeTab === key ? colors.brand : colors.gray400;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[s.tabItem, activeTab === key && s.tabItemActive]}
+              onPress={() => { haptic.selection(); setActiveTab(key); }}
+              activeOpacity={0.7}
+            >
+              <TabIconCmp size={15} color={tabColor} strokeWidth={2} />
+              <Text style={[s.tabLabel, activeTab === key && s.tabLabelActive]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* ════════════════ TAB: INFO ════════════════ */}
@@ -497,13 +502,13 @@ export default function HorseDetailScreen() {
                 activeOpacity={0.85}
               >
                 <View style={s.sellHorseBtnIcon}>
-                  <Ionicons name="megaphone-outline" size={22} color="#7c3aed" />
+                  <Megaphone size={22} color={colors.brand} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.sellHorseBtnTitle}>Publicar en venta</Text>
                   <Text style={s.sellHorseBtnSub}>Vendé {horse.name} en Remates</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#7c3aed" />
+                <ChevronRight size={16} color={colors.brand} strokeWidth={2} />
               </TouchableOpacity>
             </View>
           )}
@@ -523,16 +528,16 @@ export default function HorseDetailScreen() {
               <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
                 <Text style={s.sectionTitle}>Finanzas</Text>
                 <TouchableOpacity onPress={() => setActiveTab('finanzas')}>
-                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>Ver detalle →</Text>
+                  <Text style={{ fontSize: 12, color: colors.brand, fontWeight: '600' }}>Ver detalle →</Text>
                 </TouchableOpacity>
               </View>
               <View style={s.financialCard}>
                 <View style={s.financialGrid}>
-                  <View style={[s.financialStat, { backgroundColor: '#faf5ff' }]}>
-                    <Text style={[s.financialStatValue, { color: colors.purple700 }]} numberOfLines={1} adjustsFontSizeToFit>
+                  <View style={[s.financialStat, { backgroundColor: '#faf3e9' }]}>
+                    <Text style={[s.financialStatValue, { color: colors.brand }]} numberOfLines={1} adjustsFontSizeToFit>
                       ${financial.total.toLocaleString('es-AR')}
                     </Text>
-                    <Text style={[s.financialStatLabel, { color: colors.purple700 }]}>Total gastos</Text>
+                    <Text style={[s.financialStatLabel, { color: colors.brand }]}>Total gastos</Text>
                   </View>
                   <View style={[s.financialStat, { backgroundColor: colors.gray50 }]}>
                     <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
@@ -576,8 +581,8 @@ export default function HorseDetailScreen() {
                     <View key={v.id}>
                       {i > 0 && <View style={s.docDivider} />}
                       <View style={s.docRow}>
-                        <View style={[s.docIcon, { backgroundColor: '#eff6ff' }]}>
-                          <Ionicons name="person-outline" size={16} color="#1d4ed8" />
+                        <View style={[s.docIcon, { backgroundColor: '#faf3e9' }]}>
+                          <User size={16} color="#9d6c35" strokeWidth={2} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={s.docName}>{v.user.name}</Text>
@@ -585,7 +590,7 @@ export default function HorseDetailScreen() {
                         </View>
                         {can('horses', 'update') && (
                           <TouchableOpacity onPress={() => handleRemoveVet(v.user_id, v.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                            <Ionicons name="close-circle-outline" size={20} color={colors.gray300} />
+                            <XCircle size={20} color={colors.gray300} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -642,12 +647,12 @@ export default function HorseDetailScreen() {
                     {i > 0 && <View style={s.docDivider} />}
                     <View style={s.docRow}>
                       <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => Linking.openURL(doc.url)} activeOpacity={0.7}>
-                        <View style={s.docIcon}><Ionicons name="document-text-outline" size={18} color={colors.red500} /></View>
+                        <View style={s.docIcon}><FileText size={18} color={colors.red500} strokeWidth={2} /></View>
                         <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
                       </TouchableOpacity>
                       {can('horses', 'update') && (
                         <TouchableOpacity onPress={() => handleDeleteDoc(doc.id, doc.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="trash-outline" size={16} color={colors.gray300} />
+                          <Trash2 size={16} color={colors.gray300} strokeWidth={2} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -719,7 +724,7 @@ export default function HorseDetailScreen() {
                   >
                     <Text style={s.routineEmoji}>{emoji}</Text>
                     <Text style={[s.routineLabel, checked && s.routineLabelChecked]} numberOfLines={1}>{label}</Text>
-                    {checked && <Ionicons name="checkmark-circle" size={16} color="#16a34a" />}
+                    {checked && <CheckCircle2 size={16} color="#16a34a" strokeWidth={2} />}
                   </TouchableOpacity>
                 );
               })}
@@ -741,7 +746,7 @@ export default function HorseDetailScreen() {
                           height: Math.max(4, pct * 36),
                           backgroundColor: pct >= 0.7 ? '#16a34a' : pct >= 0.4 ? colors.amber600 : pct > 0 ? colors.red500 : colors.gray200,
                         }]} />
-                        <Text style={[s.routineTrendLabel, isToday && { color: colors.primary, fontWeight: weight.bold }]}>{dayLabel}</Text>
+                        <Text style={[s.routineTrendLabel, isToday && { color: colors.brand, fontWeight: weight.bold }]}>{dayLabel}</Text>
                       </View>
                     );
                   })}
@@ -797,8 +802,8 @@ export default function HorseDetailScreen() {
                   activeOpacity={0.75}
                 >
                   {pdfLoading
-                    ? <ActivityIndicator size="small" color={colors.primary} />
-                    : <><Ionicons name="document-text-outline" size={13} color={colors.primary} /><Text style={s.pdfBtnText}>PDF</Text></>
+                    ? <ActivityIndicator size="small" color={colors.brand} />
+                    : <><FileText size={13} color={colors.brand} strokeWidth={2} /><Text style={s.pdfBtnText}>PDF</Text></>
                   }
                 </TouchableOpacity>
               )}
@@ -830,7 +835,7 @@ export default function HorseDetailScreen() {
                             { text: 'Cancelar', style: 'cancel' },
                             { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteMedical.mutate(rec.id); } },
                           ])}>
-                            <Ionicons name="close" size={16} color={colors.gray300} />
+                            <X size={16} color={colors.gray300} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -897,6 +902,34 @@ export default function HorseDetailScreen() {
         </View>
       )}
 
+      </View>
+
+      {/* ─── Menú de acciones ─── */}
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <TouchableOpacity style={s.menuOverlay} activeOpacity={1} onPress={() => setShowMenu(false)}>
+          <View style={[s.menuSheet, { paddingBottom: insets.bottom + 16 }]}>
+            {can('horses', 'update') && (
+              <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); handlePickImage(); }} activeOpacity={0.7}>
+                <Camera size={20} color={colors.gray700} strokeWidth={2} />
+                <Text style={s.menuItemText}>Cambiar foto</Text>
+              </TouchableOpacity>
+            )}
+            {can('horses', 'update') && (
+              <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); setShowEdit(true); }} activeOpacity={0.7}>
+                <Pencil size={20} color={colors.gray700} strokeWidth={2} />
+                <Text style={s.menuItemText}>Editar caballo</Text>
+              </TouchableOpacity>
+            )}
+            {can('horses', 'delete') && (
+              <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); handleDelete(); }} activeOpacity={0.7}>
+                <Trash2 size={20} color={colors.red500} strokeWidth={2} />
+                <Text style={[s.menuItemText, { color: colors.red500 }]}>Eliminar caballo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* ─── Modal QR ─── */}
       <Modal visible={showQR} animationType="fade" transparent>
         <View style={s.qrOverlay}>
@@ -906,7 +939,7 @@ export default function HorseDetailScreen() {
                 <Text style={s.qrSub}>Código QR</Text>
                 <Text style={s.qrTitle} numberOfLines={1}>{horse.name}</Text>
               </View>
-              <TouchableOpacity onPress={() => setShowQR(false)}><Ionicons name="close" size={22} color="rgba(255,255,255,0.6)" /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowQR(false)}><X size={22} color="rgba(255,255,255,0.6)" strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.qrWrap}>
               {horse.public_token && (
@@ -927,7 +960,7 @@ export default function HorseDetailScreen() {
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Registrar peso</Text>
-              <TouchableOpacity onPress={() => setShowAddWeight(false)}><Ionicons name="close" size={22} color={colors.gray400} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowAddWeight(false)}><X size={22} color={colors.gray400} strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={s.fieldLabel}>Peso (kg) *</Text>
@@ -955,7 +988,7 @@ export default function HorseDetailScreen() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Nuevo registro médico</Text>
               <TouchableOpacity onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}>
-                <Ionicons name="close" size={22} color={colors.gray400} />
+                <X size={22} color={colors.gray400} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.modalBody, { paddingBottom: 8 }]}>
@@ -1021,11 +1054,11 @@ export default function HorseDetailScreen() {
                     .map((v) => (
                       <TouchableOpacity
                         key={v.id}
-                        style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                        style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: colors.brand, borderColor: colors.brand }]}
                         onPress={() => setSelectedVetId(v.id)}
                         activeOpacity={0.75}
                       >
-                        <Ionicons name="person-outline" size={16} color={selectedVetId === v.id ? colors.white : colors.primary} />
+                        <User size={16} color={selectedVetId === v.id ? colors.white : colors.brand} strokeWidth={2} />
                         <Text style={[s.smallBtnText, selectedVetId === v.id && { color: colors.white }]}>{v.name}</Text>
                       </TouchableOpacity>
                     ))}
@@ -1145,7 +1178,7 @@ export default function HorseDetailScreen() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Registrar evento</Text>
               <TouchableOpacity onPress={() => setShowAddEvent(false)}>
-                <Ionicons name="close" size={22} color={colors.gray400} />
+                <X size={22} color={colors.gray400} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={s.modalBody}>
@@ -1154,7 +1187,7 @@ export default function HorseDetailScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
                 {([
                   { key: 'nota', label: '📝 Nota', color: '#6b7280' },
-                  { key: 'entrenamiento', label: '🏇 Entrenamiento', color: '#7c3aed' },
+                  { key: 'entrenamiento', label: '🏇 Entrenamiento', color: '#a16207' },
                   { key: 'salud', label: '💉 Salud', color: '#dc2626' },
                   { key: 'carrera', label: '🏁 Carrera', color: '#d97706' },
                 ] as const).map((t) => (
@@ -1233,17 +1266,17 @@ export default function HorseDetailScreen() {
             <>
               {/* KPIs */}
               <View style={s.financialGrid}>
-                <View style={[s.financialStat, { backgroundColor: '#faf5ff' }]}>
-                  <Text style={[s.financialStatValue, { color: colors.purple700 }]} numberOfLines={1} adjustsFontSizeToFit>
+                <View style={[s.financialStat, { backgroundColor: '#faf3e9' }]}>
+                  <Text style={[s.financialStatValue, { color: colors.brand }]} numberOfLines={1} adjustsFontSizeToFit>
                     ${financial.total.toLocaleString('es-AR')}
                   </Text>
-                  <Text style={[s.financialStatLabel, { color: colors.purple700 }]}>Total acumulado</Text>
+                  <Text style={[s.financialStatLabel, { color: colors.brand }]}>Total acumulado</Text>
                 </View>
-                <View style={[s.financialStat, { backgroundColor: '#eff6ff' }]}>
-                  <Text style={[s.financialStatValue, { color: '#1d4ed8' }]} numberOfLines={1} adjustsFontSizeToFit>
+                <View style={[s.financialStat, { backgroundColor: '#faf3e9' }]}>
+                  <Text style={[s.financialStatValue, { color: '#9d6c35' }]} numberOfLines={1} adjustsFontSizeToFit>
                     ${financial.average_monthly.toLocaleString('es-AR')}
                   </Text>
-                  <Text style={[s.financialStatLabel, { color: '#1d4ed8' }]}>Promedio/mes</Text>
+                  <Text style={[s.financialStatLabel, { color: '#9d6c35' }]}>Promedio/mes</Text>
                 </View>
               </View>
 
@@ -1306,7 +1339,7 @@ export default function HorseDetailScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 13, fontWeight: '600', color: '#1f2937' }} numberOfLines={1}>{exp.description}</Text>
                           <Text style={{ fontSize: 11, color: '#9ca3af' }}>
-                            {new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {(() => { let d = new Date(exp.date + 'T12:00:00'); if (isNaN(d.getTime())) d = new Date(exp.date); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                           </Text>
                         </View>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>${exp.amount.toLocaleString('es-AR')}</Text>
@@ -1336,8 +1369,14 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   heroPillDanger: { backgroundColor: 'rgba(220,38,38,0.55)' },
+  heroPillStatic: { position: 'relative', top: undefined, left: undefined },
   heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
-  heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 16 },
+  menuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  menuSheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 8 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 22, paddingVertical: 15 },
+  menuItemText: { fontSize: 15, fontWeight: '600', color: colors.gray800 },
+  heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 20 },
+  heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   horseName: { fontSize: 24, fontWeight: '800', color: colors.white, lineHeight: 30, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   heroBadges: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   heroBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
@@ -1346,26 +1385,33 @@ const s = StyleSheet.create({
   heroBadgeText: { fontSize: 11, fontWeight: '600', color: colors.white },
 
   /* Tab bar */
+  sheet: {
+    marginTop: -12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    backgroundColor: '#f0f2f5',
+    overflow: 'hidden',
+  },
   tabBar: {
     flexDirection: 'row', backgroundColor: colors.white,
     borderBottomWidth: 1, borderBottomColor: colors.gray100,
   },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 3, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabItemActive: { borderBottomColor: colors.primary },
+  tabItemActive: { borderBottomColor: colors.brand },
   tabLabel: { fontSize: 10, fontWeight: '600', color: colors.gray400 },
-  tabLabelActive: { color: colors.primary },
+  tabLabelActive: { color: colors.brand },
 
   /* Sections */
   section: { margin: 16, gap: 10 },
   sellHorseBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#f5f3ff', borderRadius: 16,
-    borderWidth: 1.5, borderColor: '#ddd6fe',
+    backgroundColor: '#faf3e9', borderRadius: 16,
+    borderWidth: 1.5, borderColor: '#f3e3cc',
     padding: 16,
   },
-  sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center' },
-  sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: '#4c1d95' },
-  sellHorseBtnSub: { fontSize: 12, color: '#7c3aed', marginTop: 2 },
+  sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f3e3cc', justifyContent: 'center', alignItems: 'center' },
+  sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: '#5f3f18' },
+  sellHorseBtnSub: { fontSize: 12, color: colors.brand, marginTop: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.gray900 },
   countBadge: { backgroundColor: colors.gray200, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
@@ -1390,7 +1436,7 @@ const s = StyleSheet.create({
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   barLabel: { width: 36, fontSize: 10, color: colors.gray400, textAlign: 'right' },
   barTrack: { flex: 1, height: 6, backgroundColor: colors.gray100, borderRadius: 999, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: '#a855f7', borderRadius: 999 },
+  barFill: { height: '100%', backgroundColor: colors.brand, borderRadius: 999 },
   barValue: { width: 64, fontSize: 10, fontWeight: '600', color: colors.gray700, textAlign: 'right' },
 
   /* Docs */
@@ -1430,7 +1476,7 @@ const s = StyleSheet.create({
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: 11, color: colors.gray400 },
   eventDesc: { fontSize: 14, color: colors.gray700, lineHeight: 20 },
-  eventAmount: { fontSize: 14, fontWeight: '700', color: colors.purple700 },
+  eventAmount: { fontSize: 14, fontWeight: '700', color: colors.brand },
 
   /* Comentarios */
   commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.gray100, paddingTop: 8 },
@@ -1445,7 +1491,7 @@ const s = StyleSheet.create({
   commentText: { fontSize: 12, color: colors.gray700, marginTop: 2 },
   commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },
   commentInput: { flex: 1, borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: colors.gray900, backgroundColor: colors.gray50, minHeight: 36, maxHeight: 80 },
-  commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
 
   /* Médico */
   medCard: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.gray100, padding: 12 },
@@ -1473,21 +1519,21 @@ const s = StyleSheet.create({
 
   /* Botones pequeños */
   smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  smallBtnText: { fontSize: 11, fontWeight: '600', color: colors.brand },
   typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: colors.gray50 },
   typeChipText: { fontSize: 13, fontWeight: '600', color: colors.gray600 },
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white, minWidth: 44, justifyContent: 'center' },
-  pdfBtnText: { fontSize: 11, fontWeight: '700', color: colors.primary },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.brand, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white, minWidth: 44, justifyContent: 'center' },
+  pdfBtnText: { fontSize: 11, fontWeight: '700', color: colors.brand },
 
   /* QR Modal */
   qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   qrCard: { backgroundColor: colors.white, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden' },
-  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 16, backgroundColor: colors.primary },
+  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 16, backgroundColor: colors.brand },
   qrSub: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8 },
   qrTitle: { fontSize: 20, fontWeight: '800', color: colors.white, marginTop: 2 },
   qrWrap: { alignItems: 'center', paddingVertical: 28, backgroundColor: '#f8fafc' },
   qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '600', color: colors.gray700, paddingHorizontal: 20, marginTop: 4 },
-  qrBtn: { margin: 16, marginTop: 12, borderRadius: 14, backgroundColor: colors.primary, paddingVertical: 14, alignItems: 'center' },
+  qrBtn: { margin: 16, marginTop: 12, borderRadius: 14, backgroundColor: colors.brand, paddingVertical: 14, alignItems: 'center' },
   qrBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 
   /* Modales generales */
@@ -1504,7 +1550,7 @@ const s = StyleSheet.create({
   fieldError: { fontSize: 13, color: colors.red500 },
   input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.primary },
+  btnPrimary: { backgroundColor: colors.brand },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
   btnSecondary: { borderWidth: 1, borderColor: colors.gray200 },
   btnSecondaryText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },

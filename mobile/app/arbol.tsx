@@ -4,7 +4,7 @@ import {
   StyleSheet, ActivityIndicator, FlatList, Platform,
 } from 'react-native';
 import { Svg, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
+import { Search, ShieldCheck, Clock, GitBranch, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../hooks/use-horse-records';
 import { colors } from '../lib/colors';
@@ -138,8 +138,8 @@ function EdgeSvg({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; tot
     <Svg width={totalW} height={totalH} style={StyleSheet.absoluteFillObject} pointerEvents="none">
       <Defs>
         <LinearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#3b82f6" stopOpacity="0.6" />
-          <Stop offset="1" stopColor="#3b82f6" stopOpacity="0.15" />
+          <Stop offset="0" stopColor="#9d6c35" stopOpacity="0.6" />
+          <Stop offset="1" stopColor="#9d6c35" stopOpacity="0.15" />
         </LinearGradient>
         <LinearGradient id="dg" x1="0" y1="0" x2="1" y2="0">
           <Stop offset="0" stopColor="#f43f5e" stopOpacity="0.6" />
@@ -190,7 +190,7 @@ function SearchBar({ onSelect }: { onSelect: (r: HorseRecord) => void }) {
   return (
     <View style={styles.searchWrap}>
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={16} color="#94a3b8" style={{ marginRight: 8 }} />
+        <Search size={16} color="#94a3b8" strokeWidth={2} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           value={q}
@@ -201,7 +201,7 @@ function SearchBar({ onSelect }: { onSelect: (r: HorseRecord) => void }) {
           returnKeyType="search"
           autoCorrect={false}
         />
-        {isFetching && <ActivityIndicator size="small" color={colors.primary} />}
+        {isFetching && <ActivityIndicator size="small" color={colors.brand} />}
       </View>
 
       {open && !!data?.items?.length && (
@@ -222,7 +222,7 @@ function SearchBar({ onSelect }: { onSelect: (r: HorseRecord) => void }) {
                   </Text>
                 </View>
                 {item.ownership_status === 'verified' && (
-                  <Ionicons name="shield-checkmark" size={16} color="#34d399" />
+                  <ShieldCheck size={16} color="#34d399" strokeWidth={2} />
                 )}
               </TouchableOpacity>
             )}
@@ -257,7 +257,7 @@ function Legend() {
   return (
     <View style={styles.legend}>
       <View style={styles.legendItem}>
-        <View style={[styles.legendLine, { backgroundColor: '#3b82f6' }]} />
+        <View style={[styles.legendLine, { backgroundColor: '#9d6c35' }]} />
         <Text style={styles.legendText}>Paterna</Text>
       </View>
       <View style={styles.legendItem}>
@@ -265,11 +265,11 @@ function Legend() {
         <Text style={styles.legendText}>Materna</Text>
       </View>
       <View style={styles.legendItem}>
-        <Ionicons name="shield-checkmark" size={12} color="#34d399" />
+        <ShieldCheck size={12} color="#34d399" strokeWidth={2} />
         <Text style={styles.legendText}>Dueño verificado</Text>
       </View>
       <View style={styles.legendItem}>
-        <Ionicons name="time" size={12} color="#fbbf24" />
+        <Clock size={12} color="#fbbf24" strokeWidth={2} />
         <Text style={styles.legendText}>Pendiente</Text>
       </View>
     </View>
@@ -317,7 +317,7 @@ export default function ArbolScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="git-branch" size={18} color={colors.primary} />
+            <GitBranch size={18} color={colors.brand} strokeWidth={2} />
             <Text style={styles.title}>Árbol Genealógico</Text>
           </View>
           <DepthToggle value={maxGen} onChange={setMaxGen} />
@@ -327,7 +327,7 @@ export default function ArbolScreen() {
         {/* Breadcrumb */}
         {history.length > 1 && (
           <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-            <Ionicons name="chevron-back" size={14} color="#64748b" />
+            <ChevronLeft size={14} color="#64748b" strokeWidth={2} />
             <Text style={styles.backText}>
               Volver a <Text style={{ fontWeight: '700' }}>{history[history.length - 2]?.name}</Text>
             </Text>
@@ -338,7 +338,7 @@ export default function ArbolScreen() {
       {/* Tree canvas */}
       {!selectedId && (
         <View style={styles.empty}>
-          <Ionicons name="git-branch-outline" size={48} color="#cbd5e1" />
+          <GitBranch size={48} color="#cbd5e1" strokeWidth={2} />
           <Text style={styles.emptyTitle}>Seleccioná un caballo</Text>
           <Text style={styles.emptyText}>
             Buscá cualquier caballo arriba y su árbol genealógico aparecerá acá.
@@ -349,7 +349,7 @@ export default function ArbolScreen() {
 
       {selectedId && isLoading && (
         <View style={styles.empty}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.brand} />
           <Text style={[styles.emptyText, { marginTop: 12 }]}>Cargando árbol…</Text>
         </View>
       )}
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   genLabelSubject: {
-    color: colors.primary,
+    color: colors.brand,
   },
   // Nodes
   node: {
@@ -555,8 +555,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   nodeSubject: {
-    backgroundColor: '#0f1f3d',
-    borderColor: '#1e3a6e',
+    backgroundColor: '#9d6c35',
+    borderColor: '#7f5628',
     shadowOpacity: 0.15,
     elevation: 4,
   },
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    color: '#60a5fa',
+    color: '#f3e3cc',
     marginBottom: 2,
   },
   subjectName: {
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   },
   subjectSub: {
     fontSize: 10,
-    color: '#93c5fd',
+    color: 'rgba(255,255,255,0.75)',
     marginTop: 2,
   },
   subjectVerified: {

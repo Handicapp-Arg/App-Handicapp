@@ -7,7 +7,7 @@ interface StatCardProps {
 }
 
 const accentMap = {
-  navy:   { bg: '#0f1f3d', text: '#ffffff', sub: 'rgba(255,255,255,0.55)', icon: 'rgba(255,255,255,0.15)', label: 'rgba(255,255,255,0.5)', border: 'transparent' },
+  navy:   { bg: '#9d6c35', text: '#ffffff', sub: 'rgba(255,255,255,0.55)', icon: 'rgba(255,255,255,0.15)', label: 'rgba(255,255,255,0.5)', border: 'transparent' },
   blue:   { bg: '#eff6ff', text: '#1e3a8a', sub: '#3b82f6', icon: '#bfdbfe', label: '#60a5fa', border: '#bfdbfe' },
   green:  { bg: '#f0fdf4', text: '#14532d', sub: '#16a34a', icon: '#bbf7d0', label: '#4ade80', border: '#bbf7d0' },
   purple: { bg: '#faf5ff', text: '#581c87', sub: '#9333ea', icon: '#e9d5ff', label: '#c084fc', border: '#e9d5ff' },
@@ -23,7 +23,7 @@ export function StatCard({ label, value, icon, accent, sub }: StatCardProps) {
       style={{
         borderColor: a ? a.border : 'var(--surface-card-border)',
         backgroundColor: a ? a.bg : '#ffffff',
-        boxShadow: a?.bg === '#0f1f3d'
+        boxShadow: a?.bg === '#9d6c35'
           ? '0 4px 14px -2px rgb(15 31 61 / 0.35)'
           : 'var(--shadow-card)',
       }}

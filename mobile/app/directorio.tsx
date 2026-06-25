@@ -3,15 +3,16 @@ import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
   RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { Clock, Search, XCircle } from 'lucide-react-native';
 import api from '../lib/api';
 import { useHorses } from '../hooks/use-horses';
 import { useAuth } from '../lib/auth';
 import { useBoardingRequests, useCreateBoardingRequest } from '../hooks/use-boarding-requests';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
+import { ListRowSkeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
@@ -140,7 +141,6 @@ function RequestModal({
 }
 
 export default function DirectorioScreen() {
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -162,13 +162,13 @@ export default function DirectorioScreen() {
   const pendingRequests = myRequests?.filter((r) => r.status === 'pending') ?? [];
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <View style={s.root}>
       <ScreenHeader title="Directorio" showBack />
 
       {/* Solicitudes pendientes propias */}
       {isPropietario && pendingRequests.length > 0 && (
         <View style={s.pendingBanner}>
-          <Ionicons name="time-outline" size={14} color="#92400e" />
+          <Clock size={14} color="#92400e" strokeWidth={2} />
           <Text style={s.pendingText}>
             {pendingRequests.length} solicitud{pendingRequests.length !== 1 ? 'es' : ''} pendiente{pendingRequests.length !== 1 ? 's' : ''}
           </Text>
@@ -177,7 +177,7 @@ export default function DirectorioScreen() {
 
       {/* Buscador */}
       <View style={s.searchWrap}>
-        <Ionicons name="search-outline" size={16} color={colors.gray400} />
+        <Search size={16} color={colors.gray400} strokeWidth={2} />
         <TextInput
           style={s.searchInput}
           value={search}
@@ -189,14 +189,14 @@ export default function DirectorioScreen() {
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); haptic.selection(); }}>
-            <Ionicons name="close-circle" size={16} color={colors.gray300} />
+            <XCircle size={16} color={colors.gray300} strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
 
       {isLoading ? (
-        <View style={s.center}>
-          <View style={s.spinner} />
+        <View style={s.list}>
+          {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : !data?.length ? (
         <EmptyState
@@ -210,10 +210,10 @@ export default function DirectorioScreen() {
           keyExtractor={(d) => d.id}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const hasPending = pendingForEstab(item.id);
             return (
-              <View style={s.card}>
+              <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.card}>
                 <View style={s.avatar}>
                   <Text style={s.avatarText}>{item.name[0]?.toUpperCase()}</Text>
                 </View>
@@ -240,11 +240,11 @@ export default function DirectorioScreen() {
                     </TouchableOpacity>
                   )
                 )}
-              </View>
+              </Animated.View>
             );
           }}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
         />
       )}
 
@@ -256,18 +256,18 @@ export default function DirectorioScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f0f3f8' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: colors.gray200, borderTopColor: colors.primary },
+  spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: colors.gray200, borderTopColor: colors.brand },
   pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: '#fffbeb', borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: '#fde68a' },
   pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#92400e' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: space[3], paddingVertical: 2 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: colors.gray900 },
   list: { paddingHorizontal: space[4], paddingBottom: space[8] },
   card: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: '#e8edf5', padding: space[4], shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
   cardName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
   cardSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
-  requestBtn: { borderRadius: radius.md, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 7 },
+  requestBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 7 },
   requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
   pendingChip: { borderRadius: radius.full, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#fde68a' },
   pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: '#92400e' },
@@ -284,12 +284,12 @@ const s = StyleSheet.create({
   emptyText: { fontSize: text.xs, color: colors.gray400 },
   horseList: { gap: 8 },
   horseItem: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: colors.white },
-  horseItemActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  horseItemActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   horseItemText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
   horseItemTextActive: { color: colors.white },
   input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: colors.gray900, backgroundColor: colors.gray50 },
   btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.primary },
+  btnPrimary: { backgroundColor: colors.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
   btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },

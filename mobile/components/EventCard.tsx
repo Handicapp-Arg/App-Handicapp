@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   date: { fontSize: text.xs, color: colors.gray400 },
   deleteBtn: { padding: 2 },
   deleteBtnText: { fontSize: 13, color: colors.gray300 },
-  amount: { fontSize: text.sm, fontWeight: weight.bold, color: colors.purple700 },
+  amount: { fontSize: text.sm, fontWeight: weight.bold, color: colors.brand },
   desc: { fontSize: text.sm, color: colors.gray700, lineHeight: 20 },
   photoCount: { fontSize: text.xs, color: colors.gray400 },
 });

@@ -59,7 +59,7 @@ function ContractCard({
               <Badge tone={meta.tone} dot>{meta.label}</Badge>
               {contract.horse && <Badge tone="info">{contract.horse.name}</Badge>}
             </div>
-            <h3 className="mt-2 text-base font-semibold tracking-tight text-navy-900">{contract.title}</h3>
+            <h3 className="mt-2 text-base font-semibold tracking-tight text-gray-900">{contract.title}</h3>
             <p className="mt-1 text-xs text-slate-500">
               {isOwner ? (
                 <>De <strong className="text-slate-700">{contract.establishment?.name}</strong></>

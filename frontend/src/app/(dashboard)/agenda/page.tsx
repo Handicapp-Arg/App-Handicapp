@@ -26,14 +26,14 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
     onClose();
   };
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-[#0f1f3d] focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none';
 
   return createPortal(
     <>
       <div className="fixed inset-0 z-[998] bg-black/50 hidden sm:block" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#0f1f3d' }}>
+          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Nuevo turno</h2>
             <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">✕</button>
           </div>
@@ -85,7 +85,7 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
               <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">
                 Cancelar
               </button>
-              <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition" style={{ backgroundColor: '#0f1f3d' }}>
+              <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition" style={{ backgroundColor: '#9d6c35' }}>
                 {create.isPending ? 'Guardando...' : 'Crear turno'}
               </button>
             </div>
@@ -133,7 +133,7 @@ export default function AgendaPage() {
           {horses && horses.length > 0 && (
             <button onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer active:scale-95"
-              style={{ backgroundColor: '#0f1f3d' }}
+              style={{ backgroundColor: '#9d6c35' }}
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -146,7 +146,7 @@ export default function AgendaPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[#0f1f3d]" />
+          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[#9d6c35]" />
         </div>
       ) : !appointments?.length ? (
         <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
@@ -154,7 +154,7 @@ export default function AgendaPage() {
             {view === 'upcoming' ? 'No hay turnos próximos' : 'No hay turnos registrados'}
           </p>
           {horses && horses.length > 0 && (
-            <button onClick={() => setShowCreate(true)} className="mt-3 text-sm font-medium underline cursor-pointer" style={{ color: '#0f1f3d' }}>
+            <button onClick={() => setShowCreate(true)} className="mt-3 text-sm font-medium underline cursor-pointer" style={{ color: '#9d6c35' }}>
               Crear el primero
             </button>
           )}

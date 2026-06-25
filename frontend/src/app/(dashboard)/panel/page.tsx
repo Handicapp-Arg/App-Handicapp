@@ -745,7 +745,7 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Mis caballos</h2>
-            <Link href="/caballos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+            <Link href="/caballos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data.horses.slice(0, 5).map((h) => (
@@ -777,7 +777,7 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Actividad reciente</h2>
-            <Link href="/eventos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+            <Link href="/eventos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data.recent_events.map((ev) => (
@@ -829,7 +829,7 @@ function BoardingRequestsPanel() {
           <div key={req.id} className="flex items-center gap-4 px-5 py-4">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-gray-900">
-                {req.requester?.name} solicita alojar a <span className="text-[#0f1f3d]">{req.horse?.name}</span>
+                {req.requester?.name} solicita alojar a <span className="text-[#9d6c35]">{req.horse?.name}</span>
               </p>
               {req.message && <p className="mt-0.5 text-xs text-gray-500 italic">"{req.message}"</p>}
               <p className="mt-0.5 text-xs text-gray-400">
@@ -847,7 +847,7 @@ function BoardingRequestsPanel() {
               <button
                 onClick={() => accept.mutate(req.id)}
                 disabled={accept.isPending || reject.isPending}
-                className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a1628] transition cursor-pointer disabled:opacity-50"
+                className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#20160e] transition cursor-pointer disabled:opacity-50"
               >
                 {accept.isPending ? '...' : 'Aceptar'}
               </button>
@@ -882,7 +882,7 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Caballos en pensión</h2>
-            <Link href="/caballos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+            <Link href="/caballos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data.horses.slice(0, 8).map((h) => (
@@ -914,7 +914,7 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Actividad reciente</h2>
-            <Link href="/eventos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+            <Link href="/eventos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data.recent_events.map((ev) => (
@@ -1013,7 +1013,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">Mis pacientes</h2>
-          <Link href="/caballos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+          <Link href="/caballos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
         </div>
         <div className="divide-y divide-gray-50">
           {data.horses.map((h) => (
@@ -1045,7 +1045,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Últimos registros de salud</h2>
-            <Link href="/eventos" className="text-xs font-medium text-[#0f1f3d] hover:underline">Ver todos</Link>
+            <Link href="/eventos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data.recent_health_events.map((ev) => (

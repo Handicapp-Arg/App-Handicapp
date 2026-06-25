@@ -93,7 +93,7 @@ export default function ImageCropModal({
           value={zoom}
           onChange={(e) => setZoom(Number(e.target.value))}
           className="w-full cursor-pointer"
-          style={{ accentColor: '#0f1f3d' }}
+          style={{ accentColor: '#9d6c35' }}
         />
         <div className="flex gap-2">
           <button

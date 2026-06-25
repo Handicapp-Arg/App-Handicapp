@@ -18,6 +18,7 @@ import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
 import { RolesService } from '../roles/roles.service';
 import { EmailService } from '../email/email.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { RefreshToken } from './refresh-token.entity';
 
 @Injectable()
@@ -30,7 +31,34 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly rolesService: RolesService,
     private readonly emailService: EmailService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  /** Sube avatar o portada del usuario a Cloudinary, borra el anterior y persiste. */
+  async uploadProfileImage(
+    user: User,
+    file: Express.Multer.File,
+    kind: 'avatar' | 'cover',
+  ): Promise<{ avatar_url: string | null; cover_url: string | null }> {
+    if (!file) throw new BadRequestException('No se recibió ninguna imagen');
+
+    const folder = kind === 'avatar' ? 'handicapp/avatars' : 'handicapp/covers';
+    const result = await this.cloudinaryService.upload(file, folder);
+
+    const urlField = kind === 'avatar' ? 'avatar_url' : 'cover_url';
+    const idField = kind === 'avatar' ? 'avatar_public_id' : 'cover_public_id';
+
+    const prevId = user[idField];
+    if (prevId) {
+      await this.cloudinaryService.delete(prevId).catch(() => undefined);
+    }
+
+    user[urlField] = result.secure_url;
+    user[idField] = result.public_id;
+    await this.userRepository.save(user);
+
+    return { avatar_url: user.avatar_url, cover_url: user.cover_url };
+  }
 
   private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
     const accessToken = this.jwtService.sign({ sub: user.id, role: user.role });

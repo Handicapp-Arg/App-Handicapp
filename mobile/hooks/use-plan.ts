@@ -28,10 +28,11 @@ export function usePlanStatus() {
   });
 }
 
-export function useAdminPlanUsers() {
+export function useAdminPlanUsers(enabled = true) {
   return useQuery<AdminPlanUser[]>({
     queryKey: ['admin-plan-users'],
     queryFn: async () => (await api.get('/plans/admin/users')).data,
+    enabled,
   });
 }
 

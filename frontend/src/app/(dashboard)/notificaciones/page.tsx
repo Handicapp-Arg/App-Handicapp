@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useNotifications, useMarkAsRead } from '@/hooks/use-notifications';
-import { PageHeader } from '@/components/ui/page-header';
 import { PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -33,14 +32,14 @@ function NotifItem({
   return (
     <div
       onClick={() => onClick(n)}
-      className={`group flex cursor-pointer items-start gap-3.5 rounded-2xl border p-4 transition-all duration-150 ${
+      className={`group flex cursor-pointer items-start gap-3.5 rounded-2xl p-4 transition-all duration-150 ${
         n.read
-          ? 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
-          : 'border-blue-100 bg-blue-50/70 hover:bg-blue-50 hover:border-blue-200'
+          ? 'bg-white shadow-[var(--shadow-card)] hover:shadow-md'
+          : 'bg-clay-50 ring-1 ring-clay-100 hover:bg-clay-100/50'
       }`}
     >
-      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg ${
-        n.read ? 'bg-gray-50' : 'bg-blue-100'
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${
+        n.read ? 'bg-gray-50' : 'bg-clay-100'
       }`}>
         {icon}
       </div>
@@ -49,7 +48,7 @@ function NotifItem({
           <p className={`text-sm font-semibold leading-tight ${n.read ? 'text-gray-600' : 'text-gray-900'}`}>
             {n.title}
           </p>
-          {!n.read && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500 ring-2 ring-blue-500/20" />}
+          {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-clay-500" />}
         </div>
         <p className={`mt-0.5 text-sm leading-relaxed ${n.read ? 'text-gray-400' : 'text-gray-600'}`}>
           {n.message}
@@ -59,7 +58,7 @@ function NotifItem({
       {!n.read && (
         <button
           onClick={(e) => { e.stopPropagation(); onRead(n.id); }}
-          className="shrink-0 self-center rounded-lg px-2.5 py-1 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-100 cursor-pointer"
+          className="shrink-0 self-center rounded-lg px-2.5 py-1 text-[11px] font-semibold text-clay-600 transition hover:bg-clay-100 cursor-pointer"
         >
           Leída
         </button>
@@ -85,20 +84,21 @@ export default function NotificacionesPage() {
   if (isLoading) return <PageLoader />;
 
   return (
-    <div className="max-w-2xl space-y-5">
-      <PageHeader
-        title="Notificaciones"
-        badge={unread.length > 0 ? { label: `${unread.length} sin leer`, tone: 'info' } : undefined}
-        action={unread.length > 0 ? (
+    <div className="mx-auto max-w-2xl space-y-5">
+      {unread.length > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Tenés <span className="font-semibold text-gray-900">{unread.length}</span> sin leer
+          </p>
           <button
             onClick={() => markAsRead.mutate(undefined)}
             disabled={markAsRead.isPending}
-            className="text-sm font-semibold text-[#0f1f3d] hover:underline disabled:opacity-50 cursor-pointer"
+            className="text-sm font-semibold text-clay-600 transition hover:text-clay-700 disabled:opacity-50 cursor-pointer"
           >
             Marcar todas como leídas
           </button>
-        ) : undefined}
-      />
+        </div>
+      )}
 
       {!notifications?.length && (
         <EmptyState

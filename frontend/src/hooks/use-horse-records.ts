@@ -110,10 +110,11 @@ export interface ImportJob {
   message?: string;
 }
 
-export function useImportJobs() {
+export function useImportJobs(enabled = true) {
   return useQuery<ImportJob[]>({
     queryKey: ['horse-records', 'import-jobs'],
     queryFn: () => api.get('/horse-records/admin/import-jobs').then(r => r.data),
+    enabled,
     refetchInterval: (query) => {
       const jobs: ImportJob[] = query.state.data ?? [];
       return jobs.some(j => j.status === 'running') ? 3000 : 15_000;
@@ -170,12 +171,13 @@ export interface AuditClaim extends HorseOwnershipClaim {
 }
 
 // Admin hooks
-export function useHorseRecordStats() {
+export function useHorseRecordStats(enabled = true) {
   return useQuery({
     queryKey: ['horse-records', 'stats'],
     queryFn: () => api.get('/horse-records/stats').then(r => r.data),
     staleTime: 10_000,
     refetchInterval: 30_000,
+    enabled,
   });
 }
 

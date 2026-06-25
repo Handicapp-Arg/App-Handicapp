@@ -3,14 +3,16 @@ import {
   View, Text, TextInput, FlatList, TouchableOpacity,
   StyleSheet, ActivityIndicator, ScrollView, Modal,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { X, CheckCircle2, Info, ChevronLeft, Search } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { haptic } from '../lib/haptics';
 import { useHorseRecordTree, type HorseRecord, type HorseRecordNode } from '../hooks/use-horse-records';
+import { ListRowSkeleton } from '../components/Skeleton';
 import api from '../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -161,7 +163,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
         <View style={d.header}>
           <View style={{ flex: 1 }}>
             {isLoading
-              ? <ActivityIndicator color={colors.primary} />
+              ? <ActivityIndicator color={colors.brand} />
               : <Text style={d.name} numberOfLines={2}>{detail?.name ?? '...'}</Text>
             }
             {detail && (
@@ -173,7 +175,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             )}
           </View>
           <TouchableOpacity onPress={onClose} style={d.closeBtn} hitSlop={8}>
-            <Ionicons name="close" size={22} color={colors.gray500} />
+            <X size={22} color={colors.gray500} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -193,7 +195,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           {tab === 'info' && (
             isLoading
-              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.primary} />
+              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.brand} />
               : detail ? (
                 <View style={{ gap: 0 }}>
                   {([
@@ -215,13 +217,13 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
                   {detail.verified_owner && (
                     <View style={d.ownerRow}>
-                      <Ionicons name="checkmark-circle" size={16} color="#15803d" />
+                      <CheckCircle2 size={16} color="#15803d" strokeWidth={2} />
                       <Text style={d.ownerText}>Propietario: {detail.verified_owner.name}</Text>
                     </View>
                   )}
                   {!detail.verified_owner && (
                     <View style={d.claimBanner}>
-                      <Ionicons name="information-circle-outline" size={18} color="#0369a1" />
+                      <Info size={18} color="#0369a1" strokeWidth={2} />
                       <Text style={d.claimText}>Sin propietario verificado. Podés reclamarlo desde la web.</Text>
                     </View>
                   )}
@@ -231,7 +233,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           {tab === 'pedigree' && (
             treeLoading
-              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.primary} />
+              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.brand} />
               : tree
                 ? (
                   <View>
@@ -244,16 +246,18 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           {tab === 'progeny' && (
             progenyLoading
-              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.primary} />
+              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.brand} />
               : progeny && progeny.length > 0
                 ? (
                   <View>
                     <Text style={d.sectionTitle}>{progeny.length} descendiente{progeny.length !== 1 ? 's' : ''}</Text>
-                    {progeny.map(p => (
-                      <View key={p.id} style={d.progenyRow}>
-                        <Text style={d.progenyName}>{p.name}</Text>
-                        {p.birth_year != null && <Text style={d.progenyYear}>{p.birth_year}</Text>}
-                      </View>
+                    {progeny.map((p, index) => (
+                      <Animated.View key={p.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                        <View style={d.progenyRow}>
+                          <Text style={d.progenyName}>{p.name}</Text>
+                          {p.birth_year != null && <Text style={d.progenyYear}>{p.birth_year}</Text>}
+                        </View>
+                      </Animated.View>
                     ))}
                   </View>
                 )
@@ -288,18 +292,18 @@ export default function PadronScreen() {
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color={colors.gray700} />
+          <ChevronLeft size={24} color={colors.gray700} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.title}>Padrón</Text>
           <Text style={s.subtitle}>Registro oficial de caballos</Text>
         </View>
-        {isFetching && <ActivityIndicator size="small" color={colors.primary} />}
+        {isFetching && <ActivityIndicator size="small" color={colors.brand} />}
       </View>
 
       <View style={s.searchWrap}>
         <View style={s.searchBox}>
-          <Ionicons name="search" size={18} color={colors.gray400} style={{ marginRight: space[2] }} />
+          <Search size={18} color={colors.gray400} strokeWidth={2} style={{ marginRight: space[2] }} />
           <TextInput
             style={s.searchInput}
             placeholder="Buscar por nombre..."
@@ -319,22 +323,23 @@ export default function PadronScreen() {
       </View>
 
       {isLoading && items.length === 0 ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={s.loadingText}>Cargando padrón...</Text>
+        <View style={{ padding: space[4], gap: space[2] }}>
+          {[1, 2, 3, 4, 5, 6].map((i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : (
         <FlatList
           data={items}
           keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <RecordCard record={item} onPress={() => handleSelect(item.id)} />
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+              <RecordCard record={item} onPress={() => handleSelect(item.id)} />
+            </Animated.View>
           )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.center}>
-              <Ionicons name="search-outline" size={40} color={colors.gray300} />
+              <Search size={40} color={colors.gray300} strokeWidth={2} />
               <Text style={s.emptyTitle}>Sin resultados</Text>
               {query ? <Text style={s.emptySubtitle}>No encontramos "{query}"</Text> : null}
             </View>
@@ -436,10 +441,10 @@ const tr = StyleSheet.create({
     paddingVertical: space[2],
     marginBottom: space[1],
   },
-  nodeRoot: { borderColor: colors.primary + '60', backgroundColor: '#f0f7ff' },
+  nodeRoot: { borderColor: colors.brand + '60', backgroundColor: '#f0f7ff' },
   nodeEmpty: { borderStyle: 'dashed', borderColor: colors.gray200 },
   nodeName: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  nodeNameRoot: { fontSize: text.base, fontWeight: weight.bold, color: colors.primary },
+  nodeNameRoot: { fontSize: text.base, fontWeight: weight.bold, color: colors.brand },
   nodeMeta: { fontSize: text.xs, color: colors.gray400 },
   emptyText: { fontSize: text.sm, color: colors.gray300, textAlign: 'center' },
   children: {
@@ -491,9 +496,9 @@ const d = StyleSheet.create({
     paddingHorizontal: space[4],
   },
   tab: { paddingVertical: space[3], paddingHorizontal: space[4], marginBottom: -1 },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: colors.primary },
+  tabActive: { borderBottomWidth: 2, borderBottomColor: colors.brand },
   tabText: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray500 },
-  tabTextActive: { color: colors.primary, fontWeight: weight.semibold },
+  tabTextActive: { color: colors.brand, fontWeight: weight.semibold },
   scroll: { flex: 1 },
   scrollContent: { padding: space[4] },
   sectionTitle: {

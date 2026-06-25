@@ -58,7 +58,7 @@ export function SkeletonStat() {
 export function Spinner({ size = 'md', color = 'primary' }: { size?: 'sm' | 'md' | 'lg'; color?: 'primary' | 'white' | 'gray' }) {
   const sizes = { sm: 'h-4 w-4 border-[2px]', md: 'h-6 w-6 border-[2.5px]', lg: 'h-8 w-8 border-[3px]' };
   const colors = {
-    primary: 'border-gray-200 border-t-[#0f1f3d]',
+    primary: 'border-gray-200 border-t-[#9d6c35]',
     white: 'border-white/30 border-t-white',
     gray: 'border-gray-100 border-t-gray-400',
   };

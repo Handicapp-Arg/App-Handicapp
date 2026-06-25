@@ -43,6 +43,18 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   push_token: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  avatar_url: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  avatar_public_id: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  cover_url: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  cover_public_id: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 

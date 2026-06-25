@@ -17,7 +17,6 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
 import type { Event } from '@/types';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api$/, '');
 
 const typeOptions = [
   { value: 'salud', label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200' },
@@ -122,7 +121,7 @@ function HorseSelector({
                   type="button"
                   onClick={toggleAll}
                   className="shrink-0 text-xs font-medium cursor-pointer transition whitespace-nowrap"
-                  style={{ color: '#0f1f3d' }}
+                  style={{ color: '#9d6c35' }}
                 >
                   {selectedIds.length === horses.length ? 'Ninguno' : 'Todos'}
                 </button>
@@ -143,7 +142,7 @@ function HorseSelector({
                       type="checkbox"
                       checked={selectedIds.includes(h.id)}
                       onChange={() => toggle(h.id)}
-                      className="h-4 w-4 rounded border-gray-300 accent-[#0f1f3d]"
+                      className="h-4 w-4 rounded border-gray-300 accent-[#9d6c35]"
                     />
                     <span className="text-sm text-gray-900">{h.name}</span>
                   </label>
@@ -258,7 +257,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
         </button>
         <button type="submit" disabled={updateEvent.isPending}
           className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition cursor-pointer"
-          style={{ backgroundColor: '#0f1f3d' }}
+          style={{ backgroundColor: '#9d6c35' }}
         >
           {updateEvent.isPending ? 'Guardando...' : 'Guardar cambios'}
         </button>
@@ -269,7 +268,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
   const modal = (
     <>
       <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
-        <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#0f1f3d' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#9d6c35' }}>
           <h2 className="text-base font-semibold text-white">Editar evento</h2>
           <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -281,7 +280,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       </div>
       <div className="hidden sm:flex fixed inset-0 z-[998] items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#0f1f3d' }}>
+          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Editar evento</h2>
             <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -427,7 +426,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
           type="submit"
           disabled={isPending || !selectedIds.length}
           className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition cursor-pointer"
-          style={{ backgroundColor: '#0f1f3d' }}
+          style={{ backgroundColor: '#9d6c35' }}
         >
           {submitLabel}
         </button>
@@ -439,7 +438,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
     <>
       {/* Mobile: full screen */}
       <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#0f1f3d' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#9d6c35' }}>
           <h2 className="text-base font-semibold text-white">Nuevo evento</h2>
           <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -455,7 +454,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
       {/* Desktop: centered modal */}
       <div className="hidden sm:flex fixed inset-0 z-[998] items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#0f1f3d' }}>
+          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Nuevo evento</h2>
             <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -523,7 +522,7 @@ export default function EventosPage() {
                 aria-selected={view === 'list'}
                 onClick={() => setView('list')}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                  view === 'list' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  view === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <ListIcon className="h-3.5 w-3.5" aria-hidden />
@@ -534,7 +533,7 @@ export default function EventosPage() {
                 aria-selected={view === 'calendar'}
                 onClick={() => setView('calendar')}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                  view === 'calendar' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  view === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <CalendarDays className="h-3.5 w-3.5" aria-hidden />

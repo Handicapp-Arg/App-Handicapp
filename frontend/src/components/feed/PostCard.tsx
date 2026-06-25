@@ -16,7 +16,7 @@ import {
 
 // ─── Role config ───────────────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; gradient: string; badge: string }> = {
-  propietario:    { label: 'Propietario',    gradient: 'from-blue-500 to-blue-700',     badge: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100' },
+  propietario:    { label: 'Propietario',    gradient: 'from-clay-400 to-clay-600',     badge: 'bg-clay-50 text-clay-700 ring-1 ring-clay-100' },
   establecimiento:{ label: 'Establecimiento',gradient: 'from-emerald-500 to-emerald-700',badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' },
   veterinario:    { label: 'Veterinario',    gradient: 'from-violet-500 to-violet-700', badge: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100' },
   admin:          { label: 'Admin',          gradient: 'from-slate-500 to-slate-700',   badge: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' },
@@ -90,6 +90,11 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
   const deleteComment = useDeleteComment(postId);
   const { user } = useAuth();
   const [text, setText] = useState('');
+  const [showAll, setShowAll] = useState(false);
+
+  const VISIBLE_COMMENTS = 3;
+  const visibleComments = showAll ? comments : comments.slice(0, VISIBLE_COMMENTS);
+  const hiddenCount = comments.length - VISIBLE_COMMENTS;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,8 +110,16 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
           {[1, 2].map((i) => <div key={i} className="h-9 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
       ) : (
-        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-          {comments.map((c: FeedComment) => (
+        <div className="space-y-2">
+          {!showAll && hiddenCount > 0 && (
+            <button
+              onClick={() => setShowAll(true)}
+              className="text-xs font-semibold text-gray-500 hover:text-clay-600 transition cursor-pointer"
+            >
+              Ver {hiddenCount} comentario{hiddenCount !== 1 ? 's' : ''} más
+            </button>
+          )}
+          {visibleComments.map((c: FeedComment) => (
             <div key={c.id} className="flex gap-2.5 group">
               <Avatar name={c.user?.name ?? 'U'} role={c.user?.role} size="sm" />
               <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
@@ -139,12 +152,12 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Escribí un comentario…"
-            className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-1.5 outline-none focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-50 transition"
+            className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-1.5 outline-none focus:border-clay-400 focus:bg-white focus:ring-2 focus:ring-clay-500/15 transition"
           />
           <button
             type="submit"
             disabled={!text.trim() || addComment.isPending}
-            className="px-3.5 py-1.5 bg-[#0f1f3d] text-white text-xs font-semibold rounded-xl hover:bg-[#1a3366] transition disabled:opacity-40"
+            className="px-3.5 py-1.5 bg-clay-500 text-white text-xs font-semibold rounded-xl hover:bg-clay-600 transition disabled:opacity-40"
           >
             Enviar
           </button>
@@ -170,7 +183,6 @@ export default function PostCard({ post }: Props) {
   const isAdmin = user?.role === 'admin';
   const authorName = post.author?.name ?? 'Usuario';
   const authorRole = post.author?.role ?? '';
-  const roleConfig = ROLE_CONFIG[authorRole];
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
 
   return (
@@ -192,11 +204,6 @@ export default function PostCard({ post }: Props) {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-sm text-gray-900 truncate">{authorName}</span>
-                {roleConfig && (
-                  <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium leading-tight', roleConfig.badge)}>
-                    {roleConfig.label}
-                  </span>
-                )}
                 {post.is_pinned && (
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 ring-1 ring-amber-100 font-medium flex items-center gap-1 leading-tight">
                     <Pin className="h-3 w-3" /> Fijado
@@ -313,7 +320,7 @@ export default function PostCard({ post }: Props) {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition',
               showComments
-                ? 'text-blue-600 bg-blue-50'
+                ? 'text-clay-600 bg-clay-50'
                 : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
             )}
           >

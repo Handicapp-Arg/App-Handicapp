@@ -62,7 +62,7 @@ export function EmptyState({
       >
         {renderIcon(icon, illustration)}
       </div>
-      <p className="text-sm font-semibold text-navy-900">{title}</p>
+      <p className="text-sm font-semibold text-gray-900">{title}</p>
       {message && <p className="mt-1.5 max-w-sm text-sm text-slate-500">{message}</p>}
       {(action || secondary) && (
         <div className="mt-5 flex items-center gap-2">

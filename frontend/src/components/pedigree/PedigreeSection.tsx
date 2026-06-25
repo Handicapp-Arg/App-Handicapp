@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { usePedigree, usePedigreeTree, usePedigreeValidations, useUpsertPedigree, useValidatePedigree, useSearchHorsesForPedigree, useAdminResolvePedigree } from '@/hooks/use-pedigree';
+import { usePedigree, usePedigreeTree, usePedigreeValidations, useUpsertPedigree, useValidatePedigree, useSearchHorsesForPedigree } from '@/hooks/use-pedigree';
 import PedigreeTree from './PedigreeTree';
 import type { Horse, PedigreeStatus } from '@/types';
 
@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: 'pendiente',
 };
 
-const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#0f1f3d] focus:bg-white focus:outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100';
+const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100';
 
 function HorseSearchInput({
   label, value, onChange, onSelect,
@@ -155,7 +155,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           </div>
 
           <button type="button" onClick={() => setShowGrandparents((v) => !v)}
-            className="text-sm text-[#0f1f3d] dark:text-blue-400 hover:underline cursor-pointer">
+            className="text-sm text-[#9d6c35] dark:text-blue-400 hover:underline cursor-pointer">
             {showGrandparents ? '▾' : '▸'} {showGrandparents ? 'Ocultar abuelos' : 'Agregar abuelos (opcional)'}
           </button>
 
@@ -190,11 +190,11 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
               Cancelar
             </button>
             <button type="button" onClick={() => handleSave(false)} disabled={isPending}
-              className="flex-1 rounded-lg border border-[#0f1f3d] py-2.5 text-sm font-medium text-[#0f1f3d] hover:bg-[#0f1f3d]/5 transition cursor-pointer disabled:opacity-50 dark:border-blue-400 dark:text-blue-400">
+              className="flex-1 rounded-lg border border-[#9d6c35] py-2.5 text-sm font-medium text-[#9d6c35] hover:bg-[#9d6c35]/5 transition cursor-pointer disabled:opacity-50 dark:border-blue-400 dark:text-blue-400">
               {upsert.isPending && !validate.isPending ? 'Guardando...' : 'Guardar borrador'}
             </button>
             <button type="button" onClick={() => handleSave(true)} disabled={isPending}
-              className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#0f1f3d]/90 transition">
+              className="flex-1 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#9d6c35]/90 transition">
               {validate.isPending ? 'Validando...' : 'Guardar y validar ✓'}
             </button>
           </div>
@@ -206,7 +206,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
   return createPortal(
     <>
       <div className="fixed inset-0 z-[999] flex flex-col bg-white dark:bg-gray-950 sm:hidden">
-        <div className="flex items-center justify-between bg-[#0f1f3d] px-5 py-4">
+        <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <p className="font-bold text-white">Pedigrí</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
         </div>
@@ -214,7 +214,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
       </div>
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center bg-black/40">
         <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-950 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between bg-[#0f1f3d] px-6 py-4">
+          <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
             <p className="font-bold text-white">Pedigrí</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
           </div>
@@ -246,7 +246,7 @@ function ValidationResultScreen({ result, onClose }: { result: { status: string 
         </p>
       )}
       <button onClick={onClose}
-        className="mt-2 rounded-lg bg-[#0f1f3d] px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-[#0f1f3d]/90 transition">
+        className="mt-2 rounded-lg bg-[#9d6c35] px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-[#9d6c35]/90 transition">
         Cerrar
       </button>
     </div>
@@ -287,7 +287,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: Horse; canE
           </p>
           {canEdit && (
             <button onClick={() => setShowForm(true)}
-              className="rounded-lg bg-[#0f1f3d] px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-[#0f1f3d]/90 transition">
+              className="rounded-lg bg-[#9d6c35] px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-[#9d6c35]/90 transition">
               Agregar pedigrí
             </button>
           )}
@@ -309,7 +309,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: Horse; canE
             </div>
             {canEdit && (
               <button onClick={() => setShowForm(true)}
-                className="text-xs text-[#0f1f3d] dark:text-blue-400 hover:underline cursor-pointer font-medium">
+                className="text-xs text-[#9d6c35] dark:text-blue-400 hover:underline cursor-pointer font-medium">
                 Editar pedigrí
               </button>
             )}

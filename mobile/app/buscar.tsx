@@ -3,9 +3,11 @@ import {
   View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Search, ChevronRight, Calendar, Stethoscope, type LucideIcon } from 'lucide-react-native';
+import { HorseIcon } from '../components/icons/equine';
 import { useSearch } from '../hooks/use-search';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
@@ -18,9 +20,9 @@ function SectionHeader({ label }: { label: string }) {
 }
 
 function ResultRow({
-  icon, title, subtitle, onPress,
+  icon: Icon, title, subtitle, onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon | typeof HorseIcon;
   title: string;
   subtitle?: string;
   onPress: () => void;
@@ -28,13 +30,13 @@ function ResultRow({
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.7}>
       <View style={s.rowIcon}>
-        <Ionicons name={icon} size={18} color={colors.primary} />
+        <Icon size={18} color={colors.brand} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.rowTitle} numberOfLines={1}>{title}</Text>
         {subtitle ? <Text style={s.rowSub} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
-      <Ionicons name="chevron-forward" size={14} color={colors.gray300} />
+      <ChevronRight size={14} color={colors.gray300} strokeWidth={2} />
     </TouchableOpacity>
   );
 }
@@ -57,7 +59,7 @@ export default function BuscarScreen() {
       {/* Header con buscador */}
       <View style={s.header}>
         <View style={s.searchBar}>
-          <Ionicons name="search-outline" size={18} color={colors.gray400} />
+          <Search size={18} color={colors.gray400} strokeWidth={2} />
           <TextInput
             ref={inputRef}
             style={s.input}
@@ -83,7 +85,7 @@ export default function BuscarScreen() {
       >
         {!query.trim() && (
           <View style={s.hint}>
-            <Ionicons name="search-outline" size={36} color={colors.gray200} />
+            <Search size={36} color={colors.gray200} strokeWidth={2} />
             <Text style={s.hintText}>Escribí para buscar en toda la app</Text>
           </View>
         )}
@@ -97,14 +99,15 @@ export default function BuscarScreen() {
         {data?.horses && data.horses.length > 0 && (
           <View>
             <SectionHeader label="Caballos" />
-            {data.horses.map((h) => (
-              <ResultRow
-                key={h.id}
-                icon="paw-outline"
-                title={h.name}
-                subtitle={[h.breed, h.activity].filter(Boolean).join(' · ') || undefined}
-                onPress={() => { nav.push(router, Routes.caballo(h.id)); }}
-              />
+            {data.horses.map((h, index) => (
+              <Animated.View key={h.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                <ResultRow
+                  icon={HorseIcon}
+                  title={h.name}
+                  subtitle={[h.breed, h.activity].filter(Boolean).join(' · ') || undefined}
+                  onPress={() => { nav.push(router, Routes.caballo(h.id)); }}
+                />
+              </Animated.View>
             ))}
           </View>
         )}
@@ -112,14 +115,15 @@ export default function BuscarScreen() {
         {data?.events && data.events.length > 0 && (
           <View>
             <SectionHeader label="Eventos" />
-            {data.events.map((e) => (
-              <ResultRow
-                key={e.id}
-                icon="calendar-outline"
-                title={e.description}
-                subtitle={[e.type, e.date ? new Date(e.date).toLocaleDateString('es-AR') : undefined].filter(Boolean).join(' · ')}
-                onPress={() => { nav.push(router, Routes.tabsEventos); }}
-              />
+            {data.events.map((e, index) => (
+              <Animated.View key={e.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                <ResultRow
+                  icon={Calendar}
+                  title={e.description}
+                  subtitle={[e.type, e.date ? new Date(e.date).toLocaleDateString('es-AR') : undefined].filter(Boolean).join(' · ')}
+                  onPress={() => { nav.push(router, Routes.tabsEventos); }}
+                />
+              </Animated.View>
             ))}
           </View>
         )}
@@ -127,14 +131,15 @@ export default function BuscarScreen() {
         {data?.medical && data.medical.length > 0 && (
           <View>
             <SectionHeader label="Historial médico" />
-            {data.medical.map((m) => (
-              <ResultRow
-                key={m.id}
-                icon="medkit-outline"
-                title={m.name}
-                subtitle={m.type}
-                onPress={() => { nav.push(router, Routes.tabsCaballos); }}
-              />
+            {data.medical.map((m, index) => (
+              <Animated.View key={m.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                <ResultRow
+                  icon={Stethoscope}
+                  title={m.name}
+                  subtitle={m.type}
+                  onPress={() => { nav.push(router, Routes.tabsCaballos); }}
+                />
+              </Animated.View>
             ))}
           </View>
         )}
@@ -144,12 +149,12 @@ export default function BuscarScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.white },
+  root: { flex: 1, backgroundColor: colors.gray50 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: colors.gray100, borderRadius: radius.lg, paddingHorizontal: space[3], height: 40 },
   input: { flex: 1, fontSize: text.sm, color: colors.gray900, height: 40 },
   cancelBtn: { paddingVertical: space[2] },
-  cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.primary },
+  cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.brand },
   results: { padding: space[4], gap: space[4], paddingBottom: space[10] },
   sectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray400, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: space[2] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray100 },

@@ -22,7 +22,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8]">
-        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
       </div>
     );
   }
@@ -30,7 +30,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8]">
-        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
       </div>
     );
   }
@@ -48,7 +48,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
           </div>
           <p className="text-lg font-bold text-gray-900">Invitación inválida</p>
           <p className="mt-2 text-sm text-gray-500">El link que abriste no es válido, ya fue usado o expiró.</p>
-          <button onClick={() => router.replace('/')} className="mt-6 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white cursor-pointer">
+          <button onClick={() => router.replace('/')} className="mt-6 w-full rounded-xl bg-[#9d6c35] py-2.5 text-sm font-semibold text-white cursor-pointer">
             Ir al inicio
           </button>
         </div>
@@ -88,7 +88,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8] p-4">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
-        <div className="bg-[#0f1f3d] px-6 py-8 text-center">
+        <div className="bg-[#9d6c35] px-6 py-8 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png"
@@ -109,7 +109,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
           <button
             onClick={handleAccept}
             disabled={accept.isPending}
-            className="w-full rounded-xl bg-[#0f1f3d] py-3 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#0a1628] transition"
+            className="w-full rounded-xl bg-[#9d6c35] py-3 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#20160e] transition"
           >
             {accept.isPending ? 'Aceptando...' : 'Aceptar invitación'}
           </button>

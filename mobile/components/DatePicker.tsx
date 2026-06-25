@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Modal } from 'react-native';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar } from 'lucide-react-native';
 import { colors } from '../lib/colors';
 
 interface Props {
@@ -50,7 +51,7 @@ export function DatePicker({ label, value, onChange, placeholder = 'Seleccionar 
         <Text style={styles.label}>{label}</Text>
         <TouchableOpacity style={styles.btn} onPress={handleOpen} activeOpacity={0.7}>
           <Text style={[styles.btnText, !value && styles.placeholder]}>{displayText}</Text>
-          <Text style={styles.icon}>📅</Text>
+          <Calendar size={17} color={colors.gray400} strokeWidth={2} />
         </TouchableOpacity>
 
         {show && (
@@ -84,7 +85,7 @@ export function DatePicker({ label, value, onChange, placeholder = 'Seleccionar 
       <Text style={styles.label}>{label}</Text>
       <TouchableOpacity style={styles.btn} onPress={handleOpen} activeOpacity={0.7}>
         <Text style={[styles.btnText, !value && styles.placeholder]}>{displayText}</Text>
-        <Text style={styles.icon}>📅</Text>
+        <Calendar size={17} color={colors.gray400} strokeWidth={2} />
       </TouchableOpacity>
 
       <Modal visible={show} transparent animationType="slide" statusBarTranslucent>
@@ -163,6 +164,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 15, fontWeight: '600', color: colors.gray900 },
   cancelText: { fontSize: 15, color: colors.gray500 },
-  confirmText: { fontSize: 15, fontWeight: '700', color: colors.primary },
+  confirmText: { fontSize: 15, fontWeight: '700', color: colors.brand },
   picker: { height: 216 },
 });

@@ -1,35 +1,41 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Modal,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  FileText, Receipt, AlertCircle, File, CheckCircle2, XCircle, Home, Trophy,
+  Award, Lock, Bell, BellOff, ChevronLeft, Stethoscope, UserPlus,
+  Users, ArrowUp, MoreVertical, CheckCheck, type LucideIcon,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNotifications, type NotificationItem } from '../lib/notifications';
-import { clearBadge } from '../lib/push-notifications';
-import { haptic } from '../lib/haptics';
-import { colors } from '../lib/colors';
-import { space, text, radius, weight, shadow } from '../styles/tokens';
-import { fontFamily } from '../styles/fonts';
+import { ListRowSkeleton } from '../../components/Skeleton';
+import { useNotifications, type NotificationItem } from '../../lib/notifications';
+import { clearBadge } from '../../lib/push-notifications';
+import { haptic } from '../../lib/haptics';
+import { colors } from '../../lib/colors';
+import { space, text, radius, weight } from '../../styles/tokens';
+import { fontFamily } from '../../styles/fonts';
 
 /* ─── Tipo → icono + colores ─── */
-const TYPE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; bg: string; color: string }> = {
-  event_created:      { icon: 'document-text-outline', bg: '#eff6ff', color: '#3b82f6' },
-  health_reminder:    { icon: 'medkit-outline',        bg: '#fef2f2', color: '#ef4444' },
-  billing:            { icon: 'receipt-outline',       bg: '#f5f3ff', color: '#8b5cf6' },
-  bill_created:       { icon: 'receipt-outline',       bg: '#f5f3ff', color: '#8b5cf6' },
-  bill_disputed:      { icon: 'alert-circle-outline',  bg: '#fef9c3', color: '#ca8a04' },
-  contract:           { icon: 'document-outline',      bg: '#ecfdf5', color: '#10b981' },
-  contract_signed:    { icon: 'checkmark-circle-outline', bg: '#ecfdf5', color: '#10b981' },
-  contract_rejected:  { icon: 'close-circle-outline',  bg: '#fef2f2', color: '#ef4444' },
-  invitation_received:{ icon: 'person-add-outline',    bg: '#eff6ff', color: '#3b82f6' },
-  invitation_accepted:{ icon: 'people-outline',        bg: '#ecfdf5', color: '#10b981' },
-  boarding_request:   { icon: 'home-outline',          bg: '#fff7ed', color: '#f97316' },
-  bid_placed:         { icon: 'trophy-outline',        bg: '#fff7ed', color: '#f97316' },
-  auction_won:        { icon: 'ribbon-outline',        bg: '#ecfdf5', color: '#10b981' },
-  auction_closed:     { icon: 'lock-closed-outline',  bg: '#f3f4f6', color: '#6b7280' },
-  auction_outbid:     { icon: 'arrow-up-outline',     bg: '#fef2f2', color: '#ef4444' },
-  default:            { icon: 'notifications-outline', bg: colors.gray100, color: colors.gray500 },
+const TYPE_META: Record<string, { icon: LucideIcon; bg: string; color: string }> = {
+  event_created:      { icon: FileText,     bg: '#eff6ff', color: '#3b82f6' },
+  health_reminder:    { icon: Stethoscope,  bg: '#fef2f2', color: '#ef4444' },
+  billing:            { icon: Receipt,      bg: '#faf3e9', color: '#9d6c35' },
+  bill_created:       { icon: Receipt,      bg: '#faf3e9', color: '#9d6c35' },
+  bill_disputed:      { icon: AlertCircle,  bg: '#fef9c3', color: '#ca8a04' },
+  contract:           { icon: File,         bg: '#ecfdf5', color: '#10b981' },
+  contract_signed:    { icon: CheckCircle2, bg: '#ecfdf5', color: '#10b981' },
+  contract_rejected:  { icon: XCircle,      bg: '#fef2f2', color: '#ef4444' },
+  invitation_received:{ icon: UserPlus,     bg: '#eff6ff', color: '#3b82f6' },
+  invitation_accepted:{ icon: Users,        bg: '#ecfdf5', color: '#10b981' },
+  boarding_request:   { icon: Home,         bg: '#fff7ed', color: '#f97316' },
+  bid_placed:         { icon: Trophy,       bg: '#fff7ed', color: '#f97316' },
+  auction_won:        { icon: Award,        bg: '#ecfdf5', color: '#10b981' },
+  auction_closed:     { icon: Lock,         bg: '#f3f4f6', color: '#6b7280' },
+  auction_outbid:     { icon: ArrowUp,      bg: '#fef2f2', color: '#ef4444' },
+  default:            { icon: Bell,         bg: colors.gray100, color: colors.gray500 },
 };
 
 function formatTime(iso: string): string {
@@ -52,13 +58,12 @@ function formatTime(iso: string): string {
 function NotifRow({
   item,
   onPress,
-  onMarkRead,
 }: {
   item: NotificationItem;
   onPress: (n: NotificationItem) => void;
-  onMarkRead: (id: string) => void;
 }) {
   const meta = TYPE_META[item.type] ?? TYPE_META.default;
+  const MetaIcon = meta.icon;
 
   return (
     <TouchableOpacity
@@ -68,7 +73,7 @@ function NotifRow({
     >
       {/* Ícono */}
       <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
-        <Ionicons name={meta.icon} size={20} color={meta.color} />
+        <MetaIcon size={20} color={meta.color} strokeWidth={2} />
       </View>
 
       {/* Contenido */}
@@ -77,23 +82,10 @@ function NotifRow({
           <Text style={[s.rowTitle, !item.read && s.rowTitleUnread]} numberOfLines={1}>
             {item.title}
           </Text>
-          {!item.read && <View style={s.dot} />}
         </View>
         <Text style={s.rowMsg} numberOfLines={2}>{item.message}</Text>
         <Text style={s.rowTime}>{formatTime(item.created_at)}</Text>
       </View>
-
-      {/* Marcar leída */}
-      {!item.read && (
-        <TouchableOpacity
-          style={s.readBtn}
-          onPress={(e) => { e.stopPropagation?.(); haptic.light(); onMarkRead(item.id); }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="checkmark" size={15} color={colors.primary} />
-        </TouchableOpacity>
-      )}
     </TouchableOpacity>
   );
 }
@@ -108,6 +100,7 @@ export default function NotificacionesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { notifications, loading, unread, refresh, markAllRead, markOneRead } = useNotifications();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Limpiar badge al abrir la pantalla
   useEffect(() => {
@@ -134,7 +127,7 @@ export default function NotificacionesScreen() {
 
   const rows: ListRow[] = [];
   if (unreadList.length > 0) {
-    rows.push({ kind: 'section', key: 'sec-unread', label: 'Sin leer' });
+    rows.push({ kind: 'section', key: 'sec-unread', label: 'Nuevas' });
     unreadList.forEach((n) => rows.push({ kind: 'item', key: n.id, item: n }));
   }
   if (readList.length > 0) {
@@ -152,7 +145,7 @@ export default function NotificacionesScreen() {
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.gray900} />
+          <ChevronLeft size={22} color={colors.gray900} strokeWidth={2} />
         </TouchableOpacity>
 
         <View style={s.headerCenter}>
@@ -164,27 +157,25 @@ export default function NotificacionesScreen() {
           )}
         </View>
 
-        {unread > 0 ? (
-          <TouchableOpacity
-            onPress={() => { haptic.medium(); void markAllRead(); }}
-            activeOpacity={0.7}
-          >
-            <Text style={s.markAllBtn}>Todas leídas</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 80 }} />
-        )}
+        <TouchableOpacity
+          onPress={() => { haptic.light(); setMenuOpen(true); }}
+          style={s.menuBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          activeOpacity={0.7}
+        >
+          <MoreVertical size={22} color={colors.gray700} strokeWidth={2} />
+        </TouchableOpacity>
       </View>
 
       {/* ─── Lista ─── */}
       {loading && notifications.length === 0 ? (
-        <View style={s.centered}>
-          <ActivityIndicator color={colors.primary} />
+        <View style={s.list}>
+          {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : notifications.length === 0 ? (
         <View style={s.centered}>
           <View style={s.emptyIcon}>
-            <Ionicons name="notifications-off-outline" size={32} color={colors.gray300} />
+            <BellOff size={32} color={colors.gray300} strokeWidth={2} />
           </View>
           <Text style={s.emptyTitle}>Sin notificaciones</Text>
           <Text style={s.emptyMsg}>Cuando haya actividad en tus caballos, aparecerá aquí.</Text>
@@ -197,18 +188,35 @@ export default function NotificacionesScreen() {
           showsVerticalScrollIndicator={false}
           onRefresh={refresh}
           refreshing={loading}
-          renderItem={({ item: row }) => {
+          renderItem={({ item: row, index }) => {
             if (row.kind === 'section') return <SectionLabel label={row.label} />;
             return (
-              <NotifRow
-                item={row.item}
-                onPress={handlePress}
-                onMarkRead={(id) => void markOneRead(id)}
-              />
+              <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                <NotifRow
+                  item={row.item}
+                  onPress={handlePress}
+                />
+              </Animated.View>
             );
           }}
         />
       )}
+
+      {/* Menú de 3 puntos */}
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <TouchableOpacity style={s.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
+          <View style={[s.menu, { top: insets.top + 50 }]}>
+            <TouchableOpacity
+              style={s.menuItem}
+              activeOpacity={0.7}
+              onPress={() => { setMenuOpen(false); haptic.medium(); void markAllRead(); }}
+            >
+              <CheckCheck size={18} color={colors.gray700} strokeWidth={2} />
+              <Text style={s.menuItemText}>Marcar todas como leídas</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -225,9 +233,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: space[4],
     paddingVertical: space[3],
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    backgroundColor: colors.gray50,
   },
   backBtn: {
     width: 32,
@@ -266,17 +272,48 @@ const s = StyleSheet.create({
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
   },
-  markAllBtn: {
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  menu: {
+    position: 'absolute',
+    right: space[4],
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    paddingVertical: space[1],
+    minWidth: 230,
+    borderWidth: 1,
+    borderColor: colors.gray100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
+  },
+  menuItemText: {
     fontSize: text.sm,
     fontWeight: weight.semibold,
     fontFamily: fontFamily.semibold,
-    color: colors.primary,
+    color: colors.gray800,
   },
 
   /* Lista */
   list: {
-    padding: space[4],
-    gap: space[2],
     paddingBottom: space[10],
   },
 
@@ -287,9 +324,9 @@ const s = StyleSheet.create({
     color: colors.gray400,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    paddingHorizontal: space[1],
-    marginTop: space[2],
-    marginBottom: space[1],
+    paddingHorizontal: space[4],
+    paddingTop: space[4],
+    paddingBottom: space[2],
   },
 
   /* Row */
@@ -297,16 +334,14 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: space[3],
+    paddingVertical: space[3] + 1,
+    paddingHorizontal: space[4],
     gap: space[3],
-    borderWidth: 1,
-    borderColor: colors.gray100,
-    ...shadow.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
   },
   rowUnread: {
     backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
   },
   iconWrap: {
     width: 40,
@@ -336,13 +371,6 @@ const s = StyleSheet.create({
   rowTitleUnread: {
     color: colors.gray900,
   },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: radius.full,
-    backgroundColor: '#3b82f6',
-    flexShrink: 0,
-  },
   rowMsg: {
     fontSize: text.sm,
     fontFamily: fontFamily.regular,
@@ -355,19 +383,6 @@ const s = StyleSheet.create({
     color: colors.gray300,
     marginTop: 2,
   },
-  readBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-    alignSelf: 'center',
-  },
-
   /* Empty / Loading */
   centered: {
     flex: 1,

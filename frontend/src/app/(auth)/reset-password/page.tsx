@@ -37,7 +37,7 @@ function ResetForm() {
     return (
       <div className="text-center space-y-4">
         <p className="text-sm text-gray-500">Enlace inválido.</p>
-        <Link href="/olvide-contrasena" className="text-sm font-semibold text-[#0f1f3d] hover:underline">
+        <Link href="/olvide-contrasena" className="text-sm font-semibold text-[#9d6c35] hover:underline">
           Solicitar nuevo enlace
         </Link>
       </div>
@@ -89,7 +89,7 @@ function ResetForm() {
               value={field.value}
               onChange={(e) => field.setter(e.target.value)}
               placeholder={field.placeholder}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#0f1f3d] focus:ring-2 focus:ring-[#0f1f3d]/10 transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 transition-all"
             />
           </div>
         ))}
@@ -98,7 +98,7 @@ function ResetForm() {
           type="submit"
           disabled={loading}
           className="w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 cursor-pointer"
-          style={{ backgroundColor: '#0f1f3d' }}
+          style={{ backgroundColor: '#9d6c35' }}
         >
           {loading ? 'Guardando...' : 'Guardar contraseña'}
         </button>

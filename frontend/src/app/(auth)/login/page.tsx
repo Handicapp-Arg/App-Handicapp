@@ -18,7 +18,8 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
-const testUsers = [
+// Solo en desarrollo: en producción el bundler elimina este array (no expone credenciales).
+const testUsers = process.env.NODE_ENV === 'production' ? [] : [
   { email: 'admin@handicapp.com',          password: 'handicapp2026', label: 'Admin' },
   { email: 'propietario@handicapp.com',    password: 'handicapp2026', label: 'Propietario' },
   { email: 'establecimiento@handicapp.com', password: 'handicapp2026', label: 'Establecimiento' },
@@ -34,6 +35,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,14 +57,9 @@ function LoginForm() {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Bienvenido</h1>
-        <p className="mt-1 text-sm text-gray-400">Ingresá tus credenciales para continuar</p>
-      </div>
-
+    <div className="space-y-5">
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+        <div className="flex items-center gap-2.5 rounded-xl border border-clay-500/30 bg-clay-500/10 px-4 py-3 text-[13px] font-medium text-clay-200">
           <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
@@ -70,9 +67,9 @@ function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-1.5">
+          <label htmlFor="email" className="block text-[12.5px] font-medium text-white/55 mb-1.5">
             Correo electrónico
           </label>
           <input
@@ -83,15 +80,12 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-300 placeholder:font-normal outline-none transition-all"
-            style={{ border: '1px solid #d1d5db', backgroundColor: '#ffffff' }}
-            onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder:text-white/25 outline-none transition-all focus:border-clay-400 focus:bg-white/[0.06] focus:ring-4 focus:ring-clay-500/20"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-600 mb-1.5">
+          <label htmlFor="password" className="block text-[12.5px] font-medium text-white/55 mb-1.5">
             Contraseña
           </label>
           <div className="relative">
@@ -103,12 +97,12 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-11 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:border-[#0f1f3d] focus:ring-2 focus:ring-[#0f1f3d]/10 transition-all"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-[15px] text-white placeholder:text-white/25 outline-none transition-all focus:border-clay-400 focus:bg-white/[0.06] focus:ring-4 focus:ring-clay-500/20"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
             >
               <EyeIcon open={showPassword} />
             </button>
@@ -116,7 +110,7 @@ function LoginForm() {
         </div>
 
         <div className="flex justify-end">
-          <Link href="/olvide-contrasena" className="text-xs text-gray-400 hover:text-[#0f1f3d] transition">
+          <Link href="/olvide-contrasena" className="text-[12.5px] font-medium text-white/40 hover:text-clay-300 transition">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
@@ -124,8 +118,8 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          style={{ backgroundColor: '#0f1f3d' }}
+          className="w-full rounded-xl py-3.5 text-[15px] font-semibold text-white bg-clay-500 hover:bg-clay-400 active:scale-[0.985] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          style={{ boxShadow: '0 8px 24px -8px color-mix(in srgb, var(--color-clay-500) 65%, transparent)' }}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -139,28 +133,39 @@ function LoginForm() {
         </button>
       </form>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-[13.5px] text-white/40">
         ¿No tenés cuenta?{' '}
-        <Link href="/registro" className="font-semibold text-[#0f1f3d] hover:underline">
+        <Link href="/registro" className="font-semibold text-clay-300 hover:text-clay-200 transition">
           Registrate
         </Link>
       </p>
 
-      <div className="border-t border-gray-100 pt-4">
-        <p className="text-xs text-gray-300 mb-2">Acceso rápido (pruebas)</p>
-        <div className="flex flex-wrap gap-2">
-          {testUsers.map((u) => (
-            <button
-              key={u.email}
-              type="button"
-              onClick={() => fillUser(u)}
-              className="px-3 py-1.5 rounded-lg border border-gray-100 bg-white text-xs text-gray-400 hover:text-[#0f1f3d] hover:border-[#0f1f3d]/30 transition-all cursor-pointer"
-            >
-              {u.label}
-            </button>
-          ))}
-        </div>
+      {testUsers.length > 0 && (
+      <div className="pt-1">
+        <button
+          type="button"
+          onClick={() => setDevOpen((v) => !v)}
+          className="w-full rounded-xl border border-white/10 bg-white/[0.025] py-2.5 text-[12.5px] font-semibold text-white/50 hover:text-white/70 transition-colors cursor-pointer"
+        >
+          Acceso rápido · pruebas
+        </button>
+        {devOpen && (
+          <div className="mt-1.5 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+            {testUsers.map((u) => (
+              <button
+                key={u.email}
+                type="button"
+                onClick={() => { fillUser(u); setDevOpen(false); }}
+                className="flex w-full items-center justify-between border-t border-white/[0.06] px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-white/[0.05] cursor-pointer"
+              >
+                <span className="text-[13px] font-medium text-white/70">{u.label}</span>
+                <span className="text-[11px] text-white/35">{u.email}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+      )}
     </div>
   );
 }

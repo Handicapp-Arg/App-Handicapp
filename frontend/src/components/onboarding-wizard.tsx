@@ -194,7 +194,7 @@ export function OnboardingWizard() {
             <p className="text-[11px] font-semibold uppercase tracking-widest text-gold-600">
               {current.eyebrow}
             </p>
-            <h2 id="onboarding-title" className="mt-1 text-xl font-bold tracking-tight text-navy-900">
+            <h2 id="onboarding-title" className="mt-1 text-xl font-bold tracking-tight text-gray-900">
               {current.title}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{current.body}</p>

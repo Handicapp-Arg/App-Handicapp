@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
+import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
 import {
@@ -127,7 +128,9 @@ export default function SolicitudesScreen() {
       </View>
 
       {isLoading ? (
-        <View style={s.center}><ActivityIndicator color={colors.primary} /></View>
+        <View style={s.list}>
+          {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
+        </View>
       ) : isError ? (
         <EmptyState
           icon="cloud-offline-outline"
@@ -148,14 +151,16 @@ export default function SolicitudesScreen() {
           data={filtered}
           keyExtractor={(r) => r.id}
           contentContainerStyle={s.list}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
-          renderItem={({ item }) => (
-            <RequestRow
-              req={item}
-              pending={accept.isPending || reject.isPending}
-              onAccept={() => handleAccept(item.id, item.horse?.name ?? 'el caballo')}
-              onReject={() => handleReject(item.id, item.horse?.name ?? 'el caballo')}
-            />
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+              <RequestRow
+                req={item}
+                pending={accept.isPending || reject.isPending}
+                onAccept={() => handleAccept(item.id, item.horse?.name ?? 'el caballo')}
+                onReject={() => handleReject(item.id, item.horse?.name ?? 'el caballo')}
+              />
+            </Animated.View>
           )}
         />
       )}
@@ -181,8 +186,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
   },
   tabText: {
     fontSize: text.sm,
@@ -225,6 +230,6 @@ const s = StyleSheet.create({
   actionDisabled: { opacity: 0.5 },
   actionReject: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
   actionRejectText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  actionAccept: { backgroundColor: colors.primary },
+  actionAccept: { backgroundColor: colors.brand },
   actionAcceptText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 });

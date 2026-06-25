@@ -3,7 +3,10 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Receipt, FileText, AlertCircle, ChevronLeft, Lock, Stethoscope, Dumbbell,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth';
 import { haptic } from '../lib/haptics';
@@ -25,11 +28,11 @@ const ROLE_LABELS: Record<string, string> = {
   vet:           'Veterinario en org',
 };
 
-const EVENT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
-  salud:         'medkit-outline',
-  entrenamiento: 'barbell-outline',
-  gasto:         'receipt-outline',
-  nota:          'document-text-outline',
+const EVENT_ICONS: Record<string, LucideIcon> = {
+  salud:         Stethoscope,
+  entrenamiento: Dumbbell,
+  gasto:         Receipt,
+  nota:          FileText,
 };
 
 /* ─── Tarjeta por rol ─── */
@@ -98,26 +101,42 @@ function RoleCard({
       {/* Toggles */}
       <View style={s.toggleList}>
         {eventTypes.map((et, idx) => (
-          <View key={et.value} style={[s.toggleRow, idx < eventTypes.length - 1 && s.toggleRowBorder]}>
-            <View style={s.toggleLeft}>
-              <Ionicons
-                name={EVENT_ICONS[et.value] ?? 'alert-circle-outline'}
-                size={18}
-                color={colors.gray500}
-                style={{ marginRight: space[2] }}
-              />
-              <Text style={s.toggleLabel}>{et.label}</Text>
-            </View>
-            <Switch
-              value={state[et.value] ?? false}
-              onValueChange={() => toggle(et.value)}
-              trackColor={{ false: colors.gray200, true: colors.primary }}
-              thumbColor={colors.white}
-              ios_backgroundColor={colors.gray200}
-            />
-          </View>
+          <ToggleRowItem
+            key={et.value}
+            et={et}
+            isLast={idx === eventTypes.length - 1}
+            value={state[et.value] ?? false}
+            onToggle={() => toggle(et.value)}
+          />
         ))}
       </View>
+    </View>
+  );
+}
+
+/* ─── Fila de toggle (ícono Lucide/Ionicons + switch) ─── */
+function ToggleRowItem({
+  et, isLast, value, onToggle,
+}: {
+  et: EventTypeMeta;
+  isLast: boolean;
+  value: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = EVENT_ICONS[et.value] ?? AlertCircle;
+  return (
+    <View style={[s.toggleRow, !isLast && s.toggleRowBorder]}>
+      <View style={s.toggleLeft}>
+        <Icon size={18} color={colors.gray500} strokeWidth={2} style={{ marginRight: space[2] }} />
+        <Text style={s.toggleLabel}>{et.label}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onToggle}
+        trackColor={{ false: colors.gray200, true: colors.brand }}
+        thumbColor={colors.white}
+        ios_backgroundColor={colors.gray200}
+      />
     </View>
   );
 }
@@ -149,12 +168,12 @@ export default function NotificacionesConfigScreen() {
       <View style={[s.root, { paddingTop: insets.top }]}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={22} color={colors.gray900} />
+            <ChevronLeft size={22} color={colors.gray900} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Config. notificaciones</Text>
         </View>
         <View style={s.restricted}>
-          <Ionicons name="lock-closed-outline" size={32} color={colors.gray300} />
+          <Lock size={32} color={colors.gray300} strokeWidth={2} />
           <Text style={s.restrictedText}>Solo el administrador puede acceder a esta pantalla.</Text>
         </View>
       </View>
@@ -166,7 +185,7 @@ export default function NotificacionesConfigScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={22} color={colors.gray900} />
+          <ChevronLeft size={22} color={colors.gray900} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: space[2] }}>
           <Text style={s.headerTitle}>Config. notificaciones</Text>
@@ -176,7 +195,7 @@ export default function NotificacionesConfigScreen() {
 
       {isLoading ? (
         <View style={s.centered}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.brand} />
         </View>
       ) : (
         <ScrollView
@@ -267,7 +286,7 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
   saveBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
     borderRadius: radius.md,
     paddingHorizontal: space[3],
     paddingVertical: space[2],

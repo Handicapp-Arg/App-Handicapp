@@ -3,9 +3,10 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, CheckCircle2, XCircle, Info, Star } from 'lucide-react-native';
 import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../hooks/use-auctions';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
@@ -63,7 +64,7 @@ export default function AuctionDetailScreen() {
   if (isLoading || !auction) {
     return (
       <View style={[s.root, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.brand} />
       </View>
     );
   }
@@ -94,15 +95,16 @@ export default function AuctionDetailScreen() {
       {/* Nav */}
       <View style={s.nav}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={colors.gray700} />
+          <ArrowLeft size={20} color={colors.gray700} strokeWidth={2} />
           <Text style={s.backText}>Volver</Text>
         </TouchableOpacity>
         {!isSeller && (
           <TouchableOpacity onPress={() => toggleWatch.mutate(id)} style={s.watchBtn}>
-            <Ionicons
-              name={auction.watching ? 'star' : 'star-outline'}
+            <Star
               size={20}
               color={auction.watching ? '#d97706' : colors.gray400}
+              fill={auction.watching ? '#d97706' : 'none'}
+              strokeWidth={2}
             />
           </TouchableOpacity>
         )}
@@ -186,7 +188,9 @@ export default function AuctionDetailScreen() {
               { ok: auction.has_ownership_docs, label: 'Docs de propiedad (Studbook/SRA)' },
             ].map(({ ok, label }) => (
               <View key={label} style={[s.docRow, { backgroundColor: ok ? '#d1fae5' : colors.gray50, borderColor: ok ? '#6ee7b7' : colors.gray200 }]}>
-                <Ionicons name={ok ? 'checkmark-circle' : 'close-circle-outline'} size={16} color={ok ? '#059669' : colors.gray300} />
+                {ok
+                  ? <CheckCircle2 size={16} color="#059669" strokeWidth={2} />
+                  : <XCircle size={16} color={colors.gray300} strokeWidth={2} />}
                 <Text style={[s.docLabel, { color: ok ? '#065f46' : colors.gray400 }]}>{label}</Text>
               </View>
             ))}
@@ -216,24 +220,26 @@ export default function AuctionDetailScreen() {
         {isRemate && bids && bids.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Historial de pujas ({bids.length})</Text>
-            {bids.slice(0, 10).map((b) => (
-              <View key={b.id} style={[s.bidRow, b.status === 'active' && s.bidRowActive]}>
-                <View style={s.bidAvatar}>
-                  <Text style={s.bidAvatarText}>{b.bidder?.name?.charAt(0) ?? '?'}</Text>
+            {bids.slice(0, 10).map((b, index) => (
+              <Animated.View key={b.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                <View style={[s.bidRow, b.status === 'active' && s.bidRowActive]}>
+                  <View style={s.bidAvatar}>
+                    <Text style={s.bidAvatarText}>{b.bidder?.name?.charAt(0) ?? '?'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.bidderName}>{b.bidder?.name ?? 'Usuario'}</Text>
+                    <Text style={s.bidDate}>{new Date(b.created_at).toLocaleString('es-AR')}</Text>
+                  </View>
+                  <Text style={s.bidAmount}>{formatARS(b.amount, b.currency)}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.bidderName}>{b.bidder?.name ?? 'Usuario'}</Text>
-                  <Text style={s.bidDate}>{new Date(b.created_at).toLocaleString('es-AR')}</Text>
-                </View>
-                <Text style={s.bidAmount}>{formatARS(b.amount, b.currency)}</Text>
-              </View>
+              </Animated.View>
             ))}
           </View>
         )}
 
         {/* Aviso legal */}
         <View style={s.legalBox}>
-          <Ionicons name="information-circle-outline" size={16} color="#92400e" />
+          <Info size={16} color="#92400e" strokeWidth={2} />
           <Text style={s.legalText}>
             Las pujas son vinculantes. HandicApp retiene 3% de comisión sobre el precio final. La transferencia legal requiere documentación notarial.
           </Text>

@@ -12,7 +12,7 @@ import {
 import { PLAN_LABELS, type OrgPlan } from '@/hooks/use-organizations';
 import {
   PageHeader, Card, Badge, Button, Modal, Input, Select, DataTable,
-  SuperadminSkeleton, type ColumnDef, type BadgeTone,
+  type ColumnDef, type BadgeTone,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
@@ -63,7 +63,7 @@ function MetricCard({
       <p
         className={cn(
           'mt-2 text-3xl font-bold tracking-tight leading-none',
-          tone === 'navy' ? 'text-white' : tone === 'gold' ? 'text-gold-600' : 'text-navy-900',
+          tone === 'navy' ? 'text-white' : tone === 'gold' ? 'text-gold-600' : 'text-gray-900',
         )}
       >
         {value}
@@ -361,7 +361,7 @@ export default function SuperAdminPage() {
       header: 'Organización',
       render: (o) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-navy-900">{o.name}</p>
+          <p className="truncate text-sm font-semibold text-gray-900">{o.name}</p>
           {o.owner && <p className="truncate text-xs text-slate-400">{o.owner.email}</p>}
         </div>
       ),

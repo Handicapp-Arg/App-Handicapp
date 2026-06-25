@@ -31,18 +31,20 @@ export interface SuperAdminOrg {
   monthly_revenue_ars: number;
 }
 
-export function useSuperAdminMetrics() {
+export function useSuperAdminMetrics(enabled = true) {
   return useQuery<SuperAdminMetrics>({
     queryKey: ['superadmin', 'metrics'],
     queryFn: async () => (await api.get('/superadmin/metrics')).data,
     staleTime: 30_000,
+    enabled,
   });
 }
 
-export function useSuperAdminOrgs(filters?: { search?: string; plan?: string }) {
+export function useSuperAdminOrgs(filters?: { search?: string; plan?: string }, enabled = true) {
   return useQuery<SuperAdminOrg[]>({
     queryKey: ['superadmin', 'orgs', filters],
     queryFn: async () => (await api.get('/superadmin/organizations', { params: filters })).data,
+    enabled,
   });
 }
 

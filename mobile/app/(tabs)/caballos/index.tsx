@@ -5,9 +5,13 @@ import {
   Platform, ScrollView, ActivityIndicator, ActionSheetIOS, Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ShieldCheck, Building2, TrendingUp, ChevronRight,
+  CheckCircle2, Info, Paperclip, FileText, Camera, Search, XCircle, Plus,
+} from 'lucide-react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
 import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../hooks/use-horse-records';
@@ -22,10 +26,9 @@ import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import type { Horse } from '../../../../packages/shared/src';
 
-function HorseCard({ horse, monthlySpend, onQuickExpense }: {
+function HorseCard({ horse, monthlySpend }: {
   horse: Horse;
   monthlySpend?: number;
-  onQuickExpense: (h: Horse) => void;
 }) {
   const router = useRouter();
   const sexLabel: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
@@ -49,7 +52,7 @@ function HorseCard({ horse, monthlySpend, onQuickExpense }: {
         }
         {horse.horse_record_id && (
           <View style={styles.cardVerifiedDot}>
-            <Ionicons name="shield-checkmark" size={9} color="#fff" />
+            <ShieldCheck size={9} color="#fff" strokeWidth={2} />
           </View>
         )}
       </View>
@@ -67,29 +70,21 @@ function HorseCard({ horse, monthlySpend, onQuickExpense }: {
         {subtitle ? <Text style={styles.cardBreed} numberOfLines={1}>{subtitle}</Text> : null}
         {horse.establishment && (
           <View style={styles.cardEstabRow}>
-            <Ionicons name="business-outline" size={11} color={colors.gray400} />
+            <Building2 size={11} color={colors.gray400} strokeWidth={2} />
             <Text style={styles.cardEstab} numberOfLines={1}>{horse.establishment.name}</Text>
           </View>
         )}
         {monthlySpend != null && monthlySpend > 0 && (
           <View style={styles.cardSpendRow}>
-            <Ionicons name="trending-up-outline" size={12} color="#059669" />
+            <TrendingUp size={12} color="#059669" strokeWidth={2} />
             <Text style={styles.cardSpend}>${monthlySpend.toLocaleString('es-AR')} este mes</Text>
           </View>
         )}
       </View>
 
-      {/* Actions */}
+      {/* Entrar al detalle */}
       <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={styles.cardQuickBtn}
-          onPress={(e) => { e.stopPropagation(); haptic.medium(); onQuickExpense(horse); }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="add-circle" size={28} color={colors.primary} />
-        </TouchableOpacity>
-        <Ionicons name="chevron-forward" size={15} color={colors.gray300} />
+        <ChevronRight size={18} color={colors.gray300} strokeWidth={2} />
       </View>
     </TouchableOpacity>
   );
@@ -343,7 +338,7 @@ function RecordMatchModal({
     return (
       <View style={styles.matchCard}>
         <View style={styles.matchDoneWrap}>
-          <Ionicons name="checkmark-circle" size={52} color="#047857" />
+          <CheckCircle2 size={52} color="#047857" strokeWidth={2} />
           <Text style={styles.matchDoneTitle}>¡Reclamo aprobado!</Text>
           <Text style={styles.matchDoneSub}>Tu caballo quedó vinculado al registro oficial del padrón.</Text>
           <TouchableOpacity style={styles.submitBtn} onPress={onClose}>
@@ -369,7 +364,7 @@ function RecordMatchModal({
           </View>
           <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
             <View style={styles.claimInfoBox}>
-              <Ionicons name="information-circle-outline" size={16} color={colors.gray500} />
+              <Info size={16} color={colors.gray500} strokeWidth={2} />
               <Text style={styles.claimInfoText}>
                 Necesitamos al menos un documento oficial o el número de registro para validar la posesión.
               </Text>
@@ -396,11 +391,11 @@ function RecordMatchModal({
                     <Text style={styles.docPickedText}>Documento adjunto</Text>
                     <Text style={styles.docPickedSub}>Tocá para cambiar</Text>
                   </View>
-                  <Ionicons name="checkmark-circle" size={20} color="#047857" />
+                  <CheckCircle2 size={20} color="#047857" strokeWidth={2} />
                 </View>
               ) : (
                 <View style={styles.docPlaceholder}>
-                  <Ionicons name="document-attach-outline" size={28} color={colors.gray400} />
+                  <Paperclip size={28} color={colors.gray400} strokeWidth={2} />
                   <Text style={styles.photoPlaceholderText}>Adjuntar certificado</Text>
                   <Text style={styles.photoPlaceholderSub}>Foto del certificado del Studbook, DNE u otro</Text>
                 </View>
@@ -450,7 +445,7 @@ function RecordMatchModal({
                 {r.color && <Text style={styles.matchDetail}>{r.color}</Text>}
               </View>
               <View style={styles.matchSourceRow}>
-                <Ionicons name="document-text-outline" size={11} color={colors.gray400} />
+                <FileText size={11} color={colors.gray400} strokeWidth={2} />
                 <Text style={styles.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
                 {r.ownership_status === 'pending_claim' && (
                   <Text style={styles.matchPending}>· Reclamo pendiente</Text>
@@ -563,14 +558,14 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
               <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <Ionicons name="camera-outline" size={28} color={colors.gray400} />
+                <Camera size={28} color={colors.gray400} strokeWidth={2} />
                 <Text style={styles.photoPlaceholderText}>Agregar foto</Text>
                 <Text style={styles.photoPlaceholderSub}>Cámara o galería</Text>
               </View>
             )}
             {photoUri && (
               <View style={styles.photoEditBadge}>
-                <Ionicons name="camera" size={13} color="#fff" />
+                <Camera size={13} color="#fff" strokeWidth={2} />
               </View>
             )}
           </TouchableOpacity>
@@ -660,6 +655,7 @@ export default function CaballosScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <ScreenHeader
+          scrollable
           title="Caballos"
           right={can('horses', 'create') ? <HeaderButton label="+ Nuevo" onPress={() => setShowCreate(true)} /> : undefined}
         />
@@ -672,89 +668,92 @@ export default function CaballosScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <ScreenHeader
-        title={`Caballos${horses?.length ? ` (${horses.length})` : ''}`}
-        right={can('horses', 'create') ? (
-          <HeaderButton label="+ Nuevo" onPress={() => { haptic.medium(); setShowCreate(true); }} />
-        ) : undefined}
-      />
+      <FlatList
+        data={filtered}
+        keyExtractor={(h) => h.id}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <>
+            <ScreenHeader
+              scrollable
+              title="Caballos"
+              right={can('horses', 'create') ? (
+                <HeaderButton label="+ Nuevo" onPress={() => { haptic.medium(); setShowCreate(true); }} />
+              ) : undefined}
+            />
+            {/* Buscador */}
+            <View style={styles.searchWrap}>
+              <Search size={16} color={colors.gray400} strokeWidth={2} />
+              <TextInput
+                style={styles.searchInput}
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Buscar"
+                placeholderTextColor={colors.gray400}
+                clearButtonMode="while-editing"
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+                  <XCircle size={16} color={colors.gray300} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-      {/* Buscador */}
-      <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={16} color={colors.gray400} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre, raza..."
-          placeholderTextColor={colors.gray400}
-          clearButtonMode="while-editing"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-            <Ionicons name="close-circle" size={16} color={colors.gray300} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Filtros por actividad y establecimiento */}
-      {hasFilters && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-          style={{ maxHeight: 44 }}
-        >
-          {activityOptions.map((act) => (
-            <TouchableOpacity
-              key={act}
-              style={[styles.filterChip, filterActivity === act && styles.filterChipActive]}
-              onPress={() => { haptic.selection(); setFilterActivity(filterActivity === act ? '' : act); }}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.filterChipText, filterActivity === act && styles.filterChipTextActive]}>{act}</Text>
-            </TouchableOpacity>
-          ))}
-          {estabOptions.map((est) => (
-            <TouchableOpacity
-              key={est}
-              style={[styles.filterChip, filterEstab === est && styles.filterChipActive]}
-              onPress={() => { haptic.selection(); setFilterEstab(filterEstab === est ? '' : est); }}
-              activeOpacity={0.75}
-            >
-              <Ionicons name="business-outline" size={11} color={filterEstab === est ? colors.white : colors.gray500} />
-              <Text style={[styles.filterChipText, filterEstab === est && styles.filterChipTextActive]}>{est}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={search ? 'search-outline' : 'paw-outline'}
-          title={search ? 'Sin resultados' : 'No hay caballos registrados'}
-          message={search ? `No encontramos resultados para "${search}"` : 'Registrá el primer caballo para empezar a gestionar su historial.'}
-          actionLabel={!search && can('horses', 'create') ? 'Registrar caballo' : undefined}
-          onAction={() => { haptic.medium(); setShowCreate(true); }}
-        />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(h) => h.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
+            {/* Filtros por actividad y establecimiento */}
+            {hasFilters && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+                style={{ maxHeight: 44 }}
+              >
+                {activityOptions.map((act) => (
+                  <TouchableOpacity
+                    key={act}
+                    style={[styles.filterChip, filterActivity === act && styles.filterChipActive]}
+                    onPress={() => { haptic.selection(); setFilterActivity(filterActivity === act ? '' : act); }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.filterChipText, filterActivity === act && styles.filterChipTextActive]}>{act}</Text>
+                  </TouchableOpacity>
+                ))}
+                {estabOptions.map((est) => (
+                  <TouchableOpacity
+                    key={est}
+                    style={[styles.filterChip, filterEstab === est && styles.filterChipActive]}
+                    onPress={() => { haptic.selection(); setFilterEstab(filterEstab === est ? '' : est); }}
+                    activeOpacity={0.75}
+                  >
+                    <Building2 size={11} color={filterEstab === est ? colors.white : colors.gray500} strokeWidth={2} />
+                    <Text style={[styles.filterChipText, filterEstab === est && styles.filterChipTextActive]}>{est}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon={search ? 'search-outline' : 'paw-outline'}
+            title={search ? 'Sin resultados' : 'No hay caballos registrados'}
+            message={search ? `No encontramos resultados para "${search}"` : 'Registrá el primer caballo para empezar a gestionar su historial.'}
+            actionLabel={!search && can('horses', 'create') ? 'Registrar caballo' : undefined}
+            onAction={() => { haptic.medium(); setShowCreate(true); }}
+          />
+        }
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ paddingHorizontal: 12 }}>
             <HorseCard
               horse={item}
               monthlySpend={spendMap[item.id]}
-              onQuickExpense={(h) => setQuickGastoHorse(h)}
             />
-          )}
-          refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+          </Animated.View>
+        )}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />
+        }
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* FAB — agregar gasto rápido */}
       {(horses?.length ?? 0) > 0 && (
@@ -763,7 +762,7 @@ export default function CaballosScreen() {
           onPress={() => { haptic.medium(); setQuickGastoHorse(null); }}
           activeOpacity={0.85}
         >
-          <Ionicons name="add" size={26} color="#fff" />
+          <Plus size={26} color="#fff" strokeWidth={2} />
           <Text style={styles.fabLabel}>Gasto</Text>
         </TouchableOpacity>
       )}
@@ -800,12 +799,13 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f0f2f5' },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    marginHorizontal: 16, marginVertical: 10,
-    backgroundColor: colors.gray100, borderRadius: 14,
-    borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 2, gap: 8,
+    marginHorizontal: 12, marginVertical: 10,
+    backgroundColor: colors.white, borderRadius: 14,
+    paddingHorizontal: 12, paddingVertical: 2, gap: 8,
+    shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: colors.gray900 },
-  list: { padding: 12, paddingBottom: 100, gap: 10 },
+  list: { paddingBottom: 100, gap: 10 },
   // ─── Horse Card (list style) ───────────────────────────────────────────────
   card: {
     flexDirection: 'row', alignItems: 'center',
@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
     width: 68, height: 68, borderRadius: 12,
     backgroundColor: '#e8ecf4', justifyContent: 'center', alignItems: 'center',
   },
-  cardPhotoInitial: { fontSize: 26, fontWeight: '800', color: colors.primary, opacity: 0.5 },
+  cardPhotoInitial: { fontSize: 26, fontWeight: '800', color: colors.brand, opacity: 0.5 },
   cardVerifiedDot: {
     position: 'absolute', bottom: -3, right: -3,
     width: 18, height: 18, borderRadius: 9,
@@ -845,9 +845,9 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute', right: 20,
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.primary, borderRadius: 28,
+    backgroundColor: colors.brand, borderRadius: 28,
     paddingVertical: 12, paddingHorizontal: 18,
-    shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
+    shadowColor: colors.brand, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
   },
   fabLabel: { fontSize: 14, fontWeight: '700', color: '#fff' },
   // ─── Quick gasto modal ─────────────────────────────────────────────────────
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
     backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200,
   },
-  horseChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  horseChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   horseChipText: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
   horseChipTextActive: { color: colors.white },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: 0 },
@@ -879,9 +879,9 @@ const styles = StyleSheet.create({
   catLabel: { fontSize: 12, fontWeight: '600', color: colors.gray600 },
   catLabelActive: { color: '#1d4ed8' },
   // ─── Filtros ───────────────────────────────────────────────────────────────
-  filterRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
+  filterRow: { paddingHorizontal: 12, paddingVertical: 6, gap: 8 },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.gray600 },
   filterChipTextActive: { color: colors.white },
   // Modal
@@ -898,14 +898,14 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 13, color: colors.red500 },
   cancelBtn: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: colors.gray200, paddingVertical: 13, alignItems: 'center' },
   cancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
-  submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 13, alignItems: 'center' },
+  submitBtn: { flex: 1, borderRadius: 12, backgroundColor: colors.brand, paddingVertical: 13, alignItems: 'center' },
   submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
   photoPickerBtn: { alignSelf: 'center', marginBottom: 6, position: 'relative' },
-  photoPreview: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: colors.primary },
+  photoPreview: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: colors.brand },
   photoPlaceholder: { width: 110, height: 110, borderRadius: 55, backgroundColor: colors.gray100, borderWidth: 2, borderColor: colors.gray200, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 4 },
   photoPlaceholderText: { fontSize: 12, fontWeight: '700', color: colors.gray500 },
   photoPlaceholderSub: { fontSize: 10, color: colors.gray400 },
-  photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
   // Match modal
   matchCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
   matchSubtitle: { fontSize: 12, color: colors.gray400, marginTop: 1 },
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
   matchSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   matchSource: { fontSize: 11, color: colors.gray400 },
   matchPending: { fontSize: 11, color: colors.amber600 },
-  claimBtn: { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, minWidth: 80, alignItems: 'center' },
+  claimBtn: { backgroundColor: colors.brand, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, minWidth: 80, alignItems: 'center' },
   claimBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
   matchDoneWrap: { alignItems: 'center', padding: 32, gap: 12 },
   matchDoneTitle: { fontSize: 18, fontWeight: '700', color: colors.gray900 },

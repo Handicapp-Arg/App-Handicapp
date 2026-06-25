@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
 import api from '../../lib/api';
+
+const LOGO = 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -52,10 +54,7 @@ export default function RegistroScreen() {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
         <View style={styles.header}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoText}>H</Text>
-          </View>
-          <Text style={styles.brand}>HandicApp</Text>
+          <Image source={{ uri: LOGO }} style={styles.logo} resizeMode="contain" />
         </View>
 
         <View style={styles.card}>
@@ -134,9 +133,10 @@ export default function RegistroScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.primary },
+  root: { flex: 1, backgroundColor: colors.espresso },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 32 },
+  logo: { width: 190, height: 80 },
   logoBox: {
     width: 64, height: 64, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -161,16 +161,16 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.gray200, borderRadius: 12,
     paddingVertical: 10, alignItems: 'center', backgroundColor: colors.white,
   },
-  roleBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  roleBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   roleBtnText: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
   roleBtnTextActive: { color: colors.white },
   btn: {
-    backgroundColor: colors.primary, borderRadius: 14,
+    backgroundColor: colors.brand, borderRadius: 14,
     paddingVertical: 14, alignItems: 'center', marginTop: 4,
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
   footerText: { fontSize: 13, color: colors.gray500 },
-  link: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  link: { fontSize: 13, fontWeight: '700', color: colors.brand },
 });

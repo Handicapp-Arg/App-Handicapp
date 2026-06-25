@@ -22,7 +22,7 @@ export const typography = StyleSheet.create({
   body: { fontSize: text.sm, color: colors.gray700, lineHeight: 20 },
   caption: { fontSize: text.xs, color: colors.gray400 },
   label: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  link: { fontSize: text.sm, fontWeight: weight.bold, color: colors.primary },
+  link: { fontSize: text.sm, fontWeight: weight.bold, color: colors.brand },
 });
 
 export const card = StyleSheet.create({
@@ -75,7 +75,7 @@ export const input = StyleSheet.create({
 
 export const button = StyleSheet.create({
   primary: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
     borderRadius: radius.md,
     paddingVertical: space[3],
     alignItems: 'center' as const,

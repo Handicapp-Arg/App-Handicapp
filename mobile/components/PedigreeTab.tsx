@@ -4,7 +4,7 @@ import {
   Modal, KeyboardAvoidingView, Platform, ActivityIndicator,
   ScrollView, Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { X, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus } from 'lucide-react-native';
 import { colors } from '../lib/colors';
 import {
   usePedigree, usePedigreeValidations, useUpsertPedigree,
@@ -149,14 +149,14 @@ function PedigreeTree({ horseName, pedigree }: {
           <View style={[n.gen, { gap: 12 }]}>
             <View style={{ width: w2 }}>
               <View style={n.parentLabel}>
-                <Ionicons name="male-outline" size={11} color="#0369a1" />
+                <Mars size={11} color="#0369a1" strokeWidth={2} />
                 <Text style={[n.parentLabelText, { color: '#0369a1' }]}>PADRE</Text>
               </View>
               <PedigreeNode data={sire} width={w2} />
             </View>
             <View style={{ width: w2 }}>
               <View style={n.parentLabel}>
-                <Ionicons name="female-outline" size={11} color="#be185d" />
+                <Venus size={11} color="#be185d" strokeWidth={2} />
                 <Text style={[n.parentLabelText, { color: '#be185d' }]}>MADRE</Text>
               </View>
               <PedigreeNode data={dam} width={w2} />
@@ -230,7 +230,7 @@ const n = StyleSheet.create({
   reg: { fontSize: 10, color: colors.gray400 },
 
   nodeHorse: {
-    backgroundColor: colors.primary, borderColor: colors.primary,
+    backgroundColor: colors.brand, borderColor: colors.brand,
     alignItems: 'center', gap: 4, paddingVertical: 14,
   },
   horseIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
@@ -379,7 +379,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Editar pedigrí</Text>
           <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={22} color={colors.gray400} />
+            <X size={22} color={colors.gray400} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -387,7 +387,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           {/* Padre */}
           <View style={s.fieldset}>
             <View style={s.fieldsetHeader}>
-              <Ionicons name="male-outline" size={14} color="#0369a1" />
+              <Mars size={14} color="#0369a1" strokeWidth={2} />
               <Text style={[s.fieldsetTitle, { color: '#0369a1' }]}>PADRE</Text>
             </View>
             <HorseSearchField
@@ -405,7 +405,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           {/* Madre */}
           <View style={s.fieldset}>
             <View style={s.fieldsetHeader}>
-              <Ionicons name="female-outline" size={14} color="#be185d" />
+              <Venus size={14} color="#be185d" strokeWidth={2} />
               <Text style={[s.fieldsetTitle, { color: '#be185d' }]}>MADRE</Text>
             </View>
             <HorseSearchField
@@ -469,7 +469,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           <TouchableOpacity style={[s.btn, s.btnOutline, { flex: 1 }]}
             onPress={() => handleSave(false)} disabled={isPending}>
             {upsert.isPending && !validate.isPending
-              ? <ActivityIndicator color={colors.primary} size="small" />
+              ? <ActivityIndicator color={colors.brand} size="small" />
               : <Text style={s.btnOutlineText}>Guardar</Text>}
           </TouchableOpacity>
           <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1.4 }]}
@@ -558,7 +558,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   if (isLoading) {
     return (
       <View style={s.center}>
-        <ActivityIndicator color={colors.primary} size="large" />
+        <ActivityIndicator color={colors.brand} size="large" />
         <Text style={s.loadingText}>Cargando pedigrí...</Text>
       </View>
     );
@@ -574,7 +574,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
         </Text>
         {canEdit && (
           <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 8 }]} onPress={() => setShowForm(true)}>
-            <Ionicons name="add-outline" size={18} color={colors.white} />
+            <Plus size={18} color={colors.white} strokeWidth={2} />
             <Text style={s.btnPrimaryText}>Agregar pedigrí</Text>
           </TouchableOpacity>
         )}
@@ -595,7 +595,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {canEdit && (
             <TouchableOpacity style={s.actionBtn} onPress={() => setShowForm(true)}>
-              <Ionicons name="create-outline" size={15} color={colors.primary} />
+              <Pencil size={15} color={colors.brand} strokeWidth={2} />
               <Text style={s.actionBtnText}>Editar</Text>
             </TouchableOpacity>
           )}
@@ -608,7 +608,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
               {validate.isPending
                 ? <ActivityIndicator size="small" color={colors.white} />
                 : <>
-                    <Ionicons name="shield-checkmark-outline" size={15} color={colors.white} />
+                    <ShieldCheck size={15} color={colors.white} strokeWidth={2} />
                     <Text style={[s.actionBtnText, { color: colors.white }]}>Verificar</Text>
                   </>
               }
@@ -625,7 +625,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
       {/* Sin validar aún */}
       {validations.length === 0 && hasData && (
         <View style={s.noValidation}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.gray400} />
+          <Info size={16} color={colors.gray400} strokeWidth={2} />
           <Text style={s.noValidationText}>
             Datos guardados. Tocá <Text style={{ fontWeight: '700' }}>Verificar</Text> para contrastar con los registros oficiales.
           </Text>
@@ -657,7 +657,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
           <Text style={s.docsTitle}>Documentos adjuntos</Text>
           {pedigree.documents!.map((doc) => (
             <View key={doc.id} style={s.docRow}>
-              <Ionicons name="document-outline" size={14} color={colors.gray500} />
+              <File size={14} color={colors.gray500} strokeWidth={2} />
               <Text style={s.docName} numberOfLines={1}>{doc.file_name}</Text>
             </View>
           ))}
@@ -691,8 +691,8 @@ const s = StyleSheet.create({
     borderRadius: 8, borderWidth: 1, borderColor: colors.gray200,
     backgroundColor: colors.white,
   },
-  actionBtnPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  actionBtnText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  actionBtnPrimary: { backgroundColor: colors.brand, borderColor: colors.brand },
+  actionBtnText: { fontSize: 12, fontWeight: '600', color: colors.brand },
 
   banner: {
     borderRadius: 12, borderWidth: 1, padding: 14, gap: 6, marginBottom: 8,
@@ -764,10 +764,10 @@ const s = StyleSheet.create({
   hint: { fontSize: 12, color: colors.gray400, marginTop: 12, lineHeight: 18 },
 
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 12, gap: 6 },
-  btnPrimary: { backgroundColor: colors.primary },
+  btnPrimary: { backgroundColor: colors.brand },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
   btnSecondary: { backgroundColor: colors.gray100 },
   btnSecondaryText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
-  btnOutline: { borderWidth: 1.5, borderColor: colors.primary },
-  btnOutlineText: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  btnOutline: { borderWidth: 1.5, borderColor: colors.brand },
+  btnOutlineText: { fontSize: 14, fontWeight: '600', color: colors.brand },
 });

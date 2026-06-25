@@ -155,7 +155,7 @@ function PedigreeCard({
     return (
       <div
         style={{ left: placed.x, top: placed.y, width: NODE_W, height: NODE_H }}
-        className="absolute flex flex-col justify-center px-4 rounded-xl bg-[#0f1f3d] text-white shadow-xl border border-[#1e3a6e]"
+        className="absolute flex flex-col justify-center px-4 rounded-xl bg-[#9d6c35] text-white shadow-xl border border-[#7f5628]"
       >
         <div className="text-xs font-bold uppercase tracking-widest text-blue-300 mb-0.5">Sujeto</div>
         <div className="text-sm font-bold leading-tight truncate">{node.name}</div>

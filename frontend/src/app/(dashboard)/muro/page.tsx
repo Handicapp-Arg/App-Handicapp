@@ -13,14 +13,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ─── Avatar helper ────────────────────────────────────────────────────────────
-const ROLE_GRADIENTS: Record<string, string> = {
-  propietario:    'from-blue-600 to-blue-800',
-  establecimiento:'from-emerald-600 to-emerald-800',
-  veterinario:    'from-violet-600 to-violet-800',
-  admin:          'from-slate-600 to-slate-800',
-};
-
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
   establecimiento: 'Establecimiento',
@@ -45,13 +37,12 @@ function StatCard({ icon, label, value, color }: {
 
 // ─── Right sidebar ────────────────────────────────────────────────────────────
 function FeedSidebar({ user, stats, isAdmin }: {
-  user: { name: string; role: string } | null;
+  user: { name: string; role: string; avatar_url?: string | null; cover_url?: string | null } | null;
   stats?: { total: number; today: number; pinned: number; hidden: number } | null;
   isAdmin: boolean;
 }) {
   const { data: horses } = useHorses();
   const initials = user?.name?.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() ?? '?';
-  const gradClass = ROLE_GRADIENTS[user?.role ?? ''] ?? 'from-slate-600 to-slate-800';
   const role = user?.role ?? '';
 
   const quickLinks = [
@@ -75,25 +66,32 @@ function FeedSidebar({ user, stats, isAdmin }: {
 
   return (
     <div className="space-y-4">
-      {/* Profile card */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className={cn('h-16 bg-gradient-to-br', gradClass)} />
+      {/* Profile card — replica el diseño del perfil (cuero) */}
+      <div className="overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]">
+        <div className="relative h-16 bg-gradient-to-r from-clay-400 via-clay-500 to-clay-600">
+          {user?.cover_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+        </div>
         <div className="px-4 pb-4">
-          <div className="flex items-end gap-3 -mt-7 mb-3">
-            <div className={cn(
-              'h-14 w-14 rounded-full border-4 border-white bg-gradient-to-br flex items-center justify-center text-white font-bold text-lg shadow-md',
-              gradClass,
-            )}>
-              {initials}
+          <div className="relative z-10 -mt-8 mb-3">
+            <div className="h-16 w-16 overflow-hidden rounded-2xl bg-gradient-to-br from-clay-400 to-clay-600 ring-4 ring-white">
+              {user?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">{initials}</span>
+              )}
             </div>
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-sm leading-tight">{user?.name}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{ROLE_LABELS[role] ?? role}</p>
+            <p className="text-sm font-semibold leading-tight text-gray-900">{user?.name}</p>
+            <p className="mt-0.5 text-xs text-gray-400">{ROLE_LABELS[role] ?? role}</p>
           </div>
           <Link
             href="/perfil"
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition"
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-clay-50 py-1.5 text-xs font-semibold text-clay-700 ring-1 ring-clay-100 transition hover:bg-clay-100"
           >
             Ver perfil
           </Link>
@@ -136,9 +134,9 @@ function FeedSidebar({ user, stats, isAdmin }: {
       </div>
 
       {/* HandicApp brand */}
-      <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-[#0f1f3d] to-[#1a3366] p-4 text-center space-y-1">
+      <div className="rounded-2xl bg-gradient-to-br from-clay-500 to-clay-700 p-4 text-center space-y-1 shadow-[var(--shadow-card)]">
         <p className="text-xs font-bold text-white/90">HandicApp</p>
-        <p className="text-[11px] text-white/45 leading-relaxed">La plataforma de gestión equina de Argentina</p>
+        <p className="text-[11px] text-white/55 leading-relaxed">La plataforma de gestión equina de Argentina</p>
       </div>
     </div>
   );
@@ -169,22 +167,9 @@ export default function MuroPage() {
   );
 
   const posts = data?.pages.flatMap((p) => p.data) ?? [];
-  const total = data?.pages[0]?.total ?? 0;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Rss className="h-5 w-5 text-[#0f1f3d]" />
-            Muro
-          </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {total > 0 ? `${total} publicación${total !== 1 ? 'es' : ''} en la comunidad` : 'La comunidad HandicApp'}
-          </p>
-        </div>
-      </div>
 
       {/* 2-column layout */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">

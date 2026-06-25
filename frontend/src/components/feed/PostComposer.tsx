@@ -6,28 +6,20 @@ import { useCreatePost } from '@/hooks/use-feed';
 import { ImageIcon, X, Send, Megaphone, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ROLE_GRADIENTS: Record<string, string> = {
-  propietario:    'from-blue-500 to-blue-700',
-  establecimiento:'from-emerald-500 to-emerald-700',
-  veterinario:    'from-violet-500 to-violet-700',
-  admin:          'from-slate-500 to-slate-700',
-};
-
 const POST_TYPES = [
   { value: 'general', label: 'General', icon: null },
   { value: 'horse_update', label: 'Actualización', icon: Tag },
   { value: 'announcement', label: 'Anuncio', icon: Megaphone },
 ] as const;
 
-function ComposerAvatar({ name, role }: { name: string; role?: string }) {
+function ComposerAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const gradClass = ROLE_GRADIENTS[role ?? ''] ?? 'from-slate-500 to-slate-700';
   return (
-    <div className={cn(
-      'h-10 w-10 rounded-full bg-gradient-to-br text-white font-bold flex items-center justify-center shrink-0 shadow-sm text-sm',
-      gradClass,
-    )}>
-      {initials}
+    <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-clay-400 to-clay-600 text-white font-bold flex items-center justify-center shrink-0 shadow-sm text-sm">
+      {avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
+      ) : initials}
     </div>
   );
 }
@@ -93,7 +85,7 @@ export default function PostComposer({ onPosted }: Props) {
       expanded ? 'border-gray-300 shadow-md' : 'border-gray-200',
     )}>
       <div className="flex gap-3 p-4">
-        <ComposerAvatar name={user.name} role={user.role} />
+        <ComposerAvatar name={user.name} avatarUrl={user.avatar_url} />
 
         <div className="flex-1 min-w-0">
           {!expanded ? (
@@ -115,7 +107,7 @@ export default function PostComposer({ onPosted }: Props) {
                       className={cn(
                         'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition',
                         type === value
-                          ? 'bg-[#0f1f3d] text-white border-[#0f1f3d]'
+                          ? 'bg-clay-500 text-white border-clay-500'
                           : 'border-gray-200 text-gray-500 hover:bg-gray-50',
                       )}
                     >
@@ -182,7 +174,7 @@ export default function PostComposer({ onPosted }: Props) {
                   <button
                     onClick={handleSubmit}
                     disabled={(!content.trim() && !media.length) || createPost.isPending}
-                    className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f1f3d] text-white text-xs font-bold rounded-lg hover:bg-[#1a3366] transition disabled:opacity-40 shadow-sm"
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-clay-500 text-white text-xs font-bold rounded-lg hover:bg-clay-600 transition disabled:opacity-40 shadow-sm"
                   >
                     <Send className="h-3.5 w-3.5" />
                     {createPost.isPending ? 'Publicando…' : 'Publicar'}

@@ -55,7 +55,7 @@ function RequestCard({
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-navy-900">
+            <p className="text-sm font-semibold text-gray-900">
               {req.horse?.name ?? '—'}
             </p>
             <Badge tone={meta.tone}>{meta.label}</Badge>

@@ -39,7 +39,10 @@
               "pathPrefix": "/invitacion"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -62,7 +65,9 @@
           "color": "#0f1f3d",
           "sounds": []
         }
-      ]
+      ],
+      "@sentry/react-native",
+      "expo-font"
     ]
   }
 }

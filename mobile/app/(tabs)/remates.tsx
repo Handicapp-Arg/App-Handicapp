@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Search, Plus, Trophy, Tag, Megaphone, XCircle } from 'lucide-react-native';
 import { useAuctions } from '../../hooks/use-auctions';
+import { HorseCardSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
@@ -18,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
   draft: '#6b7280',
   paused: '#f59e0b',
   closed: '#3b82f6',
-  sold: '#8b5cf6',
+  sold: '#9d6c35',
   cancelled: '#ef4444',
 };
 
@@ -41,8 +43,10 @@ function AuctionCard({ item, onPress }: { item: Auction; onPress: () => void }) 
           </View>
         </View>
         <View style={[s.typeBadge, isRemate ? s.typeBadgeRemate : s.typeBadgeDirecto]}>
-          <Ionicons name={isRemate ? 'trophy-outline' : 'pricetag-outline'} size={11} color={isRemate ? '#7c3aed' : '#0369a1'} />
-          <Text style={[s.typeBadgeText, { color: isRemate ? '#7c3aed' : '#0369a1' }]}>
+          {isRemate
+            ? <Trophy size={11} color="#9d6c35" strokeWidth={2} />
+            : <Tag size={11} color="#0369a1" strokeWidth={2} />}
+          <Text style={[s.typeBadgeText, { color: isRemate ? '#9d6c35' : '#0369a1' }]}>
             {isRemate ? 'Remate' : 'Directo'}
           </Text>
         </View>
@@ -85,8 +89,8 @@ export default function RematesTab() {
     status: filterStatus || undefined,
   });
 
-  return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+  const Header = (
+    <>
       {/* Header */}
       <View style={s.header}>
         <View>
@@ -98,7 +102,7 @@ export default function RematesTab() {
           onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
           activeOpacity={0.85}
         >
-          <Ionicons name="add" size={18} color={colors.white} />
+          <Plus size={18} color={colors.white} strokeWidth={2} />
           <Text style={s.publishBtnText}>Publicar</Text>
         </TouchableOpacity>
       </View>
@@ -106,7 +110,7 @@ export default function RematesTab() {
       {/* Búsqueda */}
       <View style={s.searchRow}>
         <View style={s.searchBox}>
-          <Ionicons name="search-outline" size={16} color={colors.gray400} />
+          <Search size={16} color={colors.gray400} strokeWidth={2} />
           <TextInput
             style={s.searchInput}
             placeholder="Buscar por caballo, raza, lugar..."
@@ -116,7 +120,7 @@ export default function RematesTab() {
           />
           {q.length > 0 && (
             <TouchableOpacity onPress={() => setQ('')} activeOpacity={0.7}>
-              <Ionicons name="close-circle" size={16} color={colors.gray300} />
+              <XCircle size={16} color={colors.gray300} strokeWidth={2} />
             </TouchableOpacity>
           )}
         </View>
@@ -139,22 +143,30 @@ export default function RematesTab() {
           </TouchableOpacity>
         ))}
       </View>
+    </>
+  );
 
+  return (
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {isLoading ? (
-        <View style={s.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+        <View>
+          {Header}
+          <View style={{ padding: space[4], gap: space[3] }}>
+            {[1, 2, 3, 4].map((i) => <HorseCardSkeleton key={i} />)}
+          </View>
         </View>
       ) : (
         <FlatList
           data={data?.data ?? []}
           keyExtractor={(i) => i.id}
+          ListHeaderComponent={Header}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isRefetching}
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <Ionicons name="trophy-outline" size={56} color={colors.gray300} />
+              <Trophy size={56} color={colors.gray300} strokeWidth={2} />
               <Text style={s.emptyTitle}>
                 {filterStatus === 'active' ? 'No hay caballos en venta' : 'Sin resultados'}
               </Text>
@@ -168,16 +180,21 @@ export default function RematesTab() {
                 onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
                 activeOpacity={0.85}
               >
-                <Ionicons name="megaphone-outline" size={18} color={colors.white} />
+                <Megaphone size={18} color={colors.white} strokeWidth={2} />
                 <Text style={s.emptyActionText}>Publicar mi caballo</Text>
               </TouchableOpacity>
             </View>
           }
-          renderItem={({ item }) => (
-            <AuctionCard
-              item={item}
-              onPress={() => nav.push(router, Routes.remate(item.id))}
-            />
+          renderItem={({ item, index }) => (
+            <Animated.View
+              style={s.cardWrap}
+              entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}
+            >
+              <AuctionCard
+                item={item}
+                onPress={() => nav.push(router, Routes.remate(item.id))}
+              />
+            </Animated.View>
           )}
         />
       )}
@@ -195,7 +212,7 @@ const s = StyleSheet.create({
   subtitle: { fontSize: text.sm, color: colors.gray400, marginTop: 2 },
   publishBtn: {
     flexDirection: 'row', alignItems: 'center', gap: space[1] + 2,
-    backgroundColor: colors.primary, borderRadius: radius.lg,
+    backgroundColor: colors.brand, borderRadius: radius.lg,
     paddingHorizontal: space[3] + 2, paddingVertical: space[2] + 2,
     marginTop: 4,
   },
@@ -217,11 +234,12 @@ const s = StyleSheet.create({
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray200,
     backgroundColor: colors.white,
   },
-  filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
   filterBtnTextActive: { color: colors.white },
 
-  list: { paddingHorizontal: space[4], paddingBottom: space[10] },
+  list: { paddingBottom: space[10] },
+  cardWrap: { paddingHorizontal: space[4] },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   emptyBox: { alignItems: 'center', paddingTop: 48, paddingHorizontal: space[6], gap: space[3] },
@@ -229,7 +247,7 @@ const s = StyleSheet.create({
   emptySub: { fontSize: text.sm, color: colors.gray400, textAlign: 'center', lineHeight: 20 },
   emptyAction: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: colors.primary, borderRadius: radius.xl,
+    backgroundColor: colors.brand, borderRadius: radius.xl,
     paddingHorizontal: space[5], paddingVertical: space[3] + 2,
     marginTop: space[2],
   },
@@ -252,13 +270,13 @@ const s = StyleSheet.create({
     paddingHorizontal: space[2], paddingVertical: 3,
     borderRadius: radius.full, borderWidth: 1,
   },
-  typeBadgeRemate: { backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' },
+  typeBadgeRemate: { backgroundColor: '#faf3e9', borderColor: '#f3e3cc' },
   typeBadgeDirecto: { backgroundColor: '#e0f2fe', borderColor: '#bae6fd' },
   typeBadgeText: { fontSize: 10, fontWeight: weight.semibold },
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   priceLabel: { fontSize: 10, fontWeight: weight.semibold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5 },
-  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.primary, letterSpacing: -0.3 },
+  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.brand, letterSpacing: -0.3 },
   metaRight: { alignItems: 'flex-end', gap: 2 },
   metaText: { fontSize: text.xs, color: colors.gray400 },
   watchingBadge: { fontSize: 10, color: '#d97706', fontWeight: weight.semibold },

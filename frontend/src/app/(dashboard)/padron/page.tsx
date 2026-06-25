@@ -528,8 +528,8 @@ function JobProgressBar({ job }: { job: ImportJob }) {
 
 function AdminBar() {
   const { user } = useAuth();
-  const { data: stats } = useHorseRecordStats();
-  const { data: jobs = [] } = useImportJobs();
+  const { data: stats } = useHorseRecordStats(user?.role === 'admin');
+  const { data: jobs = [] } = useImportJobs(user?.role === 'admin');
   const importStudbook = useAdminImportStudbookAR();
   const importWikidata = useAdminImportWikidata();
   const retryFailed = useAdminRetryFailed();

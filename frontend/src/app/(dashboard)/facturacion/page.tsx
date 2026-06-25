@@ -7,7 +7,6 @@ import { useBills, useCreateBill, useSendBill, useApproveBill, useDisputeBill, u
 import { PageHeader } from '@/components/ui/page-header';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
-import type { BillItem } from '@/hooks/use-billing';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i] }));
 
@@ -37,7 +36,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
 
   const total = items.reduce((sum, i) => sum + (parseFloat(i.quantity || '0') * parseFloat(i.unit_price || '0')), 0);
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#0f1f3d] focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +62,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
       <div className="fixed inset-0 z-[998] bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 overflow-y-auto">
         <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl my-4">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#0f1f3d' }}>
+          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Nueva factura</h2>
             <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">✕</button>
           </div>
@@ -107,7 +106,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
                 {(['ARS', 'USD'] as const).map((c) => (
                   <button key={c} type="button" onClick={() => setCurrency(c)}
                     className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition cursor-pointer ${
-                      currency === c ? 'bg-[#0f1f3d] text-white border-transparent' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      currency === c ? 'bg-[#9d6c35] text-white border-transparent' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     {c === 'ARS' ? '$ ARS — Pesos' : 'USD — Dólares'}
@@ -120,7 +119,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-gray-600">Ítems</label>
-                <button type="button" onClick={addItem} className="text-xs font-medium text-[#0f1f3d] hover:underline cursor-pointer">+ Agregar ítem</button>
+                <button type="button" onClick={addItem} className="text-xs font-medium text-[#9d6c35] hover:underline cursor-pointer">+ Agregar ítem</button>
               </div>
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-[1fr_80px_90px_32px] gap-2 items-center">
@@ -151,7 +150,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
             <div className="flex gap-2 pt-1">
               <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">Cancelar</button>
               <button type="submit" disabled={createBill.isPending || !horseId || !ownerId}
-                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer" style={{ backgroundColor: '#0f1f3d' }}
+                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer" style={{ backgroundColor: '#9d6c35' }}
               >
                 {createBill.isPending ? 'Creando...' : 'Crear borrador'}
               </button>
@@ -187,7 +186,7 @@ export default function FacturacionPage() {
         action={isEst ? (
           <button onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition cursor-pointer active:scale-95"
-            style={{ backgroundColor: '#0f1f3d' }}
+            style={{ backgroundColor: '#9d6c35' }}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -199,7 +198,7 @@ export default function FacturacionPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[#0f1f3d]" />
+          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[#9d6c35]" />
         </div>
       ) : !bills?.length ? (
         <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
@@ -313,7 +312,7 @@ export default function FacturacionPage() {
               <h3 className="text-base font-bold text-gray-900">Disputar factura</h3>
               <textarea rows={3} value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)}
                 placeholder="Explicá el motivo de la disputa..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm resize-none focus:border-[#0f1f3d] focus:bg-white focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:bg-white focus:outline-none"
               />
               <div className="flex gap-2">
                 <button onClick={() => setDisputingId(null)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer">Cancelar</button>

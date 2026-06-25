@@ -234,7 +234,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                             onClick={entry.perform}
                             className={cn(
                               'flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition',
-                              active ? 'bg-navy-50 text-navy-900' : 'text-slate-700 hover:bg-slate-50',
+                              active ? 'bg-navy-50 text-gray-900' : 'text-slate-700 hover:bg-slate-50',
                             )}
                           >
                             <Icon className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />

@@ -50,6 +50,8 @@ export function useCreateHorse() {
       microchip?: string;
       breed_id?: string;
       activity_id?: string;
+      sex?: string;
+      color?: string;
     }) => {
       const { data } = await api.post('/horses', dto);
       return data as CreateHorseResult;

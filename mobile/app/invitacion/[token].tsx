@@ -28,7 +28,7 @@ export default function InvitationScreen() {
   if (authLoading || !user || isLoading) {
     return (
       <View style={[s.root, s.center]}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.brand} />
       </View>
     );
   }
@@ -132,7 +132,7 @@ const s = StyleSheet.create({
   errorMsg: { fontSize: text.sm, color: colors.gray500, textAlign: 'center', marginTop: 6, lineHeight: 20 },
 
   btn: { borderRadius: radius.lg, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.primary },
+  btnPrimary: { backgroundColor: colors.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
   btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },

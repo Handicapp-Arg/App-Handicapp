@@ -11,6 +11,9 @@ export interface User {
   role: string;
   permissions: string[];
   created_at: string;
+  plan?: string;
+  avatar_url?: string | null;
+  cover_url?: string | null;
 }
 
 export interface CatalogItem {

@@ -74,7 +74,7 @@ export function InboxIllustration({ className, ...rest }: Props) {
       <rect x="42" y="68" width="116" height="80" rx="12" fill="currentColor" opacity="0.92" />
       <path d="M42 80l58 38 58-38" stroke="#fff" strokeWidth="3.5" strokeLinejoin="round" fill="none" />
       <circle cx="155" cy="62" r="14" fill="var(--color-gold-500)" />
-      <text x="155" y="68" textAnchor="middle" fontFamily="sans-serif" fontSize="16" fontWeight="700" fill="#0f1f3d">!</text>
+      <text x="155" y="68" textAnchor="middle" fontFamily="sans-serif" fontSize="16" fontWeight="700" fill="#9d6c35">!</text>
     </svg>
   );
 }

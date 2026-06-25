@@ -18,7 +18,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       role="radiogroup"
       aria-label="Tema de la interfaz"
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50/80 p-0.5',
+        'inline-flex items-center gap-0.5 rounded-full border border-gray-200 bg-gray-100/80 p-0.5',
         className,
       )}
     >
@@ -32,10 +32,10 @@ export function ThemeToggle({ className }: { className?: string }) {
             aria-checked={active}
             onClick={() => setPreference(value)}
             className={cn(
-              'inline-flex h-7 w-7 items-center justify-center rounded-full transition',
+              'inline-flex h-6 w-6 items-center justify-center rounded-full transition',
               active
-                ? 'bg-white text-navy-900 shadow-sm ring-1 ring-slate-200'
-                : 'text-slate-400 hover:text-slate-700',
+                ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
+                : 'text-gray-400 hover:text-gray-700',
             )}
             aria-label={label}
             title={label}

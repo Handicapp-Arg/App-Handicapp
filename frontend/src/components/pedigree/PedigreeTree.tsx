@@ -152,7 +152,7 @@ export default function PedigreeTree({ node, depth = 2, onDepthChange, showValid
             onClick={() => handleDepthChange(d)}
             className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
               selectedDepth === d
-                ? 'bg-[#0f1f3d] text-white'
+                ? 'bg-[#9d6c35] text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
             }`}
           >

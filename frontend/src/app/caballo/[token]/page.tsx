@@ -86,7 +86,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
       {/* Header branding */}
       <div className="border-b border-gray-200 bg-white px-4 py-3 sm:px-8">
         <div className="mx-auto max-w-2xl flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: '#0f1f3d' }}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: '#9d6c35' }}>
             <span className="text-sm font-bold text-white">H</span>
           </div>
           <span className="text-sm font-semibold text-gray-500">HandicApp · Perfil público</span>

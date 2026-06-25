@@ -14,14 +14,43 @@
   --color-navy-400: #5a6d99;
   --color-navy-500: #2f4474;
   --color-navy-600: #1d2f57;
-  --color-navy-700: #0f1f3d;   /* primary brand */
-  --color-navy-800: #0a1628;
+  --color-navy-700: #9d6c35;   /* primary brand */
+  --color-navy-800: #20160e;
   --color-navy-900: #060d18;
 
   --color-gold-50:  #faf2e0;
   --color-gold-100: #f5e6c8;
   --color-gold-500: #c4922a;
   --color-gold-600: #a37820;
+
+  /* ── Marca HandicApp: CUERO CARAMELO ──
+     Color oficial de marca (cuero de montura). Reemplaza al navy/gold legacy. */
+  --color-clay-50:   #faf3e9;
+  --color-clay-100:  #f3e3cc;
+  --color-clay-200:  #e6cdab;
+  --color-clay-300:  #d2aa78;
+  --color-clay-400:  #bd8a4d;
+  --color-clay-500:  #9d6c35;   /* cuero caramelo — primario de marca */
+  --color-clay-600:  #7f5628;
+  --color-clay-700:  #66441f;
+  --color-clay-800:  #4e341a;
+  --color-clay-900:  #382514;
+
+  --color-amber-glow: #d9a94e;  /* dorado — acento secundario (premios, destacados) */
+  --color-amber-soft: #f0dca8;
+
+  --color-cream-50:  #fdfaf6;   /* warm white — cards */
+  --color-cream-100: #faf5ee;   /* crema — fondo de página */
+  --color-cream-200: #f3e9dc;
+  --color-sand-300:  #e8dccd;   /* bordes cálidos */
+  --color-sand-400:  #d8c7b2;
+
+  --color-espresso:  #2c211a;   /* texto principal — marrón muy oscuro */
+  --color-bark-600:  #6f5f52;   /* texto secundario */
+  --color-bark-400:  #9a8a7a;   /* texto terciario / placeholder */
+
+  /* Tipografía display — serif con carácter (cargada por <link> en layout) */
+  --font-display: "Fraunces", "Georgia", "Times New Roman", serif;
 
   /* Estado */
   --color-success-50:  #ecfdf5;
@@ -37,9 +66,9 @@
   --color-info-500:    #3b82f6;
 
   /* Superficies y borders */
-  --color-surface-page:    #f0f3f8;
+  --color-surface-page:    #f6f7f9;   /* blanco frío neutro (moderno) */
   --color-surface-card:    #ffffff;
-  --color-surface-border:  #e8edf5;
+  --color-surface-border:  #e8eaee;
 
   /* Radii */
   --radius-sm:  0.375rem;
@@ -67,16 +96,23 @@
   font-feature-settings: "tnum" 1, "calt" 1;
 }
 
+/* Tipografía display — serif editorial con carácter */
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
 :root {
   /* Light theme tokens (default) */
   --background: #ffffff;
   --foreground: #0d1117;
 
-  --color-primary:       var(--color-navy-700);
-  --color-primary-light: var(--color-navy-600);
-  --color-primary-hover: var(--color-navy-800);
-  --color-accent:        var(--color-gold-500);
-  --color-accent-light:  var(--color-gold-100);
+  --color-primary:       var(--color-clay-500);
+  --color-primary-light: var(--color-clay-400);
+  --color-primary-hover: var(--color-clay-600);
+  --color-accent:        var(--color-amber-glow);
+  --color-accent-light:  var(--color-clay-100);
 
   --color-gray-50:  #f8fafc;
   --color-gray-100: #f1f5f9;
@@ -111,7 +147,7 @@
   --foreground: #e7ecf5;
 
   --color-surface-page:   #060d18;
-  --color-surface-card:   #0f1f3d;
+  --color-surface-card:   #9d6c35;
   --color-surface-border: #1d2f57;
 
   --color-navy-50:  #1d2f57;
@@ -124,8 +160,8 @@
   --color-navy-800: #f5f7fb;
   --color-navy-900: #ffffff;
 
-  --color-gray-50:  #0a1628;
-  --color-gray-100: #0f1f3d;
+  --color-gray-50:  #20160e;
+  --color-gray-100: #9d6c35;
   --color-gray-200: #1d2f57;
   --color-gray-300: #2f4474;
   --color-gray-400: #5a6d99;

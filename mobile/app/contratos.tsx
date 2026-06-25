@@ -3,12 +3,13 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal,
   KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../hooks/use-contracts';
 import { useAuth } from '../lib/auth';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
+import { Skeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
@@ -118,7 +119,6 @@ function ContractCard({
 }
 
 export default function ContratosScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const { data: contracts, isLoading, refetch, isRefetching } = useContracts();
@@ -145,7 +145,7 @@ export default function ContratosScreen() {
   const others = contracts?.filter((c) => c.status !== 'pending') ?? [];
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <View style={s.root}>
       <ScreenHeader
         title="Contratos"
         showBack
@@ -160,32 +160,51 @@ export default function ContratosScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
       >
-        {!contracts?.length ? (
+        {isLoading && pending.length === 0 && others.length === 0 ? (
+          <View style={{ gap: space[3] }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={i} style={cStyles.card}>
+                <View style={cStyles.cardHeader}>
+                  <View style={{ flex: 1, gap: space[1] + 2 }}>
+                    <Skeleton width={80} height={18} borderRadius={radius.full} />
+                    <Skeleton width="65%" height={14} />
+                    <Skeleton width="45%" height={11} />
+                  </View>
+                  <Skeleton width={14} height={14} />
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : !contracts?.length ? (
           <EmptyState
             icon="document-text-outline"
             title="Sin contratos"
             message={isEstab ? 'Creá un contrato digital para que el propietario lo firme desde la app.' : 'No tenés contratos pendientes por el momento.'}
-            tint={colors.primary}
+            tint={colors.brand}
           />
         ) : (
           <>
             {pending.length > 0 && (
               <View style={s.group}>
                 <Text style={s.groupLabel}>PENDIENTES ({pending.length})</Text>
-                {pending.map((c) => (
-                  <ContractCard key={c.id} contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
-                    onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                {pending.map((c, index) => (
+                  <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                    <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
+                      onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                  </Animated.View>
                 ))}
               </View>
             )}
             {others.length > 0 && (
               <View style={s.group}>
                 <Text style={s.groupLabel}>HISTORIAL</Text>
-                {others.map((c) => (
-                  <ContractCard key={c.id} contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
-                    onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                {others.map((c, index) => (
+                  <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                    <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
+                      onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                  </Animated.View>
                 ))}
               </View>
             )}
@@ -378,9 +397,9 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.gray50 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginRight: space[2] },
-  backBtnText: { fontSize: 28, color: colors.primary, lineHeight: 32, marginTop: -2 },
+  backBtnText: { fontSize: 28, color: colors.brand, lineHeight: 32, marginTop: -2 },
   headerTitle: { flex: 1, fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
-  addBtn: { borderRadius: radius.md, backgroundColor: colors.primary, paddingHorizontal: space[3], paddingVertical: space[2] },
+  addBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: space[3], paddingVertical: space[2] },
   addBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   content: { padding: space[4], gap: space[4], paddingBottom: space[10] },
   empty: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
@@ -401,11 +420,11 @@ const s = StyleSheet.create({
   hint: { fontSize: text.xs, color: colors.gray400, marginTop: space[2] },
   cancelBtn: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, paddingVertical: space[3] + 1, alignItems: 'center' },
   cancelBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
-  submitBtn: { borderRadius: radius.md, backgroundColor: colors.primary, paddingVertical: space[3] + 1, alignItems: 'center' },
+  submitBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingVertical: space[3] + 1, alignItems: 'center' },
   submitBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
   signSubmitBtn: { borderRadius: radius.md, backgroundColor: '#16a34a', paddingVertical: space[3] + 1, alignItems: 'center' },
   rejectSubmitBtn: { borderRadius: radius.md, backgroundColor: colors.red500, paddingVertical: space[3] + 1, alignItems: 'center' },
-  searchBtn: { borderRadius: radius.md, backgroundColor: colors.primary, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
+  searchBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
   searchBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
   userFoundIcon: { fontSize: 18, color: '#16a34a' },
@@ -420,8 +439,8 @@ const cStyles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], gap: space[3] },
   statusBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1] },
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
-  horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1], backgroundColor: '#ede9fe' },
-  horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#6d28d9' },
+  horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1], backgroundColor: '#f3e3cc' },
+  horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#7f5628' },
   title: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
   meta: { fontSize: text.xs, color: colors.gray400 },
   chevron: { fontSize: 12, color: colors.gray400, marginTop: 2 },

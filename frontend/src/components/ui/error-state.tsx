@@ -29,7 +29,7 @@ export function ErrorState({
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger-50 text-danger-500">
         <Icon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
       </div>
-      <p className="text-sm font-semibold text-navy-900">{title}</p>
+      <p className="text-sm font-semibold text-gray-900">{title}</p>
       <p className="mt-1 max-w-sm text-sm text-slate-500">{message}</p>
       {onRetry && (
         <Button className="mt-5" variant="secondary" onClick={onRetry} iconLeft={<RotateCw className="h-4 w-4" />}>

@@ -14,6 +14,7 @@ interface FeedPage {
 interface FeedParams {
   include_hidden?: boolean;
   horse_id?: string;
+  author_id?: string;
   limit?: number;
 }
 

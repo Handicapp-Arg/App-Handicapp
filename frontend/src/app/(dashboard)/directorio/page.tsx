@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useHorses } from '@/hooks/use-horses';
@@ -62,7 +62,7 @@ function RequestModal({
           </div>
           <p className="text-base font-bold text-gray-900">¡Solicitud enviada!</p>
           <p className="mt-2 text-sm text-gray-400">{establishment.name} recibirá una notificación y podrá aceptar o rechazar tu solicitud.</p>
-          <button onClick={onClose} className="mt-6 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white cursor-pointer">Cerrar</button>
+          <button onClick={onClose} className="mt-6 w-full rounded-xl bg-[#9d6c35] py-2.5 text-sm font-semibold text-white cursor-pointer">Cerrar</button>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ function RequestModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-[#0f1f3d] px-6 py-4">
+        <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
           <p className="font-bold text-white">Solicitar alojamiento</p>
           <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
         </div>
@@ -88,7 +88,7 @@ function RequestModal({
               <select
                 value={horseId}
                 onChange={(e) => setHorseId(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#0f1f3d] focus:outline-none"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#9d6c35] focus:outline-none"
               >
                 <option value="">Seleccionar caballo...</option>
                 {available.map((h) => (
@@ -107,7 +107,7 @@ function RequestModal({
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
               placeholder="Presentate brevemente o aclará lo que necesitás..."
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm resize-none focus:border-[#0f1f3d] focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:outline-none"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ function RequestModal({
           <button
             onClick={handleSubmit}
             disabled={!horseId || !available.length || create.isPending}
-            className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#0a1628] transition"
+            className="flex-1 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#20160e] transition"
           >
             {create.isPending ? 'Enviando...' : 'Enviar solicitud'}
           </button>
@@ -139,10 +139,11 @@ export default function DirectorioPage() {
 
   const isPropietario = user?.role === 'propietario';
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = (v: string) => {
     setSearch(v);
-    clearTimeout((window as any).__directorioTimer);
-    (window as any).__directorioTimer = setTimeout(() => setDebouncedSearch(v), 400);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(v), 400);
   };
 
   const pendingForEstab = (estabId: string) =>
@@ -182,14 +183,14 @@ export default function DirectorioPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Buscar por nombre..."
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-[#0f1f3d] focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/8"
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-[#9d6c35] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/8"
         />
       </div>
 
       {/* Lista */}
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
         </div>
       ) : !items?.length ? (
         <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
@@ -206,7 +207,7 @@ export default function DirectorioPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white text-lg font-bold"
-                    style={{ backgroundColor: '#0f1f3d' }}
+                    style={{ backgroundColor: '#9d6c35' }}
                   >
                     {item.name[0].toUpperCase()}
                   </div>
@@ -234,7 +235,7 @@ export default function DirectorioPage() {
                     ) : (
                       <button
                         onClick={() => setRequesting(item)}
-                        className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a1628] transition cursor-pointer"
+                        className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#20160e] transition cursor-pointer"
                       >
                         Solicitar alojamiento
                       </button>

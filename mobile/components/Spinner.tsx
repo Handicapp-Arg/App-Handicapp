@@ -4,7 +4,7 @@ import { colors } from '../lib/colors';
 export function Spinner({ size = 'large' }: { size?: 'small' | 'large' }) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size={size} color={colors.primary} />
+      <ActivityIndicator size={size} color={colors.brand} />
     </View>
   );
 }

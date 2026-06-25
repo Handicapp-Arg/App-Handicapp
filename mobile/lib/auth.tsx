@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSegments } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from './secure-storage';
 import api, { saveToken, clearToken, getToken, setAuthFailureCallback } from './api';
 import { registerForPushNotifications, savePushToken } from './push-notifications';
 import type { User } from '../../packages/shared/src';

@@ -3,12 +3,14 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
   Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBills, useSendBill, useApproveBill, useDisputeBill, STATUS_META, monthLabel } from '../../hooks/use-billing';
 import { formatCurrency } from '../../lib/currency';
 import { useAuth } from '../../lib/auth';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { EmptyState } from '../../components/EmptyState';
+import { Skeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
@@ -61,8 +63,8 @@ function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void
 }
 
 export default function FacturacionScreen() {
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const { data: bills, isLoading, refetch, isRefetching } = useBills();
   const sendBill = useSendBill();
   const approveBill = useApproveBill();
@@ -89,24 +91,45 @@ export default function FacturacionScreen() {
 
   return (
     <View style={[layout.screen, { paddingTop: insets.top }]}>
-      <ScreenHeader title="Facturación" />
-
-      {isLoading ? null : !bills?.length ? (
-        <EmptyState
-          icon="receipt-outline"
-          title={isEst ? 'Sin facturas creadas' : 'Sin facturas recibidas'}
-          message={isEst ? 'Creá facturas de pensión para enviar a los propietarios.' : 'Las facturas del establecimiento aparecerán aquí para que puedas aprobarlas.'}
-          tint="#8b5cf6"
-        />
+      {isLoading ? (
+        <View>
+          <ScreenHeader scrollable title="Facturación" />
+          <View style={{ padding: space[4], gap: space[3] }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={i} style={styles.billCard}>
+                <View style={styles.billHeader}>
+                  <View style={{ flex: 1, gap: 6 }}>
+                    <Skeleton width={70} height={18} borderRadius={radius.full} />
+                    <Skeleton width="55%" height={13} />
+                    <Skeleton width="35%" height={11} />
+                  </View>
+                  <Skeleton width={84} height={20} />
+                </View>
+                <Skeleton width="100%" height={44} borderRadius={radius.md} />
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : !bills?.length ? (
+        <View>
+          <ScreenHeader scrollable title="Facturación" />
+          <EmptyState
+            icon="receipt-outline"
+            title={isEst ? 'Sin facturas creadas' : 'Sin facturas recibidas'}
+            message={isEst ? 'Creá facturas de pensión para enviar a los propietarios.' : 'Las facturas del establecimiento aparecerán aquí para que puedas aprobarlas.'}
+            tint="#9d6c35"
+          />
+        </View>
       ) : (
         <FlatList
           data={bills}
           keyExtractor={(b) => b.id}
-          contentContainerStyle={{ padding: space[4], paddingBottom: space[8], gap: space[3] }}
-          renderItem={({ item: bill }) => {
+          contentContainerStyle={{ paddingBottom: space[8], gap: space[3] }}
+          ListHeaderComponent={<ScreenHeader scrollable title="Facturación" />}
+          renderItem={({ item: bill, index }) => {
             const meta = STATUS_META[bill.status];
             return (
-              <View style={styles.billCard}>
+              <Animated.View style={[styles.billCard, { marginHorizontal: space[4] }]} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 {/* Header */}
                 <View style={styles.billHeader}>
                   <View style={{ flex: 1, gap: 4 }}>
@@ -150,10 +173,10 @@ export default function FacturacionScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-              </View>
+              </Animated.View>
             );
           }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
           showsVerticalScrollIndicator={false}
         />
       )}

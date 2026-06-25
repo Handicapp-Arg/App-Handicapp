@@ -4,8 +4,8 @@ import {
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
   Alert, Share,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { CheckCircle2, Share2, X, XCircle } from 'lucide-react-native';
 import {
   useMyOrganizations, useOrganization, useOrgInvitations,
   useCreateInvitation, useCancelInvitation, useRemoveMember,
@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../lib/auth';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
+import { ListRowSkeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
@@ -110,7 +111,7 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
             <>
               <View style={s.modalBody}>
                 <View style={s.successIcon}>
-                  <Ionicons name="checkmark-circle" size={48} color="#16a34a" />
+                  <CheckCircle2 size={48} color="#16a34a" strokeWidth={2} />
                 </View>
                 <Text style={{ fontSize: text.sm, color: colors.gray500, textAlign: 'center', marginBottom: 12 }}>
                   Compartí este link con la persona invitada. Válido por 7 días.
@@ -133,7 +134,6 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
 }
 
 export default function OrganizacionScreen() {
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: myOrgs, isLoading: loadingOrgs } = useMyOrganizations();
   const orgId = myOrgs?.[0]?.id ?? null;
@@ -148,15 +148,18 @@ export default function OrganizacionScreen() {
 
   if (loadingOrgs || loadingOrg) {
     return (
-      <View style={[s.root, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={s.root}>
+        <ScreenHeader title="Organización" showBack />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
+        </View>
       </View>
     );
   }
 
   if (!org) {
     return (
-      <View style={[s.root, { paddingTop: insets.top }]}>
+      <View style={s.root}>
         <ScreenHeader title="Organización" showBack />
         <EmptyState
           icon="business-outline"
@@ -171,7 +174,7 @@ export default function OrganizacionScreen() {
   const pct = horseLimit ? Math.min((org.horse_count / horseLimit) * 100, 100) : 0;
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <View style={s.root}>
       <ScreenHeader title="Organización" showBack />
 
       <ScrollView contentContainerStyle={{ padding: space[4], paddingBottom: 40, gap: space[4] }} showsVerticalScrollIndicator={false}>
@@ -196,7 +199,7 @@ export default function OrganizacionScreen() {
               <View style={s.progressTrack}>
                 <View style={[s.progressFill, {
                   width: `${pct}%` as any,
-                  backgroundColor: pct >= 100 ? colors.red500 : pct >= 80 ? colors.amber600 : colors.primary,
+                  backgroundColor: pct >= 100 ? colors.red500 : pct >= 80 ? colors.amber600 : colors.brand,
                 }]} />
               </View>
             </View>
@@ -207,8 +210,8 @@ export default function OrganizacionScreen() {
         {invitations && invitations.length > 0 && (
           <View style={{ gap: 8 }}>
             <Text style={s.sectionLabel}>Invitaciones pendientes ({invitations.length})</Text>
-            {invitations.map((inv) => (
-              <View key={inv.id} style={s.invCard}>
+            {invitations.map((inv, index) => (
+              <Animated.View key={inv.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.invCard}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.invEmail}>{inv.email}</Text>
                   <Text style={s.invMeta}>{ROLE_LABELS[inv.role_in_org]} · expira {new Date(inv.expires_at).toLocaleDateString('es-AR')}</Text>
@@ -218,15 +221,15 @@ export default function OrganizacionScreen() {
                     onPress={() => Share.share({ message: `Te invito a HandicApp: ${getInviteUrl(inv.token)}` })}
                     style={s.invBtn}
                   >
-                    <Ionicons name="share-outline" size={14} color={colors.primary} />
+                    <Share2 size={14} color={colors.brand} strokeWidth={2} />
                   </TouchableOpacity>
                   {isAdmin && (
                     <TouchableOpacity onPress={() => cancelInv.mutate(inv.id)} style={s.invBtn}>
-                      <Ionicons name="close" size={14} color={colors.red500} />
+                      <X size={14} color={colors.red500} strokeWidth={2} />
                     </TouchableOpacity>
                   )}
                 </View>
-              </View>
+              </Animated.View>
             ))}
           </View>
         )}
@@ -247,10 +250,10 @@ export default function OrganizacionScreen() {
           </View>
 
           <View style={{ gap: 8 }}>
-            {org.members.map((m) => {
+            {org.members.map((m, index) => {
               const isOrgOwner = m.user_id === org.owner_id;
               return (
-                <View key={m.id} style={s.memberCard}>
+                <Animated.View key={m.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.memberCard}>
                   <View style={s.memberAvatar}>
                     <Text style={s.memberAvatarText}>{m.user.name.charAt(0).toUpperCase()}</Text>
                   </View>
@@ -275,10 +278,10 @@ export default function OrganizacionScreen() {
                         ]);
                       }}
                     >
-                      <Ionicons name="close-circle-outline" size={18} color={colors.gray300} />
+                      <XCircle size={18} color={colors.gray300} strokeWidth={2} />
                     </TouchableOpacity>
                   )}
-                </View>
+                </Animated.View>
               );
             })}
           </View>
@@ -311,11 +314,11 @@ const s = StyleSheet.create({
   invMeta: { fontSize: 11, color: '#b45309', marginTop: 1 },
   invBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center' },
 
-  inviteBtn: { borderRadius: radius.md, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6 },
+  inviteBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 6 },
   inviteBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
 
   memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: colors.white, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: '#e8edf5' },
-  memberAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  memberAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
   memberAvatarText: { fontSize: 14, fontWeight: weight.bold, color: colors.white },
   memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
   memberEmail: { fontSize: 11, color: colors.gray400, marginTop: 1 },
@@ -336,12 +339,12 @@ const s = StyleSheet.create({
   input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: colors.gray900, backgroundColor: colors.gray50 },
 
   roleCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, padding: 12 },
-  roleCardActive: { borderColor: colors.primary, backgroundColor: 'rgba(15,31,61,0.04)' },
+  roleCardActive: { borderColor: colors.brand, backgroundColor: 'rgba(15,31,61,0.04)' },
   radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.gray300, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
-  radioActive: { borderColor: colors.primary },
-  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  radioActive: { borderColor: colors.brand },
+  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brand },
   roleCardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray700 },
-  roleCardTitleActive: { color: colors.primary },
+  roleCardTitleActive: { color: colors.brand },
   roleCardDesc: { fontSize: 11, color: colors.gray400, marginTop: 2, lineHeight: 16 },
 
   successIcon: { alignItems: 'center', marginBottom: 12 },
@@ -349,7 +352,7 @@ const s = StyleSheet.create({
   linkText: { fontSize: 11, color: colors.gray700, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
 
   btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.primary },
+  btnPrimary: { backgroundColor: colors.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
   btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },

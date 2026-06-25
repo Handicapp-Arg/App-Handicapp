@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '../../lib/api';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight } from '../../styles/tokens';
+
+const LOGO = 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png';
 
 export default function OlvideContrasenaScreen() {
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function OlvideContrasenaScreen() {
   if (sent) {
     return (
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <Image source={{ uri: LOGO }} style={styles.logo} resizeMode="contain" />
         <View style={styles.successCard}>
           <View style={styles.checkCircle}>
             <Text style={styles.checkText}>✓</Text>
@@ -51,6 +54,7 @@ export default function OlvideContrasenaScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <Image source={{ uri: LOGO }} style={styles.logo} resizeMode="contain" />
       <View style={styles.card}>
         <Text style={styles.title}>Recuperar contraseña</Text>
         <Text style={styles.subtitle}>
@@ -94,7 +98,8 @@ export default function OlvideContrasenaScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.primary, justifyContent: 'center', padding: space[6] },
+  root: { flex: 1, backgroundColor: colors.espresso, justifyContent: 'center', padding: space[6] },
+  logo: { width: 150, height: 64, alignSelf: 'center', marginBottom: space[5] },
   card: { backgroundColor: colors.white, borderRadius: radius['2xl'], padding: space[6], gap: space[4] },
   title: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
   subtitle: { fontSize: text.sm, color: colors.gray500, lineHeight: 20 },
@@ -107,12 +112,12 @@ const styles = StyleSheet.create({
   },
   error: { fontSize: text.sm, color: colors.red700, backgroundColor: colors.red50, borderRadius: radius.md, padding: space[3] },
   btn: {
-    backgroundColor: colors.primary, borderRadius: radius.md,
+    backgroundColor: colors.brand, borderRadius: radius.md,
     paddingVertical: space[3] + 2, alignItems: 'center',
   },
   btnText: { color: colors.white, fontSize: text.base, fontWeight: weight.bold },
   linkWrap: { alignItems: 'center' },
-  link: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.primary },
+  link: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.brand },
   // success
   successCard: { backgroundColor: colors.white, borderRadius: radius['2xl'], padding: space[6], gap: space[4], alignItems: 'center' },
   checkCircle: {
@@ -123,5 +128,5 @@ const styles = StyleSheet.create({
   successTitle: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
   successMsg: { fontSize: text.sm, color: colors.gray500, textAlign: 'center', lineHeight: 20 },
   backBtn: { marginTop: space[2] },
-  backBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.primary },
+  backBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.brand },
 });

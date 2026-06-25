@@ -130,7 +130,7 @@ export function Navbar() {
   return (
     <>
       {/* ─── Top bar (solo en mobile / ventana angosta) ─── */}
-      <header className="md:hidden sticky top-0 z-40 bg-[#0f1f3d] shadow-lg">
+      <header className="md:hidden sticky top-0 z-40 bg-[#20160e] shadow-lg">
         <div className="flex h-14 items-center justify-between px-4 gap-3">
 
           {/* Hamburguesa */}
@@ -183,7 +183,7 @@ export function Navbar() {
           />
 
           {/* Panel */}
-          <aside className="relative flex h-full w-[280px] flex-col bg-[#0f1f3d] text-white shadow-2xl overflow-y-auto">
+          <aside className="relative flex h-full w-[280px] flex-col bg-[#20160e] text-white shadow-2xl overflow-y-auto">
 
             {/* Header del drawer */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">

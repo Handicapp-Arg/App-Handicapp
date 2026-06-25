@@ -1,6 +1,12 @@
 export const colors = {
   primary: '#0f1f3d',
   primaryLight: '#1a3366',
+  // Marca HandicApp — cuero caramelo
+  brand: '#9d6c35',
+  brand300: '#d2aa78',
+  brand400: '#bd8a4d',
+  brand600: '#7f5628',
+  espresso: '#1b130c',   // fondo oscuro (login/auth)
   white: '#ffffff',
   gray50: '#f9fafb',
   gray100: '#f3f4f6',
@@ -30,7 +36,7 @@ export const colors = {
 export const eventTypeColors: Record<string, { bg: string; text: string; label: string }> = {
   salud:         { bg: colors.red50,    text: colors.red700,    label: 'Salud' },
   entrenamiento: { bg: colors.yellow50, text: colors.yellow700, label: 'Entrenamiento' },
-  gasto:         { bg: colors.purple50, text: colors.purple700, label: 'Gasto' },
+  gasto:         { bg: '#faf3e9',       text: colors.brand,     label: 'Gasto' },
   nota:          { bg: colors.gray100,  text: colors.gray700,   label: 'Nota' },
   carrera:       { bg: '#fef3c7',       text: '#92400e',        label: 'Carrera' },
 };

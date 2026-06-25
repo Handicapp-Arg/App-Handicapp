@@ -42,7 +42,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             className={`flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition cursor-pointer ${
-              isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-[#0f1f3d] hover:bg-[#0f1f3d]/90'
+              isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-[#9d6c35] hover:bg-[#9d6c35]/90'
             }`}
           >
             {confirmLabel}

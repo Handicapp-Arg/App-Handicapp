@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { colors } from '../lib/colors';
 import { space, text, weight, radius } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
@@ -13,25 +13,27 @@ interface ScreenHeaderProps {
   right?: React.ReactNode;
   /** Usa fondo primario oscuro en lugar de blanco */
   dark?: boolean;
+  /** Cuando va dentro de un scroll: el contenedor ya aplica el safe-area top */
+  scrollable?: boolean;
 }
 
-export function ScreenHeader({ title, subtitle, showBack, right, dark = false }: ScreenHeaderProps) {
+export function ScreenHeader({ title, subtitle, showBack, right, dark = false, scrollable = false }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   return (
     <View style={[
       styles.wrap,
-      { paddingTop: insets.top + space[3] },
+      { paddingTop: scrollable ? space[3] : insets.top + space[3] },
       dark ? styles.wrapDark : styles.wrapLight,
     ]}>
       <View style={styles.row}>
         {showBack && (
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons
-              name="chevron-back"
+            <ChevronLeft
               size={22}
               color={dark ? colors.white : colors.gray900}
+              strokeWidth={2}
             />
           </TouchableOpacity>
         )}
@@ -66,19 +68,20 @@ export function HeaderButton({
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'ghost';
-  icon?: React.ComponentProps<typeof Ionicons>['name'];
+  icon?: LucideIcon;
 }) {
+  const Icon = icon;
   return (
     <TouchableOpacity
       style={[styles.headerBtn, variant === 'ghost' ? styles.headerBtnGhost : styles.headerBtnPrimary]}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      {icon && (
-        <Ionicons
-          name={icon}
+      {Icon && (
+        <Icon
           size={14}
-          color={variant === 'ghost' ? colors.primary : colors.white}
+          color={variant === 'ghost' ? colors.brand : colors.white}
+          strokeWidth={2}
           style={{ marginRight: 4 }}
         />
       )}
@@ -93,14 +96,12 @@ const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: space[4],
     paddingBottom: space[3],
-    borderBottomWidth: 1,
   },
   wrapLight: {
-    backgroundColor: colors.white,
-    borderBottomColor: colors.gray100,
+    backgroundColor: 'transparent',
   },
   wrapDark: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.espresso,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   row: {
@@ -118,9 +119,9 @@ const styles = StyleSheet.create({
   },
   titleBlock: { flex: 1 },
   title: {
-    fontSize: text.lg,
-    fontWeight: weight.extrabold,
-    fontFamily: fontFamily.extrabold,
+    fontSize: text.xl,
+    fontWeight: weight.semibold,
+    fontFamily: fontFamily.semibold,
     letterSpacing: -0.3,
   },
   titleLight: { color: colors.gray900 },
@@ -136,9 +137,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[3],
     paddingVertical: space[2],
   },
-  headerBtnPrimary: { backgroundColor: colors.primary },
+  headerBtnPrimary: { backgroundColor: colors.brand },
   headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.gray200 },
   headerBtnText: { fontSize: text.sm, fontWeight: weight.bold, fontFamily: fontFamily.bold },
   headerBtnTextPrimary: { color: colors.white },
-  headerBtnTextGhost: { color: colors.primary },
+  headerBtnTextGhost: { color: colors.brand },
 });

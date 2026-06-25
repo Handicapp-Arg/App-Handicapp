@@ -9,6 +9,7 @@ import { User } from './user.entity';
 import { RefreshToken } from './refresh-token.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { EmailModule } from '../email/email.module';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { EmailModule } from '../email/email.module';
     EmailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, DevSeedService],
+  providers: [AuthService, JwtStrategy, DevSeedService, CloudinaryService],
   exports: [AuthService, PassportModule, JwtModule],
 })
 export class AuthModule {}

@@ -30,7 +30,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             'disabled:cursor-not-allowed disabled:opacity-50',
             error
               ? 'border-danger-500/40 focus:border-danger-500 focus:ring-danger-500/10'
-              : 'border-slate-200 focus:border-navy-700 focus:ring-navy-700/10',
+              : 'border-slate-200 focus:border-clay-500 focus:ring-clay-500/10',
             className,
           )}
           {...props}

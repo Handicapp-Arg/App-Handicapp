@@ -16,8 +16,8 @@ const roleLabels: Record<string, string> = {
   establecimiento: 'Establecimiento',
 };
 
-const BTN_NAVY = { backgroundColor: '#0f1f3d' } as const;
-const BTN_NAVY_HOVER = '#1a2f5a';
+const BTN_NAVY = { backgroundColor: '#9d6c35' } as const;
+const BTN_NAVY_HOVER = '#7f5628';
 
 function RoleNotifCard({
   role,
@@ -95,7 +95,7 @@ function RoleNotifCard({
                 checked={state[et.value] || false}
                 onChange={() => toggle(et.value)}
                 className="h-4 w-4 cursor-pointer"
-                style={{ accentColor: '#0f1f3d' }}
+                style={{ accentColor: '#9d6c35' }}
               />
               <span className="text-sm text-gray-700">{et.label}</span>
             </label>
@@ -120,7 +120,7 @@ export default function NotificacionesConfigPage() {
 
   if (loadingSettings || loadingRoles || loadingTypes) return (
     <div className="flex justify-center py-20">
-      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#0f1f3d' }} />
+      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
     </div>
   );
 

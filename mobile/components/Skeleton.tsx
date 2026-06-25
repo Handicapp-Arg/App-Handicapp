@@ -1,5 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import { useEffect } from 'react';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import Animated, {
+  useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, Easing,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../lib/colors';
 import { radius } from '../styles/tokens';
 
@@ -10,28 +14,29 @@ interface SkeletonProps {
   style?: ViewStyle;
 }
 
+/** Bloque de carga con shimmer (un brillo que se desliza), estilo apps modernas. */
 export function Skeleton({ width = '100%', height = 16, borderRadius = radius.sm, style }: SkeletonProps) {
-  const opacity = useRef(new Animated.Value(0.4)).current;
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
+    progress.value = withRepeat(withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }), -1, false);
   }, []);
 
+  const shimmer = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [-180, 180]) }],
+  }));
+
   return (
-    <Animated.View
-      style={[
-        styles.base,
-        { width: width as any, height, borderRadius, opacity },
-        style,
-      ]}
-    />
+    <View style={[styles.base, { width: width as any, height, borderRadius }, style]}>
+      <Animated.View style={[StyleSheet.absoluteFill, shimmer]}>
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,255,0.6)', 'transparent']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -77,13 +82,46 @@ export function HomeSkeleton() {
   );
 }
 
+/** Skeleton para una fila de lista genérica (avatar + 2 líneas) */
+export function ListRowSkeleton() {
+  return (
+    <View style={sk.listRow}>
+      <Skeleton width={44} height={44} borderRadius={radius.full} />
+      <View style={{ flex: 1, gap: 6 }}>
+        <Skeleton height={13} width="60%" />
+        <Skeleton height={11} width="38%" />
+      </View>
+    </View>
+  );
+}
+
+/** Skeleton para una publicación del muro */
+export function PostSkeleton() {
+  return (
+    <View style={sk.post}>
+      <View style={sk.postHead}>
+        <Skeleton width={40} height={40} borderRadius={radius.full} />
+        <View style={{ gap: 6 }}>
+          <Skeleton height={13} width={120} />
+          <Skeleton height={10} width={70} />
+        </View>
+      </View>
+      <Skeleton height={12} width="92%" style={{ marginTop: 12 }} />
+      <Skeleton height={12} width="70%" style={{ marginTop: 6 }} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  base: { backgroundColor: colors.gray200 },
+  base: { backgroundColor: colors.gray200, overflow: 'hidden' },
 });
 
 const sk = StyleSheet.create({
   card: { flex: 1, backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.gray100 },
   eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: colors.white, marginBottom: 2 },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: colors.white, marginBottom: 8, borderRadius: radius.lg },
+  post: { backgroundColor: colors.white, borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12 },
+  postHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsRow: { flexDirection: 'row', gap: 12 },
   homePad: { padding: 16, gap: 0 },
 });

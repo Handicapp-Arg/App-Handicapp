@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, TextInput, Alert,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
+import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
 import { space, text, radius, weight } from '../styles/tokens';
 import { useAuth } from '../lib/auth';
@@ -37,7 +39,7 @@ const STATUS_META: Record<SuperAdminOrg['status'], { bg: string; text: string; l
 };
 
 function MetricBox({ label, value, sub, tone = 'navy' }: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'gray' }) {
-  const bg = tone === 'navy' ? colors.primary : tone === 'gold' ? colors.amber50 : colors.white;
+  const bg = tone === 'navy' ? colors.brand : tone === 'gold' ? colors.amber50 : colors.white;
   const fg = tone === 'navy' ? colors.white : tone === 'gold' ? colors.amber600 : colors.gray900;
   const labelColor = tone === 'navy' ? 'rgba(255,255,255,0.6)' : tone === 'gold' ? colors.amber600 : colors.gray400;
   return (
@@ -95,8 +97,8 @@ export default function SuperAdminScreen() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
 
-  const { data: metrics } = useSuperAdminMetrics();
-  const { data: orgs, isLoading, isError, refetch, isRefetching } = useSuperAdminOrgs({ search });
+  const { data: metrics } = useSuperAdminMetrics(user?.role === 'admin');
+  const { data: orgs, isLoading, isError, refetch, isRefetching } = useSuperAdminOrgs({ search }, user?.role === 'admin');
   const setStatus = useSetOrgStatus();
 
   if (user?.role !== 'admin') {
@@ -121,7 +123,7 @@ export default function SuperAdminScreen() {
         data={orgs ?? []}
         keyExtractor={(o) => o.id}
         contentContainerStyle={s.list}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
         ListHeaderComponent={
           <View style={{ gap: space[3], marginBottom: space[3] }}>
             {metrics && (
@@ -161,26 +163,30 @@ export default function SuperAdminScreen() {
             />
           </View>
         }
-        renderItem={({ item }) => (
-          <OrgRow
-            org={item}
-            pending={setStatus.isPending}
-            onToggle={() => {
-              const next = item.status === 'active' ? 'suspended' : 'active';
-              Alert.alert(
-                next === 'suspended' ? 'Suspender organización' : 'Reactivar organización',
-                `${next === 'suspended' ? 'Suspender' : 'Reactivar'} "${item.name}"?`,
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Confirmar', onPress: () => setStatus.mutate({ id: item.id, status: next }) },
-                ],
-              );
-            }}
-          />
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+            <OrgRow
+              org={item}
+              pending={setStatus.isPending}
+              onToggle={() => {
+                const next = item.status === 'active' ? 'suspended' : 'active';
+                Alert.alert(
+                  next === 'suspended' ? 'Suspender organización' : 'Reactivar organización',
+                  `${next === 'suspended' ? 'Suspender' : 'Reactivar'} "${item.name}"?`,
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Confirmar', onPress: () => setStatus.mutate({ id: item.id, status: next }) },
+                  ],
+                );
+              }}
+            />
+          </Animated.View>
         )}
         ListEmptyComponent={
           isLoading ? (
-            <View style={s.center}><ActivityIndicator color={colors.primary} /></View>
+            <View style={{ gap: space[3] }}>
+              {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
+            </View>
           ) : isError ? (
             <EmptyState icon="cloud-offline-outline" title="No pudimos cargar las orgs" actionLabel="Reintentar" onAction={() => refetch()} tint={colors.red500} />
           ) : (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import {
@@ -26,14 +26,13 @@ import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
 import { Plus, Search as SearchIcon, Filter as FilterIcon } from 'lucide-react';
 import { HorseIllustration } from '@/components/illustrations';
-import { PageHeader } from '@/components/ui/page-header';
 import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import type { Horse, HorseOwnership } from '@/types';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#0f1f3d] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/10';
+  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-clay-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-clay-500/12';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -107,7 +106,7 @@ function OwnershipSection({
         <p className="text-sm font-medium text-gray-700">Tenencia</p>
         {canManage && !editing && (
           <button type="button" onClick={startEditing}
-            className="text-xs font-medium text-[#0f1f3d] hover:underline cursor-pointer">
+            className="text-xs font-medium text-[#9d6c35] hover:underline cursor-pointer">
             Editar
           </button>
         )}
@@ -216,7 +215,7 @@ function OwnershipSection({
 
           {availablePropietarios.length > 0 && (
             <button type="button" onClick={addEntry}
-              className="flex items-center gap-1 text-xs font-medium text-[#0f1f3d] hover:underline cursor-pointer">
+              className="flex items-center gap-1 text-xs font-medium text-[#9d6c35] hover:underline cursor-pointer">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
@@ -228,7 +227,7 @@ function OwnershipSection({
 
           <div className="flex gap-2">
             <button type="button" onClick={save} disabled={updateOwnership.isPending}
-              className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer">
+              className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer">
               {updateOwnership.isPending ? 'Guardando...' : 'Guardar tenencia'}
             </button>
             <button type="button" onClick={() => setEditing(false)}
@@ -411,7 +410,7 @@ function EditModal({
     <>
       {/* ── MOBILE: pantalla completa ── */}
       <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
-        <div className="flex items-center justify-between bg-[#0f1f3d] px-5 py-4">
+        <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <p className="font-bold text-white">Editar caballo</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
         </div>
@@ -423,7 +422,7 @@ function EditModal({
           </div>
           <div className="border-t border-gray-100 p-5 space-y-3">
             <button type="submit" disabled={isPending}
-              className="w-full rounded-xl bg-[#0f1f3d] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
+              className="w-full rounded-xl bg-[#9d6c35] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
               {isPending ? 'Guardando...' : 'Guardar cambios'}
             </button>
             <button type="button" onClick={onClose}
@@ -438,7 +437,7 @@ function EditModal({
       <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
         <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
-          <div className="flex items-center justify-between bg-[#0f1f3d] rounded-t-2xl px-6 py-4">
+          <div className="flex items-center justify-between bg-[#9d6c35] rounded-t-2xl px-6 py-4">
             <p className="font-bold text-white">Editar caballo</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
           </div>
@@ -450,7 +449,7 @@ function EditModal({
             </div>
             <div className="flex gap-2 border-t border-gray-100 p-4">
               <button type="submit" disabled={isPending}
-                className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
+                className="flex-1 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
                 {isPending ? 'Guardando...' : 'Guardar cambios'}
               </button>
               <button type="button" onClick={onClose}
@@ -491,6 +490,8 @@ export default function CaballosPage() {
   const [microchip, setMicrochip] = useState('');
   const [breedId, setBreedId] = useState('');
   const [activityId, setActivityId] = useState('');
+  const [sex, setSex] = useState('');
+  const [color, setColor] = useState('');
 
   const submitClaim = useSubmitClaim();
   const [editingHorse, setEditingHorse] = useState<Horse | null>(null);
@@ -499,6 +500,19 @@ export default function CaballosPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [recordMatches, setRecordMatches] = useState<{ matches: HorseRecord[]; microchip: string; birthDate: string } | null>(null);
+
+  // Abrir el modal de edición al llegar con ?edit={id} (desde el detalle del caballo)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !horses) return;
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (editId) {
+      const h = horses.find((x) => x.id === editId);
+      if (h) {
+        setEditingHorse(h);
+        router.replace('/caballos');
+      }
+    }
+  }, [horses, router]);
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -519,6 +533,8 @@ export default function CaballosPage() {
         microchip: microchip || undefined,
         breed_id: breedId || undefined,
         activity_id: activityId || undefined,
+        sex: sex || undefined,
+        color: color || undefined,
       });
       if (imageFiles.length > 0) {
         try {
@@ -529,7 +545,7 @@ export default function CaballosPage() {
         }
       }
       setName(''); setBirthDate(''); setImageFiles([]); setEstablishmentId(''); setOwnerId('');
-      setMicrochip(''); setBreedId(''); setActivityId('');
+      setMicrochip(''); setBreedId(''); setActivityId(''); setSex(''); setColor('');
       setShowForm(false);
       if (result.record_matches.length > 0) {
         setRecordMatches({ matches: result.record_matches, microchip, birthDate });
@@ -564,8 +580,7 @@ export default function CaballosPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Caballos" />
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {[1,2,3,4,5,6].map((i) => <SkeletonCard key={i} />)}
         </div>
       </div>
@@ -649,7 +664,7 @@ export default function CaballosPage() {
                         setRecordMatches(null);
                       }}
                       disabled={submitClaim.isPending}
-                      className="shrink-0 rounded-lg bg-[#0f1f3d] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer"
+                      className="shrink-0 rounded-lg bg-[#9d6c35] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer"
                     >
                       {submitClaim.isPending ? '...' : 'Reclamar'}
                     </button>
@@ -685,19 +700,6 @@ export default function CaballosPage() {
         />
       )}
 
-      <PageHeader
-        title="Caballos"
-        badge={horses && horses.length > 0 ? { label: `${horses.length} en total`, tone: 'success' } : undefined}
-        action={can('horses', 'create') ? (
-          <Button
-            className="hidden md:inline-flex"
-            iconLeft={<Plus className="h-4 w-4" />}
-            onClick={() => { setCreateError(null); setShowForm(!showForm); }}
-          >
-            Nuevo caballo
-          </Button>
-        ) : undefined}
-      />
 
       {/* FAB mobile: arriba del bottom-nav */}
       {can('horses', 'create') && (
@@ -705,7 +707,7 @@ export default function CaballosPage() {
           onClick={() => { setCreateError(null); setShowForm(!showForm); }}
           className="md:hidden fixed right-4 z-40 flex items-center gap-2 rounded-full py-2 pl-2 pr-4 text-xs font-semibold text-white shadow-xl cursor-pointer"
           style={{
-            backgroundColor: '#0f1f3d',
+            backgroundColor: '#9d6c35',
             bottom: 'calc(env(safe-area-inset-bottom) + 4.5rem)',
           }}
         >
@@ -723,9 +725,9 @@ export default function CaballosPage() {
         <>
           {/* Mobile */}
           <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
-            <div className="flex items-center justify-between bg-[#0f1f3d] px-5 py-4">
+            <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
               <p className="font-bold text-white">Nuevo caballo</p>
-              <button onClick={closeCreateForm} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+              <button onClick={closeCreateForm} className="p-2 text-white/70 hover:text-white cursor-pointer">✕</button>
             </div>
             <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -782,7 +784,7 @@ export default function CaballosPage() {
               </div>
               <div className="border-t border-gray-100 p-5 space-y-3">
                 <button type="submit" disabled={createHorse.isPending || uploadImage.isPending}
-                  className="w-full rounded-xl bg-[#0f1f3d] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
+                  className="w-full rounded-xl bg-clay-500 py-3.5 text-sm font-semibold text-white hover:bg-clay-600 disabled:opacity-50 cursor-pointer">
                   {createHorse.isPending || uploadImage.isPending ? 'Creando...' : 'Crear caballo'}
                 </button>
                 <button type="button" onClick={closeCreateForm}
@@ -794,74 +796,103 @@ export default function CaballosPage() {
           </div>
 
           {/* Desktop */}
-          <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={closeCreateForm} />
+          <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50 backdrop-blur-sm" onClick={closeCreateForm} />
           <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-            <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
-              <div className="flex items-center justify-between bg-[#0f1f3d] rounded-t-2xl px-6 py-4">
-                <p className="font-bold text-white">Nuevo caballo</p>
-                <button onClick={closeCreateForm} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+            <div className="relative flex flex-col w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '90dvh' }}>
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Nuevo caballo</h2>
+                  <p className="mt-0.5 text-sm text-gray-400">Cargá los datos de tu caballo. Solo el nombre es obligatorio.</p>
+                </div>
+                <button onClick={closeCreateForm} aria-label="Cerrar" className="-mr-1.5 rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
               </div>
               <form onSubmit={handleCreate} className="flex flex-col overflow-hidden">
-                <div className="overflow-y-auto p-6 space-y-4">
-                  <Field label="Nombre">
-                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Nombre del caballo" />
-                  </Field>
-                  <Field label="Fecha de nacimiento (opcional)">
-                    <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
-                  </Field>
-                  {user?.role === 'admin' && propietarios && propietarios.length > 0 && (
-                    <Field label="Propietario">
-                      <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className={inputClass} required>
-                        <option value="">Seleccionar propietario</option>
-                        {propietarios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                <div className="overflow-y-auto p-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <Field label="Nombre">
+                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Nombre del caballo" />
+                      </Field>
+                    </div>
+                    <Field label="Sexo">
+                      <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputClass}>
+                        <option value="">Sin especificar</option>
+                        <option value="macho">Macho</option>
+                        <option value="hembra">Hembra</option>
+                        <option value="castrado">Castrado</option>
                       </select>
                     </Field>
-                  )}
-                  {establishments && establishments.length > 0 && (
-                    <Field label="Establecimiento (opcional)">
-                      <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
-                        <option value="">Sin establecimiento</option>
-                        {establishments.map((est) => <option key={est.id} value={est.id}>{est.name}</option>)}
-                      </select>
+                    <Field label="Color / pelaje">
+                      <input type="text" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Ej: Zaino, Alazán, Tordillo" className={inputClass} />
                     </Field>
-                  )}
-                  <Field label="Microchip (opcional)">
-                    <input type="text" value={microchip} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 15); setMicrochip(v); }} inputMode="numeric" maxLength={15} placeholder="15 dígitos numéricos" className={inputClass} />
-                  </Field>
-                  {breeds && breeds.length > 0 && (
-                    <Field label="Raza (opcional)">
-                      <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
-                        <option value="">Sin raza</option>
-                        {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
+                    <Field label="Fecha de nacimiento">
+                      <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
                     </Field>
-                  )}
-                  {activities && activities.length > 0 && (
-                    <Field label="Actividad (opcional)">
-                      <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
-                        <option value="">Sin actividad</option>
-                        {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
+                    <Field label="Microchip">
+                      <input type="text" value={microchip} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 15); setMicrochip(v); }} inputMode="numeric" maxLength={15} placeholder="15 dígitos numéricos" className={inputClass} />
                     </Field>
-                  )}
-                  <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
-                  {createError && (
-                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-                    <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
-                    <span className="leading-snug">{createError}</span>
+                    {breeds && breeds.length > 0 && (
+                      <Field label="Raza">
+                        <select value={breedId} onChange={(e) => setBreedId(e.target.value)} className={inputClass}>
+                          <option value="">Sin raza</option>
+                          {breeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                      </Field>
+                    )}
+                    {activities && activities.length > 0 && (
+                      <Field label="Actividad">
+                        <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
+                          <option value="">Sin actividad</option>
+                          {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+                      </Field>
+                    )}
+                    {user?.role === 'admin' && propietarios && propietarios.length > 0 && (
+                      <div className="sm:col-span-2">
+                        <Field label="Propietario">
+                          <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className={inputClass} required>
+                            <option value="">Seleccionar propietario</option>
+                            {propietarios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                        </Field>
+                      </div>
+                    )}
+                    {establishments && establishments.length > 0 && (
+                      <div className="sm:col-span-2">
+                        <Field label="Establecimiento">
+                          <select value={establishmentId} onChange={(e) => setEstablishmentId(e.target.value)} className={inputClass}>
+                            <option value="">Sin establecimiento</option>
+                            {establishments.map((est) => <option key={est.id} value={est.id}>{est.name}</option>)}
+                          </select>
+                        </Field>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  <div className="mt-4">
+                    <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
+                  </div>
+
+                  {createError && (
+                    <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                      <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                      </svg>
+                      <span className="leading-snug">{createError}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2 border-t border-gray-100 p-4">
-                  <button type="submit" disabled={createHorse.isPending || uploadImage.isPending}
-                    className="flex-1 rounded-lg bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
-                    {createHorse.isPending || uploadImage.isPending ? 'Creando...' : 'Crear caballo'}
-                  </button>
+                <div className="flex justify-end gap-2 border-t border-gray-100 px-6 py-4">
                   <button type="button" onClick={closeCreateForm}
-                    className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 cursor-pointer">
+                    className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50 cursor-pointer">
                     Cancelar
+                  </button>
+                  <button type="submit" disabled={createHorse.isPending || uploadImage.isPending}
+                    className="rounded-xl bg-clay-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-clay-600 disabled:opacity-50 cursor-pointer">
+                    {createHorse.isPending || uploadImage.isPending ? 'Creando...' : 'Crear caballo'}
                   </button>
                 </div>
               </form>
@@ -871,25 +902,36 @@ export default function CaballosPage() {
         document.body
       )}
 
-      {/* Búsqueda */}
+      {/* Búsqueda + acción */}
       {horses && horses.length > 0 && (
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, raza o microchip..."
-            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-gray-400 focus:outline-none"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <div className="flex items-center justify-between gap-3">
+          <div className="relative w-full max-w-md">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar"
+              className="w-full rounded-xl bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 shadow-[var(--shadow-card)] focus:outline-none focus:ring-2 focus:ring-clay-500/15"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {can('horses', 'create') && (
+            <Button
+              className="hidden md:inline-flex shrink-0"
+              iconLeft={<Plus className="h-4 w-4" />}
+              onClick={() => { setCreateError(null); setShowForm(!showForm); }}
+            >
+              Nuevo caballo
+            </Button>
           )}
         </div>
       )}
@@ -927,62 +969,41 @@ export default function CaballosPage() {
           {filteredHorses.map((horse) => (
             <div key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
-              className="group relative aspect-[4/3] sm:aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl bg-gray-900 shadow-md ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:ring-emerald-500/30">
+              className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
 
-              {/* Imagen recortada por Cloudinary al ratio exacto de la card */}
-              {horse.image_url ? (
-                <picture>
-                  {/* Desktop: 4/5 */}
-                  <source
-                    media="(min-width: 640px)"
-                    srcSet={cldTransform(horse.image_url, { width: 600, ar: '4:5' })}
-                  />
-                  {/* Mobile: 4/3 */}
+              {/* Media: foto o placeholder cálido con inicial */}
+              <div className="relative aspect-[4/3] overflow-hidden">
+                {horse.image_url ? (
                   <img
-                    src={cldTransform(horse.image_url, { width: 700, ar: '4:3' })}
+                    src={cldTransform(horse.image_url, { width: 600, ar: '4:3' })}
                     alt={horse.name}
                     className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />
-                </picture>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900 text-gray-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-clay-100 to-clay-200">
+                    <span className="text-5xl font-bold text-clay-400/70">{horse.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
 
-              {/* Gradiente para legibilidad */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 sm:via-black/30 sm:to-transparent" />
-
-              {/* Raza arriba izquierda + actividad arriba derecha */}
-              <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4 sm:p-3">
-                {horse.breed ? (
-                  <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm ring-1 ring-white/25 backdrop-blur-md">
-                    {horse.breed.name}
-                  </span>
-                ) : <span />}
+                {/* Verificado */}
+                {horse.horse_record_id && (
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-lg bg-emerald-500/95 px-2 py-1 text-[10px] font-bold text-white shadow backdrop-blur-sm">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3"><path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
+                    Verificado
+                  </div>
+                )}
+                {/* Actividad */}
                 {horse.activity && (
-                  <span className="rounded-full bg-amber-400/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-100 shadow-sm ring-1 ring-amber-300/30 backdrop-blur-md">
+                  <span className="absolute top-2.5 right-2.5 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-clay-700 shadow-sm backdrop-blur">
                     {horse.activity.name}
                   </span>
                 )}
               </div>
 
-              {/* Badge verificado */}
-              {horse.horse_record_id && (
-                <div className="absolute top-2 left-2 flex items-center gap-1 rounded-lg bg-emerald-500/90 px-2 py-1 text-[10px] font-bold text-white shadow backdrop-blur-sm">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3"><path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
-                  Verificado
-                </div>
-              )}
-
-              {/* Nombre + tenencia abajo */}
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-4">
-                <h2 className="truncate text-2xl sm:text-lg font-bold leading-tight text-white drop-shadow-sm">
-                  {horse.name}
-                </h2>
-                <div className="mt-3 sm:mt-2.5 flex flex-wrap gap-1.5 sm:gap-1">
+              {/* Cuerpo */}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="truncate text-[15px] font-bold leading-tight text-gray-900">{horse.name}</h2>
                   {(() => {
                     const myCo = horse.co_owners?.find((co) => co.user?.id === user?.id);
                     const myPct = myCo?.percentage != null
@@ -990,12 +1011,19 @@ export default function CaballosPage() {
                       : (horse.owner?.id === user?.id && (!horse.co_owners || horse.co_owners.length === 0)) ? 100 : null;
                     if (myPct == null) return null;
                     return (
-                      <span className="rounded-full bg-emerald-400/20 px-2.5 py-1 sm:px-2 sm:py-0.5 text-[11px] sm:text-[10px] font-semibold text-emerald-200 ring-1 ring-emerald-300/30 backdrop-blur-sm">
-                        Mi tenencia · {myPct}%
+                      <span className="shrink-0 rounded-full bg-clay-50 px-2 py-0.5 text-[10px] font-semibold text-clay-700 ring-1 ring-clay-200">
+                        {myPct}%
                       </span>
                     );
                   })()}
                 </div>
+                <p className="mt-1 truncate text-[13px] text-gray-500 capitalize">
+                  {[
+                    horse.sex,
+                    horse.birth_date ? calcAge(horse.birth_date) : null,
+                    horse.color,
+                  ].filter(Boolean).join(' · ') || 'Sin datos cargados'}
+                </p>
               </div>
             </div>
           ))}
@@ -1016,7 +1044,7 @@ export default function CaballosPage() {
                   className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#0f1f3d] to-[#1a3366]">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#9d6c35] to-[#7f5628]">
                   <span className="text-5xl font-bold text-white/10 select-none">{horse.name[0]?.toUpperCase()}</span>
                 </div>
               )}

@@ -27,6 +27,13 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full antialiased">
       <body className={`${inter.className} min-h-full flex flex-col`}>
+        {/* Fuente display "Fraunces" — cargada en runtime (robusto sin red en build) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&display=swap"
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

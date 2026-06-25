@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal,
 } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { Link } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
+
+const LOGO = 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png';
 
 const DEV_USERS = [
   { email: 'admin@handicapp.com',           password: 'handicapp2026', name: 'Alejo Admin',          role: 'Administrador' },
@@ -17,43 +19,27 @@ const DEV_USERS = [
   { email: 'veterinario@handicapp.com',     password: 'handicapp2026', name: 'Dr. Pablo Veterinario', role: 'Veterinario' },
 ];
 
-const ROLE_COLORS: Record<string, string> = {
-  Administrador:  '#0f1f3d',
-  Establecimiento:'#8b5cf6',
-  Propietario:    '#10b981',
-  Veterinario:    '#f59e0b',
-};
-
 function DevUserPicker({ onSelect }: { onSelect: (email: string, password: string) => void }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <TouchableOpacity style={s.devBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Ionicons name="flash-outline" size={14} color={colors.primary} />
-        <Text style={s.devBtnText}>Acceso rápido dev</Text>
-        <Ionicons name="chevron-down" size={14} color={colors.primary} />
+        <Text style={s.devBtnText}>Acceso rápido · dev</Text>
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setOpen(false)}>
           <View style={s.picker}>
-            <Text style={s.pickerTitle}>Usuarios de desarrollo</Text>
             {DEV_USERS.map((u) => (
               <TouchableOpacity
                 key={u.email}
                 style={s.pickerRow}
-                activeOpacity={0.75}
+                activeOpacity={0.7}
                 onPress={() => { onSelect(u.email, u.password); setOpen(false); }}
               >
-                <View style={[s.roleTag, { backgroundColor: `${ROLE_COLORS[u.role]}18` }]}>
-                  <Text style={[s.roleTagText, { color: ROLE_COLORS[u.role] }]}>{u.role}</Text>
-                </View>
-                <View style={s.pickerInfo}>
-                  <Text style={s.pickerName}>{u.name}</Text>
-                  <Text style={s.pickerEmail}>{u.email}</Text>
-                </View>
-                <Ionicons name="arrow-forward" size={14} color={colors.gray300} />
+                <Text style={s.pickerRole}>{u.role}</Text>
+                <Text style={s.pickerEmail}>{u.email}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -86,21 +72,18 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* Isotipo gigante como marca de agua */}
+      <Image source={{ uri: LOGO }} style={s.watermark} resizeMode="contain" />
+
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
-        {/* Logo / cabecera */}
-        <View style={s.header}>
-          <View style={s.logoBox}>
-            <Text style={s.logoText}>H</Text>
-          </View>
-          <Text style={s.brand}>HandicApp</Text>
-          <Text style={s.subtitle}>Gestión equina profesional</Text>
-        </View>
+        {/* Logo */}
+        <Animated.View style={s.header} entering={FadeIn.duration(700)}>
+          <Image source={{ uri: LOGO }} style={s.logo} resizeMode="contain" />
+        </Animated.View>
 
-        {/* Card */}
-        <View style={s.card}>
-          <Text style={s.title}>Iniciar sesión</Text>
-
+        {/* Card glass */}
+        <Animated.View style={s.card} entering={FadeInDown.duration(550).delay(180)}>
           {error ? (
             <View style={s.errorBox}>
               <Text style={s.errorText}>{error}</Text>
@@ -114,7 +97,7 @@ export default function LoginScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="tu@email.com"
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor="rgba(255,255,255,0.28)"
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
@@ -128,21 +111,27 @@ export default function LoginScreen() {
                 style={s.inputFlex}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Mínimo 6 caracteres"
-                placeholderTextColor={colors.gray400}
+                placeholder="••••••••"
+                placeholderTextColor="rgba(255,255,255,0.28)"
                 secureTextEntry={!showPassword}
                 autoComplete="password"
               />
               <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={s.eyeBtn}>
                 {showPassword
-                  ? <EyeOff size={18} color={colors.gray400} />
-                  : <Eye size={18} color={colors.gray400} />
+                  ? <EyeOff size={18} color="rgba(255,255,255,0.4)" />
+                  : <Eye size={18} color="rgba(255,255,255,0.4)" />
                 }
               </TouchableOpacity>
             </View>
           </View>
 
-          {__DEV__ && <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} />}
+          <View style={{ alignItems: 'flex-end' }}>
+            <Link href="/(auth)/olvide-contrasena" asChild>
+              <TouchableOpacity>
+                <Text style={s.linkMuted}>¿Olvidaste tu contraseña?</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
 
           <TouchableOpacity
             style={[s.btn, loading && s.btnDisabled]}
@@ -156,12 +145,6 @@ export default function LoginScreen() {
             }
           </TouchableOpacity>
 
-          <Link href="/(auth)/olvide-contrasena" asChild>
-            <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: -4 }}>
-              <Text style={[s.link, { fontSize: 12 }]}>¿Olvidaste tu contraseña?</Text>
-            </TouchableOpacity>
-          </Link>
-
           <View style={s.footer}>
             <Text style={s.footerText}>¿No tenés cuenta? </Text>
             <Link href="/(auth)/registro" asChild>
@@ -170,7 +153,11 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </Link>
           </View>
-        </View>
+
+          {__DEV__ && <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} />}
+        </Animated.View>
+
+        <Text style={s.tagline}>PLATAFORMA DE GESTIÓN ECUESTRE</Text>
 
       </ScrollView>
     </KeyboardAvoidingView>
@@ -178,86 +165,83 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.primary },
+  root: { flex: 1, backgroundColor: colors.espresso },
+  watermark: {
+    position: 'absolute', width: 360, height: 360,
+    bottom: -90, right: -110, opacity: 0.04,
+  },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
 
-  header: { alignItems: 'center', marginBottom: 32 },
-  logoBox: {
-    width: 64, height: 64, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
-  },
-  logoText: { fontSize: 28, fontWeight: '800', color: colors.white },
-  brand: { fontSize: 26, fontWeight: '800', color: colors.white, letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+  header: { alignItems: 'center', marginBottom: 26 },
+  logo: { width: 210, height: 92 },
 
-  card: { backgroundColor: colors.white, borderRadius: 24, padding: 24, gap: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: colors.gray900 },
-  errorBox: { backgroundColor: '#fef2f2', borderRadius: 10, padding: 12 },
-  errorText: { fontSize: 13, color: colors.red700 },
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 24, padding: 22, gap: 14,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+  },
+  errorBox: {
+    backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.28)',
+  },
+  errorText: { fontSize: 13, color: '#fca5a5' },
 
   field: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  label: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.55)' },
   input: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 13,
+    fontSize: 15, color: colors.white, backgroundColor: 'rgba(255,255,255,0.04)',
   },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 12,
-    backgroundColor: colors.gray50,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   inputFlex: {
-    flex: 1, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: colors.gray900,
+    flex: 1, paddingHorizontal: 14, paddingVertical: 13,
+    fontSize: 15, color: colors.white,
   },
   eyeBtn: { paddingHorizontal: 12 },
 
   devBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 10, paddingHorizontal: 14,
+    alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 9, marginTop: 2,
     borderRadius: 10, borderWidth: 1,
-    borderColor: `${colors.primary}30`,
-    backgroundColor: `${colors.primary}08`,
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.025)',
   },
-  devBtnText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  devBtnText: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
 
   btn: {
-    backgroundColor: colors.primary, borderRadius: 14,
-    paddingVertical: 14, alignItems: 'center', marginTop: 4,
+    backgroundColor: colors.brand, borderRadius: 14,
+    paddingVertical: 15, alignItems: 'center', marginTop: 2,
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
 
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
-  footerText: { fontSize: 13, color: colors.gray500 },
-  link: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 2 },
+  footerText: { fontSize: 13, color: 'rgba(255,255,255,0.4)' },
+  link: { fontSize: 13, fontWeight: '700', color: colors.brand300 },
+  linkMuted: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  tagline: {
+    textAlign: 'center', marginTop: 24, fontSize: 11,
+    letterSpacing: 1.5, color: 'rgba(255,255,255,0.25)',
+  },
 
-  /* Modal picker */
+  /* Modal picker — compacto y oscuro */
   overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center', paddingHorizontal: 24,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center', paddingHorizontal: 32,
   },
   picker: {
-    backgroundColor: colors.white, borderRadius: 20,
-    paddingVertical: 8, overflow: 'hidden',
-  },
-  pickerTitle: {
-    fontSize: 13, fontWeight: '700', color: colors.gray400,
-    textTransform: 'uppercase', letterSpacing: 0.8,
-    paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: '#241b13', borderRadius: 16, overflow: 'hidden',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
   },
   pickerRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderTopWidth: 1, borderTopColor: colors.gray50,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
   },
-  roleTag: {
-    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, minWidth: 90, alignItems: 'center',
-  },
-  roleTagText: { fontSize: 11, fontWeight: '700' },
-  pickerInfo: { flex: 1 },
-  pickerName: { fontSize: 14, fontWeight: '600', color: colors.gray900 },
-  pickerEmail: { fontSize: 11, color: colors.gray400, marginTop: 1 },
+  pickerRole: { fontSize: 13.5, fontWeight: '600', color: colors.white },
+  pickerEmail: { fontSize: 11, color: 'rgba(255,255,255,0.4)' },
 });

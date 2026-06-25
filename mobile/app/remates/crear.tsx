@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Check, Tag, Trophy, ArrowLeft, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
+import { HorseIcon } from '../../components/icons/equine';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { useHorses } from '../../hooks/use-horses';
 import { useCreateAuction } from '../../hooks/use-auctions';
@@ -41,7 +42,7 @@ function HorseSelector({ horses, selected, onSelect }: {
           </Text>
           {selected === h.id && (
             <View style={s.horseCheckMark}>
-              <Ionicons name="checkmark" size={12} color={colors.white} />
+              <Check size={12} color={colors.white} strokeWidth={2} />
             </View>
           )}
         </TouchableOpacity>
@@ -57,8 +58,8 @@ function TypeOption({ type, selected, onSelect }: {
 }) {
   const isSelected = type === selected;
   const config = type === 'venta_directa'
-    ? { icon: 'pricetag-outline' as const, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: '#0369a1' }
-    : { icon: 'trophy-outline' as const, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#7c3aed' };
+    ? { Icon: Tag, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: '#0369a1' }
+    : { Icon: Trophy, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#9d6c35' };
 
   return (
     <TouchableOpacity
@@ -67,7 +68,7 @@ function TypeOption({ type, selected, onSelect }: {
       activeOpacity={0.8}
     >
       <View style={[s.typeIcon, { backgroundColor: `${config.color}18` }]}>
-        <Ionicons name={config.icon} size={24} color={config.color} />
+        <config.Icon size={24} color={config.color} strokeWidth={2} />
       </View>
       <View style={s.typeBody}>
         <Text style={[s.typeTitle, isSelected && { color: config.color }]}>{config.title}</Text>
@@ -176,7 +177,7 @@ export default function CrearRemateScreen() {
         {/* Header */}
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={22} color={colors.gray900} />
+            <ArrowLeft size={22} color={colors.gray900} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Publicar caballo</Text>
           <View style={{ width: 40 }} />
@@ -193,7 +194,7 @@ export default function CrearRemateScreen() {
             <Text style={s.sectionLabel}>¿Cuál caballo querés vender?</Text>
             {myHorses.length === 0 ? (
               <View style={s.emptyHorses}>
-                <Ionicons name="paw-outline" size={32} color={colors.gray300} />
+                <HorseIcon size={32} color={colors.gray300} />
                 <Text style={s.emptyHorsesText}>No tenés caballos registrados</Text>
               </View>
             ) : (
@@ -255,7 +256,7 @@ export default function CrearRemateScreen() {
                 activeOpacity={0.8}
               >
                 <View style={s.dateTriggerIcon}>
-                  <Ionicons name="calendar-outline" size={22} color={endDate ? colors.primary : colors.gray400} />
+                  <Calendar size={22} color={endDate ? colors.brand : colors.gray400} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.dateTriggerLabel, !endDate && { color: colors.gray400 }]}>
@@ -267,7 +268,7 @@ export default function CrearRemateScreen() {
                     <Text style={s.dateTriggerSub}>Tocá para cambiar</Text>
                   )}
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.gray300} />
+                <ChevronRight size={16} color={colors.gray300} strokeWidth={2} />
               </TouchableOpacity>
 
               {/* Android: picker inline */}
@@ -332,7 +333,7 @@ export default function CrearRemateScreen() {
                   </View>
                   {/* Resumen fecha+hora */}
                   <View style={s.dateTimeSummary}>
-                    <Ionicons name="time-outline" size={14} color={colors.primary} />
+                    <Clock size={14} color={colors.brand} strokeWidth={2} />
                     <Text style={s.dateTimeSummaryText}>
                       Cierra el {endDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} a las {String(endHour).padStart(2, '0')}:00 hs
                     </Text>
@@ -376,7 +377,7 @@ export default function CrearRemateScreen() {
               activeOpacity={0.8}
             >
               <View style={[s.checkbox, hasHealthCert && s.checkboxActive]}>
-                {hasHealthCert && <Ionicons name="checkmark" size={14} color={colors.white} />}
+                {hasHealthCert && <Check size={14} color={colors.white} strokeWidth={2} />}
               </View>
               <Text style={s.checkLabel}>Certificado sanitario SENASA</Text>
             </TouchableOpacity>
@@ -386,7 +387,7 @@ export default function CrearRemateScreen() {
               activeOpacity={0.8}
             >
               <View style={[s.checkbox, hasOwnershipDocs && s.checkboxActive]}>
-                {hasOwnershipDocs && <Ionicons name="checkmark" size={14} color={colors.white} />}
+                {hasOwnershipDocs && <Check size={14} color={colors.white} strokeWidth={2} />}
               </View>
               <Text style={s.checkLabel}>Documentos de propiedad</Text>
             </TouchableOpacity>
@@ -394,7 +395,7 @@ export default function CrearRemateScreen() {
 
           {error ? (
             <View style={s.errorBox}>
-              <Ionicons name="alert-circle-outline" size={16} color={colors.red500} />
+              <AlertCircle size={16} color={colors.red500} strokeWidth={2} />
               <Text style={s.errorText}>{error}</Text>
             </View>
           ) : null}
@@ -414,7 +415,7 @@ export default function CrearRemateScreen() {
               <ActivityIndicator color={colors.white} />
             ) : (
               <>
-                <Ionicons name="megaphone-outline" size={20} color={colors.white} />
+                <Megaphone size={20} color={colors.white} strokeWidth={2} />
                 <Text style={s.publishBtnText}>Publicar caballo</Text>
               </>
             )}
@@ -455,20 +456,20 @@ const s = StyleSheet.create({
     position: 'relative',
     ...shadow.sm,
   },
-  horseOptionActive: { borderColor: colors.primary, backgroundColor: '#e8ecf4' },
+  horseOptionActive: { borderColor: colors.brand, backgroundColor: '#e8ecf4' },
   horseOptionAvatar: {
     width: 52, height: 52, borderRadius: radius.full,
     backgroundColor: colors.gray100,
     justifyContent: 'center', alignItems: 'center',
   },
-  horseOptionAvatarActive: { backgroundColor: colors.primary },
-  horseOptionAvatarText: { fontSize: text.xl, fontWeight: weight.bold, color: colors.primary },
+  horseOptionAvatarActive: { backgroundColor: colors.brand },
+  horseOptionAvatarText: { fontSize: text.xl, fontWeight: weight.bold, color: colors.brand },
   horseOptionName: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray700, textAlign: 'center' },
-  horseOptionNameActive: { color: colors.primary },
+  horseOptionNameActive: { color: colors.brand },
   horseCheckMark: {
     position: 'absolute', top: 6, right: 6,
     width: 20, height: 20, borderRadius: 10,
-    backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center',
   },
   emptyHorses: { alignItems: 'center', padding: space[8], gap: space[3] },
   emptyHorsesText: { fontSize: text.sm, color: colors.gray400 },
@@ -495,7 +496,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.gray100,
   },
   currencyBtn: { paddingHorizontal: space[4], paddingVertical: space[3] },
-  currencyBtnActive: { backgroundColor: colors.primary },
+  currencyBtnActive: { backgroundColor: colors.brand },
   currencyBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray500 },
   currencyBtnTextActive: { color: colors.white },
   priceInput: {
@@ -524,7 +525,7 @@ const s = StyleSheet.create({
     padding: space[4],
     ...shadow.sm,
   },
-  dateTriggerFilled: { borderColor: colors.primary, backgroundColor: '#f0f4ff' },
+  dateTriggerFilled: { borderColor: colors.brand, backgroundColor: '#f0f4ff' },
   dateTriggerIcon: { width: 44, height: 44, borderRadius: radius.lg, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
   dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: colors.gray900 },
   dateTriggerSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
@@ -538,7 +539,7 @@ const s = StyleSheet.create({
   },
   pickerTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
   pickerCancel: { fontSize: text.base, color: colors.gray500 },
-  pickerConfirm: { fontSize: text.base, fontWeight: weight.bold, color: colors.primary },
+  pickerConfirm: { fontSize: text.base, fontWeight: weight.bold, color: colors.brand },
 
   /* Time chips */
   timeSection: { gap: space[2], marginTop: space[1] },
@@ -549,7 +550,7 @@ const s = StyleSheet.create({
     borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.gray200,
     backgroundColor: colors.white,
   },
-  timeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  timeChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   timeChipText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray600 },
   timeChipTextActive: { color: colors.white },
 
@@ -557,7 +558,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     backgroundColor: '#e8ecf4', borderRadius: radius.lg, padding: space[3],
   },
-  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.primary },
+  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.brand },
 
   /* Checks */
   checkRow: {
@@ -594,7 +595,7 @@ const s = StyleSheet.create({
   },
   publishBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: space[2], backgroundColor: colors.primary,
+    gap: space[2], backgroundColor: colors.brand,
     borderRadius: radius.xl, paddingVertical: space[4],
     ...shadow.sm,
   },

@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import { Stack } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
@@ -18,6 +18,18 @@ import {
 import { AuthProvider, useAuth } from '../lib/auth';
 import { NotificationsProvider } from '../lib/notifications';
 import { colors } from '../lib/colors';
+import { StatusBar } from 'expo-status-bar';
+
+// Quita el contorno negro de foco de los inputs en la versión web (no afecta al celular real).
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const STYLE_ID = 'rnw-focus-fix';
+  if (!document.getElementById(STYLE_ID)) {
+    const el = document.createElement('style');
+    el.id = STYLE_ID;
+    el.textContent = 'input,textarea,select,[contenteditable]{outline:none !important;}';
+    document.head.appendChild(el);
+  }
+}
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -44,7 +56,7 @@ export default function RootLayout() {
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.brand} />
       </View>
     );
   }
@@ -52,6 +64,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
+        <StatusBar style="dark" />
         <AuthProvider>
           <InnerLayout />
         </AuthProvider>

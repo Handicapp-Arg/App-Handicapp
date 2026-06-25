@@ -18,13 +18,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-navy-700 text-white shadow-sm hover:bg-navy-800 active:scale-[0.98] disabled:bg-navy-700/50',
+    'bg-clay-500 text-white shadow-sm hover:bg-clay-600 active:scale-[0.98] disabled:bg-clay-500/50',
   secondary:
-    'bg-white text-navy-700 border border-navy-200 hover:bg-navy-50 hover:border-navy-300 active:scale-[0.98]',
+    'bg-white text-clay-700 border border-clay-200 hover:bg-clay-50 hover:border-clay-300 active:scale-[0.98]',
   ghost:
-    'bg-transparent text-navy-700 hover:bg-navy-50 active:scale-[0.98]',
+    'bg-transparent text-clay-700 hover:bg-clay-50 active:scale-[0.98]',
   outline:
-    'bg-transparent text-navy-700 border border-navy-700 hover:bg-navy-50 active:scale-[0.98]',
+    'bg-transparent text-clay-700 border border-clay-500 hover:bg-clay-50 active:scale-[0.98]',
   danger:
     'bg-danger-500 text-white shadow-sm hover:bg-danger-700 active:scale-[0.98] disabled:bg-danger-500/50',
 };
@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center font-semibold tracking-tight transition-all',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-700 focus-visible:outline-offset-2',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-clay-500 focus-visible:outline-offset-2',
         'disabled:cursor-not-allowed disabled:opacity-60',
         VARIANTS[variant],
         SIZES[size],

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
 
-const PRIMARY = '#0f1f3d';
+const PRIMARY = '#9d6c35';
 
 type NavIcon = React.FC<{ active: boolean }>;
 

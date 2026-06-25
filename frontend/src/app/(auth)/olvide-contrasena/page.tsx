@@ -40,7 +40,7 @@ export default function OlvideContrasenaPage() {
             Si existe una cuenta con <strong>{email}</strong>, vas a recibir un enlace para restablecer tu contraseña en los próximos minutos.
           </p>
         </div>
-        <Link href="/login" className="block text-sm font-semibold text-[#0f1f3d] hover:underline">
+        <Link href="/login" className="block text-sm font-semibold text-[#9d6c35] hover:underline">
           ← Volver al inicio de sesión
         </Link>
       </div>
@@ -71,7 +71,7 @@ export default function OlvideContrasenaPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#0f1f3d] focus:ring-2 focus:ring-[#0f1f3d]/10 transition-all"
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 transition-all"
           />
         </div>
 
@@ -79,14 +79,14 @@ export default function OlvideContrasenaPage() {
           type="submit"
           disabled={loading}
           className="w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 cursor-pointer"
-          style={{ backgroundColor: '#0f1f3d' }}
+          style={{ backgroundColor: '#9d6c35' }}
         >
           {loading ? 'Enviando...' : 'Enviar enlace'}
         </button>
       </form>
 
       <p className="text-center text-sm text-gray-500">
-        <Link href="/login" className="font-semibold text-[#0f1f3d] hover:underline">
+        <Link href="/login" className="font-semibold text-[#9d6c35] hover:underline">
           ← Volver al inicio de sesión
         </Link>
       </p>

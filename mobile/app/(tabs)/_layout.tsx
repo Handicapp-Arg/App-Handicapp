@@ -1,139 +1,145 @@
-import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Calendar, LayoutGrid, QrCode } from 'lucide-react-native';
+import type { ComponentType } from 'react';
+import { HorseIcon, BrandIsotipo } from '../../components/icons/equine';
 import { colors } from '../../lib/colors';
-import { useNotifications } from '../../lib/notifications';
+import { haptic } from '../../lib/haptics';
 
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
-const TABS: Record<string, { active: IoniconsName; inactive: IoniconsName; label: string; color: string }> = {
-  muro:             { active: 'newspaper',    inactive: 'newspaper-outline',   label: 'Muro',     color: '#0284c7' },
-  'caballos/index': { active: 'paw',          inactive: 'paw-outline',         label: 'Caballos', color: '#059669' },
-  agenda:           { active: 'calendar',     inactive: 'calendar-outline',    label: 'Agenda',   color: '#7c3aed' },
-  perfil:           { active: 'person',       inactive: 'person-outline',      label: 'Perfil',   color: colors.primary },
-  mas:              { active: 'grid',         inactive: 'grid-outline',        label: 'Más',      color: '#374151' },
+const TABS: Record<string, { Icon: IconType; label: string }> = {
+  muro:             { Icon: BrandIsotipo, label: 'Muro' },
+  'caballos/index': { Icon: HorseIcon,    label: 'Caballos' },
+  agenda:           { Icon: Calendar,     label: 'Agenda' },
+  mas:              { Icon: LayoutGrid,   label: 'Más' },
 };
 
-function TabIcon({ name, focused, badge }: { name: string; focused: boolean; badge?: number }) {
-  const meta = TABS[name] ?? TABS.muro;
-  const iconColor = focused ? meta.color : '#94a3b8';
+function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const activeName = state.routes[state.index]?.name;
+
+  const renderTab = (name: string) => {
+    const meta = TABS[name];
+    if (!meta) return null;
+    const focused = activeName === name;
+    const Icon = meta.Icon;
+    const color = focused ? colors.brand : colors.gray500;
+    const onPress = () => {
+      haptic.light();
+      const route = state.routes.find((r) => r.name === name);
+      if (!route) return;
+      const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+      if (!focused && !event.defaultPrevented) navigation.navigate(name as never);
+    };
+    return (
+      <TouchableOpacity key={name} style={styles.tab} onPress={onPress} activeOpacity={0.7}>
+        {focused && <View style={styles.activeBar} />}
+        <Icon size={23} color={color} strokeWidth={focused ? 2.6 : 2} />
+        <Text style={[styles.label, { color }]}>{meta.label}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={styles.wrap}>
-      {focused && (
-        <View style={[styles.activePill, { backgroundColor: meta.color + '14' }]} />
-      )}
-      <Ionicons
-        name={focused ? meta.active : meta.inactive}
-        size={focused ? 23 : 22}
-        color={iconColor}
-      />
-      {badge != null && badge > 0 && (
-        <View style={styles.badgeDot}>
-          <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
-        </View>
-      )}
+    <View style={[styles.bar, { height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
+      {renderTab('muro')}
+      {renderTab('caballos/index')}
+      <View style={styles.qrSlot} />
+      {renderTab('agenda')}
+      {renderTab('mas')}
+
+      {/* Botón QR central que sobresale */}
+      <TouchableOpacity
+        style={[styles.qrBtn, { bottom: insets.bottom + 24 }]}
+        activeOpacity={0.85}
+        onPress={() => { haptic.light(); router.push('/buscar'); }}
+      >
+        <QrCode size={23} color="#ffffff" strokeWidth={2.2} />
+      </TouchableOpacity>
+      <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>QR</Text>
     </View>
   );
 }
 
 export default function TabsLayout() {
-  const insets = useSafeAreaInsets();
-  const { unread } = useNotifications();
-
   return (
     <Tabs
-      screenOptions={({ route }) => {
-        const meta = TABS[route.name] ?? TABS.muro;
-        return {
-          headerShown: false,
-          tabBarActiveTintColor: meta.color,
-          tabBarInactiveTintColor: '#94a3b8',
-          tabBarStyle: {
-            backgroundColor: '#ffffff',
-            borderTopWidth: 0,
-            paddingBottom: insets.bottom + 2,
-            paddingTop: 8,
-            height: 62 + insets.bottom,
-            elevation: 0,
-            shadowColor: '#0f1f3d',
-            shadowOffset: { width: 0, height: -6 },
-            shadowOpacity: 0.07,
-            shadowRadius: 20,
-            ...Platform.select({
-              android: {
-                borderTopWidth: 1,
-                borderTopColor: '#e5e7eb',
-              },
-            }),
-          },
-          tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: '600',
-            marginTop: 1,
-            letterSpacing: 0.1,
-          },
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              name={route.name}
-              focused={focused}
-              badge={route.name === 'mas' ? unread : undefined}
-            />
-          ),
-        };
-      }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false, animation: 'shift' }}
     >
-      <Tabs.Screen name="muro"           options={{ title: 'Muro' }} />
-      <Tabs.Screen name="caballos/index" options={{ title: 'Caballos' }} />
-      <Tabs.Screen name="agenda"         options={{ title: 'Agenda' }} />
-      <Tabs.Screen name="perfil"         options={{ title: 'Perfil' }} />
-      <Tabs.Screen name="mas"            options={{
-        title: 'Más',
-        tabBarBadge: unread > 0 ? unread : undefined,
-        tabBarBadgeStyle: { backgroundColor: '#ef4444', fontSize: 9, minWidth: 15, height: 15 },
-      }} />
-      <Tabs.Screen name="index"          options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]"  options={{ href: null }} />
-      <Tabs.Screen name="eventos"        options={{ href: null }} />
-      <Tabs.Screen name="facturacion"    options={{ href: null }} />
-      <Tabs.Screen name="remates"        options={{ href: null }} />
+      <Tabs.Screen name="muro" />
+      <Tabs.Screen name="caballos/index" />
+      <Tabs.Screen name="agenda" />
+      <Tabs.Screen name="mas" />
+      <Tabs.Screen name="perfil"        options={{ href: null }} />
+      <Tabs.Screen name="index"         options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]" options={{ href: null }} />
+      <Tabs.Screen name="eventos"       options={{ href: null }} />
+      <Tabs.Screen name="facturacion"   options={{ href: null }} />
+      <Tabs.Screen name="remates"       options={{ href: null }} />
+      <Tabs.Screen name="notificaciones" options={{ href: null }} />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    width: 36,
-    height: 28,
-    justifyContent: 'center',
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 10,
+    elevation: 14,
+    shadowColor: '#0f1f3d',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+  },
+  tab: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 3,
     position: 'relative',
   },
-  activePill: {
+  activeBar: {
     position: 'absolute',
+    top: -10,
     width: 40,
-    height: 30,
-    borderRadius: 12,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.brand,
   },
-  badgeDot: {
+  label: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
+  qrSlot: { width: 70 },
+  qrBtn: {
     position: 'absolute',
-    top: -2,
-    right: -4,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#ef4444',
-    borderWidth: 1.5,
-    borderColor: '#ffffff',
+    left: '50%',
+    marginLeft: -25,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.brand,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 2,
+    elevation: 8,
+    shadowColor: colors.brand,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
-  badgeText: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#ffffff',
-    lineHeight: 10,
+  qrLabel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.brand,
   },
 });

@@ -142,9 +142,9 @@ export default function RegistroPage() {
                 onClick={() => setRole(r.name)}
                 className="rounded-xl border py-2.5 text-sm font-medium transition cursor-pointer"
                 style={{
-                  backgroundColor: role === r.name ? '#0f1f3d' : '#ffffff',
+                  backgroundColor: role === r.name ? '#9d6c35' : '#ffffff',
                   color: role === r.name ? '#ffffff' : '#374151',
-                  borderColor: role === r.name ? '#0f1f3d' : '#d1d5db',
+                  borderColor: role === r.name ? '#9d6c35' : '#d1d5db',
                 }}
               >
                 {roleLabels[r.name] || r.name}
@@ -157,7 +157,7 @@ export default function RegistroPage() {
           type="submit"
           disabled={loading || !role}
           className="w-full rounded-xl py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          style={{ backgroundColor: '#0f1f3d' }}
+          style={{ backgroundColor: '#9d6c35' }}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -173,7 +173,7 @@ export default function RegistroPage() {
 
       <p className="text-center text-sm text-gray-500">
         ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="font-semibold text-[#0f1f3d] hover:underline">
+        <Link href="/login" className="font-semibold text-[#9d6c35] hover:underline">
           Iniciá sesión
         </Link>
       </p>
