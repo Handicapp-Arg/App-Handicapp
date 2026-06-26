@@ -4,7 +4,11 @@ import {
   Modal, KeyboardAvoidingView, Platform, ActivityIndicator,
   ScrollView, Dimensions,
 } from 'react-native';
-import { X, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus } from 'lucide-react-native';
+import {
+  X, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus,
+  Network, CheckCircle2, AlertTriangle, XCircle, Circle,
+} from 'lucide-react-native';
+import { HorseHeadLine } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import {
@@ -26,21 +30,25 @@ interface NodeData {
   inSystem?: boolean;
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  verified: '#15803d',
-  partial:  '#c2410c',
-  disputed: '#b91c1c',
+const statusColor = (st: string, isDark: boolean): string => (({
+  verified:   isDark ? '#86efac' : '#15803d',
+  partial:    isDark ? '#fdba74' : '#c2410c',
+  disputed:   isDark ? '#fca5a5' : '#b91c1c',
   unverified: colors.gray400,
-  pending:  '#d97706',
-};
+  pending:    isDark ? '#fcd34d' : '#d97706',
+} as Record<string, string>)[st] ?? colors.gray400);
 
-const STATUS_BG: Record<string, string> = {
-  verified: '#f0fdf4',
-  partial:  '#fff7ed',
-  disputed: '#fef2f2',
-  unverified: colors.gray50,
-  pending:  '#fffbeb',
-};
+const statusBg = (st: string, isDark: boolean): string => (({
+  verified:   isDark ? 'rgba(34,197,94,0.14)'  : '#f0fdf4',
+  partial:    isDark ? 'rgba(249,115,22,0.14)' : '#fff7ed',
+  disputed:   isDark ? 'rgba(239,68,68,0.14)'  : '#fef2f2',
+  unverified: isDark ? 'rgba(148,163,184,0.12)': colors.gray50,
+  pending:    isDark ? 'rgba(245,158,11,0.14)' : '#fffbeb',
+} as Record<string, string>)[st] ?? (isDark ? 'rgba(148,163,184,0.12)' : colors.gray50));
+
+// Semantic parent colors (slightly brighter in dark for legibility)
+const sireColor = (isDark: boolean) => (isDark ? '#38bdf8' : '#0369a1');
+const damColor  = (isDark: boolean) => (isDark ? '#f472b6' : '#be185d');
 
 function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: number; dim?: boolean }) {
   const { c } = useTheme();
@@ -54,8 +62,8 @@ function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: numb
   }
 
   const st = data.status ?? 'unverified';
-  const col = STATUS_COLOR[st] ?? colors.gray400;
-  const bg  = STATUS_BG[st] ?? colors.gray50;
+  const col = statusColor(st, c.isDark);
+  const bg  = statusBg(st, c.isDark);
 
   return (
     <View style={[n.node, { width, backgroundColor: bg, borderColor: dim ? c.borderStrong : col + '50', opacity: dim ? 0.7 : 1 }]}>
@@ -132,7 +140,7 @@ function PedigreeTree({ horseName, pedigree }: {
       <View style={n.gen}>
         <View style={[n.node, n.nodeHorse, { width: w1 }]}>
           <View style={n.horseIconWrap}>
-            <Text style={n.horseIcon}>🐴</Text>
+            <HorseHeadLine size={22} color={colors.white} />
           </View>
           <Text style={n.horseName}>{horseName}</Text>
           <Text style={n.horseLabel}>CABALLO</Text>
@@ -156,15 +164,15 @@ function PedigreeTree({ horseName, pedigree }: {
           <View style={[n.gen, { gap: 12 }]}>
             <View style={{ width: w2 }}>
               <View style={n.parentLabel}>
-                <Mars size={11} color="#0369a1" strokeWidth={2} />
-                <Text style={[n.parentLabelText, { color: '#0369a1' }]}>PADRE</Text>
+                <Mars size={11} color={sireColor(c.isDark)} strokeWidth={2} />
+                <Text style={[n.parentLabelText, { color: sireColor(c.isDark) }]}>PADRE</Text>
               </View>
               <PedigreeNode data={sire} width={w2} />
             </View>
             <View style={{ width: w2 }}>
               <View style={n.parentLabel}>
-                <Venus size={11} color="#be185d" strokeWidth={2} />
-                <Text style={[n.parentLabelText, { color: '#be185d' }]}>MADRE</Text>
+                <Venus size={11} color={damColor(c.isDark)} strokeWidth={2} />
+                <Text style={[n.parentLabelText, { color: damColor(c.isDark) }]}>MADRE</Text>
               </View>
               <PedigreeNode data={dam} width={w2} />
             </View>
@@ -240,8 +248,7 @@ const makeN = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.brand, borderColor: c.brand,
     alignItems: 'center', gap: 4, paddingVertical: 14,
   },
-  horseIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  horseIcon: { fontSize: 22 },
+  horseIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
   horseName: { fontSize: 15, fontWeight: '800', color: colors.white, textAlign: 'center' },
   horseLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: 1, textTransform: 'uppercase' },
 
@@ -363,17 +370,20 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
   };
 
   if (validationResult) {
-    const map: Record<string, { icon: string; title: string; msg: string; color: string }> = {
-      verified: { icon: '✅', title: 'Pedigrí verificado', msg: 'Los datos coinciden con registros oficiales.', color: '#15803d' },
-      partial:  { icon: '⚠️', title: 'Validación parcial',  msg: 'Algunos datos coinciden. Revisá y corregí para mejorar el resultado.', color: '#c2410c' },
-      failed:   { icon: '❌', title: 'Sin coincidencias',   msg: 'No se encontró en ningún registro oficial. Verificá la ortografía del nombre.', color: colors.red500 },
-      disputed: { icon: '⚠️', title: 'Datos inconsistentes', msg: 'Distintas fuentes muestran información contradictoria.', color: '#b91c1c' },
+    const map: Record<string, { Icon: typeof CheckCircle2; title: string; msg: string; color: string }> = {
+      verified: { Icon: CheckCircle2,  title: 'Pedigrí verificado',   msg: 'Los datos coinciden con registros oficiales.', color: c.isDark ? '#86efac' : '#15803d' },
+      partial:  { Icon: AlertTriangle, title: 'Validación parcial',   msg: 'Algunos datos coinciden. Revisá y corregí para mejorar el resultado.', color: c.isDark ? '#fdba74' : '#c2410c' },
+      failed:   { Icon: XCircle,       title: 'Sin coincidencias',    msg: 'No se encontró en ningún registro oficial. Verificá la ortografía del nombre.', color: c.isDark ? '#fca5a5' : colors.red500 },
+      disputed: { Icon: AlertTriangle, title: 'Datos inconsistentes', msg: 'Distintas fuentes muestran información contradictoria.', color: c.isDark ? '#fca5a5' : '#b91c1c' },
     };
-    const cfg = map[validationResult.status] ?? { icon: 'ℹ️', title: validationResult.status, msg: '', color: c.textMuted };
+    const cfg = map[validationResult.status] ?? { Icon: Info, title: validationResult.status, msg: '', color: c.textMuted };
+    const ResultIcon = cfg.Icon;
     return (
       <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <Text style={{ fontSize: 48 }}>{cfg.icon}</Text>
+          <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: cfg.color + (c.isDark ? '24' : '18'), justifyContent: 'center', alignItems: 'center' }}>
+            <ResultIcon size={44} color={cfg.color} strokeWidth={2} />
+          </View>
           <Text style={{ fontSize: 18, fontWeight: '800', color: cfg.color, marginTop: 16, textAlign: 'center' }}>{cfg.title}</Text>
           {cfg.msg ? <Text style={{ fontSize: 14, color: c.textMuted, textAlign: 'center', marginTop: 10, lineHeight: 20 }}>{cfg.msg}</Text> : null}
           <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 32, width: '100%' }]} onPress={onClose}>
@@ -398,8 +408,8 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           {/* Padre */}
           <View style={s.fieldset}>
             <View style={s.fieldsetHeader}>
-              <Mars size={14} color="#0369a1" strokeWidth={2} />
-              <Text style={[s.fieldsetTitle, { color: '#0369a1' }]}>PADRE</Text>
+              <Mars size={14} color={sireColor(c.isDark)} strokeWidth={2} />
+              <Text style={[s.fieldsetTitle, { color: sireColor(c.isDark) }]}>PADRE</Text>
             </View>
             <HorseSearchField
               label="Nombre del padre"
@@ -416,8 +426,8 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           {/* Madre */}
           <View style={s.fieldset}>
             <View style={s.fieldsetHeader}>
-              <Venus size={14} color="#be185d" strokeWidth={2} />
-              <Text style={[s.fieldsetTitle, { color: '#be185d' }]}>MADRE</Text>
+              <Venus size={14} color={damColor(c.isDark)} strokeWidth={2} />
+              <Text style={[s.fieldsetTitle, { color: damColor(c.isDark) }]}>MADRE</Text>
             </View>
             <HorseSearchField
               label="Nombre de la madre"
@@ -468,9 +478,12 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             <Text style={s.errorText}>Error al guardar. Intentá de nuevo.</Text>
           )}
 
-          <Text style={s.hint}>
-            💡 "Guardar y validar" consulta Stud Book Argentino, SRA y PedigreeQuery para verificar los datos automáticamente.
-          </Text>
+          <View style={s.hintRow}>
+            <Info size={13} color={c.textFaint} strokeWidth={2} style={{ marginTop: 2 }} />
+            <Text style={s.hint}>
+              "Guardar y validar" consulta Stud Book Argentino, SRA y PedigreeQuery para verificar los datos automáticamente.
+            </Text>
+          </View>
         </ScrollView>
 
         <View style={s.modalFooter}>
@@ -487,7 +500,10 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             onPress={() => handleSave(true)} disabled={isPending}>
             {validate.isPending
               ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={s.btnPrimaryText}>Validar ✓</Text>}
+              : <>
+                  <ShieldCheck size={16} color={colors.white} strokeWidth={2} />
+                  <Text style={s.btnPrimaryText}>Validar</Text>
+                </>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -515,19 +531,20 @@ function ValidationBanner({ validations }: { validations: PedigreeValidation[] }
   const anyDisputed = latest.some((v) => v.status === 'disputed');
   const allFailed   = latest.every((v) => v.status === 'failed');
 
-  let title: string, msg: string, bg: string, color: string, icon: string;
+  let title: string, msg: string, bg: string, color: string;
+  let Icon: typeof CheckCircle2;
 
   if (anyVerified) {
-    title = '✓ Pedigrí verificado'; bg = '#f0fdf4'; color = '#15803d'; icon = '✓';
+    title = 'Pedigrí verificado'; bg = statusBg('verified', c.isDark); color = statusColor('verified', c.isDark); Icon = CheckCircle2;
     msg = 'Los datos coinciden con registros oficiales.';
   } else if (anyPartial) {
-    title = '⚠ Validación parcial'; bg = '#fff7ed'; color = '#c2410c'; icon = '⚠';
+    title = 'Validación parcial'; bg = statusBg('partial', c.isDark); color = statusColor('partial', c.isDark); Icon = AlertTriangle;
     msg = 'Algunos datos coinciden. Editá y re-validá para mejorar.';
   } else if (anyDisputed) {
-    title = '✕ Datos inconsistentes'; bg = '#fef2f2'; color = '#b91c1c'; icon = '✕';
+    title = 'Datos inconsistentes'; bg = statusBg('disputed', c.isDark); color = statusColor('disputed', c.isDark); Icon = XCircle;
     msg = 'Fuentes contradictorias. Requiere revisión manual.';
   } else if (allFailed) {
-    title = '○ No encontrado'; bg = colors.gray50; color = colors.gray500; icon = '○';
+    title = 'No encontrado'; bg = statusBg('unverified', c.isDark); color = c.textMuted; Icon = Circle;
     msg = 'Sin coincidencias en los registros. Verificá nombres y números.';
   } else {
     return null;
@@ -535,13 +552,17 @@ function ValidationBanner({ validations }: { validations: PedigreeValidation[] }
 
   return (
     <View style={[s.banner, { backgroundColor: bg, borderColor: color + '30' }]}>
-      <Text style={[s.bannerTitle, { color }]}>{title}</Text>
+      <View style={s.bannerTitleRow}>
+        <Icon size={16} color={color} strokeWidth={2.25} />
+        <Text style={[s.bannerTitle, { color }]}>{title}</Text>
+      </View>
       <Text style={s.bannerMsg}>{msg}</Text>
       {latest.length > 0 && (
         <View style={s.sourceRow}>
           {latest.map((v) => {
             const sourceLabels: Record<string, string> = { studbook_ar: 'Stud Book', sra: 'SRA', pedigreequery: 'PedigreeQuery', manual_admin: 'Admin' };
-            const stColor = ({ validated: '#15803d', partial: '#c2410c', disputed: '#b91c1c', failed: colors.gray400, pending: '#d97706' } as Record<string, string>)[v.status] ?? colors.gray400;
+            const stKey = ({ validated: 'verified', partial: 'partial', disputed: 'disputed', failed: 'unverified', pending: 'pending' } as Record<string, string>)[v.status] ?? 'unverified';
+            const stColor = statusColor(stKey, c.isDark);
             return (
               <View key={v.source} style={[s.sourceChip, { backgroundColor: stColor + '18', borderColor: stColor + '40' }]}>
                 <Text style={[s.sourceChipText, { color: stColor }]}>{sourceLabels[v.source] ?? v.source}</Text>
@@ -582,7 +603,9 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   if (!pedigree) {
     return (
       <View style={s.empty}>
-        <Text style={{ fontSize: 52 }}>🧬</Text>
+        <View style={s.emptyIcon}>
+          <Network size={30} color={c.textMuted} strokeWidth={1.75} />
+        </View>
         <Text style={s.emptyTitle}>Sin pedigrí registrado</Text>
         <Text style={s.emptyMsg}>
           Registrá el padre y la madre para construir el árbol genealógico y verificarlo automáticamente contra registros oficiales.
@@ -690,7 +713,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
   loadingText: { fontSize: 13, color: c.textFaint },
 
-  empty: { flex: 1, padding: 32, alignItems: 'center', gap: 12 },
+  empty: { flex: 1, padding: 32, alignItems: 'center', gap: 12, justifyContent: 'center' },
+  emptyIcon: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: c.surfaceAlt,
+    borderWidth: 1, borderColor: c.border,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 4,
+  },
   emptyTitle: { fontSize: 17, fontWeight: '800', color: c.text, textAlign: 'center' },
   emptyMsg: { fontSize: 13, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
 
@@ -712,6 +740,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   banner: {
     borderRadius: 12, borderWidth: 1, padding: 14, gap: 6, marginBottom: 8,
   },
+  bannerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   bannerTitle: { fontSize: 14, fontWeight: '700' },
   bannerMsg: { fontSize: 12, color: c.textMuted, lineHeight: 18 },
   sourceRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 },
@@ -776,7 +805,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   dropdownName: { fontSize: 14, color: c.text, fontWeight: '500' },
   dropdownReg: { fontSize: 12, color: c.textFaint },
   errorText: { fontSize: 13, color: colors.red500, marginTop: 8 },
-  hint: { fontSize: 12, color: c.textFaint, marginTop: 12, lineHeight: 18 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 12 },
+  hint: { flex: 1, fontSize: 12, color: c.textFaint, lineHeight: 18 },
 
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 12, gap: 6 },
   btnPrimary: { backgroundColor: c.brand },
