@@ -510,29 +510,6 @@ export default function HorseDetailScreen() {
       {activeTab === 'info' && (
         <View style={{ gap: 0 }}>
 
-          {/* Botón publicar en venta (solo propietarios) */}
-          {(user?.role === 'propietario' || can('auctions', 'create')) && (
-            <View style={s.section}>
-              <TouchableOpacity
-                style={s.sellHorseBtn}
-                onPress={() => {
-                  haptic.medium();
-                  nav.push(router, `${Routes.remateCrear}?horse=${horse.id}` as never);
-                }}
-                activeOpacity={0.85}
-              >
-                <View style={s.sellHorseBtnIcon}>
-                  <Megaphone size={22} color={c.brand} strokeWidth={2} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.sellHorseBtnTitle}>Publicar en venta</Text>
-                  <Text style={s.sellHorseBtnSub}>Vendé {horse.name} en Remates</Text>
-                </View>
-                <ChevronRight size={16} color={c.brand} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-          )}
-
           {/* Info grid */}
           {infoItems.length > 0 && (
             <View style={s.section}>
@@ -941,6 +918,16 @@ export default function HorseDetailScreen() {
               <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); setShowEdit(true); }} activeOpacity={0.7}>
                 <Pencil size={20} color={c.text} strokeWidth={2} />
                 <Text style={s.menuItemText}>Editar caballo</Text>
+              </TouchableOpacity>
+            )}
+            {(user?.role === 'propietario' || can('auctions', 'create')) && (
+              <TouchableOpacity
+                style={s.menuItem}
+                onPress={() => { setShowMenu(false); haptic.medium(); nav.push(router, `${Routes.remateCrear}?horse=${horse.id}` as never); }}
+                activeOpacity={0.7}
+              >
+                <Megaphone size={20} color={c.text} strokeWidth={2} />
+                <Text style={s.menuItemText}>Publicar en venta</Text>
               </TouchableOpacity>
             )}
             {can('horses', 'delete') && (
@@ -1435,15 +1422,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Sections */
   section: { margin: 16, gap: 10 },
-  sellHorseBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: c.brandSoft, borderRadius: 16,
-    borderWidth: 1, borderColor: c.brandSoft,
-    padding: 16,
-  },
-  sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: c.surface, justifyContent: 'center', alignItems: 'center' },
-  sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: c.text },
-  sellHorseBtnSub: { fontSize: 12, color: c.brand, marginTop: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: c.text },
   countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
