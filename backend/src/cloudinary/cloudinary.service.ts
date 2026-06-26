@@ -71,22 +71,26 @@ export class CloudinaryService {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
-    const text = encodeURIComponent(`${authorName} • ${date}`);
+    // Espacios laterales = padding visual dentro de la "pill"
+    const text = encodeURIComponent(`  ${authorName} · ${date}  `);
     return cloudinary.url(publicId, {
       transformation: [
         { width: 800, crop: 'limit', quality: 'auto' },
         {
-          overlay: { font_family: 'Arial', font_size: 20, font_weight: 'bold', text },
+          // Sans moderna (Google Font vía Cloudinary) con tracking sutil
+          overlay: {
+            font_family: 'Montserrat',
+            font_size: 22,
+            font_weight: 'semibold',
+            letter_spacing: 1,
+            text,
+          },
           gravity: 'south_east',
-          x: 10, y: 10,
-          color: '#ffffff',
-        },
-        {
-          overlay: { font_family: 'Arial', font_size: 20, font_weight: 'bold', text },
-          gravity: 'south_east',
-          x: 12, y: 12,
-          color: '#000000',
-          opacity: 50,
+          x: 16, y: 16,
+          color: '#FFFFFF',
+          // Pill negra translúcida + esquinas redondeadas = look prolijo
+          background: 'rgb:00000099',
+          radius: 20,
         },
       ],
       secure: true,
