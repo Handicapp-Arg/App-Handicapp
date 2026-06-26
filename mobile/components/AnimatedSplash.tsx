@@ -1,25 +1,25 @@
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withSpring, withDelay, runOnJS, Easing,
 } from 'react-native-reanimated';
-import { colors } from '../lib/colors';
-
-const LOGO = 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png';
+import { useTheme } from '../lib/theme';
+import { HorseshoeH } from './icons/equine';
 
 /**
- * Pantalla de entrada: el logo de marca aparece con un spring sutil sobre fondo espresso,
- * sostiene un instante y se desvanece. Estilo "splash" moderno (tipo MercadoPago, sobrio).
+ * Pantalla de entrada: el isotipo de marca aparece con un spring sutil y el
+ * wordmark, sobre el fondo del tema (claro u oscuro). Se sostiene un instante
+ * y se desvanece. Coherente con el login.
  */
 export function AnimatedSplash({ onDone }: { onDone: () => void }) {
-  const logoOpacity = useSharedValue(0);
-  const logoScale = useSharedValue(0.82);
+  const { c } = useTheme();
+  const brandOpacity = useSharedValue(0);
+  const brandScale = useSharedValue(0.82);
   const rootOpacity = useSharedValue(1);
 
   useEffect(() => {
-    logoOpacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
-    logoScale.value = withSpring(1, { damping: 11, stiffness: 90, mass: 0.7 });
-    // Sostiene ~1s y se va con fade
+    brandOpacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
+    brandScale.value = withSpring(1, { damping: 11, stiffness: 90, mass: 0.7 });
     rootOpacity.value = withDelay(
       1250,
       withTiming(0, { duration: 420, easing: Easing.in(Easing.cubic) }, (finished) => {
@@ -28,19 +28,18 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
     );
   }, []);
 
-  const logoStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [{ scale: logoScale.value }],
+  const brandStyle = useAnimatedStyle(() => ({
+    opacity: brandOpacity.value,
+    transform: [{ scale: brandScale.value }],
   }));
   const rootStyle = useAnimatedStyle(() => ({ opacity: rootOpacity.value }));
 
   return (
-    <Animated.View style={[styles.root, rootStyle]} pointerEvents="none">
-      <Animated.Image
-        source={{ uri: LOGO }}
-        style={[styles.logo, logoStyle]}
-        resizeMode="contain"
-      />
+    <Animated.View style={[styles.root, rootStyle, { backgroundColor: c.bg }]} pointerEvents="none">
+      <Animated.View style={[styles.brand, brandStyle]}>
+        <HorseshoeH size={58} strokeWidth={1.8} color={c.brand} />
+        <Text style={[styles.wordmark, { color: c.text }]}>HandicApp</Text>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -48,10 +47,10 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.gray900,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
   },
-  logo: { width: 200, height: 90 },
+  brand: { alignItems: 'center', gap: 14 },
+  wordmark: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
 });
