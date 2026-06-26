@@ -326,12 +326,19 @@ export default function ArbolScreen() {
         title="Árbol genealógico"
         showBack
         backTo={Routes.mas}
-        right={<DepthToggle value={maxGen} onChange={setMaxGen} s={s} />}
       />
 
       {/* Controls */}
       <View style={s.controls}>
         <SearchBar onSelect={handleSelect} s={s} c={c} />
+
+        {/* Selector de generaciones (sólo con árbol cargado) */}
+        {selectedId && (
+          <View style={s.depthRowWrap}>
+            <Text style={s.depthRowLabel}>Generaciones</Text>
+            <DepthToggle value={maxGen} onChange={setMaxGen} s={s} />
+          </View>
+        )}
 
         {/* Breadcrumb */}
         {history.length > 1 && (
@@ -471,6 +478,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: 11,
     color: c.textFaint,
     marginTop: 1,
+  },
+  depthRowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  depthRowLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: c.textFaint,
   },
   depthRow: {
     flexDirection: 'row',
