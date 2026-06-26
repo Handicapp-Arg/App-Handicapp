@@ -6,12 +6,16 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#f9fafb",
+      "dark": {
+        "image": "./assets/splash-logo.png",
+        "backgroundColor": "#0b0b0c"
+      }
     },
     "ios": {
       "supportsTablet": true,
