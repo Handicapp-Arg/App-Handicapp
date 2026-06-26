@@ -262,7 +262,7 @@ export default function DirectorioScreen() {
             );
           }}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
         />
       )}
 

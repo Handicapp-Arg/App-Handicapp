@@ -181,7 +181,7 @@ export default function FacturacionScreen() {
               </Animated.View>
             );
           }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
           showsVerticalScrollIndicator={false}
         />
       )}

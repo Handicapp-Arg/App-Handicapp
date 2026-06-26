@@ -154,7 +154,7 @@ export default function SolicitudesScreen() {
           data={filtered}
           keyExtractor={(r) => r.id}
           contentContainerStyle={s.list}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
               <RequestRow

@@ -126,7 +126,7 @@ export default function SuperAdminScreen() {
         data={orgs ?? []}
         keyExtractor={(o) => o.id}
         contentContainerStyle={s.list}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
         ListHeaderComponent={
           <View style={{ gap: space[3], marginBottom: space[3] }}>
             {metrics && (

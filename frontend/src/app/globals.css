@@ -167,15 +167,17 @@
   --color-accent:        var(--color-amber-glow);
   --color-accent-light:  rgba(210, 170, 120, 0.16);
 
-  /* Escala gris neutra invertida (50 = más oscuro … 900 = más claro) */
+  /* Escala gris neutra invertida (50 = más oscuro … 900 = más claro).
+     300/400 algo más claros para que el texto tenue sea legible en dark. */
   --color-gray-50:  #18181b;
   --color-gray-100: #232327;
   --color-gray-200: #27272a;
-  --color-gray-300: #3f3f46;
-  --color-gray-400: #6b6b73;
+  --color-gray-300: #52525b;
+  --color-gray-400: #7c7c85;
   --color-gray-500: #a1a1aa;
   --color-gray-600: #d4d4d8;
   --color-gray-700: #e4e4e7;
+  --color-gray-800: #f4f4f5;
   --color-gray-900: #fafafa;
 
   /* Navy legacy → mismos neutros (navy-700 = acento cuero para foco/marca) */
@@ -185,6 +187,7 @@
   --color-navy-300: #3f3f46;
   --color-navy-400: #6b6b73;
   --color-navy-500: #a1a1aa;
+  --color-navy-600: #d4d4d8;
   --color-navy-700: #d2aa78;
   --color-navy-800: #e4e4e7;
   --color-navy-900: #fafafa;
@@ -193,8 +196,8 @@
   --color-slate-50:  #18181b;
   --color-slate-100: #232327;
   --color-slate-200: #27272a;
-  --color-slate-300: #3f3f46;
-  --color-slate-400: #6b6b73;
+  --color-slate-300: #52525b;
+  --color-slate-400: #7c7c85;
   --color-slate-500: #a1a1aa;
   --color-slate-600: #d4d4d8;
   --color-slate-700: #e4e4e7;
@@ -237,6 +240,12 @@
   --color-danger-50:  rgba(239,68,68,.15);  --color-danger-700:  #fca5a5;
   --color-info-50:    rgba(59,130,246,.15);
   --color-gold-50:    rgba(196,146,42,.18); --color-gold-600:    #dbb27a;
+
+  /* Cuero suave (clay-50/100) → tinte cuero oscuro en dark.
+     Son fondos de chips/cards de marca (ej. notificación no leída); claros
+     quedan mal sobre el dark. clay-300/400/500 (acentos sólidos) NO se tocan. */
+  --color-clay-50:  rgba(210, 170, 120, 0.12);
+  --color-clay-100: rgba(210, 170, 120, 0.20);
 
   --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);

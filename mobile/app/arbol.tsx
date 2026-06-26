@@ -8,6 +8,7 @@ import { Search, ShieldCheck, Clock, GitBranch, ChevronLeft } from 'lucide-react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../hooks/use-horse-records';
 import { useTheme, type ThemeColors } from '../lib/theme';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const NODE_W   = 148;
@@ -318,16 +319,16 @@ export default function ArbolScreen() {
   const layout = tree ? buildLayout(tree, maxGen) : null;
 
   return (
-    <View style={[s.screen, { paddingTop: insets.top }]}>
+    <View style={s.screen}>
       {/* Header */}
-      <View style={s.header}>
-        <View style={s.headerTop}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <GitBranch size={18} color={c.brand} strokeWidth={2} />
-            <Text style={s.title}>Árbol Genealógico</Text>
-          </View>
-          <DepthToggle value={maxGen} onChange={setMaxGen} s={s} />
-        </View>
+      <ScreenHeader
+        title="Árbol genealógico"
+        showBack
+        right={<DepthToggle value={maxGen} onChange={setMaxGen} s={s} />}
+      />
+
+      {/* Controls */}
+      <View style={s.controls}>
         <SearchBar onSelect={handleSelect} s={s} c={c} />
 
         {/* Breadcrumb */}
@@ -407,12 +408,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: c.bg,
   },
-  header: {
+  controls: {
     backgroundColor: c.surface,
     borderBottomWidth: 1,
     borderBottomColor: c.border,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 10,
     gap: 10,
     shadowColor: '#0f1f3d',
@@ -421,17 +422,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     zIndex: 10,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: c.text,
-    letterSpacing: -0.3,
   },
   searchWrap: {
     position: 'relative',

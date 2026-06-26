@@ -412,7 +412,7 @@ export default function HorseDetailScreen() {
       style={s.root}
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
     >
       {/* ─── Hero: aspect ratio, Dynamic Island safe ─── */}
       <View style={s.heroWrap}>

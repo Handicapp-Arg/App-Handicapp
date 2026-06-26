@@ -767,7 +767,7 @@ export default function CaballosScreen() {
           </Animated.View>
         )}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
         }
         showsVerticalScrollIndicator={false}
       />

@@ -346,7 +346,7 @@ export default function EventosScreen() {
               </View>
             ) : null
           }
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} />}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
           showsVerticalScrollIndicator={false}
         />
       )}

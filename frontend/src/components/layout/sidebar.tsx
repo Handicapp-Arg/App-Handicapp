@@ -1,10 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Newspaper, ScrollText, Network, CalendarClock, Gavel,
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { HorseHeadLine, HorseshoeH } from '@/components/icons/equine';
@@ -13,24 +15,27 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number };
 type NavSection = { label: string; items: NavItem[] };
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
   return (
     <Link
       href={item.href}
-      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+      title={collapsed ? item.label : undefined}
+      className={`group relative flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
+        collapsed ? 'justify-center px-0' : 'px-3'
+      } ${
         active
           ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-fg)]'
           : 'text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
       }`}
     >
-      {active && (
+      {active && !collapsed && (
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--color-primary)]" />
       )}
       <span className={`shrink-0 transition-colors ${active ? 'text-[var(--color-primary)]' : 'text-[var(--sidebar-fg-faint)] group-hover:text-[var(--sidebar-fg-muted)]'}`}>
         {item.icon}
       </span>
-      <span className="flex-1 truncate tracking-[-0.01em] leading-none">{item.label}</span>
-      {item.badge != null && item.badge > 0 && (
+      {!collapsed && <span className="flex-1 truncate tracking-[-0.01em] leading-none">{item.label}</span>}
+      {!collapsed && item.badge != null && item.badge > 0 && (
         <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
           {item.badge > 9 ? '9+' : item.badge}
         </span>
@@ -39,7 +44,10 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-function SectionDivider({ label }: { label: string }) {
+function SectionDivider({ label, collapsed }: { label: string; collapsed: boolean }) {
+  if (collapsed) {
+    return <div className="mx-3 my-2 h-px bg-[var(--sidebar-border)]" />;
+  }
   return (
     <div className="px-3 pt-5 pb-2">
       <div className="flex items-center gap-2">
@@ -55,6 +63,17 @@ const ic = 'h-5 w-5';
 export function Sidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem('handicapp:sidebar') === '1') setCollapsed(true);
+  }, []);
+
+  const toggle = () => setCollapsed((prev) => {
+    const next = !prev;
+    localStorage.setItem('handicapp:sidebar', next ? '1' : '0');
+    return next;
+  });
 
   /* ─── Íconos (lucide + ecuestres de marca, mismo set que el móvil) ─── */
   const icons = {
@@ -131,29 +150,36 @@ export function Sidebar() {
       ].filter((s) => s.items.length > 0);
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]">
+    <aside
+      className={`hidden md:flex sticky top-0 h-screen flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)] transition-[width] duration-300 ease-out ${
+        collapsed ? 'w-[68px]' : 'w-[220px]'
+      }`}
+    >
 
-      {/* Brand — isotipo de marca (herradura + H) + wordmark monocromático */}
-      <div className="px-5 pt-6 pb-5">
-        <Link href="/" className="flex items-center gap-2.5">
+      {/* Brand — isotipo + wordmark (oculto al contraer) */}
+      <div className={`pt-6 pb-5 ${collapsed ? 'px-0' : 'px-5'}`}>
+        <Link href="/" className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : ''}`}>
           <HorseshoeH size={26} strokeWidth={2} className="text-[var(--color-primary)] shrink-0" />
-          <span className="font-display text-[20px] font-semibold tracking-[-0.01em] text-[var(--sidebar-fg)]">
-            HandicApp
-          </span>
+          {!collapsed && (
+            <span className="font-display text-[20px] font-semibold tracking-[-0.01em] text-[var(--sidebar-fg)] whitespace-nowrap">
+              HandicApp
+            </span>
+          )}
         </Link>
       </div>
 
       {/* Nav con secciones */}
-      <nav className="flex-1 overflow-y-auto px-2 py-2">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2">
         {sections.map((section) => (
           <div key={section.label}>
-            <SectionDivider label={section.label} />
+            <SectionDivider label={section.label} collapsed={collapsed} />
             <div className="space-y-px">
               {section.items.map((item) => (
                 <NavLink
                   key={item.href}
                   item={item}
                   active={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                  collapsed={collapsed}
                 />
               ))}
             </div>
@@ -161,12 +187,26 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer — control de tema (manejo de fondos) */}
-      <div className="border-t border-[var(--sidebar-border)] px-3 py-3">
-        <div className="flex items-center justify-between gap-2 px-1">
-          <span className="text-[11px] font-medium text-[var(--sidebar-fg-faint)]">Tema</span>
-          <ThemeToggle />
-        </div>
+      {/* Footer — tema + botón contraer */}
+      <div className="border-t border-[var(--sidebar-border)] px-2.5 py-3 space-y-2">
+        {!collapsed && (
+          <div className="flex items-center justify-between gap-2 px-1.5">
+            <span className="text-[11px] font-medium text-[var(--sidebar-fg-faint)]">Tema</span>
+            <ThemeToggle />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={toggle}
+          title={collapsed ? 'Expandir' : 'Contraer'}
+          className={`flex w-full items-center gap-2.5 rounded-lg py-2 text-[12.5px] font-medium text-[var(--sidebar-fg-faint)] transition-colors hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg-muted)] cursor-pointer ${
+            collapsed ? 'justify-center px-0' : 'px-2'
+          }`}
+        >
+          {collapsed
+            ? <PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            : <><PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={1.8} /><span>Contraer</span></>}
+        </button>
       </div>
 
     </aside>

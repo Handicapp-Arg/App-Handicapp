@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, Plus, Trophy, Tag, Megaphone, XCircle } from 'lucide-react-native';
 import { useAuctions } from '../../hooks/use-auctions';
+import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
@@ -81,7 +81,6 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
 
 export default function RematesTab() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('active');
   const { c } = useTheme();
@@ -94,22 +93,6 @@ export default function RematesTab() {
 
   const Header = (
     <>
-      {/* Header */}
-      <View style={s.header}>
-        <View>
-          <Text style={s.title}>Remates</Text>
-          <Text style={s.subtitle}>Comprá y vendé equinos</Text>
-        </View>
-        <TouchableOpacity
-          style={s.publishBtn}
-          onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
-          activeOpacity={0.85}
-        >
-          <Plus size={18} color={colors.white} strokeWidth={2} />
-          <Text style={s.publishBtnText}>Publicar</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Búsqueda */}
       <View style={s.searchRow}>
         <View style={s.searchBox}>
@@ -150,7 +133,19 @@ export default function RematesTab() {
   );
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <View style={s.root}>
+      <ScreenHeader
+        title="Remates"
+        subtitle="Comprá y vendé equinos"
+        showBack
+        right={
+          <HeaderButton
+            label="Publicar"
+            icon={Plus}
+            onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
+          />
+        }
+      />
       {isLoading ? (
         <View>
           {Header}
@@ -211,19 +206,6 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
-    paddingHorizontal: space[5], paddingBottom: space[3],
-  },
-  title: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: text.sm, color: c.textFaint, marginTop: 2 },
-  publishBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: space[1] + 2,
-    backgroundColor: c.brand, borderRadius: radius.lg,
-    paddingHorizontal: space[3] + 2, paddingVertical: space[2] + 2,
-    marginTop: 4,
-  },
-  publishBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 
   searchRow: { paddingHorizontal: space[4], paddingBottom: space[2] },
   searchBox: {

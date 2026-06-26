@@ -182,7 +182,7 @@ export default function ContratosScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
       >
         {header}
         <View style={s.body}>

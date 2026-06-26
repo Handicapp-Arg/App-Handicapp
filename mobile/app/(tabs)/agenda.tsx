@@ -300,7 +300,7 @@ export default function AgendaScreen() {
         <ScrollView
           contentContainerStyle={{ paddingBottom: space[8] }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
         >
           {Header}
           <MonthCalendar
@@ -360,7 +360,7 @@ export default function AgendaScreen() {
               ) : null)}
             </Animated.View>
           )}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
           showsVerticalScrollIndicator={false}
         />
       )}

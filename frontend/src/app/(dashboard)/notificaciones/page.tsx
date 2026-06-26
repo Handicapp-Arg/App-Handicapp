@@ -1,18 +1,34 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import {
+  FileText, Stethoscope, Receipt, AlertCircle, File,
+  CheckCircle2, XCircle, UserPlus, Users, Home, Trophy, Award, Lock,
+  ArrowUp, Bell, type LucideIcon,
+} from 'lucide-react';
 import { useNotifications, useMarkAsRead } from '@/hooks/use-notifications';
 import { PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 
 type NotifData = { id: string; title: string; message: string; read: boolean; type: string; created_at: string; event_id: string | null };
 
-const TYPE_ICON: Record<string, string> = {
-  event_created: '📋',
-  health_reminder: '💊',
-  billing: '💰',
-  contract: '📄',
-  default: '🔔',
+const TYPE_META: Record<string, { icon: LucideIcon; chip: string }> = {
+  event_created:       { icon: FileText,     chip: 'bg-blue-50 text-blue-600' },
+  health_reminder:     { icon: Stethoscope,  chip: 'bg-red-50 text-red-600' },
+  billing:             { icon: Receipt,      chip: 'bg-clay-100 text-clay-600' },
+  bill_created:        { icon: Receipt,      chip: 'bg-clay-100 text-clay-600' },
+  bill_disputed:       { icon: AlertCircle,  chip: 'bg-amber-50 text-amber-600' },
+  contract:            { icon: File,         chip: 'bg-emerald-50 text-emerald-600' },
+  contract_signed:     { icon: CheckCircle2, chip: 'bg-emerald-50 text-emerald-600' },
+  contract_rejected:   { icon: XCircle,      chip: 'bg-red-50 text-red-600' },
+  invitation_received: { icon: UserPlus,     chip: 'bg-blue-50 text-blue-600' },
+  invitation_accepted: { icon: Users,        chip: 'bg-emerald-50 text-emerald-600' },
+  boarding_request:    { icon: Home,         chip: 'bg-orange-50 text-orange-600' },
+  bid_placed:          { icon: Trophy,       chip: 'bg-orange-50 text-orange-600' },
+  auction_won:         { icon: Award,        chip: 'bg-emerald-50 text-emerald-600' },
+  auction_closed:      { icon: Lock,         chip: 'bg-gray-100 text-gray-500' },
+  auction_outbid:      { icon: ArrowUp,      chip: 'bg-red-50 text-red-600' },
+  default:             { icon: Bell,         chip: 'bg-gray-100 text-gray-500' },
 };
 
 function NotifItem({
@@ -24,7 +40,8 @@ function NotifItem({
   onRead: (id: string) => void;
   onClick: (n: NotifData) => void;
 }) {
-  const icon = TYPE_ICON[n.type] ?? TYPE_ICON.default;
+  const meta = TYPE_META[n.type] ?? TYPE_META.default;
+  const Icon = meta.icon;
   const timeStr = new Date(n.created_at).toLocaleString('es-AR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   });
@@ -38,10 +55,8 @@ function NotifItem({
           : 'bg-clay-50 ring-1 ring-clay-100 hover:bg-clay-100/50'
       }`}
     >
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${
-        n.read ? 'bg-gray-50' : 'bg-clay-100'
-      }`}>
-        {icon}
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.chip}`}>
+        <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
@@ -53,7 +68,7 @@ function NotifItem({
         <p className={`mt-0.5 text-sm leading-relaxed ${n.read ? 'text-gray-400' : 'text-gray-600'}`}>
           {n.message}
         </p>
-        <p className="mt-1.5 text-xs text-gray-300">{timeStr}</p>
+        <p className="mt-1.5 text-xs text-gray-400">{timeStr}</p>
       </div>
       {!n.read && (
         <button
