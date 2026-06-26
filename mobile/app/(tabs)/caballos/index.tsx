@@ -5,7 +5,7 @@ import {
   Platform, ScrollView, ActivityIndicator, ActionSheetIOS, Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -146,7 +146,7 @@ function QuickGastoModal({
 
   return (
     <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.modalCard}>
+      <Animated.View style={styles.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={styles.modalHeader}>
           <View>
             <Text style={styles.modalTitle}>Registrar gasto</Text>
@@ -239,7 +239,7 @@ function QuickGastoModal({
             }
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -336,7 +336,7 @@ function RecordMatchModal({
 
   if (step === 'done') {
     return (
-      <View style={styles.matchCard}>
+      <Animated.View style={styles.matchCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={styles.matchDoneWrap}>
           <CheckCircle2 size={52} color="#047857" strokeWidth={2} />
           <Text style={styles.matchDoneTitle}>¡Reclamo aprobado!</Text>
@@ -345,14 +345,14 @@ function RecordMatchModal({
             <Text style={styles.submitBtnText}>Listo</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     );
   }
 
   if (step === 'form' && selectedRecord) {
     return (
       <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.matchCard}>
+        <Animated.View style={styles.matchCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={styles.modalHeader}>
             <View>
               <Text style={styles.modalTitle}>Validar posesión</Text>
@@ -419,13 +419,13 @@ function RecordMatchModal({
               }
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     );
   }
 
   return (
-    <View style={styles.matchCard}>
+    <Animated.View style={styles.matchCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
       <View style={styles.modalHeader}>
         <View>
           <Text style={styles.modalTitle}>Posibles coincidencias</Text>
@@ -466,7 +466,7 @@ function RecordMatchModal({
           <Text style={styles.cancelBtnText}>Omitir por ahora</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -545,7 +545,7 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
 
   return (
     <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.modalCard}>
+      <Animated.View style={styles.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Nuevo caballo</Text>
           <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
@@ -612,7 +612,7 @@ function CreateHorseModal({ onClose }: { onClose: () => void }) {
             }
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -768,7 +768,7 @@ export default function CaballosScreen() {
       )}
 
       {/* Modal: crear caballo */}
-      <Modal visible={showCreate} animationType="slide" transparent>
+      <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
         <View style={styles.modalOverlay}>
           <CreateHorseModal onClose={() => setShowCreate(false)} />
         </View>
@@ -777,8 +777,9 @@ export default function CaballosScreen() {
       {/* Modal: registrar gasto rápido */}
       <Modal
         visible={quickGastoHorse !== undefined}
-        animationType="slide"
+        animationType="fade"
         transparent
+        statusBarTranslucent
         onRequestClose={() => setQuickGastoHorse(undefined)}
       >
         <View style={styles.modalOverlay}>
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.gray600 },
   filterChipTextActive: { color: colors.white },
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100 },

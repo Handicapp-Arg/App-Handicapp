@@ -133,7 +133,7 @@ export default function RegistroScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.espresso },
+  root: { flex: 1, backgroundColor: colors.gray900 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 32 },
   logo: { width: 190, height: 80 },

@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
@@ -75,7 +75,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
 
   return (
     <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={modalStyle.sheet}>
+      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         {/* Header */}
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Nuevo evento</Text>
@@ -228,7 +228,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
             }
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -346,7 +346,7 @@ export default function EventosScreen() {
         />
       )}
 
-      <Modal visible={showCreate} animationType="slide" transparent>
+      <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
         <CreateEventModal onClose={() => setShowCreate(false)} />
       </Modal>
     </View>

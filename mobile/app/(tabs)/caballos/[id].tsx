@@ -415,7 +415,11 @@ export default function HorseDetailScreen() {
       <View style={s.heroWrap}>
         {horse.image_url
           ? <Image source={{ uri: horse.image_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          : <View style={[StyleSheet.absoluteFill, s.heroPlaceholder]} />
+          : (
+            <View style={[StyleSheet.absoluteFill, s.heroPlaceholder]}>
+              <Text style={s.heroPlaceholderInitial}>{horse.name[0]?.toUpperCase()}</Text>
+            </View>
+          )
         }
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.75)']}
@@ -468,10 +472,15 @@ export default function HorseDetailScreen() {
       <View style={s.sheet}>
 
       {/* ─── Tab bar ─── */}
-      <View style={s.tabBar}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.tabBar}
+        contentContainerStyle={s.tabBarContent}
+      >
         {TABS.map(({ key, label, icon }) => {
           const TabIconCmp = icon;
-          const tabColor = activeTab === key ? colors.brand : colors.gray400;
+          const tabColor = activeTab === key ? colors.gray900 : colors.gray400;
           return (
             <TouchableOpacity
               key={key}
@@ -479,12 +488,12 @@ export default function HorseDetailScreen() {
               onPress={() => { haptic.selection(); setActiveTab(key); }}
               activeOpacity={0.7}
             >
-              <TabIconCmp size={15} color={tabColor} strokeWidth={2} />
+              <TabIconCmp size={18} color={tabColor} strokeWidth={2} />
               <Text style={[s.tabLabel, activeTab === key && s.tabLabelActive]}>{label}</Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* ════════════════ TAB: INFO ════════════════ */}
       {activeTab === 'info' && (
@@ -1361,8 +1370,9 @@ const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
 
   /* Hero */
-  heroWrap: { aspectRatio: 16 / 9, position: 'relative', backgroundColor: '#1a1a2e' },
-  heroPlaceholder: { backgroundColor: '#1a2744' },
+  heroWrap: { aspectRatio: 16 / 9, position: 'relative', backgroundColor: colors.gray900 },
+  heroPlaceholder: { backgroundColor: colors.gray900, alignItems: 'center', justifyContent: 'center' },
+  heroPlaceholderInitial: { fontSize: 80, fontWeight: '800', color: colors.brand300 },
   heroPill: {
     position: 'absolute', width: 36, height: 36, borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -1393,13 +1403,15 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   tabBar: {
-    flexDirection: 'row', backgroundColor: colors.white,
+    backgroundColor: colors.white,
     borderBottomWidth: 1, borderBottomColor: colors.gray100,
+    flexGrow: 0,
   },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 3, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabItemActive: { borderBottomColor: colors.brand },
-  tabLabel: { fontSize: 10, fontWeight: '600', color: colors.gray400 },
-  tabLabelActive: { color: colors.brand },
+  tabBarContent: { paddingHorizontal: 8 },
+  tabItem: { alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 16, gap: 5, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabItemActive: { borderBottomColor: colors.gray900 },
+  tabLabel: { fontSize: 12, fontWeight: '600', color: colors.gray400 },
+  tabLabelActive: { color: colors.gray900 },
 
   /* Sections */
   section: { margin: 16, gap: 10 },

@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
   Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBills, useSendBill, useApproveBill, useDisputeBill, STATUS_META, monthLabel } from '../../hooks/use-billing';
 import { formatCurrency } from '../../lib/currency';
@@ -22,7 +22,7 @@ function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void
 
   return (
     <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={modalStyle.sheet}>
+      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Disputar factura</Text>
           <TouchableOpacity onPress={onClose}><Text style={modalStyle.closeText}>✕</Text></TouchableOpacity>
@@ -57,7 +57,7 @@ function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void
             }
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -181,7 +181,7 @@ export default function FacturacionScreen() {
         />
       )}
 
-      <Modal visible={!!disputingId} animationType="slide" transparent>
+      <Modal visible={!!disputingId} animationType="fade" transparent statusBarTranslucent>
         {disputingId && <DisputeModal billId={disputingId} onClose={() => setDisputingId(null)} />}
       </Modal>
     </View>

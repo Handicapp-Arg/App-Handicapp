@@ -25,7 +25,7 @@ import {
   Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
   Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check,
 } from 'lucide-react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { HorseIcon } from '../../components/icons/equine';
 import { PostSkeleton } from '../../components/Skeleton';
 import { InlineSearch } from '../../components/InlineSearch';
@@ -296,6 +296,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
 function Composer({ user }: { user: { name: string; role: string } }) {
   const createPost = useCreatePost();
   const { data: myHorses } = useHorses();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [media, setMedia] = useState<{ uri: string; isVideo: boolean }[]>([]);
@@ -373,9 +374,9 @@ function Composer({ user }: { user: { name: string; role: string } }) {
 
   return (
     <>
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
+    <Modal visible animationType="slide" onRequestClose={() => setOpen(false)}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <View style={s.composerModal}>
+        <View style={[s.composerModal, { paddingTop: insets.top }]}>
           <View style={s.composerModalHeader}>
             <TouchableOpacity onPress={() => setOpen(false)} activeOpacity={0.7}>
               <Text style={s.composerCancel}>Cancelar</Text>
@@ -480,9 +481,9 @@ function Composer({ user }: { user: { name: string; role: string } }) {
       </KeyboardAvoidingView>
     </Modal>
 
-    <Modal visible={showHorseSelect} transparent animationType="slide" onRequestClose={() => setShowHorseSelect(false)}>
+    <Modal visible={showHorseSelect} transparent animationType="fade" onRequestClose={() => setShowHorseSelect(false)} statusBarTranslucent>
       <TouchableOpacity style={s.selectOverlay} activeOpacity={1} onPress={() => setShowHorseSelect(false)}>
-        <View style={s.selectSheet}>
+        <Animated.View style={s.selectSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.selectHandle} />
           <Text style={s.selectTitle}>Etiquetar un caballo</Text>
           <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
@@ -505,7 +506,7 @@ function Composer({ user }: { user: { name: string; role: string } }) {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </Animated.View>
       </TouchableOpacity>
     </Modal>
     </>
@@ -544,9 +545,6 @@ export default function MuroTab() {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/notificaciones')} hitSlop={8} activeOpacity={0.7}>
           <Bell size={24} color={colors.gray700} strokeWidth={2} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/perfil')} hitSlop={8} activeOpacity={0.7}>
-          <Avatar name={user?.name ?? 'U'} size={30} />
         </TouchableOpacity>
       </View>
     </View>
@@ -704,7 +702,7 @@ const s = StyleSheet.create({
   footerLeft: { flexDirection: 'row', alignItems: 'center' },
   tagBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: 160, backgroundColor: colors.gray50, borderRadius: 20, paddingHorizontal: space[3], paddingVertical: space[2] },
   tagBtnText: { fontSize: text.sm, color: colors.gray500, fontWeight: weight.medium, fontFamily: fontFamily.medium },
-  selectOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  selectOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   selectSheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: space[4], paddingBottom: 36, paddingHorizontal: space[4] },
   selectTitle: { fontSize: text.base, fontWeight: weight.bold, fontFamily: fontFamily.semibold, color: colors.gray900, marginBottom: space[2], paddingHorizontal: space[2] },
   selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: 1, borderBottomColor: colors.gray100 },

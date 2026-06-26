@@ -82,6 +82,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="facturacion"   options={{ href: null }} />
       <Tabs.Screen name="remates"       options={{ href: null }} />
       <Tabs.Screen name="notificaciones" options={{ href: null }} />
+      <Tabs.Screen name="directorio"     options={{ href: null }} />
+      <Tabs.Screen name="contratos"      options={{ href: null }} />
     </Tabs>
   );
 }

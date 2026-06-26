@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react-native';
 import { Stack } from 'expo-router';
-import { View, ActivityIndicator, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { useState } from 'react';
 
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
@@ -17,8 +18,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { NotificationsProvider } from '../lib/notifications';
-import { colors } from '../lib/colors';
 import { StatusBar } from 'expo-status-bar';
+import { AnimatedSplash } from '../components/AnimatedSplash';
+import { ThemeProvider, useTheme } from '../lib/theme';
 
 // Quita el contorno negro de foco de los inputs en la versión web (no afecta al celular real).
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -44,6 +46,11 @@ function InnerLayout() {
   );
 }
 
+function ThemedStatusBar() {
+  const { scheme } = useTheme();
+  return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -52,23 +59,21 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
-
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator color={colors.brand} />
-      </View>
-    );
-  }
+  const [showSplash, setShowSplash] = useState(true);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar style="dark" />
-        <AuthProvider>
-          <InnerLayout />
-        </AuthProvider>
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <SafeAreaProvider>
+          <ThemedStatusBar />
+          {fontsLoaded && (
+            <AuthProvider>
+              <InnerLayout />
+            </AuthProvider>
+          )}
+          {showSplash && <AnimatedSplash onDone={() => setShowSplash(false)} />}
+        </SafeAreaProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

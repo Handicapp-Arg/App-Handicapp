@@ -165,7 +165,7 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.espresso },
+  root: { flex: 1, backgroundColor: colors.gray900 },
   watermark: {
     position: 'absolute', width: 360, height: 360,
     bottom: -90, right: -110, opacity: 0.04,

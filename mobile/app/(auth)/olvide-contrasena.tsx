@@ -98,7 +98,7 @@ export default function OlvideContrasenaScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.espresso, justifyContent: 'center', padding: space[6] },
+  root: { flex: 1, backgroundColor: colors.gray900, justifyContent: 'center', padding: space[6] },
   logo: { width: 150, height: 64, alignSelf: 'center', marginBottom: space[5] },
   card: { backgroundColor: colors.white, borderRadius: radius['2xl'], padding: space[6], gap: space[4] },
   title: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },

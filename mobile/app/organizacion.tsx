@@ -4,7 +4,7 @@ import {
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
   Alert, Share,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { CheckCircle2, Share2, X, XCircle } from 'lucide-react-native';
 import {
   useMyOrganizations, useOrganization, useOrgInvitations,
@@ -50,9 +50,9 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
   };
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={s.modalSheet}>
+        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{createdLink ? 'Invitación lista' : 'Invitar miembro'}</Text>
             <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
@@ -127,7 +127,7 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
               </View>
             </>
           )}
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -328,7 +328,7 @@ const s = StyleSheet.create({
   roleBadgeTextOwner: { color: '#92400e' },
 
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },

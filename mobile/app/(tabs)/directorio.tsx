@@ -3,19 +3,20 @@ import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
   RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Search, XCircle } from 'lucide-react-native';
-import api from '../lib/api';
-import { useHorses } from '../hooks/use-horses';
-import { useAuth } from '../lib/auth';
-import { useBoardingRequests, useCreateBoardingRequest } from '../hooks/use-boarding-requests';
-import { ScreenHeader } from '../components/ScreenHeader';
-import { EmptyState } from '../components/EmptyState';
-import { ListRowSkeleton } from '../components/Skeleton';
-import { haptic } from '../lib/haptics';
-import { colors } from '../lib/colors';
-import { space, text, radius, weight } from '../styles/tokens';
+import api from '../../lib/api';
+import { useHorses } from '../../hooks/use-horses';
+import { useAuth } from '../../lib/auth';
+import { useBoardingRequests, useCreateBoardingRequest } from '../../hooks/use-boarding-requests';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { ListRowSkeleton } from '../../components/Skeleton';
+import { haptic } from '../../lib/haptics';
+import { colors } from '../../lib/colors';
+import { space, text, radius, weight } from '../../styles/tokens';
 
 interface DirectorioItem {
   id: string;
@@ -68,9 +69,9 @@ function RequestModal({
   };
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={s.modalSheet}>
+        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Solicitar alojamiento</Text>
             <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
@@ -134,13 +135,14 @@ function RequestModal({
               }
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 export default function DirectorioScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -161,9 +163,9 @@ export default function DirectorioScreen() {
 
   const pendingRequests = myRequests?.filter((r) => r.status === 'pending') ?? [];
 
-  return (
-    <View style={s.root}>
-      <ScreenHeader title="Directorio" showBack />
+  const ListHeader = (
+    <>
+      <ScreenHeader scrollable title="Directorio" showBack />
 
       {/* Solicitudes pendientes propias */}
       {isPropietario && pendingRequests.length > 0 && (
@@ -193,27 +195,36 @@ export default function DirectorioScreen() {
           </TouchableOpacity>
         )}
       </View>
+    </>
+  );
 
+  return (
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {isLoading ? (
-        <View style={s.list}>
-          {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
-        </View>
-      ) : !data?.length ? (
-        <EmptyState
-          icon="business-outline"
-          title={search ? 'Sin resultados' : 'Sin establecimientos'}
-          message={search ? `No encontramos resultados para "${search}".` : 'No hay establecimientos registrados.'}
-        />
+        <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+          {ListHeader}
+          <View style={s.itemWrap}>
+            {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
+          </View>
+        </ScrollView>
       ) : (
         <FlatList
-          data={data}
+          data={data ?? []}
           keyExtractor={(d) => d.id}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            <EmptyState
+              icon="business-outline"
+              title={search ? 'Sin resultados' : 'Sin establecimientos'}
+              message={search ? `No encontramos resultados para "${search}".` : 'No hay establecimientos registrados.'}
+            />
+          }
           renderItem={({ item, index }) => {
             const hasPending = pendingForEstab(item.id);
             return (
-              <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.card}>
+              <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={[s.itemWrap, s.card]}>
                 <View style={s.avatar}>
                   <Text style={s.avatarText}>{item.name[0]?.toUpperCase()}</Text>
                 </View>
@@ -261,10 +272,11 @@ const s = StyleSheet.create({
   pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#92400e' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: space[3], paddingVertical: 2 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: colors.gray900 },
-  list: { paddingHorizontal: space[4], paddingBottom: space[8] },
+  list: { paddingBottom: space[8] },
+  itemWrap: { marginHorizontal: space[4] },
   card: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: '#e8edf5', padding: space[4], shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
+  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray700 },
   cardName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
   cardSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
   requestBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 7 },
@@ -272,7 +284,7 @@ const s = StyleSheet.create({
   pendingChip: { borderRadius: radius.full, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#fde68a' },
   pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: '#92400e' },
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },

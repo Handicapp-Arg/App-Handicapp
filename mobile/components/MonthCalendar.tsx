@@ -98,11 +98,11 @@ const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: space[1] },
   dayCircle: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
-  daySelected: { backgroundColor: colors.espresso },
+  daySelected: { backgroundColor: colors.gray900 },
   dayText: { fontSize: text.sm, color: colors.gray800, fontWeight: weight.medium },
   dayTextToday: { color: colors.brand, fontWeight: weight.bold },
   dayTextSelected: { color: colors.white, fontWeight: weight.bold },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2, backgroundColor: 'transparent' },
   dotOn: { backgroundColor: colors.brand },
-  dotOnSelected: { backgroundColor: colors.espresso },
+  dotOnSelected: { backgroundColor: colors.gray900 },
 });

@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   wrapDark: {
-    backgroundColor: colors.espresso,
+    backgroundColor: colors.gray900,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   row: {

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import { Check, Tag, Trophy, ArrowLeft, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
 import { HorseIcon } from '../../components/icons/equine';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
@@ -287,9 +288,9 @@ export default function CrearRemateScreen() {
 
               {/* iOS: modal con spinner */}
               {Platform.OS === 'ios' && (
-                <Modal visible={showDatePicker} transparent animationType="slide">
+                <Modal visible={showDatePicker} transparent animationType="fade" statusBarTranslucent>
                   <View style={s.pickerOverlay}>
-                    <View style={s.pickerSheet}>
+                    <Animated.View style={s.pickerSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
                       <View style={s.pickerHeader}>
                         <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                           <Text style={s.pickerCancel}>Cancelar</Text>
@@ -308,7 +309,7 @@ export default function CrearRemateScreen() {
                         locale="es-AR"
                         style={{ height: 200 }}
                       />
-                    </View>
+                    </Animated.View>
                   </View>
                 </Modal>
               )}
@@ -530,7 +531,7 @@ const s = StyleSheet.create({
   dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: colors.gray900 },
   dateTriggerSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
 
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   pickerSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   pickerHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

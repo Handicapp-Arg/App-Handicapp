@@ -3,16 +3,19 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal,
   KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../hooks/use-contracts';
-import { useAuth } from '../lib/auth';
-import { ScreenHeader } from '../components/ScreenHeader';
-import { EmptyState } from '../components/EmptyState';
-import { Skeleton } from '../components/Skeleton';
-import { haptic } from '../lib/haptics';
-import { colors } from '../lib/colors';
-import { space, text, radius, weight } from '../styles/tokens';
+import { FileText, ChevronDown } from 'lucide-react-native';
+import { PressableScale } from '../../components/PressableScale';
+import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../../hooks/use-contracts';
+import { useAuth } from '../../lib/auth';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { Skeleton } from '../../components/Skeleton';
+import { haptic } from '../../lib/haptics';
+import { colors } from '../../lib/colors';
+import { space, text, radius, weight } from '../../styles/tokens';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente', signed: 'Firmado', rejected: 'Rechazado',
@@ -51,10 +54,18 @@ function ContractCard({
 
   return (
     <View style={cStyles.card}>
-      <TouchableOpacity onPress={() => setExpanded((p) => !p)} activeOpacity={0.8} style={cStyles.cardHeader}>
-        <View style={{ flex: 1, gap: space[1] }}>
-          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+      <TouchableOpacity onPress={() => setExpanded((p) => !p)} activeOpacity={0.7} style={cStyles.cardHeader}>
+        <View style={cStyles.docIcon}>
+          <FileText size={22} color={colors.gray900} strokeWidth={2} />
+        </View>
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text style={cStyles.title} numberOfLines={1}>{contract.title}</Text>
+          <Text style={cStyles.meta} numberOfLines={1}>
+            {isOwner ? `De ${contract.establishment?.name}` : `Para ${contract.owner?.name}`} · {dateStr}
+          </Text>
+          <View style={cStyles.tagRow}>
             <View style={[cStyles.statusBadge, { backgroundColor: sc.bg }]}>
+              <View style={[cStyles.statusDot, { backgroundColor: sc.text }]} />
               <Text style={[cStyles.statusText, { color: sc.text }]}>{STATUS_LABEL[contract.status]}</Text>
             </View>
             {contract.horse && (
@@ -63,12 +74,13 @@ function ContractCard({
               </View>
             )}
           </View>
-          <Text style={cStyles.title} numberOfLines={1}>{contract.title}</Text>
-          <Text style={cStyles.meta}>
-            {isOwner ? `De: ${contract.establishment?.name}` : `Para: ${contract.owner?.name}`} · {dateStr}
-          </Text>
         </View>
-        <Text style={cStyles.chevron}>{expanded ? '▲' : '▽'}</Text>
+        <ChevronDown
+          size={18}
+          color={colors.gray300}
+          strokeWidth={2}
+          style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}
+        />
       </TouchableOpacity>
 
       {contract.status === 'signed' && contract.signed_name && (
@@ -92,12 +104,12 @@ function ContractCard({
 
           {isOwner && contract.status === 'pending' && (
             <View style={cStyles.actions}>
-              <TouchableOpacity style={cStyles.rejectBtn} onPress={() => onReject(contract)} activeOpacity={0.8}>
+              <PressableScale style={cStyles.rejectBtn} onPress={() => onReject(contract)}>
                 <Text style={cStyles.rejectBtnText}>Rechazar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={cStyles.signBtn} onPress={() => onSign(contract)} activeOpacity={0.8}>
+              </PressableScale>
+              <PressableScale style={cStyles.signBtn} onPress={() => onSign(contract)}>
                 <Text style={cStyles.signBtnText}>Firmar</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
           {isEstab && contract.status === 'pending' && (
@@ -120,6 +132,7 @@ function ContractCard({
 
 export default function ContratosScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: contracts, isLoading, refetch, isRefetching } = useContracts();
   const createContract = useCreateContract();
@@ -144,78 +157,83 @@ export default function ContratosScreen() {
   const pending = contracts?.filter((c) => c.status === 'pending') ?? [];
   const others = contracts?.filter((c) => c.status !== 'pending') ?? [];
 
-  return (
-    <View style={s.root}>
-      <ScreenHeader
-        title="Contratos"
-        showBack
-        right={isEstab ? (
-          <TouchableOpacity onPress={() => { haptic.medium(); setShowCreate(true); }} style={s.addBtn} activeOpacity={0.8}>
-            <Text style={s.addBtnText}>+ Nuevo</Text>
-          </TouchableOpacity>
-        ) : undefined}
-      />
+  const header = (
+    <ScreenHeader
+      scrollable
+      title="Contratos"
+      showBack
+      right={isEstab ? (
+        <TouchableOpacity onPress={() => { haptic.medium(); setShowCreate(true); }} style={s.addBtn} activeOpacity={0.8}>
+          <Text style={s.addBtnText}>+ Nuevo</Text>
+        </TouchableOpacity>
+      ) : undefined}
+    />
+  );
 
+  return (
+    <View style={[s.root, { paddingTop: insets.top }]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
       >
-        {isLoading && pending.length === 0 && others.length === 0 ? (
-          <View style={{ gap: space[3] }}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} style={cStyles.card}>
-                <View style={cStyles.cardHeader}>
-                  <View style={{ flex: 1, gap: space[1] + 2 }}>
-                    <Skeleton width={80} height={18} borderRadius={radius.full} />
-                    <Skeleton width="65%" height={14} />
-                    <Skeleton width="45%" height={11} />
+        {header}
+        <View style={s.body}>
+          {isLoading && pending.length === 0 && others.length === 0 ? (
+            <View style={{ gap: space[3] }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <View key={i} style={cStyles.card}>
+                  <View style={cStyles.cardHeader}>
+                    <View style={{ flex: 1, gap: space[1] + 2 }}>
+                      <Skeleton width={80} height={18} borderRadius={radius.full} />
+                      <Skeleton width="65%" height={14} />
+                      <Skeleton width="45%" height={11} />
+                    </View>
+                    <Skeleton width={14} height={14} />
                   </View>
-                  <Skeleton width={14} height={14} />
                 </View>
-              </View>
-            ))}
-          </View>
-        ) : !contracts?.length ? (
-          <EmptyState
-            icon="document-text-outline"
-            title="Sin contratos"
-            message={isEstab ? 'Creá un contrato digital para que el propietario lo firme desde la app.' : 'No tenés contratos pendientes por el momento.'}
-            tint={colors.brand}
-          />
-        ) : (
-          <>
-            {pending.length > 0 && (
-              <View style={s.group}>
-                <Text style={s.groupLabel}>PENDIENTES ({pending.length})</Text>
-                {pending.map((c, index) => (
-                  <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                    <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
-                      onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
-                  </Animated.View>
-                ))}
-              </View>
-            )}
-            {others.length > 0 && (
-              <View style={s.group}>
-                <Text style={s.groupLabel}>HISTORIAL</Text>
-                {others.map((c, index) => (
-                  <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                    <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
-                      onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
-                  </Animated.View>
-                ))}
-              </View>
-            )}
-          </>
-        )}
+              ))}
+            </View>
+          ) : !contracts?.length ? (
+            <EmptyState
+              icon="document-text-outline"
+              title="Sin contratos"
+              message={isEstab ? 'Creá un contrato digital para que el propietario lo firme desde la app.' : 'No tenés contratos pendientes por el momento.'}
+            />
+          ) : (
+            <>
+              {pending.length > 0 && (
+                <View style={s.group}>
+                  <Text style={s.groupLabel}>PENDIENTES ({pending.length})</Text>
+                  {pending.map((c, index) => (
+                    <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                      <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
+                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                    </Animated.View>
+                  ))}
+                </View>
+              )}
+              {others.length > 0 && (
+                <View style={s.group}>
+                  <Text style={s.groupLabel}>HISTORIAL</Text>
+                  {others.map((c, index) => (
+                    <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                      <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
+                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                    </Animated.View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
       </ScrollView>
 
       {/* Modal crear contrato */}
-      <Modal visible={showCreate} animationType="slide" transparent onRequestClose={() => setShowCreate(false)}>
+      <Modal visible={showCreate} animationType="fade" transparent onRequestClose={() => setShowCreate(false)} statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={s.modalCard}>
+          <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Nuevo contrato</Text>
               <TouchableOpacity onPress={() => { setShowCreate(false); setEmailToSearch(''); setCreateOwnerEmail(''); }}>
@@ -301,14 +319,14 @@ export default function ContratosScreen() {
                 }
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Modal firmar */}
-      <Modal visible={!!signingContract} animationType="slide" transparent>
+      <Modal visible={!!signingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={[s.modalCard, { maxHeight: '50%' }]}>
+          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
             <View style={[s.modalHeader, { backgroundColor: '#16a34a' }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Firmar digitalmente</Text>
               <TouchableOpacity onPress={() => setSigningContract(null)}><Text style={[s.modalClose, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text></TouchableOpacity>
@@ -344,14 +362,14 @@ export default function ContratosScreen() {
                 }
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Modal rechazar */}
-      <Modal visible={!!rejectingContract} animationType="slide" transparent>
+      <Modal visible={!!rejectingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={[s.modalCard, { maxHeight: '50%' }]}>
+          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
             <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Rechazar contrato</Text>
               <TouchableOpacity onPress={() => setRejectingContract(null)}><Text style={[s.modalClose, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text></TouchableOpacity>
@@ -386,7 +404,7 @@ export default function ContratosScreen() {
                 }
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -401,14 +419,15 @@ const s = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
   addBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: space[3], paddingVertical: space[2] },
   addBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  content: { padding: space[4], gap: space[4], paddingBottom: space[10] },
+  content: { paddingBottom: space[10] },
+  body: { paddingHorizontal: space[4], paddingTop: space[2], gap: space[4] },
   empty: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
   emptyIcon: { fontSize: 40 },
   emptyTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray700 },
   emptyMsg: { fontSize: text.sm, color: colors.gray400, textAlign: 'center', paddingHorizontal: space[6] },
   group: { gap: space[3] },
   groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray400, letterSpacing: 0.8 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   modalTitle: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.gray900 },
@@ -435,15 +454,17 @@ const s = StyleSheet.create({
 });
 
 const cStyles = StyleSheet.create({
-  card: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden' },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], gap: space[3] },
-  statusBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1] },
-  statusText: { fontSize: text.xs, fontWeight: weight.bold },
-  horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1], backgroundColor: '#f3e3cc' },
-  horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#7f5628' },
-  title: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
+  card: { backgroundColor: colors.white, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3] },
+  docIcon: { width: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  title: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
   meta: { fontSize: text.xs, color: colors.gray400 },
-  chevron: { fontSize: 12, color: colors.gray400, marginTop: 2 },
+  tagRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: text.xs, fontWeight: weight.bold },
+  horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: colors.gray100 },
+  horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray700 },
   signedBanner: { marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3] },
   signedText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#15803d' },
   rejectedBanner: { marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3] },
@@ -451,11 +472,11 @@ const cStyles = StyleSheet.create({
   body: { borderTopWidth: 1, borderTopColor: colors.gray100 },
   bodyScroll: { maxHeight: 200, padding: space[4] },
   bodyText: { fontSize: text.sm, color: colors.gray700, lineHeight: 20 },
-  actions: { flexDirection: 'row', gap: space[3], padding: space[4], paddingTop: 0 },
-  signBtn: { flex: 1, borderRadius: radius.md, backgroundColor: '#16a34a', paddingVertical: space[3], alignItems: 'center' },
+  actions: { flexDirection: 'row', gap: space[3], padding: space[4], paddingTop: space[3] },
+  signBtn: { flex: 1, borderRadius: radius.lg, backgroundColor: '#16a34a', paddingVertical: space[3] + 2, alignItems: 'center' },
   signBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
-  rejectBtn: { flex: 1, borderRadius: radius.md, borderWidth: 1, borderColor: '#fca5a5', paddingVertical: space[3], alignItems: 'center' },
-  rejectBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.red700 },
+  rejectBtn: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, paddingVertical: space[3] + 2, alignItems: 'center' },
+  rejectBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
   deleteBtn: { margin: space[4], marginTop: 0, borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, paddingVertical: space[3], alignItems: 'center' },
   deleteBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray500 },
 });

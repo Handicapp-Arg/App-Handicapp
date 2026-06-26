@@ -1,24 +1,21 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, TextInput, FlatList, Image, Modal, KeyboardAvoidingView, Platform,
+  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import {
-  Heart, MessageCircle, Newspaper, User, ChevronRight, Lock, LogOut,
+  User, ChevronRight, Lock, LogOut, Crown,
   type LucideIcon,
 } from 'lucide-react-native';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
-import { useFeedPosts } from '../../hooks/use-feed';
-import type { FeedPost } from '../../../packages/shared/src/types';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -34,12 +31,6 @@ const MONTHS_OPTIONS = [
   { label: '12 meses', value: 12 },
 ];
 
-function timeAgo(date: string) {
-  try {
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: es });
-  } catch { return ''; }
-}
-
 /* ─── Plan Card ─── */
 
 function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
@@ -48,23 +39,42 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
   const isPro = plan === 'pro';
   const pct = horseLimit ? Math.min((horseCount / horseLimit) * 100, 100) : 0;
 
-  return (
-    <View style={[s.planCard, isPro ? s.planCardPro : s.planCardFree]}>
-      <View style={s.planHeader}>
-        <View style={s.planBadge}>
-          <Text style={s.planBadgeText}>{isPro ? 'Pro' : 'Gratis'}</Text>
+  if (isPro) {
+    return (
+      <LinearGradient
+        colors={['#241910', '#5f3f18', '#a87330']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={s.planPro}
+      >
+        <View style={s.planProTop}>
+          <View style={s.planProBadge}>
+            <Crown size={13} color="#241910" strokeWidth={2.5} />
+            <Text style={s.planProBadgeText}>PRO</Text>
+          </View>
         </View>
-        <Text style={isPro ? s.planUsagePro : s.planUsage}>
-          {isPro ? `${horseCount} caballos` : `${horseCount}${horseLimit ? `/${horseLimit}` : ''} caballos`}
-        </Text>
+        <Text style={s.planProTitle}>Acceso ilimitado</Text>
+        <Text style={s.planProSub}>{horseCount} caballos · todas las funciones</Text>
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <View style={s.planFree}>
+      <View style={s.planProTop}>
+        <View style={s.planFreeBadge}>
+          <Text style={s.planFreeBadgeText}>Gratis</Text>
+        </View>
+        <Text style={s.planFreeUsage}>{horseCount}{horseLimit ? `/${horseLimit}` : ''} caballos</Text>
       </View>
-      {!isPro && horseLimit && (
+      {horseLimit && (
         <View style={s.progressTrack}>
           <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.brand }]} />
         </View>
       )}
-      {isLimited && <Text style={s.planWarning}>Límite alcanzado.</Text>}
-      {isPro && <Text style={s.planProMsg}>Acceso ilimitado a todas las funciones.</Text>}
+      <Text style={s.planFreeMsg}>
+        {isLimited ? 'Límite alcanzado. Pasate a Pro para caballos ilimitados.' : 'Pasate a Pro para caballos ilimitados.'}
+      </Text>
     </View>
   );
 }
@@ -144,95 +154,7 @@ function AdminUserRow({ u, onActivate, onRevoke, isPending }: {
   );
 }
 
-/* ─── My Post Card ─── */
-
-function MyPostCard({ post }: { post: FeedPost }) {
-  const hasMedia = (post.image_urls?.length ?? 0) + (post.video_urls?.length ?? 0) > 0;
-  const firstImage = post.image_urls?.[0];
-
-  return (
-    <View style={s.postCard}>
-      {firstImage && (
-        <Image source={{ uri: firstImage }} style={s.postThumb} resizeMode="cover" />
-      )}
-      <View style={s.postBody}>
-        <Text style={s.postContent} numberOfLines={2}>{post.content}</Text>
-        {post.horse && (
-          <Text style={s.postHorse}>🐴 {post.horse.name}</Text>
-        )}
-        <View style={s.postMeta}>
-          <View style={s.postStat}>
-            <Heart size={13} color="#ef4444" strokeWidth={2} />
-            <Text style={s.postStatText}>{post.likes_count}</Text>
-          </View>
-          <View style={s.postStat}>
-            <MessageCircle size={13} color={colors.gray400} strokeWidth={2} />
-            <Text style={s.postStatText}>{post.comments_count}</Text>
-          </View>
-          <Text style={s.postTime}>{timeAgo(post.created_at)}</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-/* ─── My Activity Tab ─── */
-
-function MyActivityTab({ userId, header }: { userId: string; header?: ReactNode }) {
-  const { posts, isLoading, loadMore, hasMore, isFetchingMore, refresh, isRefreshing } =
-    useFeedPosts({ author_id: userId });
-
-  if (isLoading) {
-    return (
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {header}
-        <View style={s.center}>
-          <ActivityIndicator color={colors.brand} />
-        </View>
-      </ScrollView>
-    );
-  }
-
-  if (!posts.length) {
-    return (
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {header}
-        <View style={s.emptyActivity}>
-          <Newspaper size={48} color={colors.gray300} strokeWidth={2} />
-          <Text style={s.emptyActivityTitle}>Sin publicaciones aún</Text>
-          <Text style={s.emptyActivitySub}>Tus posts del muro van a aparecer acá.</Text>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  return (
-    <FlatList
-      data={posts}
-      keyExtractor={(p) => p.id}
-      ListHeaderComponent={<>{header}</>}
-      renderItem={({ item, index }) => (
-        <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-          <MyPostCard post={item} />
-        </Animated.View>
-      )}
-      contentContainerStyle={s.postsList}
-      showsVerticalScrollIndicator={false}
-      onEndReached={() => hasMore && loadMore()}
-      onEndReachedThreshold={0.3}
-      onRefresh={refresh}
-      refreshing={isRefreshing}
-      ListFooterComponent={isFetchingMore
-        ? <ActivityIndicator color={colors.brand} style={{ margin: space[4] }} />
-        : null
-      }
-    />
-  );
-}
-
 /* ─── Main Screen ─── */
-
-type ProfileTab = 'info' | 'publicaciones';
 
 function EditProfileModal({ visible, user, onClose }: {
   visible: boolean;
@@ -261,13 +183,13 @@ function EditProfileModal({ visible, user, onClose }: {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
-        <View style={s.editModalSheet}>
+        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.editModalHandle} />
           <Text style={s.editModalTitle}>Editar perfil</Text>
           {error ? <Text style={s.editModalError}>{error}</Text> : null}
@@ -308,7 +230,7 @@ function EditProfileModal({ visible, user, onClose }: {
           <TouchableOpacity style={s.editCancelBtn} onPress={onClose} activeOpacity={0.8}>
             <Text style={s.editCancelText}>Cancelar</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -341,13 +263,13 @@ function ChangePasswordModal({ visible, onClose }: { visible: boolean; onClose: 
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
-        <View style={s.editModalSheet}>
+        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.editModalHandle} />
           <Text style={s.editModalTitle}>Cambiar contraseña</Text>
           {error ? <Text style={s.editModalError}>{error}</Text> : null}
@@ -384,7 +306,7 @@ function ChangePasswordModal({ visible, onClose }: { visible: boolean; onClose: 
           <TouchableOpacity style={s.editCancelBtn} onPress={onClose} activeOpacity={0.8}>
             <Text style={s.editCancelText}>Cancelar</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -397,7 +319,6 @@ export default function PerfilScreen() {
   const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers(user?.role === 'admin');
   const setPlan = useAdminSetPlan();
   const [adminSearch, setAdminSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<ProfileTab>('publicaciones');
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
@@ -426,61 +347,26 @@ export default function PerfilScreen() {
     ]);
   };
 
-  const Header = (
-    <>
-      {/* Hero */}
-      <View style={s.hero}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>{initials}</Text>
-        </View>
-        <Text style={s.userName}>{user.name}</Text>
-        <Text style={s.userEmail}>{user.email}</Text>
-        <View style={s.roleBadge}>
-          <Text style={s.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
-        </View>
-      </View>
-
-      {/* Tab bar */}
-      <View style={s.tabBar}>
-        {([
-          { key: 'publicaciones', label: 'Publicaciones', icon: Newspaper },
-          { key: 'info', label: 'Mi cuenta', icon: User },
-        ] as { key: ProfileTab; label: string; icon: LucideIcon }[]).map((t) => {
-          const TabIcon = t.icon;
-          return (
-            <TouchableOpacity
-              key={t.key}
-              style={[s.tabBtn, activeTab === t.key && s.tabBtnActive]}
-              onPress={() => { haptic.selection(); setActiveTab(t.key); }}
-              activeOpacity={0.8}
-            >
-              <TabIcon
-                size={15}
-                color={activeTab === t.key ? colors.brand : colors.gray400}
-                strokeWidth={2}
-              />
-              <Text style={[s.tabLabel, activeTab === t.key && s.tabLabelActive]}>{t.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </>
-  );
-
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      {/* Content */}
-      {activeTab === 'publicaciones' && (
-        <MyActivityTab userId={user.id} header={Header} />
-      )}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: space[10] }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero */}
+        <View style={s.hero}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{initials}</Text>
+          </View>
+          <Text style={s.userName}>{user.name}</Text>
+          <Text style={s.userEmail}>{user.email}</Text>
+          <View style={s.roleBadge}>
+            <Text style={s.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
+          </View>
+        </View>
 
-      {activeTab === 'info' && (
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: space[10] }}
-          showsVerticalScrollIndicator={false}
-        >
-          {Header}
+        <View style={s.sheet}>
           {/* Plan */}
           {showPlan && planStatus && (
             <View style={s.section}>
@@ -538,7 +424,7 @@ export default function PerfilScreen() {
                 onPress={() => setShowEditProfile(true)}
                 activeOpacity={0.8}
               >
-                <User size={18} color={colors.brand} strokeWidth={2} />
+                <User size={18} color={colors.gray900} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.accountRowLabel}>Editar datos personales</Text>
                   <Text style={s.accountRowSub}>{user.name} · {user.email}</Text>
@@ -551,7 +437,7 @@ export default function PerfilScreen() {
                 onPress={() => setShowChangePassword(true)}
                 activeOpacity={0.8}
               >
-                <Lock size={18} color={colors.brand} strokeWidth={2} />
+                <Lock size={18} color={colors.gray900} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.accountRowLabel}>Cambiar contraseña</Text>
                 </View>
@@ -562,11 +448,11 @@ export default function PerfilScreen() {
 
           {/* Logout */}
           <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-            <LogOut size={18} color={colors.red700} strokeWidth={2} />
+            <LogOut size={18} color={colors.red500} strokeWidth={2} />
             <Text style={s.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
+        </View>
         </ScrollView>
-      )}
 
       {user && (
         <>
@@ -592,9 +478,21 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: space[1] + 2,
     backgroundColor: colors.brand,
-    paddingBottom: space[4],
+    paddingBottom: space[10],
     paddingTop: space[5],
     paddingHorizontal: space[5],
+  },
+  sheet: {
+    backgroundColor: colors.gray50,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: space[4],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
   },
   avatar: {
     width: 68, height: 68, borderRadius: 34,
@@ -660,18 +558,21 @@ const s = StyleSheet.create({
     fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
   },
 
-  planCard: { borderRadius: radius.lg, padding: space[4], gap: space[2], borderWidth: 1 },
-  planCardFree: { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' },
-  planCardPro: { backgroundColor: colors.amber50, borderColor: '#fde68a' },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  planBadge: { backgroundColor: colors.brand, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
-  planBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
-  planUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: '#1e40af' },
-  planUsagePro: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.amber600 },
-  progressTrack: { height: 6, backgroundColor: '#dbeafe', borderRadius: radius.full, overflow: 'hidden' },
+  // Plan Pro (gradiente premium)
+  planPro: { borderRadius: radius.xl, padding: space[4] + 2, overflow: 'hidden' },
+  planProTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space[2] },
+  planProBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#e8c787', borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3 },
+  planProBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: '#241910', letterSpacing: 1 },
+  planProTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
+  planProSub: { fontSize: text.xs, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  // Plan Free
+  planFree: { backgroundColor: colors.white, borderRadius: radius.xl, padding: space[4], gap: space[2], borderWidth: 1, borderColor: colors.gray100 },
+  planFreeBadge: { backgroundColor: colors.gray100, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
+  planFreeBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray600 },
+  planFreeUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
+  progressTrack: { height: 6, backgroundColor: colors.gray100, borderRadius: radius.full, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: radius.full },
-  planWarning: { fontSize: text.xs, color: colors.amber600, fontWeight: weight.medium },
-  planProMsg: { fontSize: text.xs, color: colors.amber600 },
+  planFreeMsg: { fontSize: text.xs, color: colors.gray400 },
 
   adminRow: {
     backgroundColor: colors.white, borderRadius: radius.lg,
@@ -712,10 +613,10 @@ const s = StyleSheet.create({
 
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
-    backgroundColor: '#fef2f2', borderRadius: radius.lg, borderWidth: 1, borderColor: '#fecaca',
-    paddingVertical: space[4], marginHorizontal: space[5], marginTop: space[6],
+    backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200,
+    paddingVertical: space[3] + 2, marginHorizontal: space[4], marginTop: space[5],
   },
-  logoutText: { fontSize: text.base, fontWeight: weight.bold, color: colors.red700 },
+  logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.red500 },
 
   accountCard: {
     backgroundColor: colors.white, borderRadius: radius.lg,
@@ -731,7 +632,7 @@ const s = StyleSheet.create({
 
   modalOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   editModalSheet: {
     backgroundColor: colors.white,

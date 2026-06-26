@@ -1,16 +1,17 @@
+import { useMemo } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Trophy, Calendar, GitBranch, BookOpen, FileText, Receipt, Bell, Search,
-  Mail, Building2, Settings, ShieldCheck, ChevronRight, CircleUser, Megaphone,
-  ArrowRight, Map, type LucideIcon,
+  Trophy, GitBranch, BookOpen, FileText, Receipt,
+  Mail, Building2, Settings, ShieldCheck, ChevronRight,
+  Map, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
-import { useNotifications } from '../../lib/notifications';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
 
@@ -23,13 +24,12 @@ interface MenuItem {
   iconColor?: string;
 }
 
-function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
-  const tint = item.iconColor ?? colors.brand;
+function MenuRow({ item, onPress, c, s }: { item: MenuItem; onPress: () => void; c: ThemeColors; s: Styles }) {
   const Icon = item.icon;
   return (
-    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.75}>
-      <View style={[s.iconWrap, { backgroundColor: `${tint}18` }]}>
-        <Icon size={20} color={tint} strokeWidth={2} />
+    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.6}>
+      <View style={s.iconWrap}>
+        <Icon size={22} color={c.text} strokeWidth={2} />
       </View>
       <View style={s.rowBody}>
         <Text style={s.rowLabel}>{item.label}</Text>
@@ -40,12 +40,12 @@ function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
           <Text style={s.badgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
         </View>
       )}
-      <ChevronRight size={16} color={colors.gray300} strokeWidth={2} />
+      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
     </TouchableOpacity>
   );
 }
 
-function Section({ title, items, onPress }: { title: string; items: MenuItem[]; onPress: (path: string) => void }) {
+function Section({ title, items, onPress, c, s }: { title: string; items: MenuItem[]; onPress: (path: string) => void; c: ThemeColors; s: Styles }) {
   if (items.length === 0) return null;
   return (
     <View style={s.section}>
@@ -54,9 +54,39 @@ function Section({ title, items, onPress }: { title: string; items: MenuItem[]; 
         {items.map((item, idx) => (
           <Animated.View key={item.path} entering={FadeInDown.duration(320).delay(Math.min(idx, 8) * 45)}>
             {idx > 0 && <View style={s.divider} />}
-            <MenuRow item={item} onPress={() => { haptic.light(); onPress(item.path); }} />
+            <MenuRow item={item} onPress={() => { haptic.light(); onPress(item.path); }} c={c} s={s} />
           </Animated.View>
         ))}
+      </View>
+    </View>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'auto', label: 'Automático' },
+  { value: 'light', label: 'Claro' },
+  { value: 'dark', label: 'Oscuro' },
+];
+
+function AppearanceSection({ c, s }: { c: ThemeColors; s: Styles }) {
+  const { preference, setPreference } = useTheme();
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Apariencia</Text>
+      <View style={s.segment}>
+        {THEME_OPTIONS.map((opt) => {
+          const active = preference === opt.value;
+          return (
+            <TouchableOpacity
+              key={opt.value}
+              style={[s.segmentBtn, active && s.segmentBtnActive]}
+              onPress={() => { haptic.selection(); setPreference(opt.value); }}
+              activeOpacity={0.85}
+            >
+              <Text style={[s.segmentText, active && s.segmentTextActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -66,7 +96,8 @@ export default function MasScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { unread } = useNotifications();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const role = user?.role ?? '';
   const isProp  = role === 'propietario';
@@ -86,12 +117,6 @@ export default function MasScreen() {
       label: 'Remates',
       desc: 'Comprá y vendé caballos en subastas',
       path: Routes.remates,
-    },
-    {
-      icon: Calendar,
-      label: 'Agenda',
-      desc: 'Calendario de turnos y citas',
-      path: Routes.tabsAgenda,
     },
     {
       icon: GitBranch,
@@ -116,19 +141,6 @@ export default function MasScreen() {
       label: 'Facturación',
       desc: 'Facturas y pagos de pensión',
       path: Routes.tabsFacturacion,
-    },
-    {
-      icon: Bell,
-      label: 'Notificaciones',
-      desc: 'Actividad reciente de tus caballos',
-      path: Routes.notificaciones,
-      badge: unread,
-    },
-    {
-      icon: Search,
-      label: 'Buscar',
-      desc: 'Caballos, eventos y más',
-      path: Routes.buscar,
     },
   ];
 
@@ -175,89 +187,75 @@ export default function MasScreen() {
     }] : []),
   ];
 
+  const initials = (user?.name ?? 'U').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
   return (
     <ScrollView
       style={s.root}
       contentContainerStyle={[s.content, { paddingTop: insets.top + space[4] }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Encabezado sección "Más" */}
-      <View style={s.masHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.masGreeting}>{user?.name?.split(' ')[0] ?? 'Hola'}</Text>
-          <Text style={s.masRoleLabel}>{roleLabel}</Text>
+      {/* Tarjeta de perfil */}
+      <TouchableOpacity
+        style={s.profileCard}
+        onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
+        activeOpacity={0.7}
+      >
+        <View style={s.profileAvatar}>
+          <Text style={s.profileAvatarText}>{initials}</Text>
         </View>
-        <TouchableOpacity
-          style={s.masPerfilBtn}
-          onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
-          activeOpacity={0.8}
-        >
-          <CircleUser size={22} color={colors.brand} strokeWidth={2} />
-          <Text style={s.masPerfilBtnText}>Mi perfil</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Mi perfil'}</Text>
+          <Text style={s.profileRole}>{roleLabel}</Text>
+        </View>
+        <ChevronRight size={20} color={c.textFaint} strokeWidth={2} />
+      </TouchableOpacity>
 
-      {/* Banner vender caballo (propietarios) */}
-      {isProp && (
-        <TouchableOpacity
-          style={s.sellBanner}
-          onPress={() => { haptic.medium(); push(Routes.remateCrear); }}
-          activeOpacity={0.85}
-        >
-          <View style={s.sellBannerLeft}>
-            <Megaphone size={28} color="#9d6c35" strokeWidth={2} />
-            <View>
-              <Text style={s.sellBannerTitle}>¿Querés vender tu caballo?</Text>
-              <Text style={s.sellBannerSub}>Publicalo en Remates en 2 minutos</Text>
-            </View>
-          </View>
-          <View style={s.sellBannerBtn}>
-            <Text style={s.sellBannerBtnText}>Publicar</Text>
-            <ArrowRight size={14} color="#9d6c35" strokeWidth={2} />
-          </View>
-        </TouchableOpacity>
-      )}
-
-      <Section title="Principal" items={principal} onPress={push} />
-      <Section title="Gestión" items={gestion} onPress={push} />
-      <Section title="Cuenta" items={cuenta} onPress={push} />
+      <Section title="Principal" items={principal} onPress={push} c={c} s={s} />
+      <Section title="Gestión" items={gestion} onPress={push} c={c} s={s} />
+      <Section title="Cuenta" items={cuenta} onPress={push} c={c} s={s} />
+      <AppearanceSection c={c} s={s} />
     </ScrollView>
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   content: { paddingBottom: space[10], gap: space[1] },
 
-  masHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: space[4], marginBottom: space[3],
+  profileCard: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    paddingVertical: space[3], paddingHorizontal: space[3] + 2,
+    marginHorizontal: space[4], marginBottom: space[4],
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
   },
-  masGreeting: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900 },
-  masRoleLabel: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
-  masPerfilBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.white, borderRadius: radius.full,
-    paddingHorizontal: space[3], paddingVertical: space[2],
-    borderWidth: 1, borderColor: colors.gray200,
+  profileAvatar: {
+    width: 50, height: 50, borderRadius: radius.full,
+    backgroundColor: colors.gray900, alignItems: 'center', justifyContent: 'center',
   },
-  masPerfilBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.brand },
+  profileAvatarText: { color: colors.white, fontSize: text.base, fontWeight: weight.bold },
+  profileName: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  profileRole: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
   section: { marginBottom: space[4], paddingHorizontal: space[4] },
   sectionTitle: {
     fontSize: text.xs,
     fontWeight: weight.bold,
-    color: colors.gray400,
+    color: c.textFaint,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: space[2],
     paddingHorizontal: space[1],
   },
   sectionCard: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.border,
     overflow: 'hidden',
     ...shadow.sm,
   },
@@ -270,16 +268,13 @@ const s = StyleSheet.create({
     gap: space[3],
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    justifyContent: 'center',
+    width: 28,
     alignItems: 'center',
     flexShrink: 0,
   },
   rowBody: { flex: 1 },
-  rowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  rowDesc: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  rowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  rowDesc: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   badge: {
     backgroundColor: '#ef4444',
@@ -292,7 +287,29 @@ const s = StyleSheet.create({
   },
   badgeText: { color: colors.white, fontSize: text.xs, fontWeight: weight.bold },
 
-  divider: { height: 1, backgroundColor: colors.gray50, marginHorizontal: space[4] },
+  divider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
+
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: c.surfaceAlt,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: c.border,
+    padding: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: space[1] + 2,
+    alignItems: 'center',
+    borderRadius: radius.full,
+  },
+  segmentBtnActive: {
+    backgroundColor: c.surface,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 2, elevation: 1,
+  },
+  segmentText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
+  segmentTextActive: { color: c.text },
 
   sellBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

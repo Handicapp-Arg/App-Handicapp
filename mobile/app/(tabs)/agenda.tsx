@@ -4,8 +4,8 @@ import {
   Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Pressable,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Check, X, Clock, List, CalendarDays } from 'lucide-react-native';
+import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import { Check, X, Clock, List, CalendarDays, MoreVertical, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '../../hooks/use-agenda';
 import { useHorses } from '../../hooks/use-horses';
@@ -30,6 +30,7 @@ function AppointmentCard({
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   if (!appt) return null;
   const meta = APPOINTMENT_TYPES[appt.type] ?? APPOINTMENT_TYPES.otro;
   const date = new Date(appt.scheduled_at);
@@ -41,16 +42,9 @@ function AppointmentCard({
         <View style={[styles.typeDot, { backgroundColor: meta.bg }]}>
           <Text style={[styles.typeText, { color: meta.color }]}>{meta.label}</Text>
         </View>
-        <View style={styles.apptActions}>
-          {!appt.completed && (
-            <TouchableOpacity onPress={() => onComplete(appt.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Check size={18} color={colors.gray400} strokeWidth={2.5} />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => onDelete(appt.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <X size={17} color={colors.gray300} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => setMenuOpen(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <MoreVertical size={18} color={colors.gray400} strokeWidth={2} />
+        </TouchableOpacity>
       </View>
       <Text style={styles.apptTitle}>{appt.title}</Text>
       {appt.horse && <Text style={styles.apptHorse}>{appt.horse.name}</Text>}
@@ -59,6 +53,34 @@ function AppointmentCard({
         <Text style={styles.apptTime}>{timeStr}</Text>
       </View>
       {appt.completed && <Text style={styles.completedText}>✓ Completado</Text>}
+
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={styles.apptMenuOverlay} onPress={() => setMenuOpen(false)}>
+          <View style={styles.apptMenu}>
+            {!appt.completed && (
+              <>
+                <TouchableOpacity
+                  style={styles.apptMenuItem}
+                  onPress={() => { setMenuOpen(false); onComplete(appt.id); }}
+                  activeOpacity={0.7}
+                >
+                  <Check size={18} color={colors.gray700} strokeWidth={2.5} />
+                  <Text style={styles.apptMenuText}>Marcar como completado</Text>
+                </TouchableOpacity>
+                <View style={styles.apptMenuDivider} />
+              </>
+            )}
+            <TouchableOpacity
+              style={styles.apptMenuItem}
+              onPress={() => { setMenuOpen(false); onDelete(appt.id); }}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={18} color={colors.red500} strokeWidth={2} />
+              <Text style={[styles.apptMenuText, { color: colors.red500 }]}>Eliminar turno</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -88,7 +110,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
 
   return (
     <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={[modalStyle.sheet, { maxHeight: '92%' }]}>
+      <Animated.View style={[modalStyle.sheet, { maxHeight: '92%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Nuevo turno</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8}><X size={22} color={colors.gray500} strokeWidth={2} /></TouchableOpacity>
@@ -175,7 +197,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
             {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={button.primaryText}>Crear turno</Text>}
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -232,16 +254,14 @@ export default function AgendaScreen() {
             onPress={() => { haptic.selection(); setViewMode('list'); }}
             activeOpacity={0.85}
           >
-            <List size={15} color={viewMode === 'list' ? colors.gray900 : colors.gray500} strokeWidth={2.2} />
-            <Text style={[styles.viewText, viewMode === 'list' && styles.viewTextActive]}>Lista</Text>
+            <List size={18} color={viewMode === 'list' ? colors.gray900 : colors.gray500} strokeWidth={2.2} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.viewBtn, viewMode === 'calendar' && styles.viewBtnActive]}
             onPress={() => { haptic.selection(); setViewMode('calendar'); }}
             activeOpacity={0.85}
           >
-            <CalendarDays size={15} color={viewMode === 'calendar' ? colors.gray900 : colors.gray500} strokeWidth={2.2} />
-            <Text style={[styles.viewText, viewMode === 'calendar' && styles.viewTextActive]}>Mes</Text>
+            <CalendarDays size={18} color={viewMode === 'calendar' ? colors.gray900 : colors.gray500} strokeWidth={2.2} />
           </TouchableOpacity>
         </View>
 
@@ -335,7 +355,7 @@ export default function AgendaScreen() {
         />
       )}
 
-      <Modal visible={showCreate} animationType="slide" transparent>
+      <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
         <CreateModal onClose={() => setShowCreate(false)} />
       </Modal>
     </View>
@@ -350,7 +370,7 @@ const styles = StyleSheet.create({
   toggleText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
   toggleTextActive: { color: colors.gray900 },
   viewToggle: { flexDirection: 'row', backgroundColor: colors.gray100, borderRadius: radius.full, padding: 3 },
-  viewBtn: { flexDirection: 'row', alignItems: 'center', gap: space[1] + 2, paddingVertical: space[1] + 1, paddingHorizontal: space[4], borderRadius: radius.full },
+  viewBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[1] + 2, paddingHorizontal: space[4], borderRadius: radius.full },
   viewBtnActive: { backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 },
   viewText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
   viewTextActive: { color: colors.gray900 },
@@ -369,6 +389,11 @@ const styles = StyleSheet.create({
   apptDate: { fontSize: text.xs, color: colors.gray500 },
   apptTime: { fontSize: text.sm, color: colors.gray900, fontWeight: weight.bold },
   completedText: { fontSize: text.xs, color: '#16a34a', fontWeight: weight.semibold },
+  apptMenuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: space[8] },
+  apptMenu: { backgroundColor: colors.white, borderRadius: radius.xl, width: '100%', maxWidth: 340, paddingVertical: space[1], shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 12 },
+  apptMenuItem: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[4], paddingVertical: space[3] + 2 },
+  apptMenuText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray800 },
+  apptMenuDivider: { height: 1, backgroundColor: colors.gray100, marginHorizontal: space[2] },
   chip: { borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: colors.gray100 },
   chipActive: { backgroundColor: colors.brand },
   chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
