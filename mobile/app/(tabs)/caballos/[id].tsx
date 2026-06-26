@@ -13,6 +13,7 @@ import {
   Trash2, CheckCircle2, Camera, Pencil, Stethoscope, Network,
   Info, Clock, Images, Banknote,
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse,
+  Wheat, Syringe, Hammer, Wrench, Truck, Package,
   type LucideIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -50,14 +51,14 @@ const TABS: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: 'finanzas',  label: 'Finanzas',  icon: Banknote },
 ];
 
-const EXPENSE_CATEGORY_META: Record<string, { icon: string; color: string }> = {
-  alimentacion:  { icon: '🌾', color: '#16a34a' },
-  veterinario:   { icon: '💉', color: '#dc2626' },
-  herradero:     { icon: '🔨', color: '#d97706' },
-  entrenamiento: { icon: '🏇', color: '#a16207' },
-  mantenimiento: { icon: '🔧', color: '#0284c7' },
-  transporte:    { icon: '🚛', color: '#0891b2' },
-  otros:         { icon: '📦', color: '#6b7280' },
+const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string }> = {
+  alimentacion:  { Icon: Wheat,    color: '#16a34a' },
+  veterinario:   { Icon: Syringe,  color: '#dc2626' },
+  herradero:     { Icon: Hammer,   color: '#d97706' },
+  entrenamiento: { Icon: Activity, color: '#a16207' },
+  mantenimiento: { Icon: Wrench,   color: '#0284c7' },
+  transporte:    { Icon: Truck,    color: '#0891b2' },
+  otros:         { Icon: Package,  color: '#6b7280' },
 };
 
 /* ─── EditHorseModal ─── */
@@ -565,15 +566,16 @@ export default function HorseDetailScreen() {
                     <Text style={s.financialStatLabel}>Promedio/mes</Text>
                   </View>
                 </View>
-                {(financial.by_category ?? []).slice(0, 4).map((c) => {
-                  const meta = EXPENSE_CATEGORY_META[c.category] ?? { icon: '📦', color: '#6b7280' };
+                {(financial.by_category ?? []).slice(0, 4).map((cat) => {
+                  const meta = EXPENSE_CATEGORY_META[cat.category] ?? { Icon: Package, color: '#6b7280' };
+                  const MetaIcon = meta.Icon;
                   const maxVal = Math.max(...(financial.by_category ?? []).map((x) => x.total), 1);
-                  const pct = (c.total / maxVal) * 100;
+                  const pct = (cat.total / maxVal) * 100;
                   return (
-                    <View key={c.category} style={s.barRow}>
-                      <Text style={[s.barLabel, { fontSize: 13 }]}>{meta.icon}</Text>
+                    <View key={cat.category} style={s.barRow}>
+                      <View style={s.barIcon}><MetaIcon size={15} color={meta.color} strokeWidth={2} /></View>
                       <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%` as any, backgroundColor: meta.color }]} /></View>
-                      <Text style={s.barValue}>${c.total.toLocaleString('es-AR')}</Text>
+                      <Text style={s.barValue}>${cat.total.toLocaleString('es-AR')}</Text>
                     </View>
                   );
                 })}
@@ -1305,23 +1307,27 @@ export default function HorseDetailScreen() {
               {(financial.by_category ?? []).length > 0 && (
                 <View style={[s.financialCard, { marginTop: 14 }]}>
                   <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Por categoría</Text>
-                  {financial.by_category.map((c) => {
-                    const meta = EXPENSE_CATEGORY_META[c.category] ?? { icon: '📦', color: '#6b7280' };
-                    const pct = financial.total > 0 ? (c.total / financial.total) * 100 : 0;
+                  {financial.by_category.map((cat) => {
+                    const meta = EXPENSE_CATEGORY_META[cat.category] ?? { Icon: Package, color: '#6b7280' };
+                    const MetaIcon = meta.Icon;
+                    const pct = financial.total > 0 ? (cat.total / financial.total) * 100 : 0;
                     const maxVal = Math.max(...financial.by_category.map((x) => x.total), 1);
                     return (
-                      <View key={c.category} style={{ marginBottom: 10 }}>
+                      <View key={cat.category} style={{ marginBottom: 10 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>
-                            {meta.icon} {EXPENSE_CATEGORY_META[c.category] ? c.category.charAt(0).toUpperCase() + c.category.slice(1) : c.category}
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                            <MetaIcon size={14} color={meta.color} strokeWidth={2} />
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: c.text }}>
+                              {EXPENSE_CATEGORY_META[cat.category] ? cat.category.charAt(0).toUpperCase() + cat.category.slice(1) : cat.category}
+                            </Text>
+                          </View>
                           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 11, color: '#9ca3af' }}>{pct.toFixed(0)}%</Text>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>${c.total.toLocaleString('es-AR')}</Text>
+                            <Text style={{ fontSize: 11, color: c.textFaint }}>{pct.toFixed(0)}%</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: c.text }}>${cat.total.toLocaleString('es-AR')}</Text>
                           </View>
                         </View>
                         <View style={s.barTrack}>
-                          <View style={[s.barFill, { width: `${(c.total / maxVal) * 100}%` as any, backgroundColor: meta.color }]} />
+                          <View style={[s.barFill, { width: `${(cat.total / maxVal) * 100}%` as any, backgroundColor: meta.color }]} />
                         </View>
                       </View>
                     );
@@ -1459,6 +1465,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   financialStatValue: { fontSize: 18, fontWeight: '800', color: c.text },
   financialStatLabel: { fontSize: 10, fontWeight: '600', color: c.textMuted, marginTop: 2, textTransform: 'uppercase' },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  barIcon: { width: 24, alignItems: 'center' },
   barLabel: { width: 36, fontSize: 10, color: c.textFaint, textAlign: 'right' },
   barTrack: { flex: 1, height: 6, backgroundColor: c.border, borderRadius: 999, overflow: 'hidden' },
   barFill: { height: '100%', backgroundColor: c.brand, borderRadius: 999 },
