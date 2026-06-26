@@ -403,7 +403,7 @@ export default function HorseDetailScreen() {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
         <Text style={{ fontSize: 15, color: c.textMuted }}>Caballo no encontrado</Text>
-        <TouchableOpacity onPress={() => router.back()}><Text style={{ fontSize: 14, fontWeight: '600', color: c.brand }}>← Volver</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.navigate(Routes.tabsCaballos as never)}><Text style={{ fontSize: 14, fontWeight: '600', color: c.brand }}>← Volver</Text></TouchableOpacity>
       </View>
     );
   }
@@ -446,7 +446,7 @@ export default function HorseDetailScreen() {
         />
 
         {/* Back */}
-        <TouchableOpacity style={[s.heroPill, { top: insets.top + 10, left: 14 }]} onPress={() => { haptic.light(); router.back(); }} activeOpacity={0.8}>
+        <TouchableOpacity style={[s.heroPill, { top: insets.top + 10, left: 14 }]} onPress={() => { haptic.light(); router.navigate(Routes.tabsCaballos as never); }} activeOpacity={0.8}>
           <ChevronLeft size={20} color={colors.white} strokeWidth={2} />
         </TouchableOpacity>
 
@@ -803,8 +803,8 @@ export default function HorseDetailScreen() {
                   activeOpacity={0.75}
                 >
                   {pdfLoading
-                    ? <ActivityIndicator size="small" color={c.brand} />
-                    : <><Download size={14} color={c.brand} strokeWidth={2.2} /><Text style={s.pdfBtnText}>PDF</Text></>
+                    ? <ActivityIndicator size="small" color={c.isDark ? '#fca5a5' : '#dc2626'} />
+                    : <><Download size={14} color={c.isDark ? '#fca5a5' : '#dc2626'} strokeWidth={2.2} /><Text style={s.pdfBtnText}>PDF</Text></>
                   }
                 </TouchableOpacity>
               )}
@@ -1529,12 +1529,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoBadgeText: { fontSize: 8, fontWeight: '700' },
 
   /* Botones pequeños */
-  smallBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surface },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.brand },
+  smallBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.text },
   typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.surfaceAlt },
   typeChipText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.brandSoft, minWidth: 44, justifyContent: 'center' },
-  pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.brand },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.isDark ? 'rgba(239,68,68,0.16)' : '#fef2f2', minWidth: 44, justifyContent: 'center' },
+  pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.isDark ? '#fca5a5' : '#dc2626' },
 
   /* QR Modal */
   qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 },
