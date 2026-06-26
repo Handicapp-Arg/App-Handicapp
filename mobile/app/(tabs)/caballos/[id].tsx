@@ -821,12 +821,12 @@ export default function HorseDetailScreen() {
           ) : (
             <View style={{ gap: 8 }}>
               {medicalRecords.map((rec) => {
-                const c = MEDICAL_TYPE_COLORS[rec.type] ?? MEDICAL_TYPE_COLORS.tratamiento;
+                const mc = MEDICAL_TYPE_COLORS[rec.type] ?? MEDICAL_TYPE_COLORS.tratamiento;
                 return (
                   <View key={rec.id} style={s.medCard}>
                     <View style={s.medCardTop}>
-                      <View style={[s.medTypeBadge, { backgroundColor: c.bg }]}>
-                        <Text style={[s.medTypeText, { color: c.text }]}>{MEDICAL_TYPE_LABELS[rec.type] ?? rec.type}</Text>
+                      <View style={[s.medTypeBadge, { backgroundColor: mc.bg }]}>
+                        <Text style={[s.medTypeText, { color: mc.text }]}>{MEDICAL_TYPE_LABELS[rec.type] ?? rec.type}</Text>
                       </View>
                       <Text style={s.medName} numberOfLines={1}>{rec.name}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
