@@ -6,7 +6,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Bell, ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -95,10 +94,6 @@ export function Topbar() {
               <UserIcon className="h-4 w-4 text-gray-400" strokeWidth={1.8} />
               Mi perfil
             </Link>
-            <div className="flex items-center justify-between px-4 py-2.5">
-              <span className="text-sm font-medium text-gray-700">Tema</span>
-              <ThemeToggle />
-            </div>
             <div className="my-1 h-px bg-gray-100" />
             <button
               type="button"
