@@ -475,12 +475,7 @@ export default function HorseDetailScreen() {
       <View style={s.sheet}>
 
       {/* ─── Tab bar ─── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={s.tabBar}
-        contentContainerStyle={s.tabBarContent}
-      >
+      <View style={s.tabBar}>
         {TABS.map(({ key, label, icon }) => {
           const TabIconCmp = icon;
           const tabColor = activeTab === key ? c.text : c.textFaint;
@@ -491,12 +486,12 @@ export default function HorseDetailScreen() {
               onPress={() => { haptic.selection(); setActiveTab(key); }}
               activeOpacity={0.7}
             >
-              <TabIconCmp size={18} color={tabColor} strokeWidth={2} />
-              <Text style={[s.tabLabel, activeTab === key && s.tabLabelActive]}>{label}</Text>
+              <TabIconCmp size={17} color={tabColor} strokeWidth={2} />
+              <Text style={[s.tabLabel, activeTab === key && s.tabLabelActive]} numberOfLines={1}>{label}</Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* ════════════════ TAB: INFO ════════════════ */}
       {activeTab === 'info' && (
@@ -1401,21 +1396,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Tab bar */
   sheet: {
-    marginTop: -12,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    marginTop: -10,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     backgroundColor: c.bg,
     overflow: 'hidden',
   },
   tabBar: {
+    flexDirection: 'row',
     backgroundColor: c.surface,
     borderBottomWidth: 1, borderBottomColor: c.border,
-    flexGrow: 0,
   },
-  tabBarContent: { paddingHorizontal: 8 },
-  tabItem: { alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 16, gap: 5, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 11, paddingHorizontal: 2, gap: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabItemActive: { borderBottomColor: c.text },
-  tabLabel: { fontSize: 12, fontWeight: '600', color: c.textFaint },
+  tabLabel: { fontSize: 10.5, fontWeight: '600', color: c.textFaint },
   tabLabelActive: { color: c.text },
 
   /* Sections */
