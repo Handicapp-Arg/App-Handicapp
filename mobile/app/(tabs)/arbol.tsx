@@ -6,10 +6,10 @@ import {
 import { Svg, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Search, ShieldCheck, Clock, GitBranch, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../hooks/use-horse-records';
-import { useTheme, type ThemeColors } from '../lib/theme';
-import { ScreenHeader } from '../components/ScreenHeader';
-import { Routes } from '../lib/routes';
+import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../../hooks/use-horse-records';
+import { useTheme, type ThemeColors } from '../../lib/theme';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { Routes } from '../../lib/routes';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const NODE_W   = 148;
@@ -395,8 +395,8 @@ export default function ArbolScreen() {
         </ScrollView>
       )}
 
-      {/* Legend */}
-      <View style={[s.legendBar, { paddingBottom: insets.bottom + 8 }]}>
+      {/* Legend (deja espacio para la tab bar inferior) */}
+      <View style={[s.legendBar, { paddingBottom: insets.bottom + 64 }]}>
         <Legend s={s} />
       </View>
     </View>
@@ -411,18 +411,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.bg,
   },
   controls: {
-    backgroundColor: c.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 10,
     gap: 10,
-    shadowColor: '#0f1f3d',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
     zIndex: 10,
   },
   searchWrap: {
@@ -453,7 +445,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: c.borderStrong,
-    shadowColor: '#0f1f3d',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -493,7 +485,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   depthBtnActive: {
     backgroundColor: c.surface,
-    shadowColor: '#0f1f3d',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -550,7 +542,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: c.surface,
     borderColor: c.borderStrong,
-    shadowColor: '#0f1f3d',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
