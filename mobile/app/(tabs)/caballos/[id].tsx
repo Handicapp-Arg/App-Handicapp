@@ -254,7 +254,7 @@ export default function HorseDetailScreen() {
   const [showAddWeight, setShowAddWeight] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(todayISO);
-  const [activityType, setActivityType] = useState('otro');
+  const [activityType, setActivityType] = useState('all');
   const [showAddMedical, setShowAddMedical] = useState(false);
   const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({ type: 'vacuna', name: '', date: todayISO });
 
@@ -869,16 +869,22 @@ export default function HorseDetailScreen() {
                 if (status !== 'granted') { Alert.alert('Permiso', 'Necesitamos acceso a la cámara.'); return; }
                 const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
                 if (!result.canceled && result.assets[0]) {
-                  await uploadActivityPhoto.mutateAsync({ uri: result.assets[0].uri, activity_type: activityType });
+                  await uploadActivityPhoto.mutateAsync({ uri: result.assets[0].uri, activity_type: activityType === 'all' ? 'otro' : activityType });
                   haptic.success();
                 }
               }}
             >
-              <Camera size={15} color={colors.white} strokeWidth={2.2} />
+              <Camera size={15} color={c.surface} strokeWidth={2.2} />
               <Text style={s.captureBtnText}>Capturar</Text>
             </TouchableOpacity>
           </View>
           <View style={s.activityTypeRow}>
+            <TouchableOpacity
+              style={[s.activityChip, activityType === 'all' && { backgroundColor: c.surfaceAlt, borderColor: c.text }]}
+              onPress={() => setActivityType('all')}
+            >
+              <Text style={[s.activityChipText, activityType === 'all' && { color: c.text }]}>Todas</Text>
+            </TouchableOpacity>
             {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
               <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg, borderColor: m.color }]} onPress={() => setActivityType(v)}>
                 <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
@@ -889,7 +895,7 @@ export default function HorseDetailScreen() {
             <Text style={s.emptyText}>Las fotos tomadas incluyen sello de fecha y autor verificado.</Text>
           ) : (
             <View style={s.photosGrid}>
-              {activityPhotos.slice(0, 9).map((p) => {
+              {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).slice(0, 9).map((p) => {
                 const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
                 return (
                   <TouchableOpacity key={p.id} style={s.photoWrap} onPress={() => Linking.openURL(p.url)} activeOpacity={0.85}>
@@ -1522,8 +1528,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Fotos */
   activityTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.brand },
-  captureBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
+  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.text },
+  captureBtnText: { fontSize: 12, fontWeight: '700', color: c.surface },
   activityChip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border },
   activityChipText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
