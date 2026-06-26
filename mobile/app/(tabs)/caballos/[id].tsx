@@ -979,7 +979,7 @@ export default function HorseDetailScreen() {
       </Modal>
 
       {/* ─── Modal agregar peso ─── */}
-      <Modal visible={showAddWeight} animationType="slide" transparent>
+      <Modal visible={showAddWeight} animationType="fade" transparent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
@@ -1006,7 +1006,7 @@ export default function HorseDetailScreen() {
       </Modal>
 
       {/* ─── Modal agregar registro médico ─── */}
-      <Modal visible={showAddMedical} animationType="slide" transparent>
+      <Modal visible={showAddMedical} animationType="fade" transparent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[s.modalCard, { maxHeight: '85%' }]}>
             <View style={s.modalHeader}>
@@ -1053,14 +1053,14 @@ export default function HorseDetailScreen() {
       </Modal>
 
       {/* ─── Modal editar ─── */}
-      <Modal visible={showEdit} animationType="slide" transparent>
+      <Modal visible={showEdit} animationType="fade" transparent>
         <View style={s.modalOverlay}>
           <EditHorseModal horse={horse} onClose={() => setShowEdit(false)} c={c} s={s} />
         </View>
       </Modal>
 
       {/* ─── Modal asignar veterinario ─── */}
-      <Modal visible={showAssignVet} animationType="slide" transparent onRequestClose={() => setShowAssignVet(false)}>
+      <Modal visible={showAssignVet} animationType="fade" transparent onRequestClose={() => setShowAssignVet(false)}>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={s.modalSheet}>
             <View style={s.modalHeader}>
@@ -1112,7 +1112,7 @@ export default function HorseDetailScreen() {
       </Modal>
 
       {/* ─── Modal transferir ─── */}
-      <Modal visible={showTransfer} animationType="slide" transparent onRequestClose={() => setShowTransfer(false)}>
+      <Modal visible={showTransfer} animationType="fade" transparent onRequestClose={() => setShowTransfer(false)}>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={s.modalSheet}>
             <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
@@ -1159,7 +1159,7 @@ export default function HorseDetailScreen() {
       </Modal>
 
       {/* ─── Modal subir documento ─── */}
-      <Modal visible={showUploadDoc} animationType="slide" transparent onRequestClose={() => setShowUploadDoc(false)}>
+      <Modal visible={showUploadDoc} animationType="fade" transparent onRequestClose={() => setShowUploadDoc(false)}>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[s.modalSheet, { maxHeight: '45%' }]}>
             <View style={s.modalHeader}>
@@ -1196,7 +1196,7 @@ export default function HorseDetailScreen() {
       </Modal>
 
       {/* ════════════════ MODAL: AGREGAR EVENTO ════════════════ */}
-      <Modal visible={showAddEvent} animationType="slide" transparent onRequestClose={() => setShowAddEvent(false)}>
+      <Modal visible={showAddEvent} animationType="fade" transparent onRequestClose={() => setShowAddEvent(false)}>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
