@@ -878,7 +878,12 @@ export default function HorseDetailScreen() {
               <Text style={s.captureBtnText}>Capturar</Text>
             </TouchableOpacity>
           </View>
-          <View style={s.activityTypeRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={s.activityTypeRow}
+            contentContainerStyle={{ flexDirection: 'row', gap: 6, paddingRight: 8 }}
+          >
             <TouchableOpacity
               style={[s.activityChip, activityType === 'all' && { backgroundColor: c.surfaceAlt, borderColor: c.text }]}
               onPress={() => setActivityType('all')}
@@ -890,7 +895,7 @@ export default function HorseDetailScreen() {
                 <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
           {!activityPhotos?.length ? (
             <Text style={s.emptyText}>Las fotos tomadas incluyen sello de fecha y autor verificado.</Text>
           ) : (
@@ -1527,7 +1532,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   medTypeOptionText: { fontSize: 12, color: c.textMuted },
 
   /* Fotos */
-  activityTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  activityTypeRow: { marginBottom: 10, flexGrow: 0 },
   captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.text },
   captureBtnText: { fontSize: 12, fontWeight: '700', color: c.surface },
   activityChip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border },
