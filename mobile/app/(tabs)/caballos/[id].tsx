@@ -862,7 +862,8 @@ export default function HorseDetailScreen() {
           <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
             <Text style={s.sectionTitle}>Fotos verificadas</Text>
             <TouchableOpacity
-              style={s.smallBtn}
+              style={s.captureBtn}
+              activeOpacity={0.85}
               onPress={async () => {
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
                 if (status !== 'granted') { Alert.alert('Permiso', 'Necesitamos acceso a la cámara.'); return; }
@@ -873,7 +874,8 @@ export default function HorseDetailScreen() {
                 }
               }}
             >
-              <Text style={s.smallBtnText}>📷 Capturar</Text>
+              <Camera size={15} color={colors.white} strokeWidth={2.2} />
+              <Text style={s.captureBtnText}>Capturar</Text>
             </TouchableOpacity>
           </View>
           <View style={s.activityTypeRow}>
@@ -1519,9 +1521,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   medTypeOptionText: { fontSize: 12, color: c.textMuted },
 
   /* Fotos */
-  activityTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  activityChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
-  activityChipText: { fontSize: 11, fontWeight: '600', color: c.textMuted },
+  activityTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.brand },
+  captureBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
+  activityChip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border },
+  activityChipText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   photoWrap: { width: '31%', aspectRatio: 1, position: 'relative' },
   photoThumb: { width: '100%', height: '100%', borderRadius: 10 },
