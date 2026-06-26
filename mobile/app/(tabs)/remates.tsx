@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, Plus, Trophy, Tag, Megaphone, XCircle } from 'lucide-react-native';
 import { useAuctions } from '../../hooks/use-auctions';
 import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
@@ -16,20 +17,11 @@ import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { nav, Routes } from '../../lib/routes';
 import type { Auction } from '../../../packages/shared/src/types';
 
-const STATUS_COLORS: Record<string, string> = {
-  active: '#10b981',
-  draft: '#6b7280',
-  paused: '#f59e0b',
-  closed: '#3b82f6',
-  sold: '#9d6c35',
-  cancelled: '#ef4444',
-};
-
 function formatARS(n: number, cur: string) {
   return `${cur} ${new Intl.NumberFormat('es-AR').format(n)}`;
 }
 
-function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => void; c: ThemeColors; s: Styles }) {
+function AuctionCard({ item, onPress, s }: { item: Auction; onPress: () => void; s: Styles }) {
   const isRemate = item.type === 'remate';
   const price = isRemate ? (item.top_bid ?? item.starting_bid) : item.asking_price;
 
@@ -37,7 +29,6 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
       <View style={s.cardHeader}>
         <View style={s.cardLeft}>
-          <View style={[s.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? c.textFaint }]} />
           <View style={{ flex: 1 }}>
             <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
             <Text style={s.cardSub} numberOfLines={1}>{item.horse?.name}</Text>
@@ -84,6 +75,7 @@ export default function RematesTab() {
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('active');
   const { c } = useTheme();
+  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
 
   const { data, isLoading, refetch, isRefetching } = useAuctions({
@@ -93,13 +85,27 @@ export default function RematesTab() {
 
   const Header = (
     <>
+      <ScreenHeader
+        scrollable
+        title="Remates"
+        subtitle="Comprá y vendé equinos"
+        showBack
+        right={
+          <HeaderButton
+            label="Publicar"
+            icon={Plus}
+            onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
+          />
+        }
+      />
+
       {/* Búsqueda */}
       <View style={s.searchRow}>
         <View style={s.searchBox}>
           <Search size={16} color={c.textFaint} strokeWidth={2} />
           <TextInput
             style={s.searchInput}
-            placeholder="Buscar por caballo, raza, lugar..."
+            placeholder="Buscar"
             placeholderTextColor={c.textFaint}
             value={q}
             onChangeText={setQ}
@@ -115,7 +121,7 @@ export default function RematesTab() {
       {/* Filtros */}
       <View style={s.filterRow}>
         {[
-          { v: 'active', l: '🟢 Activos' },
+          { v: 'active', l: 'Activos' },
           { v: '', l: 'Todos' },
           { v: 'sold', l: 'Vendidos' },
         ].map(({ v, l }) => (
@@ -133,19 +139,7 @@ export default function RematesTab() {
   );
 
   return (
-    <View style={s.root}>
-      <ScreenHeader
-        title="Remates"
-        subtitle="Comprá y vendé equinos"
-        showBack
-        right={
-          <HeaderButton
-            label="Publicar"
-            icon={Plus}
-            onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
-          />
-        }
-      />
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {isLoading ? (
         <View>
           {Header}
@@ -191,7 +185,6 @@ export default function RematesTab() {
               <AuctionCard
                 item={item}
                 onPress={() => nav.push(router, Routes.remate(item.id))}
-                c={c}
                 s={s}
               />
             </Animated.View>
@@ -217,15 +210,21 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: text.sm, color: c.text },
 
-  filterRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingBottom: space[3] },
-  filterBtn: {
-    paddingHorizontal: space[3], paddingVertical: space[1] + 2,
-    borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong,
-    backgroundColor: c.surface,
+  filterRow: {
+    flexDirection: 'row', gap: 2, padding: 3,
+    marginHorizontal: space[4], marginBottom: space[3],
+    backgroundColor: c.surfaceAlt, borderRadius: radius.full,
   },
-  filterBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
+  filterBtn: {
+    flex: 1, paddingVertical: space[1] + 2, alignItems: 'center',
+    borderRadius: radius.full,
+  },
+  filterBtnActive: {
+    backgroundColor: c.surface,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1,
+  },
   filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  filterBtnTextActive: { color: colors.white },
+  filterBtnTextActive: { color: c.text },
 
   list: { paddingBottom: space[10] },
   cardWrap: { paddingHorizontal: space[4] },
@@ -250,7 +249,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: space[3] },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1 },
-  statusDot: { width: 8, height: 8, borderRadius: 4, marginTop: 2, flexShrink: 0 },
   cardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   cardSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
@@ -265,7 +263,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   priceLabel: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.brand, letterSpacing: -0.3 },
+  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.3 },
   metaRight: { alignItems: 'flex-end', gap: 2 },
   metaText: { fontSize: text.xs, color: c.textFaint },
   watchingBadge: { fontSize: 10, color: '#d97706', fontWeight: weight.semibold },
