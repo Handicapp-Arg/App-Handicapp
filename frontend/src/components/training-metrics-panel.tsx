@@ -41,7 +41,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
 
   if (!hasData && !canEdit) return null;
 
-  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs focus:border-gray-400 focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none';
 
   return (
     <div className="mt-2 rounded-lg bg-yellow-50 border border-yellow-100 p-3">

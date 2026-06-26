@@ -34,7 +34,7 @@ export function HorseTable({ horses }: HorseTableProps) {
   const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
       {/* Header desktop */}
       <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr_110px_32px] gap-0 border-b border-gray-100 bg-gray-50 px-4 py-2.5">
         <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Nombre</span>

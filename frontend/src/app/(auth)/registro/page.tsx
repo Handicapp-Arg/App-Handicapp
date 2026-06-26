@@ -48,17 +48,17 @@ export default function RegistroPage() {
     }
   };
 
-  const inputClass = "w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-300 placeholder:font-normal outline-none transition-all";
+  const inputClass = "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15";
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Crear cuenta</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
         <p className="mt-1 text-sm text-gray-400">Completá tus datos para registrarte</p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
@@ -68,7 +68,7 @@ export default function RegistroPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1.5">Nombre</label>
+          <label className="block text-sm font-medium text-gray-500 mb-1.5">Nombre</label>
           <input
             type="text"
             required
@@ -76,14 +76,11 @@ export default function RegistroPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Tu nombre"
             className={inputClass}
-            style={{ border: '1px solid #d1d5db', backgroundColor: 'var(--surface-card)' }}
-            onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1.5">Correo electrónico</label>
+          <label className="block text-sm font-medium text-gray-500 mb-1.5">Correo electrónico</label>
           <input
             type="email"
             required
@@ -92,14 +89,11 @@ export default function RegistroPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
             className={inputClass}
-            style={{ border: '1px solid #d1d5db', backgroundColor: 'var(--surface-card)' }}
-            onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1.5">Contraseña</label>
+          <label className="block text-sm font-medium text-gray-500 mb-1.5">Contraseña</label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -109,14 +103,11 @@ export default function RegistroPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
               className={inputClass + ' pr-11'}
-              style={{ border: '1px solid #d1d5db', backgroundColor: 'var(--surface-card)' }}
-              onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
-              onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
             />
             <button
               type="button"
               onClick={() => setShowPassword(v => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               {showPassword ? (
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -133,7 +124,7 @@ export default function RegistroPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1.5">Tipo de cuenta</label>
+          <label className="block text-sm font-medium text-gray-500 mb-1.5">Tipo de cuenta</label>
           <div className="grid grid-cols-2 gap-2">
             {roles.map((r) => (
               <button
@@ -156,8 +147,7 @@ export default function RegistroPage() {
         <button
           type="submit"
           disabled={loading || !role}
-          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          style={{ backgroundColor: '#9d6c35' }}
+          className="w-full rounded-xl py-3 text-sm font-semibold text-white bg-clay-500 hover:bg-clay-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -171,9 +161,9 @@ export default function RegistroPage() {
         </button>
       </form>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-gray-400">
         ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="font-semibold text-[#9d6c35] hover:underline">
+        <Link href="/login" className="font-semibold text-clay-500 hover:text-clay-600 transition">
           Iniciá sesión
         </Link>
       </p>

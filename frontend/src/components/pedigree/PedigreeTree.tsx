@@ -37,7 +37,7 @@ function NodeCard({ node, showValidation }: { node: PedigreeNode; showValidation
   }
 
   const card = (
-    <div className={`${baseCard} border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-700 shadow-sm`}>
+    <div className={`${baseCard} border-gray-200 bg-[var(--surface-card)] dark:bg-gray-900 dark:border-gray-700 shadow-sm`}>
       <div className="flex items-center justify-between gap-1">
         <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{node.name}</p>
         {showValidation && cfg.icon && (

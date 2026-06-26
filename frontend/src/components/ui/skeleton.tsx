@@ -11,7 +11,7 @@ function SkeletonBlock({ className = '' }: { className?: string }) {
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 space-y-3">
+    <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 space-y-3">
       <SkeletonBlock className="h-40 rounded-xl" />
       <SkeletonBlock className="h-4 w-3/5" />
       <SkeletonBlock className="h-3 w-2/5" />
@@ -21,7 +21,7 @@ export function SkeletonCard() {
 
 export function SkeletonRow() {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-[var(--surface-card)] px-4 py-3">
       <SkeletonBlock className="h-10 w-10 rounded-xl shrink-0" />
       <div className="flex-1 space-y-2">
         <SkeletonBlock className="h-3.5 w-3/5" />
@@ -47,7 +47,7 @@ export function SkeletonText({ lines = 3 }: { lines?: number }) {
 
 export function SkeletonStat() {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 space-y-2">
+    <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 space-y-2">
       <SkeletonBlock className="h-3 w-1/2" />
       <SkeletonBlock className="h-7 w-4/5" />
     </div>

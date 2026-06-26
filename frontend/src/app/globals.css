@@ -264,6 +264,14 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Transición suave al alternar claro/oscuro (acotada a superficies grandes
+   para no penalizar performance). Respeta prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  body, aside, header, .card, .input-base {
+    transition: background-color 0.28s ease, border-color 0.28s ease, color 0.2s ease;
+  }
+}
+
 .safe-bottom {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 1.25rem);
 }

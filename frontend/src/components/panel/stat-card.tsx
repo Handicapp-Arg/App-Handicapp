@@ -22,7 +22,7 @@ export function StatCard({ label, value, icon, accent, sub }: StatCardProps) {
       className="rounded-2xl border p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
       style={{
         borderColor: a ? a.border : 'var(--surface-card-border)',
-        backgroundColor: a ? a.bg : '#ffffff',
+        backgroundColor: a ? a.bg : 'var(--surface-card)',
         boxShadow: a?.bg === '#9d6c35'
           ? '0 4px 14px -2px rgb(15 31 61 / 0.35)'
           : 'var(--shadow-card)',

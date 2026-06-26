@@ -58,8 +58,13 @@ function LoginForm() {
 
   return (
     <div className="space-y-5">
+      <div className="mb-1">
+        <h1 className="text-[19px] font-bold tracking-[-0.02em] text-gray-900">Iniciá sesión</h1>
+        <p className="mt-1 text-[13px] text-gray-400">Ingresá a tu cuenta para continuar</p>
+      </div>
+
       {error && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-clay-500/30 bg-clay-500/10 px-4 py-3 text-[13px] font-medium text-clay-200">
+        <div className="flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700">
           <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
@@ -69,7 +74,7 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         <div>
-          <label htmlFor="email" className="block text-[12.5px] font-medium text-white/55 mb-1.5">
+          <label htmlFor="email" className="block text-[12.5px] font-medium text-gray-500 mb-1.5">
             Correo electrónico
           </label>
           <input
@@ -80,12 +85,12 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder:text-white/25 outline-none transition-all focus:border-clay-400 focus:bg-white/[0.06] focus:ring-4 focus:ring-clay-500/20"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-[12.5px] font-medium text-white/55 mb-1.5">
+          <label htmlFor="password" className="block text-[12.5px] font-medium text-gray-500 mb-1.5">
             Contraseña
           </label>
           <div className="relative">
@@ -97,12 +102,12 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-[15px] text-white placeholder:text-white/25 outline-none transition-all focus:border-clay-400 focus:bg-white/[0.06] focus:ring-4 focus:ring-clay-500/20"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-11 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               <EyeIcon open={showPassword} />
             </button>
@@ -110,7 +115,7 @@ function LoginForm() {
         </div>
 
         <div className="flex justify-end">
-          <Link href="/olvide-contrasena" className="text-[12.5px] font-medium text-white/40 hover:text-clay-300 transition">
+          <Link href="/olvide-contrasena" className="text-[12.5px] font-medium text-gray-400 hover:text-clay-500 transition">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
@@ -118,8 +123,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl py-3.5 text-[15px] font-semibold text-white bg-clay-500 hover:bg-clay-400 active:scale-[0.985] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          style={{ boxShadow: '0 8px 24px -8px color-mix(in srgb, var(--color-clay-500) 65%, transparent)' }}
+          className="w-full rounded-xl py-3.5 text-[15px] font-semibold text-white bg-clay-500 hover:bg-clay-600 active:scale-[0.985] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-[0_8px_24px_-10px_color-mix(in_srgb,var(--color-clay-500)_70%,transparent)]"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -133,9 +137,9 @@ function LoginForm() {
         </button>
       </form>
 
-      <p className="text-center text-[13.5px] text-white/40">
+      <p className="text-center text-[13.5px] text-gray-400">
         ¿No tenés cuenta?{' '}
-        <Link href="/registro" className="font-semibold text-clay-300 hover:text-clay-200 transition">
+        <Link href="/registro" className="font-semibold text-clay-500 hover:text-clay-600 transition">
           Registrate
         </Link>
       </p>
@@ -145,21 +149,21 @@ function LoginForm() {
         <button
           type="button"
           onClick={() => setDevOpen((v) => !v)}
-          className="w-full rounded-xl border border-white/10 bg-white/[0.025] py-2.5 text-[12.5px] font-semibold text-white/50 hover:text-white/70 transition-colors cursor-pointer"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-[12.5px] font-semibold text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
         >
           Acceso rápido · pruebas
         </button>
         {devOpen && (
-          <div className="mt-1.5 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+          <div className="mt-1.5 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
             {testUsers.map((u) => (
               <button
                 key={u.email}
                 type="button"
                 onClick={() => { fillUser(u); setDevOpen(false); }}
-                className="flex w-full items-center justify-between border-t border-white/[0.06] px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-white/[0.05] cursor-pointer"
+                className="flex w-full items-center justify-between border-t border-gray-100 px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-[var(--surface-card)] cursor-pointer"
               >
-                <span className="text-[13px] font-medium text-white/70">{u.label}</span>
-                <span className="text-[11px] text-white/35">{u.email}</span>
+                <span className="text-[13px] font-medium text-gray-700">{u.label}</span>
+                <span className="text-[11px] text-gray-400">{u.email}</span>
               </button>
             ))}
           </div>

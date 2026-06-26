@@ -37,7 +37,7 @@ function ResetForm() {
     return (
       <div className="text-center space-y-4">
         <p className="text-sm text-gray-500">Enlace inválido.</p>
-        <Link href="/olvide-contrasena" className="text-sm font-semibold text-[#9d6c35] hover:underline">
+        <Link href="/olvide-contrasena" className="text-sm font-semibold text-clay-500 hover:text-clay-600 transition">
           Solicitar nuevo enlace
         </Link>
       </div>
@@ -65,12 +65,12 @@ function ResetForm() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Nueva contraseña</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Nueva contraseña</h1>
         <p className="mt-1 text-sm text-gray-400">Elegí una contraseña nueva para tu cuenta.</p>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -81,7 +81,7 @@ function ResetForm() {
           { label: 'Confirmar contraseña', value: confirm, setter: setConfirm, placeholder: 'Repetí la contraseña' },
         ].map((field) => (
           <div key={field.label}>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">{field.label}</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1.5">{field.label}</label>
             <input
               type="password"
               required
@@ -89,7 +89,7 @@ function ResetForm() {
               value={field.value}
               onChange={(e) => field.setter(e.target.value)}
               placeholder={field.placeholder}
-              className="w-full rounded-xl border border-gray-200 bg-[var(--surface-card)] px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
             />
           </div>
         ))}
@@ -97,8 +97,7 @@ function ResetForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 cursor-pointer"
-          style={{ backgroundColor: '#9d6c35' }}
+          className="w-full rounded-xl py-3 text-sm font-semibold text-white bg-clay-500 hover:bg-clay-600 transition-colors disabled:opacity-50 cursor-pointer"
         >
           {loading ? 'Guardando...' : 'Guardar contraseña'}
         </button>

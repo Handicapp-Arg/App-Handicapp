@@ -37,7 +37,7 @@ export function UserTable({ users, roleLabel, allHorses, roleKey }: UserTablePro
   const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
       {/* Header desktop */}
       <div className="hidden sm:grid grid-cols-[1fr_1fr_72px_110px_32px] gap-0 border-b border-gray-100 bg-gray-50 px-4 py-2.5">
         <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Nombre</span>
@@ -99,7 +99,7 @@ export function UserTable({ users, roleLabel, allHorses, roleKey }: UserTablePro
                       {horses.map((h) => (
                         <span
                           key={h.id}
-                          className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700"
+                          className="inline-flex items-center rounded-full border border-gray-200 bg-[var(--surface-card)] px-3 py-1 text-xs font-medium text-gray-700"
                         >
                           {h.name}
                         </span>

@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: 'pendiente',
 };
 
-const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100';
+const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100';
 
 function HorseSearchInput({
   label, value, onChange, onSelect,
@@ -54,7 +54,7 @@ function HorseSearchInput({
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
       {open && value.length >= 2 && results.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:bg-gray-900 dark:border-gray-700">
+        <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-[var(--surface-card)] shadow-lg dark:bg-gray-900 dark:border-gray-700">
           {results.map((h) => (
             <button
               key={h.id}
@@ -205,7 +205,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[999] flex flex-col bg-white dark:bg-gray-950 sm:hidden">
+      <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] dark:bg-gray-950 sm:hidden">
         <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <p className="font-bold text-white">Pedigrí</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -213,7 +213,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
         <div className="overflow-y-auto flex-1">{content}</div>
       </div>
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center bg-black/40">
-        <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-950 shadow-2xl overflow-hidden">
+        <div className="w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] dark:bg-gray-950 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
             <p className="font-bold text-white">Pedigrí</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>

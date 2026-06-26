@@ -48,7 +48,7 @@ export function SearchInput({
         value={local}
         onChange={(e) => handleChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-9 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition"
+        className="w-full rounded-lg border border-gray-200 bg-[var(--surface-card)] py-2.5 pl-10 pr-9 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition"
       />
       {local && (
         <button

@@ -175,7 +175,7 @@ export function OnboardingWizard() {
         aria-labelledby="onboarding-title"
         className="fixed inset-0 z-[991] flex items-center justify-center p-4"
       >
-        <div className="animate-fade-in-up flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="animate-fade-in-up flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface-card)] shadow-2xl">
           <div className="relative flex flex-col items-center bg-gradient-to-br from-navy-800 to-navy-700 px-6 pb-6 pt-8">
             <button
               type="button"

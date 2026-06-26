@@ -152,7 +152,7 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Escribí un comentario…"
-            className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-1.5 outline-none focus:border-clay-400 focus:bg-white focus:ring-2 focus:ring-clay-500/15 transition"
+            className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-1.5 outline-none focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-2 focus:ring-clay-500/15 transition"
           />
           <button
             type="submit"
@@ -187,7 +187,7 @@ export default function PostCard({ post }: Props) {
 
   return (
     <article className={cn(
-      'bg-white rounded-xl border shadow-sm overflow-hidden transition-shadow hover:shadow-md',
+      'bg-[var(--surface-card)] rounded-xl border shadow-sm overflow-hidden transition-shadow hover:shadow-md',
       post.is_pinned ? 'border-amber-200' : 'border-gray-200',
       post.is_hidden ? 'opacity-60' : '',
     )}>
@@ -238,7 +238,7 @@ export default function PostCard({ post }: Props) {
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-8 z-20 bg-white rounded-xl border border-gray-200 shadow-lg py-1 min-w-[160px]">
+                  <div className="absolute right-0 top-8 z-20 bg-[var(--surface-card)] rounded-xl border border-gray-200 shadow-lg py-1 min-w-[160px]">
                     {isAdmin && (
                       <>
                         <button

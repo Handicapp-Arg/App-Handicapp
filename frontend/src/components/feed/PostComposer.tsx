@@ -81,7 +81,7 @@ export default function PostComposer({ onPosted }: Props) {
 
   return (
     <div className={cn(
-      'bg-white rounded-xl border shadow-sm transition-all duration-200',
+      'bg-[var(--surface-card)] rounded-xl border shadow-sm transition-all duration-200',
       expanded ? 'border-gray-300 shadow-md' : 'border-gray-200',
     )}>
       <div className="flex gap-3 p-4">

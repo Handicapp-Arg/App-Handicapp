@@ -40,7 +40,7 @@ export default function OlvideContrasenaPage() {
             Si existe una cuenta con <strong>{email}</strong>, vas a recibir un enlace para restablecer tu contraseña en los próximos minutos.
           </p>
         </div>
-        <Link href="/login" className="block text-sm font-semibold text-[#9d6c35] hover:underline">
+        <Link href="/login" className="block text-sm font-semibold text-clay-500 hover:text-clay-600 transition">
           ← Volver al inicio de sesión
         </Link>
       </div>
@@ -50,43 +50,42 @@ export default function OlvideContrasenaPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Recuperar contraseña</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Recuperar contraseña</h1>
         <p className="mt-1 text-sm text-gray-400">
           Ingresá tu email y te enviamos un enlace para restablecer tu contraseña.
         </p>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1.5">Correo electrónico</label>
+          <label className="block text-sm font-medium text-gray-500 mb-1.5">Correo electrónico</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl border border-gray-200 bg-[var(--surface-card)] px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 transition-all"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 cursor-pointer"
-          style={{ backgroundColor: '#9d6c35' }}
+          className="w-full rounded-xl py-3 text-sm font-semibold text-white bg-clay-500 hover:bg-clay-600 transition-colors disabled:opacity-50 cursor-pointer"
         >
           {loading ? 'Enviando...' : 'Enviar enlace'}
         </button>
       </form>
 
-      <p className="text-center text-sm text-gray-500">
-        <Link href="/login" className="font-semibold text-[#9d6c35] hover:underline">
+      <p className="text-center text-sm text-gray-400">
+        <Link href="/login" className="font-semibold text-clay-500 hover:text-clay-600 transition">
           ← Volver al inicio de sesión
         </Link>
       </p>

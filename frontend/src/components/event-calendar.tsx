@@ -92,7 +92,7 @@ export default function EventCalendar({ events }: EventCalendarProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
       {/* Calendar */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <button
@@ -200,7 +200,7 @@ export default function EventCalendar({ events }: EventCalendarProps) {
       </div>
 
       {/* Sidebar: selected day events / event detail */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
         {selectedEvent ? (
           /* Event detail */
           <div>
