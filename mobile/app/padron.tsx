@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { X, CheckCircle2, Info, ChevronLeft, Search } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '../lib/colors';
+import { Routes } from '../lib/routes';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { haptic } from '../lib/haptics';
@@ -297,7 +298,7 @@ export default function PadronScreen() {
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={8}>
+        <TouchableOpacity onPress={() => router.navigate(Routes.mas as never)} style={s.backBtn} hitSlop={8}>
           <ChevronLeft size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>

@@ -17,13 +17,17 @@ interface ScreenHeaderProps {
   dark?: boolean;
   /** Cuando va dentro de un scroll: el contenedor ya aplica el safe-area top */
   scrollable?: boolean;
+  /** Ruta a la que vuelve el botón atrás (en vez del back genérico). Útil para
+   *  pantallas abiertas desde "Más", que deben volver a "Más" y no al tab inicial. */
+  backTo?: string;
 }
 
-export function ScreenHeader({ title, subtitle, showBack, right, dark = false, scrollable = false }: ScreenHeaderProps) {
+export function ScreenHeader({ title, subtitle, showBack, right, dark = false, scrollable = false, backTo }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
+  const onBack = () => { if (backTo) router.navigate(backTo as never); else router.back(); };
 
   return (
     <View style={[
@@ -33,7 +37,7 @@ export function ScreenHeader({ title, subtitle, showBack, right, dark = false, s
     ]}>
       <View style={s.row}>
         {showBack && (
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={onBack} style={s.backBtn} activeOpacity={0.7}>
             <ChevronLeft
               size={22}
               color={dark ? colors.white : c.text}

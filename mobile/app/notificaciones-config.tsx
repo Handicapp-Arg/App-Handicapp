@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
+import { Routes } from '../lib/routes';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
@@ -178,7 +179,7 @@ export default function NotificacionesConfigScreen() {
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => router.navigate(Routes.mas as never)} style={s.backBtn} activeOpacity={0.7}>
             <ChevronLeft size={22} color={c.text} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Config. notificaciones</Text>
@@ -195,7 +196,7 @@ export default function NotificacionesConfigScreen() {
     <View style={[s.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => router.navigate(Routes.mas as never)} style={s.backBtn} activeOpacity={0.7}>
           <ChevronLeft size={22} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: space[2] }}>

@@ -21,6 +21,7 @@ export const Routes = {
   notificacionesConfig: '/notificaciones-config',
   superadmin:          '/superadmin',
   muro:                '/(tabs)/muro',
+  mas:                 '/(tabs)/mas',
   remates:             '/(tabs)/remates',
   remateCrear:         '/remates/crear',
   remate:              (id: string) => `/remates/${id}`,

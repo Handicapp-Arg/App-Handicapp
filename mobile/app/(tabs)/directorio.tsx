@@ -12,6 +12,7 @@ import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
 import { useBoardingRequests, useCreateBoardingRequest } from '../../hooks/use-boarding-requests';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
 import { ListRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
@@ -172,7 +173,7 @@ export default function DirectorioScreen() {
 
   const ListHeader = (
     <>
-      <ScreenHeader scrollable title="Directorio" showBack />
+      <ScreenHeader scrollable title="Directorio" showBack backTo={Routes.mas} />
 
       {/* Solicitudes pendientes propias */}
       {isPropietario && pendingRequests.length > 0 && (

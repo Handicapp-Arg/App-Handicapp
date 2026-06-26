@@ -13,6 +13,7 @@ import {
 } from '../hooks/use-organizations';
 import { useAuth } from '../lib/auth';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { Routes } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
@@ -152,7 +153,7 @@ export default function OrganizacionScreen() {
   if (loadingOrgs || loadingOrg) {
     return (
       <View style={s.root}>
-        <ScreenHeader title="Organización" showBack />
+        <ScreenHeader title="Organización" showBack backTo={Routes.mas} />
         <View style={{ padding: space[4], gap: space[2] }}>
           {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
@@ -163,7 +164,7 @@ export default function OrganizacionScreen() {
   if (!org) {
     return (
       <View style={s.root}>
-        <ScreenHeader title="Organización" showBack />
+        <ScreenHeader title="Organización" showBack backTo={Routes.mas} />
         <EmptyState
           icon="business-outline"
           title="No pertenecés a una organización"
@@ -178,7 +179,7 @@ export default function OrganizacionScreen() {
 
   return (
     <View style={s.root}>
-      <ScreenHeader title="Organización" showBack />
+      <ScreenHeader title="Organización" showBack backTo={Routes.mas} />
 
       <ScrollView contentContainerStyle={{ padding: space[4], paddingBottom: 40, gap: space[4] }} showsVerticalScrollIndicator={false}>
         {/* Card principal */}

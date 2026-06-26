@@ -11,6 +11,7 @@ import { PressableScale } from '../../components/PressableScale';
 import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../../hooks/use-contracts';
 import { useAuth } from '../../lib/auth';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
 import { Skeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
@@ -168,6 +169,7 @@ export default function ContratosScreen() {
       scrollable
       title="Contratos"
       showBack
+      backTo={Routes.mas}
       right={isEstab ? (
         <TouchableOpacity onPress={() => { haptic.medium(); setShowCreate(true); }} style={s.addBtn} activeOpacity={0.8}>
           <Text style={s.addBtnText}>+ Nuevo</Text>

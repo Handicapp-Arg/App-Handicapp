@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { Routes } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
@@ -107,7 +108,7 @@ export default function SuperAdminScreen() {
   if (user?.role !== 'admin') {
     return (
       <View style={s.container}>
-        <ScreenHeader title="Superadmin" showBack />
+        <ScreenHeader title="Superadmin" showBack backTo={Routes.mas} />
         <EmptyState
           icon="lock-closed-outline"
           title="Acceso restringido"
@@ -120,7 +121,7 @@ export default function SuperAdminScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Superadmin" subtitle="Control de plataforma" showBack />
+      <ScreenHeader title="Superadmin" subtitle="Control de plataforma" showBack backTo={Routes.mas} />
 
       <FlatList
         data={orgs ?? []}

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { Routes } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
@@ -115,7 +116,7 @@ export default function SolicitudesScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Solicitudes" subtitle="Pensión de caballos" showBack />
+      <ScreenHeader title="Solicitudes" subtitle="Pensión de caballos" showBack backTo={Routes.mas} />
 
       <View style={s.tabs}>
         {FILTERS.map((f) => (

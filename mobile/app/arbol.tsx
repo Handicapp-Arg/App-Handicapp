@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../hooks/use-horse-records';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { Routes } from '../lib/routes';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const NODE_W   = 148;
@@ -324,6 +325,7 @@ export default function ArbolScreen() {
       <ScreenHeader
         title="Árbol genealógico"
         showBack
+        backTo={Routes.mas}
         right={<DepthToggle value={maxGen} onChange={setMaxGen} s={s} />}
       />
 

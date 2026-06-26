@@ -13,6 +13,7 @@ import { useAuth } from '../../lib/auth';
 import { DatePicker } from '../../components/DatePicker';
 import { EventCard } from '../../components/EventCard';
 import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
+import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
 import { EventRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
@@ -259,6 +260,8 @@ export default function EventosScreen() {
     <>
       <ScreenHeader
         scrollable
+        showBack
+        backTo={Routes.mas}
         title={total > 0 ? `Eventos (${total})` : 'Eventos'}
         right={canCreate ? (
           <HeaderButton label="+ Nuevo" onPress={() => { haptic.medium(); setShowCreate(true); }} />

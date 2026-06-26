@@ -59,7 +59,7 @@ export function EmptyState({ icon, title, message, actionLabel, onAction, tint }
       <Text style={s.title}>{title}</Text>
       {message && <Text style={s.message}>{message}</Text>}
       {actionLabel && onAction && (
-        <TouchableOpacity style={[s.btn, { backgroundColor: accent }]} onPress={onAction} activeOpacity={0.85}>
+        <TouchableOpacity style={[s.btn, { backgroundColor: accent, shadowColor: accent }]} onPress={onAction} activeOpacity={0.88}>
           <Text style={s.btnText}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
@@ -76,8 +76,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     gap: space[3],
   },
   iconCircle: {
-    width: 72,
-    height: 72,
+    width: 84,
+    height: 84,
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
@@ -98,10 +98,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     lineHeight: 20,
   },
   btn: {
-    marginTop: space[2],
-    borderRadius: radius.md,
-    paddingHorizontal: space[6],
-    paddingVertical: space[3],
+    marginTop: space[3],
+    borderRadius: radius.full,
+    paddingHorizontal: space[6] + 2,
+    paddingVertical: space[3] + 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 4,
   },
   btnText: {
     fontSize: text.sm,

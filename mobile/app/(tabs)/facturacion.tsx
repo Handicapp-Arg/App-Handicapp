@@ -9,6 +9,7 @@ import { useBills, useSendBill, useApproveBill, useDisputeBill, STATUS_META, mon
 import { formatCurrency } from '../../lib/currency';
 import { useAuth } from '../../lib/auth';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
 import { Skeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
@@ -98,7 +99,7 @@ export default function FacturacionScreen() {
     <View style={[layout.screen, { paddingTop: insets.top }]}>
       {isLoading ? (
         <View>
-          <ScreenHeader scrollable title="Facturación" />
+          <ScreenHeader scrollable showBack backTo={Routes.mas} title="Facturación" />
           <View style={{ padding: space[4], gap: space[3] }}>
             {Array.from({ length: 5 }).map((_, i) => (
               <View key={i} style={s.billCard}>
@@ -117,7 +118,7 @@ export default function FacturacionScreen() {
         </View>
       ) : !bills?.length ? (
         <View>
-          <ScreenHeader scrollable title="Facturación" />
+          <ScreenHeader scrollable showBack backTo={Routes.mas} title="Facturación" />
           <EmptyState
             icon="receipt-outline"
             title={isEst ? 'Sin facturas creadas' : 'Sin facturas recibidas'}
@@ -130,7 +131,7 @@ export default function FacturacionScreen() {
           data={bills}
           keyExtractor={(b) => b.id}
           contentContainerStyle={{ paddingBottom: space[8], gap: space[3] }}
-          ListHeaderComponent={<ScreenHeader scrollable title="Facturación" />}
+          ListHeaderComponent={<ScreenHeader scrollable showBack backTo={Routes.mas} title="Facturación" />}
           renderItem={({ item: bill, index }) => {
             const meta = STATUS_META[bill.status];
             return (

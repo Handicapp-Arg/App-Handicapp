@@ -6,12 +6,12 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, Plus, Trophy, Tag, Megaphone, XCircle } from 'lucide-react-native';
+import { Search, Plus, Trophy, Tag, XCircle } from 'lucide-react-native';
 import { useAuctions } from '../../hooks/use-auctions';
 import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../components/Skeleton';
+import { EmptyState } from '../../components/EmptyState';
 import { haptic } from '../../lib/haptics';
-import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { nav, Routes } from '../../lib/routes';
@@ -90,6 +90,7 @@ export default function RematesTab() {
         title="Remates"
         subtitle="Comprá y vendé equinos"
         showBack
+        backTo={Routes.mas}
         right={
           <HeaderButton
             label="Publicar"
@@ -157,25 +158,15 @@ export default function RematesTab() {
           onRefresh={refetch}
           refreshing={isRefetching}
           ListEmptyComponent={
-            <View style={s.emptyBox}>
-              <Trophy size={56} color={c.textFaint} strokeWidth={2} />
-              <Text style={s.emptyTitle}>
-                {filterStatus === 'active' ? 'No hay caballos en venta' : 'Sin resultados'}
-              </Text>
-              <Text style={s.emptySub}>
-                {filterStatus === 'active'
-                  ? 'Sé el primero en publicar un caballo.'
-                  : 'Probá con otro filtro o búsqueda.'}
-              </Text>
-              <TouchableOpacity
-                style={s.emptyAction}
-                onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
-                activeOpacity={0.85}
-              >
-                <Megaphone size={18} color={colors.white} strokeWidth={2} />
-                <Text style={s.emptyActionText}>Publicar mi caballo</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon="trophy-outline"
+              title={filterStatus === 'active' ? 'No hay caballos en venta' : 'Sin resultados'}
+              message={filterStatus === 'active'
+                ? 'Sé el primero en publicar un caballo.'
+                : 'Probá con otro filtro o búsqueda.'}
+              actionLabel="Publicar mi caballo"
+              onAction={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
+            />
           }
           renderItem={({ item, index }) => (
             <Animated.View
@@ -226,20 +217,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterBtnTextActive: { color: c.text },
 
-  list: { paddingBottom: space[10] },
+  list: { paddingBottom: space[10], flexGrow: 1 },
   cardWrap: { paddingHorizontal: space[4] },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  emptyBox: { alignItems: 'center', paddingTop: 48, paddingHorizontal: space[6], gap: space[3] },
-  emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
-  emptySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', lineHeight: 20 },
-  emptyAction: {
-    flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: c.brand, borderRadius: radius.xl,
-    paddingHorizontal: space[5], paddingVertical: space[3] + 2,
-    marginTop: space[2],
-  },
-  emptyActionText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 
   card: {
     backgroundColor: c.surface, borderRadius: radius.xl,
