@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, weight, radius } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 
@@ -20,39 +22,41 @@ interface ScreenHeaderProps {
 export function ScreenHeader({ title, subtitle, showBack, right, dark = false, scrollable = false }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   return (
     <View style={[
-      styles.wrap,
+      s.wrap,
       { paddingTop: scrollable ? space[3] : insets.top + space[3] },
-      dark ? styles.wrapDark : styles.wrapLight,
+      dark ? s.wrapDark : s.wrapLight,
     ]}>
-      <View style={styles.row}>
+      <View style={s.row}>
         {showBack && (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
             <ChevronLeft
               size={22}
-              color={dark ? colors.white : colors.gray900}
+              color={dark ? colors.white : c.text}
               strokeWidth={2}
             />
           </TouchableOpacity>
         )}
 
-        <View style={styles.titleBlock}>
+        <View style={s.titleBlock}>
           <Text
-            style={[styles.title, dark ? styles.titleDark : styles.titleLight]}
+            style={[s.title, dark ? s.titleDark : s.titleLight]}
             numberOfLines={1}
           >
             {title}
           </Text>
           {subtitle && (
-            <Text style={[styles.subtitle, dark ? styles.subtitleDark : styles.subtitleLight]}>
+            <Text style={[s.subtitle, dark ? s.subtitleDark : s.subtitleLight]}>
               {subtitle}
             </Text>
           )}
         </View>
 
-        {right && <View style={styles.rightSlot}>{right}</View>}
+        {right && <View style={s.rightSlot}>{right}</View>}
       </View>
     </View>
   );
@@ -71,28 +75,32 @@ export function HeaderButton({
   icon?: LucideIcon;
 }) {
   const Icon = icon;
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
     <TouchableOpacity
-      style={[styles.headerBtn, variant === 'ghost' ? styles.headerBtnGhost : styles.headerBtnPrimary]}
+      style={[s.headerBtn, variant === 'ghost' ? s.headerBtnGhost : s.headerBtnPrimary]}
       onPress={onPress}
       activeOpacity={0.8}
     >
       {Icon && (
         <Icon
           size={14}
-          color={variant === 'ghost' ? colors.brand : colors.white}
+          color={variant === 'ghost' ? c.brand : colors.white}
           strokeWidth={2}
           style={{ marginRight: 4 }}
         />
       )}
-      <Text style={[styles.headerBtnText, variant === 'ghost' ? styles.headerBtnTextGhost : styles.headerBtnTextPrimary]}>
+      <Text style={[s.headerBtnText, variant === 'ghost' ? s.headerBtnTextGhost : s.headerBtnTextPrimary]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   wrap: {
     paddingHorizontal: space[4],
     paddingBottom: space[3],
@@ -124,10 +132,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     letterSpacing: -0.3,
   },
-  titleLight: { color: colors.gray900 },
+  titleLight: { color: c.text },
   titleDark: { color: colors.white },
   subtitle: { fontSize: text.xs, marginTop: 1, fontFamily: fontFamily.medium },
-  subtitleLight: { color: colors.gray400 },
+  subtitleLight: { color: c.textFaint },
   subtitleDark: { color: 'rgba(255,255,255,0.55)' },
   rightSlot: { flexShrink: 0 },
   headerBtn: {
@@ -137,9 +145,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[3],
     paddingVertical: space[2],
   },
-  headerBtnPrimary: { backgroundColor: colors.brand },
-  headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.gray200 },
+  headerBtnPrimary: { backgroundColor: c.brand },
+  headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.borderStrong },
   headerBtnText: { fontSize: text.sm, fontWeight: weight.bold, fontFamily: fontFamily.bold },
   headerBtnTextPrimary: { color: colors.white },
-  headerBtnTextGhost: { color: colors.brand },
+  headerBtnTextGhost: { color: c.brand },
 });

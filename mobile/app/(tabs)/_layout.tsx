@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, LayoutGrid, QrCode } from 'lucide-react-native';
-import type { ComponentType } from 'react';
+import { useMemo, type ComponentType } from 'react';
 import { HorseIcon, BrandIsotipo } from '../../components/icons/equine';
-import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
@@ -20,6 +20,8 @@ const TABS: Record<string, { Icon: IconType; label: string }> = {
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { c } = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const activeName = state.routes[state.index]?.name;
 
   const renderTab = (name: string) => {
@@ -27,7 +29,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (!meta) return null;
     const focused = activeName === name;
     const Icon = meta.Icon;
-    const color = focused ? colors.brand : colors.gray500;
+    const color = focused ? c.brand : c.textMuted;
     const onPress = () => {
       haptic.light();
       const route = state.routes.find((r) => r.name === name);
@@ -66,10 +68,11 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function TabsLayout() {
+  const { c } = useTheme();
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false, animation: 'shift' }}
+      screenOptions={{ headerShown: false, animation: 'shift', sceneStyle: { backgroundColor: c.bg } }}
     >
       <Tabs.Screen name="muro" />
       <Tabs.Screen name="caballos/index" />
@@ -88,11 +91,13 @@ export default function TabsLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#ffffff',
+    backgroundColor: c.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 10,
@@ -115,7 +120,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 3,
     borderRadius: 2,
-    backgroundColor: colors.brand,
+    backgroundColor: c.brand,
   },
   label: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
   qrSlot: { width: 70 },
@@ -126,11 +131,11 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: colors.brand,
+    backgroundColor: c.brand,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
-    shadowColor: colors.brand,
+    shadowColor: c.brand,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -142,6 +147,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 10,
     fontWeight: '700',
-    color: colors.brand,
+    color: c.brand,
   },
 });

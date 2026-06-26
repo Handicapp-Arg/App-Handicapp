@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react-native';
 import { HorseIcon } from './icons/equine';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, weight, radius } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 
@@ -42,27 +44,30 @@ interface EmptyStateProps {
   tint?: string;
 }
 
-export function EmptyState({ icon, title, message, actionLabel, onAction, tint = colors.brand }: EmptyStateProps) {
+export function EmptyState({ icon, title, message, actionLabel, onAction, tint }: EmptyStateProps) {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const accent = tint ?? c.brand;
   return (
-    <Animated.View entering={FadeInDown.duration(350)} style={styles.wrap}>
-      <View style={[styles.iconCircle, { backgroundColor: `${tint}15` }]}>
+    <Animated.View entering={FadeInDown.duration(350)} style={s.wrap}>
+      <View style={[s.iconCircle, { backgroundColor: `${accent}15` }]}>
         {(() => {
           const L = ICON_MAP[icon];
-          return L ? <L size={32} color={tint} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={tint} />;
+          return L ? <L size={32} color={accent} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={accent} />;
         })()}
       </View>
-      <Text style={styles.title}>{title}</Text>
-      {message && <Text style={styles.message}>{message}</Text>}
+      <Text style={s.title}>{title}</Text>
+      {message && <Text style={s.message}>{message}</Text>}
       {actionLabel && onAction && (
-        <TouchableOpacity style={[styles.btn, { backgroundColor: tint }]} onPress={onAction} activeOpacity={0.85}>
-          <Text style={styles.btnText}>{actionLabel}</Text>
+        <TouchableOpacity style={[s.btn, { backgroundColor: accent }]} onPress={onAction} activeOpacity={0.85}>
+          <Text style={s.btnText}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   wrap: {
     flex: 1,
     justifyContent: 'center',
@@ -82,13 +87,13 @@ const styles = StyleSheet.create({
     fontSize: text.base,
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
-    color: colors.gray900,
+    color: c.text,
     textAlign: 'center',
   },
   message: {
     fontSize: text.sm,
     fontFamily: fontFamily.regular,
-    color: colors.gray400,
+    color: c.textFaint,
     textAlign: 'center',
     lineHeight: 20,
   },

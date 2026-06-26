@@ -1,13 +1,13 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, FlatList, Platform,
+  StyleSheet, ActivityIndicator, FlatList,
 } from 'react-native';
 import { Svg, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Search, ShieldCheck, Clock, GitBranch, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../hooks/use-horse-records';
-import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const NODE_W   = 148;
@@ -70,12 +70,12 @@ function buildLayout(root: HorseRecordNode, maxGen: number) {
 }
 
 // ─── Ownership colors ─────────────────────────────────────────────────────────
-function ownerStyle(status: string) {
+function ownerStyle(status: string, c: ThemeColors) {
   switch (status) {
-    case 'verified':     return { border: '#34d399', bg: '#f0fdf4', badge: '✓ Verificado', badgeColor: '#059669' };
-    case 'pending_claim':return { border: '#fbbf24', bg: '#fffbeb', badge: '⏳ Pendiente',  badgeColor: '#d97706' };
-    case 'disputed':     return { border: '#f87171', bg: '#fef2f2', badge: '⚠ Disputado',  badgeColor: '#dc2626' };
-    default:             return { border: '#e2e8f0', bg: '#ffffff', badge: null, badgeColor: '#94a3b8' };
+    case 'verified':     return { border: '#34d399', bg: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', badge: '✓ Verificado', badgeColor: c.isDark ? '#34d399' : '#059669' };
+    case 'pending_claim':return { border: '#fbbf24', bg: c.isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb', badge: '⏳ Pendiente',  badgeColor: c.isDark ? '#fbbf24' : '#d97706' };
+    case 'disputed':     return { border: '#f87171', bg: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', badge: '⚠ Disputado',  badgeColor: c.isDark ? '#f87171' : '#dc2626' };
+    default:             return { border: c.borderStrong, bg: c.surface, badge: null, badgeColor: c.textFaint };
   }
 }
 
@@ -84,26 +84,30 @@ function NodeCard({
   placed,
   isSubject,
   onPress,
+  s,
+  c,
 }: {
   placed: PlacedNode;
   isSubject: boolean;
   onPress: (id: string) => void;
+  s: Styles;
+  c: ThemeColors;
 }) {
   const { node } = placed;
-  const own = ownerStyle(node.ownership_status);
+  const own = ownerStyle(node.ownership_status, c);
   const sexIcon = node.sex === 'macho' ? '♂' : node.sex === 'hembra' ? '♀' : node.sex === 'castrado' ? '⚥' : '';
   const subtitle = [node.birth_year, node.country_code, sexIcon].filter(Boolean).join(' · ');
 
   if (isSubject) {
     return (
       <View
-        style={[styles.node, styles.nodeSubject, { left: placed.x, top: placed.y }]}
+        style={[s.node, s.nodeSubject, { left: placed.x, top: placed.y }]}
       >
-        <Text style={styles.subjectLabel}>Sujeto</Text>
-        <Text style={styles.subjectName} numberOfLines={2}>{node.name}</Text>
-        {!!subtitle && <Text style={styles.subjectSub}>{subtitle}</Text>}
+        <Text style={s.subjectLabel}>Sujeto</Text>
+        <Text style={s.subjectName} numberOfLines={2}>{node.name}</Text>
+        {!!subtitle && <Text style={s.subjectSub}>{subtitle}</Text>}
         {node.ownership_status === 'verified' && (
-          <Text style={styles.subjectVerified}>✓ Con dueño</Text>
+          <Text style={s.subjectVerified}>✓ Con dueño</Text>
         )}
       </View>
     );
@@ -114,19 +118,19 @@ function NodeCard({
       activeOpacity={node.id ? 0.7 : 1}
       onPress={() => node.id && onPress(node.id)}
       style={[
-        styles.node,
+        s.node,
         { left: placed.x, top: placed.y, borderColor: own.border, backgroundColor: own.bg },
-        !node.id && styles.nodeEmpty,
+        !node.id && s.nodeEmpty,
       ]}
     >
-      <Text style={styles.nodeName} numberOfLines={2}>
-        {node.name || <Text style={styles.nodeNoData}>Sin datos</Text>}
+      <Text style={s.nodeName} numberOfLines={2}>
+        {node.name || <Text style={s.nodeNoData}>Sin datos</Text>}
       </Text>
-      {!!subtitle && <Text style={styles.nodeSub}>{subtitle}</Text>}
+      {!!subtitle && <Text style={s.nodeSub}>{subtitle}</Text>}
       {own.badge ? (
-        <Text style={[styles.nodeBadge, { color: own.badgeColor }]}>{own.badge}</Text>
+        <Text style={[s.nodeBadge, { color: own.badgeColor }]}>{own.badge}</Text>
       ) : node.id ? (
-        <Text style={styles.nodeNoBadge}>Sin dueño registrado</Text>
+        <Text style={s.nodeNoBadge}>Sin dueño registrado</Text>
       ) : null}
     </TouchableOpacity>
   );
@@ -167,12 +171,12 @@ function EdgeSvg({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; tot
 // ─── Generation headers ───────────────────────────────────────────────────────
 const GEN_LABELS = ['Caballo', 'Padres', 'Abuelos', 'Bisabuelos', 'Tatarabuelos'];
 
-function GenHeaders({ maxGen }: { maxGen: number }) {
+function GenHeaders({ maxGen, s }: { maxGen: number; s: Styles }) {
   return (
-    <View style={styles.genRow}>
+    <View style={s.genRow}>
       {Array.from({ length: maxGen + 1 }).map((_, g) => (
-        <View key={g} style={[styles.genHeader, { width: NODE_W }]}>
-          <Text style={[styles.genLabel, g === 0 && styles.genLabelSubject]}>
+        <View key={g} style={[s.genHeader, { width: NODE_W }]}>
+          <Text style={[s.genLabel, g === 0 && s.genLabelSubject]}>
             {GEN_LABELS[g] ?? `Gen ${g}`}
           </Text>
         </View>
@@ -182,42 +186,42 @@ function GenHeaders({ maxGen }: { maxGen: number }) {
 }
 
 // ─── Search dropdown ──────────────────────────────────────────────────────────
-function SearchBar({ onSelect }: { onSelect: (r: HorseRecord) => void }) {
+function SearchBar({ onSelect, s, c }: { onSelect: (r: HorseRecord) => void; s: Styles; c: ThemeColors }) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const { data, isFetching } = useHorseRecordsSearch(q, q.length > 1);
 
   return (
-    <View style={styles.searchWrap}>
-      <View style={styles.searchBox}>
-        <Search size={16} color="#94a3b8" strokeWidth={2} style={{ marginRight: 8 }} />
+    <View style={s.searchWrap}>
+      <View style={s.searchBox}>
+        <Search size={16} color={c.textFaint} strokeWidth={2} style={{ marginRight: 8 }} />
         <TextInput
-          style={styles.searchInput}
+          style={s.searchInput}
           value={q}
           onChangeText={t => { setQ(t); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder="Buscar caballo…"
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={c.textFaint}
           returnKeyType="search"
           autoCorrect={false}
         />
-        {isFetching && <ActivityIndicator size="small" color={colors.brand} />}
+        {isFetching && <ActivityIndicator size="small" color={c.brand} />}
       </View>
 
       {open && !!data?.items?.length && (
-        <View style={styles.dropdown}>
+        <View style={s.dropdown}>
           <FlatList
             data={data.items}
             keyExtractor={i => i.id}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.dropdownItem}
+                style={s.dropdownItem}
                 onPress={() => { onSelect(item); setQ(item.name); setOpen(false); }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.dropdownName}>{item.name}</Text>
-                  <Text style={styles.dropdownSub}>
+                  <Text style={s.dropdownName}>{item.name}</Text>
+                  <Text style={s.dropdownSub}>
                     {[item.birth_year, item.breed, item.country_code].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
@@ -234,16 +238,16 @@ function SearchBar({ onSelect }: { onSelect: (r: HorseRecord) => void }) {
 }
 
 // ─── Depth toggle ────────────────────────────────────────────────────────────
-function DepthToggle({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function DepthToggle({ value, onChange, s }: { value: number; onChange: (v: number) => void; s: Styles }) {
   return (
-    <View style={styles.depthRow}>
+    <View style={s.depthRow}>
       {[3, 4, 5].map(d => (
         <TouchableOpacity
           key={d}
-          style={[styles.depthBtn, value === d && styles.depthBtnActive]}
+          style={[s.depthBtn, value === d && s.depthBtnActive]}
           onPress={() => onChange(d)}
         >
-          <Text style={[styles.depthLabel, value === d && styles.depthLabelActive]}>
+          <Text style={[s.depthLabel, value === d && s.depthLabelActive]}>
             {d} gen
           </Text>
         </TouchableOpacity>
@@ -253,24 +257,24 @@ function DepthToggle({ value, onChange }: { value: number; onChange: (v: number)
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
-function Legend() {
+function Legend({ s }: { s: Styles }) {
   return (
-    <View style={styles.legend}>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendLine, { backgroundColor: '#9d6c35' }]} />
-        <Text style={styles.legendText}>Paterna</Text>
+    <View style={s.legend}>
+      <View style={s.legendItem}>
+        <View style={[s.legendLine, { backgroundColor: '#9d6c35' }]} />
+        <Text style={s.legendText}>Paterna</Text>
       </View>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendLine, { backgroundColor: '#f43f5e' }]} />
-        <Text style={styles.legendText}>Materna</Text>
+      <View style={s.legendItem}>
+        <View style={[s.legendLine, { backgroundColor: '#f43f5e' }]} />
+        <Text style={s.legendText}>Materna</Text>
       </View>
-      <View style={styles.legendItem}>
+      <View style={s.legendItem}>
         <ShieldCheck size={12} color="#34d399" strokeWidth={2} />
-        <Text style={styles.legendText}>Dueño verificado</Text>
+        <Text style={s.legendText}>Dueño verificado</Text>
       </View>
-      <View style={styles.legendItem}>
+      <View style={s.legendItem}>
         <Clock size={12} color="#fbbf24" strokeWidth={2} />
-        <Text style={styles.legendText}>Pendiente</Text>
+        <Text style={s.legendText}>Pendiente</Text>
       </View>
     </View>
   );
@@ -282,6 +286,8 @@ export default function ArbolScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [maxGen, setMaxGen] = useState(4);
   const [history, setHistory] = useState<{ id: string; name: string }[]>([]);
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const { data: tree, isLoading } = useHorseRecordTree(selectedId, maxGen);
 
@@ -312,23 +318,23 @@ export default function ArbolScreen() {
   const layout = tree ? buildLayout(tree, maxGen) : null;
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={[s.screen, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
+      <View style={s.header}>
+        <View style={s.headerTop}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <GitBranch size={18} color={colors.brand} strokeWidth={2} />
-            <Text style={styles.title}>Árbol Genealógico</Text>
+            <GitBranch size={18} color={c.brand} strokeWidth={2} />
+            <Text style={s.title}>Árbol Genealógico</Text>
           </View>
-          <DepthToggle value={maxGen} onChange={setMaxGen} />
+          <DepthToggle value={maxGen} onChange={setMaxGen} s={s} />
         </View>
-        <SearchBar onSelect={handleSelect} />
+        <SearchBar onSelect={handleSelect} s={s} c={c} />
 
         {/* Breadcrumb */}
         {history.length > 1 && (
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-            <ChevronLeft size={14} color="#64748b" strokeWidth={2} />
-            <Text style={styles.backText}>
+          <TouchableOpacity style={s.backBtn} onPress={handleBack}>
+            <ChevronLeft size={14} color={c.textMuted} strokeWidth={2} />
+            <Text style={s.backText}>
               Volver a <Text style={{ fontWeight: '700' }}>{history[history.length - 2]?.name}</Text>
             </Text>
           </TouchableOpacity>
@@ -337,10 +343,10 @@ export default function ArbolScreen() {
 
       {/* Tree canvas */}
       {!selectedId && (
-        <View style={styles.empty}>
-          <GitBranch size={48} color="#cbd5e1" strokeWidth={2} />
-          <Text style={styles.emptyTitle}>Seleccioná un caballo</Text>
-          <Text style={styles.emptyText}>
+        <View style={s.empty}>
+          <GitBranch size={48} color={c.textFaint} strokeWidth={2} />
+          <Text style={s.emptyTitle}>Seleccioná un caballo</Text>
+          <Text style={s.emptyText}>
             Buscá cualquier caballo arriba y su árbol genealógico aparecerá acá.
             Tocá un nodo para navegar por el árbol.
           </Text>
@@ -348,9 +354,9 @@ export default function ArbolScreen() {
       )}
 
       {selectedId && isLoading && (
-        <View style={styles.empty}>
-          <ActivityIndicator size="large" color={colors.brand} />
-          <Text style={[styles.emptyText, { marginTop: 12 }]}>Cargando árbol…</Text>
+        <View style={s.empty}>
+          <ActivityIndicator size="large" color={c.brand} />
+          <Text style={[s.emptyText, { marginTop: 12 }]}>Cargando árbol…</Text>
         </View>
       )}
 
@@ -367,15 +373,17 @@ export default function ArbolScreen() {
             nestedScrollEnabled
           >
             <View>
-              <GenHeaders maxGen={maxGen} />
+              <GenHeaders maxGen={maxGen} s={s} />
               <View style={{ width: layout.totalW, height: layout.totalH, position: 'relative' }}>
                 <EdgeSvg edges={layout.edges} totalW={layout.totalW} totalH={layout.totalH} />
-                {layout.nodes.map((placed, i) => (
+                {layout.nodes.map((placed) => (
                   <NodeCard
                     key={`${placed.gen}-${placed.index}`}
                     placed={placed}
                     isSubject={placed.gen === 0}
                     onPress={handleNodePress}
+                    s={s}
+                    c={c}
                   />
                 ))}
               </View>
@@ -385,22 +393,24 @@ export default function ArbolScreen() {
       )}
 
       {/* Legend */}
-      <View style={[styles.legendBar, { paddingBottom: insets.bottom + 8 }]}>
-        <Legend />
+      <View style={[s.legendBar, { paddingBottom: insets.bottom + 8 }]}>
+        <Legend s={s} />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: c.bg,
   },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: c.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 10,
@@ -420,7 +430,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#0f172a',
+    color: c.text,
     letterSpacing: -0.3,
   },
   searchWrap: {
@@ -430,9 +440,9 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: c.borderStrong,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -440,17 +450,17 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#1e293b',
+    color: c.text,
   },
   dropdown: {
     position: 'absolute',
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: c.borderStrong,
     shadowColor: '#0f1f3d',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
@@ -465,22 +475,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: '#f8fafc',
+    borderBottomColor: c.border,
     gap: 8,
   },
   dropdownName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: c.text,
   },
   dropdownSub: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: c.textFaint,
     marginTop: 1,
   },
   depthRow: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: c.surfaceAlt,
     borderRadius: 8,
     padding: 2,
   },
@@ -490,7 +500,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   depthBtnActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: c.surface,
     shadowColor: '#0f1f3d',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -500,10 +510,10 @@ const styles = StyleSheet.create({
   depthLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: c.textFaint,
   },
   depthLabelActive: {
-    color: '#1e293b',
+    color: c.text,
   },
   backBtn: {
     flexDirection: 'row',
@@ -513,7 +523,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 12,
-    color: '#64748b',
+    color: c.textMuted,
   },
   // Gen headers
   genRow: {
@@ -524,7 +534,7 @@ const styles = StyleSheet.create({
   genHeader: {
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: c.surfaceAlt,
     alignItems: 'center',
   },
   genLabel: {
@@ -532,10 +542,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    color: '#94a3b8',
+    color: c.textFaint,
   },
   genLabelSubject: {
-    color: colors.brand,
+    color: c.brand,
   },
   // Nodes
   node: {
@@ -546,8 +556,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     padding: 10,
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#e2e8f0',
+    backgroundColor: c.surface,
+    borderColor: c.borderStrong,
     shadowColor: '#0f1f3d',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -567,18 +577,18 @@ const styles = StyleSheet.create({
   nodeName: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1e293b',
+    color: c.text,
     lineHeight: 16,
   },
   nodeNoData: {
-    color: '#94a3b8',
+    color: c.textFaint,
     fontStyle: 'italic',
     fontWeight: '400',
     fontSize: 11,
   },
   nodeSub: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: c.textFaint,
     marginTop: 2,
   },
   nodeBadge: {
@@ -588,7 +598,7 @@ const styles = StyleSheet.create({
   },
   nodeNoBadge: {
     fontSize: 9,
-    color: '#cbd5e1',
+    color: c.textFaint,
     marginTop: 4,
   },
   subjectLabel: {
@@ -627,19 +637,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: c.textMuted,
   },
   emptyText: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: c.textFaint,
     textAlign: 'center',
     lineHeight: 19,
   },
   // Legend
   legendBar: {
-    backgroundColor: '#ffffff',
+    backgroundColor: c.surface,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 10,
   },
@@ -661,7 +671,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 10,
-    color: '#64748b',
+    color: c.textMuted,
     fontWeight: '500',
   },
 });

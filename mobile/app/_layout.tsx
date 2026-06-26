@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react-native';
 import { Stack } from 'expo-router';
 import { Platform } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
@@ -39,15 +39,38 @@ const queryClient = new QueryClient({
 
 function InnerLayout() {
   const { user } = useAuth();
+  const { c } = useTheme();
   return (
     <NotificationsProvider userId={user?.id}>
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
     </NotificationsProvider>
   );
 }
 
 function ThemedStatusBar() {
-  const { scheme } = useTheme();
+  const { scheme, c } = useTheme();
+
+  // En web: pinta el fondo del documento y los scrollbars del navegador según el
+  // tema, para que el rebote/overscroll y las barras de scroll no se vean claras
+  // sobre el fondo oscuro. Reacciona al cambiar de tema.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const STYLE_ID = 'theme-chrome';
+    let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement('style');
+      el.id = STYLE_ID;
+      document.head.appendChild(el);
+    }
+    el.textContent = `
+      html, body { background-color: ${c.bg}; }
+      * { scrollbar-width: thin; scrollbar-color: ${c.borderStrong} ${c.bg}; }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: ${c.bg}; }
+      ::-webkit-scrollbar-thumb { background: ${c.borderStrong}; border-radius: 5px; border: 2px solid ${c.bg}; }
+    `;
+  }, [scheme, c]);
+
   return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 }
 

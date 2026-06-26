@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
@@ -17,6 +17,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
@@ -31,7 +32,7 @@ function getInviteUrl(token: string): string {
   return `${base}/invitacion/${token}`;
 }
 
-function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void }) {
+function InviteModal({ orgId, onClose, c, s }: { orgId: string; onClose: () => void; c: ThemeColors; s: Styles }) {
   const create = useCreateInvitation(orgId);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<OrgRole>('staff');
@@ -67,7 +68,7 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
                   value={email}
                   onChangeText={setEmail}
                   placeholder="ejemplo@email.com"
-                  placeholderTextColor={colors.gray400}
+                  placeholderTextColor={c.textFaint}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoFocus
@@ -113,7 +114,7 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
                 <View style={s.successIcon}>
                   <CheckCircle2 size={48} color="#16a34a" strokeWidth={2} />
                 </View>
-                <Text style={{ fontSize: text.sm, color: colors.gray500, textAlign: 'center', marginBottom: 12 }}>
+                <Text style={{ fontSize: text.sm, color: c.textMuted, textAlign: 'center', marginBottom: 12 }}>
                   Compartí este link con la persona invitada. Válido por 7 días.
                 </Text>
                 <View style={s.linkBox}>
@@ -135,6 +136,8 @@ function InviteModal({ orgId, onClose }: { orgId: string; onClose: () => void })
 
 export default function OrganizacionScreen() {
   const { user } = useAuth();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const { data: myOrgs, isLoading: loadingOrgs } = useMyOrganizations();
   const orgId = myOrgs?.[0]?.id ?? null;
   const { data: org, isLoading: loadingOrg } = useOrganization(orgId);
@@ -189,17 +192,17 @@ export default function OrganizacionScreen() {
           {horseLimit && (
             <View style={{ marginTop: 14, gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: text.xs, color: colors.gray500 }}>
+                <Text style={{ fontSize: text.xs, color: c.textMuted }}>
                   {org.horse_count} de {horseLimit} caballos
                 </Text>
-                <Text style={{ fontSize: text.xs, fontWeight: weight.semibold, color: pct >= 80 ? colors.amber600 : colors.gray500 }}>
+                <Text style={{ fontSize: text.xs, fontWeight: weight.semibold, color: pct >= 80 ? colors.amber600 : c.textMuted }}>
                   {Math.round(pct)}%
                 </Text>
               </View>
               <View style={s.progressTrack}>
                 <View style={[s.progressFill, {
                   width: `${pct}%` as any,
-                  backgroundColor: pct >= 100 ? colors.red500 : pct >= 80 ? colors.amber600 : colors.brand,
+                  backgroundColor: pct >= 100 ? colors.red500 : pct >= 80 ? colors.amber600 : c.brand,
                 }]} />
               </View>
             </View>
@@ -221,7 +224,7 @@ export default function OrganizacionScreen() {
                     onPress={() => Share.share({ message: `Te invito a HandicApp: ${getInviteUrl(inv.token)}` })}
                     style={s.invBtn}
                   >
-                    <Share2 size={14} color={colors.brand} strokeWidth={2} />
+                    <Share2 size={14} color={c.brand} strokeWidth={2} />
                   </TouchableOpacity>
                   {isAdmin && (
                     <TouchableOpacity onPress={() => cancelInv.mutate(inv.id)} style={s.invBtn}>
@@ -260,7 +263,7 @@ export default function OrganizacionScreen() {
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.memberName} numberOfLines={1}>
                       {m.user.name}
-                      {m.user_id === user?.id && <Text style={{ color: colors.gray400, fontSize: 10 }}> (vos)</Text>}
+                      {m.user_id === user?.id && <Text style={{ color: c.textFaint, fontSize: 10 }}> (vos)</Text>}
                     </Text>
                     <Text style={s.memberEmail} numberOfLines={1}>{m.user.email}</Text>
                   </View>
@@ -278,7 +281,7 @@ export default function OrganizacionScreen() {
                         ]);
                       }}
                     >
-                      <XCircle size={18} color={colors.gray300} strokeWidth={2} />
+                      <XCircle size={18} color={c.textFaint} strokeWidth={2} />
                     </TouchableOpacity>
                   )}
                 </Animated.View>
@@ -288,72 +291,74 @@ export default function OrganizacionScreen() {
         </View>
       </ScrollView>
 
-      {showInvite && orgId && <InviteModal orgId={orgId} onClose={() => setShowInvite(false)} />}
+      {showInvite && orgId && <InviteModal orgId={orgId} onClose={() => setShowInvite(false)} c={c} s={s} />}
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f0f3f8' },
-  sectionLabel: { fontSize: 11, fontWeight: weight.bold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5 },
+type Styles = ReturnType<typeof makeStyles>;
 
-  heroCard: { backgroundColor: colors.white, borderRadius: radius.xl, padding: space[4], borderWidth: 1, borderColor: '#e8edf5', shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  orgName: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900, letterSpacing: -0.5 },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
+  sectionLabel: { fontSize: 11, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  heroCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], borderWidth: 1, borderColor: c.borderStrong, shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  orgName: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: -0.5 },
   badge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
-  badgeGray: { backgroundColor: colors.gray100 },
+  badgeGray: { backgroundColor: c.surfaceAlt },
   badgeGold: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' },
   badgeText: { fontSize: 11, fontWeight: weight.bold },
-  badgeTextGray: { color: colors.gray500 },
+  badgeTextGray: { color: c.textMuted },
   badgeTextGold: { color: '#92400e' },
 
-  progressTrack: { height: 8, borderRadius: 4, backgroundColor: colors.gray100, overflow: 'hidden' },
+  progressTrack: { height: 8, borderRadius: 4, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
 
   invCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: radius.md, padding: space[3], borderWidth: 1, borderColor: '#fde68a' },
   invEmail: { fontSize: text.sm, fontWeight: weight.semibold, color: '#92400e' },
   invMeta: { fontSize: 11, color: '#b45309', marginTop: 1 },
-  invBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center' },
+  invBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: c.surface, justifyContent: 'center', alignItems: 'center' },
 
-  inviteBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 6 },
+  inviteBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 6 },
   inviteBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
 
-  memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: colors.white, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: '#e8edf5' },
-  memberAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
+  memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: c.borderStrong },
+  memberAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
   memberAvatarText: { fontSize: 14, fontWeight: weight.bold, color: colors.white },
-  memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  memberEmail: { fontSize: 11, color: colors.gray400, marginTop: 1 },
-  roleBadge: { borderRadius: radius.full, backgroundColor: colors.gray100, paddingHorizontal: 8, paddingVertical: 4 },
+  memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  memberEmail: { fontSize: 11, color: c.textFaint, marginTop: 1 },
+  roleBadge: { borderRadius: radius.full, backgroundColor: c.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4 },
   roleBadgeOwner: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' },
-  roleBadgeText: { fontSize: 10, fontWeight: weight.semibold, color: colors.gray600 },
+  roleBadgeText: { fontSize: 10, fontWeight: weight.semibold, color: c.textMuted },
   roleBadgeTextOwner: { color: '#92400e' },
 
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  modalClose: { fontSize: 18, color: colors.gray400 },
+  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border },
+  modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  modalClose: { fontSize: 18, color: c.textFaint },
   modalBody: { padding: space[5], gap: space[2] },
-  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: colors.gray100 },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: colors.gray900, backgroundColor: colors.gray50 },
+  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: c.border },
+  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
 
-  roleCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, padding: 12 },
-  roleCardActive: { borderColor: colors.brand, backgroundColor: 'rgba(15,31,61,0.04)' },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.gray300, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
-  radioActive: { borderColor: colors.brand },
-  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brand },
-  roleCardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray700 },
-  roleCardTitleActive: { color: colors.brand },
-  roleCardDesc: { fontSize: 11, color: colors.gray400, marginTop: 2, lineHeight: 16 },
+  roleCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, padding: 12 },
+  roleCardActive: { borderColor: c.brand, backgroundColor: 'rgba(15,31,61,0.04)' },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: c.borderStrong, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
+  radioActive: { borderColor: c.brand },
+  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: c.brand },
+  roleCardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  roleCardTitleActive: { color: c.brand },
+  roleCardDesc: { fontSize: 11, color: c.textFaint, marginTop: 2, lineHeight: 16 },
 
   successIcon: { alignItems: 'center', marginBottom: 12 },
-  linkBox: { backgroundColor: colors.gray50, borderRadius: radius.md, padding: 12 },
-  linkText: { fontSize: 11, color: colors.gray700, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
+  linkBox: { backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: 12 },
+  linkText: { fontSize: 11, color: c.text, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
 
   btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.brand },
+  btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
 });

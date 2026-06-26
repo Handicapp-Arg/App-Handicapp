@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -28,6 +29,8 @@ interface Props {
 /** Calendario mensual: navegación por mes, puntito en días con turnos, día seleccionado resaltado. */
 export function MonthCalendar({ monthCursor, onMonthChange, selectedDay, onSelectDay, markedDays }: Props) {
   const today = ymd(new Date());
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const cells = useMemo(() => {
     const year = monthCursor.getFullYear();
@@ -49,11 +52,11 @@ export function MonthCalendar({ monthCursor, onMonthChange, selectedDay, onSelec
     <View style={s.wrap}>
       <View style={s.header}>
         <TouchableOpacity onPress={prevMonth} hitSlop={10} style={s.navBtn} activeOpacity={0.7}>
-          <ChevronLeft size={20} color={colors.gray600} strokeWidth={2.2} />
+          <ChevronLeft size={20} color={c.textMuted} strokeWidth={2.2} />
         </TouchableOpacity>
         <Text style={s.monthLabel}>{MONTHS[monthCursor.getMonth()]} {monthCursor.getFullYear()}</Text>
         <TouchableOpacity onPress={nextMonth} hitSlop={10} style={s.navBtn} activeOpacity={0.7}>
-          <ChevronRight size={20} color={colors.gray600} strokeWidth={2.2} />
+          <ChevronRight size={20} color={c.textMuted} strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
 
@@ -88,21 +91,23 @@ export function MonthCalendar({ monthCursor, onMonthChange, selectedDay, onSelec
   );
 }
 
-const s = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   wrap: { paddingHorizontal: space[4], paddingTop: space[1], paddingBottom: space[3] },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] },
-  navBtn: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray100 },
-  monthLabel: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900, textTransform: 'capitalize' },
+  navBtn: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surfaceAlt },
+  monthLabel: { fontSize: text.base, fontWeight: weight.bold, color: c.text, textTransform: 'capitalize' },
   weekRow: { flexDirection: 'row', marginBottom: space[1] },
-  weekDay: { flex: 1, textAlign: 'center', fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray400 },
+  weekDay: { flex: 1, textAlign: 'center', fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: space[1] },
   dayCircle: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   daySelected: { backgroundColor: colors.gray900 },
-  dayText: { fontSize: text.sm, color: colors.gray800, fontWeight: weight.medium },
-  dayTextToday: { color: colors.brand, fontWeight: weight.bold },
+  dayText: { fontSize: text.sm, color: c.text, fontWeight: weight.medium },
+  dayTextToday: { color: c.brand, fontWeight: weight.bold },
   dayTextSelected: { color: colors.white, fontWeight: weight.bold },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2, backgroundColor: 'transparent' },
-  dotOn: { backgroundColor: colors.brand },
+  dotOn: { backgroundColor: c.brand },
   dotOnSelected: { backgroundColor: colors.gray900 },
 });

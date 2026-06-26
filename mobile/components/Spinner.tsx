@@ -1,10 +1,11 @@
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { colors } from '../lib/colors';
+import { useTheme } from '../lib/theme';
 
 export function Spinner({ size = 'large' }: { size?: 'small' | 'large' }) {
+  const { c } = useTheme();
   return (
     <View style={styles.container}>
-      <ActivityIndicator size={size} color={colors.brand} />
+      <ActivityIndicator size={size} color={c.brand} />
     </View>
   );
 }

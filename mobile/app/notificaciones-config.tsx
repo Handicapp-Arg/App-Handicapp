@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Switch,
 } from 'react-native';
@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 import {
@@ -40,10 +41,14 @@ function RoleCard({
   role,
   enabledTypes,
   eventTypes,
+  c,
+  s,
 }: {
   role: string;
   enabledTypes: string[];
   eventTypes: EventTypeMeta[];
+  c: ThemeColors;
+  s: Styles;
 }) {
   const update = useUpdateNotificationSettings();
   const [state, setState] = useState<Record<string, boolean>>({});
@@ -107,6 +112,8 @@ function RoleCard({
             isLast={idx === eventTypes.length - 1}
             value={state[et.value] ?? false}
             onToggle={() => toggle(et.value)}
+            c={c}
+            s={s}
           />
         ))}
       </View>
@@ -116,26 +123,28 @@ function RoleCard({
 
 /* ─── Fila de toggle (ícono Lucide/Ionicons + switch) ─── */
 function ToggleRowItem({
-  et, isLast, value, onToggle,
+  et, isLast, value, onToggle, c, s,
 }: {
   et: EventTypeMeta;
   isLast: boolean;
   value: boolean;
   onToggle: () => void;
+  c: ThemeColors;
+  s: Styles;
 }) {
   const Icon = EVENT_ICONS[et.value] ?? AlertCircle;
   return (
     <View style={[s.toggleRow, !isLast && s.toggleRowBorder]}>
       <View style={s.toggleLeft}>
-        <Icon size={18} color={colors.gray500} strokeWidth={2} style={{ marginRight: space[2] }} />
+        <Icon size={18} color={c.textMuted} strokeWidth={2} style={{ marginRight: space[2] }} />
         <Text style={s.toggleLabel}>{et.label}</Text>
       </View>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: colors.gray200, true: colors.brand }}
+        trackColor={{ false: c.borderStrong, true: c.brand }}
         thumbColor={colors.white}
-        ios_backgroundColor={colors.gray200}
+        ios_backgroundColor={c.borderStrong}
       />
     </View>
   );
@@ -148,6 +157,8 @@ export default function NotificacionesConfigScreen() {
   const { user } = useAuth();
   const { data: settings, isLoading: loadingSettings } = useNotificationSettings();
   const { data: eventTypes = [], isLoading: loadingTypes } = useEventTypes();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const isLoading = loadingSettings || loadingTypes;
 
@@ -157,9 +168,9 @@ export default function NotificacionesConfigScreen() {
   const settingsByRole: Record<string, string[]> = {};
   for (const role of roleNames) settingsByRole[role] = [];
   if (settings) {
-    for (const s of settings) {
-      if (!settingsByRole[s.role]) settingsByRole[s.role] = [];
-      settingsByRole[s.role].push(s.event_type);
+    for (const setting of settings) {
+      if (!settingsByRole[setting.role]) settingsByRole[setting.role] = [];
+      settingsByRole[setting.role].push(setting.event_type);
     }
   }
 
@@ -168,12 +179,12 @@ export default function NotificacionesConfigScreen() {
       <View style={[s.root, { paddingTop: insets.top }]}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-            <ChevronLeft size={22} color={colors.gray900} strokeWidth={2} />
+            <ChevronLeft size={22} color={c.text} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Config. notificaciones</Text>
         </View>
         <View style={s.restricted}>
-          <Lock size={32} color={colors.gray300} strokeWidth={2} />
+          <Lock size={32} color={c.textFaint} strokeWidth={2} />
           <Text style={s.restrictedText}>Solo el administrador puede acceder a esta pantalla.</Text>
         </View>
       </View>
@@ -185,7 +196,7 @@ export default function NotificacionesConfigScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <ChevronLeft size={22} color={colors.gray900} strokeWidth={2} />
+          <ChevronLeft size={22} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: space[2] }}>
           <Text style={s.headerTitle}>Config. notificaciones</Text>
@@ -195,7 +206,7 @@ export default function NotificacionesConfigScreen() {
 
       {isLoading ? (
         <View style={s.centered}>
-          <ActivityIndicator color={colors.brand} />
+          <ActivityIndicator color={c.brand} />
         </View>
       ) : (
         <ScrollView
@@ -208,6 +219,8 @@ export default function NotificacionesConfigScreen() {
               role={role}
               enabledTypes={settingsByRole[role] ?? []}
               eventTypes={eventTypes}
+              c={c}
+              s={s}
             />
           ))}
         </ScrollView>
@@ -216,17 +229,19 @@ export default function NotificacionesConfigScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space[4],
     paddingVertical: space[3],
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
   backBtn: {
     width: 32, height: 32,
@@ -239,13 +254,13 @@ const s = StyleSheet.create({
     fontSize: text.lg,
     fontWeight: weight.extrabold,
     fontFamily: fontFamily.extrabold,
-    color: colors.gray900,
+    color: c.text,
     letterSpacing: -0.3,
   },
   headerSub: {
     fontSize: text.xs,
     fontFamily: fontFamily.regular,
-    color: colors.gray400,
+    color: c.textFaint,
     marginTop: 1,
   },
 
@@ -256,10 +271,10 @@ const s = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     overflow: 'hidden',
     ...shadow.sm,
   },
@@ -269,24 +284,24 @@ const s = StyleSheet.create({
     gap: space[3],
     padding: space[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
-    backgroundColor: colors.gray50,
+    borderBottomColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   cardTitle: {
     fontSize: text.sm,
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
-    color: colors.gray900,
+    color: c.text,
   },
   cardDesc: {
     fontSize: text.xs,
     fontFamily: fontFamily.regular,
-    color: colors.gray500,
+    color: c.textMuted,
     marginTop: 2,
     lineHeight: 16,
   },
   saveBtn: {
-    backgroundColor: colors.brand,
+    backgroundColor: c.brand,
     borderRadius: radius.md,
     paddingHorizontal: space[3],
     paddingVertical: space[2],
@@ -312,7 +327,7 @@ const s = StyleSheet.create({
   },
   toggleRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray50,
+    borderBottomColor: c.border,
   },
   toggleLeft: {
     flexDirection: 'row',
@@ -322,7 +337,7 @@ const s = StyleSheet.create({
   toggleLabel: {
     fontSize: text.sm,
     fontFamily: fontFamily.medium,
-    color: colors.gray700,
+    color: c.text,
   },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -337,7 +352,7 @@ const s = StyleSheet.create({
   restrictedText: {
     fontSize: text.sm,
     fontFamily: fontFamily.regular,
-    color: colors.gray400,
+    color: c.textFaint,
     textAlign: 'center',
     lineHeight: 20,
   },

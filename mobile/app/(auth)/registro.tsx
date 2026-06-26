@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
@@ -6,6 +6,7 @@ import {
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import api from '../../lib/api';
 
 const LOGO = 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png';
@@ -18,6 +19,8 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function RegistroScreen() {
   const { register } = useAuth();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,19 +53,19 @@ export default function RegistroScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
-        <View style={styles.header}>
-          <Image source={{ uri: LOGO }} style={styles.logo} resizeMode="contain" />
+        <View style={s.header}>
+          <Image source={{ uri: LOGO }} style={s.logo} resizeMode="contain" />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.title}>Crear cuenta</Text>
+        <View style={s.card}>
+          <Text style={s.title}>Crear cuenta</Text>
 
           {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{error}</Text>
             </View>
           ) : null}
 
@@ -71,14 +74,14 @@ export default function RegistroScreen() {
             { label: 'Correo electrónico', value: email, setter: setEmail, placeholder: 'tu@email.com', type: 'email-address' as const },
             { label: 'Contraseña', value: password, setter: setPassword, placeholder: 'Mínimo 6 caracteres', type: 'default' as const, secure: true },
           ].map((field) => (
-            <View key={field.label} style={styles.field}>
-              <Text style={styles.label}>{field.label}</Text>
+            <View key={field.label} style={s.field}>
+              <Text style={s.label}>{field.label}</Text>
               <TextInput
-                style={styles.input}
+                style={s.input}
                 value={field.value}
                 onChangeText={field.setter}
                 placeholder={field.placeholder}
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 keyboardType={field.type}
                 secureTextEntry={field.secure}
                 autoCapitalize={field.type === 'email-address' ? 'none' : 'words'}
@@ -87,17 +90,17 @@ export default function RegistroScreen() {
             </View>
           ))}
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Tipo de cuenta</Text>
-            <View style={styles.roleGrid}>
+          <View style={s.field}>
+            <Text style={s.label}>Tipo de cuenta</Text>
+            <View style={s.roleGrid}>
               {roles.map((r) => (
                 <TouchableOpacity
                   key={r.id}
-                  style={[styles.roleBtn, role === r.name && styles.roleBtnActive]}
+                  style={[s.roleBtn, role === r.name && s.roleBtnActive]}
                   onPress={() => setRole(r.name)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.roleBtnText, role === r.name && styles.roleBtnTextActive]}>
+                  <Text style={[s.roleBtnText, role === r.name && s.roleBtnTextActive]}>
                     {ROLE_LABELS[r.name] ?? r.name}
                   </Text>
                 </TouchableOpacity>
@@ -106,22 +109,22 @@ export default function RegistroScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.btn, loading && styles.btnDisabled]}
+            style={[s.btn, loading && s.btnDisabled]}
             onPress={handleRegister}
             disabled={loading}
             activeOpacity={0.85}
           >
             {loading
               ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.btnText}>Crear cuenta</Text>
+              : <Text style={s.btnText}>Crear cuenta</Text>
             }
           </TouchableOpacity>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>¿Ya tenés cuenta? </Text>
+          <View style={s.footer}>
+            <Text style={s.footerText}>¿Ya tenés cuenta? </Text>
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity>
-                <Text style={styles.link}>Iniciá sesión</Text>
+                <Text style={s.link}>Iniciá sesión</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -132,7 +135,9 @@ export default function RegistroScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.gray900 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 32 },
@@ -144,33 +149,33 @@ const styles = StyleSheet.create({
   },
   logoText: { fontSize: 28, fontWeight: '800', color: colors.white },
   brand: { fontSize: 26, fontWeight: '800', color: colors.white },
-  card: { backgroundColor: colors.white, borderRadius: 24, padding: 24, gap: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: colors.gray900 },
+  card: { backgroundColor: c.surface, borderRadius: 24, padding: 24, gap: 16 },
+  title: { fontSize: 20, fontWeight: '700', color: c.text },
   errorBox: { backgroundColor: '#fef2f2', borderRadius: 10, padding: 12 },
   errorText: { fontSize: 13, color: colors.red700 },
   field: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  label: { fontSize: 13, fontWeight: '600', color: c.textMuted },
   input: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 12,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
+    fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
   },
   roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   roleBtn: {
     flex: 1, minWidth: '30%',
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 12,
-    paddingVertical: 10, alignItems: 'center', backgroundColor: colors.white,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 12,
+    paddingVertical: 10, alignItems: 'center', backgroundColor: c.surface,
   },
-  roleBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  roleBtnText: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  roleBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
+  roleBtnText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
   roleBtnTextActive: { color: colors.white },
   btn: {
-    backgroundColor: colors.brand, borderRadius: 14,
+    backgroundColor: c.brand, borderRadius: 14,
     paddingVertical: 14, alignItems: 'center', marginTop: 4,
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
-  footerText: { fontSize: 13, color: colors.gray500 },
-  link: { fontSize: 13, fontWeight: '700', color: colors.brand },
+  footerText: { fontSize: 13, color: c.textMuted },
+  link: { fontSize: 13, fontWeight: '700', color: c.brand },
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal,
   TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
@@ -18,8 +18,9 @@ import { EventRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { CURRENCY_OPTIONS, type Currency } from '../../lib/currency';
 import { colors, eventTypeColors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
-import { layout, typography, input as inputStyle, modal as modalStyle, button } from '../../styles/common';
+import { useCommonStyles } from '../../styles/common';
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'carrera', 'gasto', 'nota'] as const;
 
@@ -35,7 +36,8 @@ const EXPENSE_CATEGORIES_MOBILE = [
 
 /* ─── Modal crear evento ─── */
 
-function CreateEventModal({ onClose }: { onClose: () => void }) {
+function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
+  const { typography, modal: modalStyle, input: inputStyle, button } = useCommonStyles();
   const { data: horses } = useHorses();
   const createEvent = useCreateEvent();
   const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
@@ -92,10 +94,10 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
               {horses?.map((h) => (
                 <TouchableOpacity
                   key={h.id}
-                  style={[styles.chip, horseId === h.id && styles.chipActive]}
+                  style={[s.chip, horseId === h.id && s.chipActive]}
                   onPress={() => setHorseId(h.id)}
                 >
-                  <Text style={[styles.chipText, horseId === h.id && styles.chipTextActive]}>{h.name}</Text>
+                  <Text style={[s.chipText, horseId === h.id && s.chipTextActive]}>{h.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -104,17 +106,17 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
           {/* Tipo */}
           <View style={{ gap: space[2] }}>
             <Text style={typography.label}>Tipo</Text>
-            <View style={styles.typeGrid}>
+            <View style={s.typeGrid}>
               {TYPE_OPTIONS.map((t) => {
-                const c = eventTypeColors[t];
+                const ec = eventTypeColors[t];
                 const active = type === t;
                 return (
                   <TouchableOpacity
                     key={t}
-                    style={[styles.typeBtn, active && { backgroundColor: c.bg }]}
+                    style={[s.typeBtn, active && { backgroundColor: c.isDark ? ec.text + '26' : ec.bg }]}
                     onPress={() => setType(t)}
                   >
-                    <Text style={[styles.typeBtnText, active && { color: c.text }]}>{c.label}</Text>
+                    <Text style={[s.typeBtnText, active && { color: ec.text }]}>{ec.label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -133,11 +135,11 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
                   {CURRENCY_OPTIONS.map((opt) => (
                     <TouchableOpacity
                       key={opt.value}
-                      style={[styles.currencyBtn, currency === opt.value && styles.currencyBtnActive]}
+                      style={[s.currencyBtn, currency === opt.value && s.currencyBtnActive]}
                       onPress={() => setCurrency(opt.value)}
                       activeOpacity={0.75}
                     >
-                      <Text style={[styles.currencyBtnText, currency === opt.value && styles.currencyBtnTextActive]}>
+                      <Text style={[s.currencyBtnText, currency === opt.value && s.currencyBtnTextActive]}>
                         {opt.label}
                       </Text>
                     </TouchableOpacity>
@@ -148,22 +150,22 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
                   value={amount}
                   onChangeText={setAmount}
                   placeholder="0.00"
-                  placeholderTextColor={colors.gray400}
+                  placeholderTextColor={c.textFaint}
                   keyboardType="decimal-pad"
                 />
               </View>
               <View style={{ gap: space[2] }}>
                 <Text style={typography.label}>Categoría</Text>
-                <View style={styles.categoryGrid}>
+                <View style={s.categoryGrid}>
                   {EXPENSE_CATEGORIES_MOBILE.map((cat) => (
                     <TouchableOpacity
                       key={cat.value}
-                      style={[styles.categoryBtn, expenseCategory === cat.value && { backgroundColor: '#9d6c35', borderColor: '#9d6c35' }]}
+                      style={[s.categoryBtn, expenseCategory === cat.value && { backgroundColor: c.brand, borderColor: c.brand }]}
                       onPress={() => setExpenseCategory(expenseCategory === cat.value ? '' : cat.value)}
                       activeOpacity={0.75}
                     >
                       <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
-                      <Text style={[styles.categoryBtnText, expenseCategory === cat.value && { color: '#fff' }]}>{cat.label}</Text>
+                      <Text style={[s.categoryBtnText, expenseCategory === cat.value && { color: '#fff' }]}>{cat.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -176,21 +178,21 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
             <Text style={typography.label}>Fotos (opcional)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
               {photoUris.map((uri, i) => (
-                <View key={uri} style={styles.photoThumb}>
-                  <Image source={{ uri }} style={styles.photoImg} />
+                <View key={uri} style={s.photoThumb}>
+                  <Image source={{ uri }} style={s.photoImg} />
                   <TouchableOpacity
-                    style={styles.photoRemove}
+                    style={s.photoRemove}
                     onPress={() => setPhotoUris((p) => p.filter((_, idx) => idx !== i))}
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <Text style={styles.photoRemoveText}>✕</Text>
+                    <Text style={s.photoRemoveText}>✕</Text>
                   </TouchableOpacity>
                 </View>
               ))}
               {photoUris.length < 5 && (
-                <TouchableOpacity style={styles.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
-                  <Text style={styles.photoAddIcon}>📷</Text>
-                  <Text style={styles.photoAddText}>Agregar</Text>
+                <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
+                  <Text style={s.photoAddIcon}>📷</Text>
+                  <Text style={s.photoAddText}>Agregar</Text>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -204,12 +206,12 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
               value={description}
               onChangeText={setDescription}
               placeholder="Detalle del evento..."
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               multiline
             />
           </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={s.errorText}>{error}</Text> : null}
         </ScrollView>
 
         {/* Footer */}
@@ -238,6 +240,9 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
 export default function EventosScreen() {
   const { can } = useAuth();
   const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const { layout, typography } = useCommonStyles();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [filterType, setFilterType] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
@@ -264,16 +269,16 @@ export default function EventosScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
+        contentContainerStyle={s.filterRow}
         style={{ maxHeight: 48 }}
       >
         {(['', ...TYPE_OPTIONS] as string[]).map((t) => (
           <TouchableOpacity
             key={t}
-            style={[styles.filterChip, filterType === t && styles.filterChipActive]}
+            style={[s.filterChip, filterType === t && s.filterChipActive]}
             onPress={() => setFilterType(t)}
           >
-            <Text style={[styles.filterChipText, filterType === t && styles.filterChipTextActive]}>
+            <Text style={[s.filterChipText, filterType === t && s.filterChipTextActive]}>
               {t === '' ? 'Todos' : eventTypeColors[t]?.label ?? t}
             </Text>
           </TouchableOpacity>
@@ -282,7 +287,7 @@ export default function EventosScreen() {
 
       {/* Contador */}
       {total > 0 && (
-        <Text style={styles.counter}>{events.length} de {total}</Text>
+        <Text style={s.counter}>{events.length} de {total}</Text>
       )}
     </>
   );
@@ -315,7 +320,7 @@ export default function EventosScreen() {
         <FlatList
           data={events}
           keyExtractor={(e) => e.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={s.list}
           ListHeaderComponent={headerChrome}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
           renderItem={({ item, index }) => (
@@ -332,72 +337,74 @@ export default function EventosScreen() {
           onEndReachedThreshold={0.3}
           ListFooterComponent={
             isFetchingMore ? (
-              <View style={styles.footer}>
-                <ActivityIndicator size="small" color={colors.brand} />
+              <View style={s.footer}>
+                <ActivityIndicator size="small" color={c.brand} />
               </View>
             ) : !hasMore && total > 0 ? (
-              <View style={styles.footer}>
+              <View style={s.footer}>
                 <Text style={typography.caption}>— {total} eventos en total —</Text>
               </View>
             ) : null
           }
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.brand} />}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} />}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
-        <CreateEventModal onClose={() => setShowCreate(false)} />
+        <CreateEventModal onClose={() => setShowCreate(false)} c={c} s={s} />
       </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[1],
   },
-  newBtn: { backgroundColor: colors.brand, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] },
+  newBtn: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] },
   newBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   filterRow: { paddingHorizontal: space[4], paddingVertical: space[2], gap: space[2] },
   filterChip: {
     borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[1] + 2,
-    backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray300,
+    backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong,
   },
-  filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
+  filterChipActive: { backgroundColor: c.brand, borderColor: c.brand },
+  filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterChipTextActive: { color: colors.white },
-  counter: { fontSize: text.xs, color: colors.gray400, paddingHorizontal: space[4], paddingBottom: space[1] },
+  counter: { fontSize: text.xs, color: c.textFaint, paddingHorizontal: space[4], paddingBottom: space[1] },
   list: { paddingBottom: space[8] },
   footer: { padding: space[5], alignItems: 'center' },
   // Modal form
   chip: {
     borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2],
-    backgroundColor: colors.gray100,
+    backgroundColor: c.surfaceAlt,
   },
-  chipActive: { backgroundColor: colors.brand },
-  chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
+  chipActive: { backgroundColor: c.brand },
+  chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   chipTextActive: { color: colors.white },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   typeBtn: {
     flex: 1, minWidth: '45%', borderRadius: radius.md,
-    paddingVertical: space[2] + 2, alignItems: 'center', backgroundColor: colors.gray100,
+    paddingVertical: space[2] + 2, alignItems: 'center', backgroundColor: c.surfaceAlt,
   },
-  typeBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  typeBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   errorText: { fontSize: text.sm, color: colors.red500 },
-  currencyBtn: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
-  currencyBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  currencyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  currencyBtn: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  currencyBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
+  currencyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   currencyBtnTextActive: { color: colors.white },
   photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
   photoImg: { width: '100%', height: '100%' },
   photoRemove: { position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
   photoRemoveText: { fontSize: 9, color: colors.white, fontWeight: weight.bold },
-  photoAdd: { width: 72, height: 72, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.gray200, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2, backgroundColor: colors.gray50 },
+  photoAdd: { width: 72, height: 72, borderRadius: radius.md, borderWidth: 1.5, borderColor: c.borderStrong, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2, backgroundColor: c.surfaceAlt },
   photoAddIcon: { fontSize: 20 },
-  photoAddText: { fontSize: 10, color: colors.gray400, fontWeight: weight.semibold },
+  photoAddText: { fontSize: 10, color: c.textFaint, fontWeight: weight.semibold },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  categoryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
-  categoryBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
+  categoryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  categoryBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
 });

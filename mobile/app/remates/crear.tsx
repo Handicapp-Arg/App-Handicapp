@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Modal,
@@ -13,16 +13,18 @@ import { useHorses } from '../../hooks/use-horses';
 import { useCreateAuction } from '../../hooks/use-auctions';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import type { Horse } from '../../../packages/shared/src';
 
 type AuctionType = 'venta_directa' | 'remate';
 type Currency = 'ARS' | 'USD';
 
-function HorseSelector({ horses, selected, onSelect }: {
+function HorseSelector({ horses, selected, onSelect, s }: {
   horses: Horse[];
   selected: string;
   onSelect: (id: string, name: string) => void;
+  s: Styles;
 }) {
   return (
     <View style={s.horseGrid}>
@@ -52,10 +54,12 @@ function HorseSelector({ horses, selected, onSelect }: {
   );
 }
 
-function TypeOption({ type, selected, onSelect }: {
+function TypeOption({ type, selected, onSelect, c, s }: {
   type: AuctionType;
   selected: AuctionType;
   onSelect: (t: AuctionType) => void;
+  c: ThemeColors;
+  s: Styles;
 }) {
   const isSelected = type === selected;
   const config = type === 'venta_directa'
@@ -64,7 +68,7 @@ function TypeOption({ type, selected, onSelect }: {
 
   return (
     <TouchableOpacity
-      style={[s.typeOption, isSelected && { borderColor: config.color, backgroundColor: isSelected ? `${config.color}0d` : colors.white }]}
+      style={[s.typeOption, isSelected && { borderColor: config.color, backgroundColor: isSelected ? `${config.color}0d` : c.surface }]}
       onPress={() => { haptic.selection(); onSelect(type); }}
       activeOpacity={0.8}
     >
@@ -85,6 +89,8 @@ function TypeOption({ type, selected, onSelect }: {
 export default function CrearRemateScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const { horse: preselectedHorseId } = useLocalSearchParams<{ horse?: string }>();
   const { data: horses } = useHorses();
   const createAuction = useCreateAuction();
@@ -178,7 +184,7 @@ export default function CrearRemateScreen() {
         {/* Header */}
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={colors.gray900} strokeWidth={2} />
+            <ArrowLeft size={22} color={c.text} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Publicar caballo</Text>
           <View style={{ width: 40 }} />
@@ -195,7 +201,7 @@ export default function CrearRemateScreen() {
             <Text style={s.sectionLabel}>¿Cuál caballo querés vender?</Text>
             {myHorses.length === 0 ? (
               <View style={s.emptyHorses}>
-                <HorseIcon size={32} color={colors.gray300} />
+                <HorseIcon size={32} color={c.textFaint} />
                 <Text style={s.emptyHorsesText}>No tenés caballos registrados</Text>
               </View>
             ) : (
@@ -203,6 +209,7 @@ export default function CrearRemateScreen() {
                 horses={myHorses}
                 selected={horseId}
                 onSelect={handleHorseSelect}
+                s={s}
               />
             )}
           </View>
@@ -210,8 +217,8 @@ export default function CrearRemateScreen() {
           {/* Paso 2: Tipo de venta */}
           <View style={s.section}>
             <Text style={s.sectionLabel}>Tipo de publicación</Text>
-            <TypeOption type="venta_directa" selected={type} onSelect={setType} />
-            <TypeOption type="remate" selected={type} onSelect={setType} />
+            <TypeOption type="venta_directa" selected={type} onSelect={setType} c={c} s={s} />
+            <TypeOption type="remate" selected={type} onSelect={setType} c={c} s={s} />
           </View>
 
           {/* Paso 3: Precio */}
@@ -222,14 +229,14 @@ export default function CrearRemateScreen() {
             <View style={s.priceRow}>
               {/* Moneda */}
               <View style={s.currencyToggle}>
-                {(['USD', 'ARS'] as Currency[]).map((c) => (
+                {(['USD', 'ARS'] as Currency[]).map((cur) => (
                   <TouchableOpacity
-                    key={c}
-                    style={[s.currencyBtn, currency === c && s.currencyBtnActive]}
-                    onPress={() => { haptic.selection(); setCurrency(c); }}
+                    key={cur}
+                    style={[s.currencyBtn, currency === cur && s.currencyBtnActive]}
+                    onPress={() => { haptic.selection(); setCurrency(cur); }}
                     activeOpacity={0.8}
                   >
-                    <Text style={[s.currencyBtnText, currency === c && s.currencyBtnTextActive]}>{c}</Text>
+                    <Text style={[s.currencyBtnText, currency === cur && s.currencyBtnTextActive]}>{cur}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -239,7 +246,7 @@ export default function CrearRemateScreen() {
                 value={price}
                 onChangeText={(v) => setPrice(v.replace(/[^0-9.]/g, ''))}
                 placeholder="0"
-                placeholderTextColor={colors.gray300}
+                placeholderTextColor={c.textFaint}
                 keyboardType="numeric"
               />
             </View>
@@ -257,10 +264,10 @@ export default function CrearRemateScreen() {
                 activeOpacity={0.8}
               >
                 <View style={s.dateTriggerIcon}>
-                  <Calendar size={22} color={endDate ? colors.brand : colors.gray400} strokeWidth={2} />
+                  <Calendar size={22} color={endDate ? c.brand : c.textFaint} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.dateTriggerLabel, !endDate && { color: colors.gray400 }]}>
+                  <Text style={[s.dateTriggerLabel, !endDate && { color: c.textFaint }]}>
                     {endDate
                       ? endDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
                       : 'Elegí una fecha'}
@@ -269,7 +276,7 @@ export default function CrearRemateScreen() {
                     <Text style={s.dateTriggerSub}>Tocá para cambiar</Text>
                   )}
                 </View>
-                <ChevronRight size={16} color={colors.gray300} strokeWidth={2} />
+                <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
               </TouchableOpacity>
 
               {/* Android: picker inline */}
@@ -334,7 +341,7 @@ export default function CrearRemateScreen() {
                   </View>
                   {/* Resumen fecha+hora */}
                   <View style={s.dateTimeSummary}>
-                    <Clock size={14} color={colors.brand} strokeWidth={2} />
+                    <Clock size={14} color={c.brand} strokeWidth={2} />
                     <Text style={s.dateTimeSummaryText}>
                       Cierra el {endDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} a las {String(endHour).padStart(2, '0')}:00 hs
                     </Text>
@@ -352,7 +359,7 @@ export default function CrearRemateScreen() {
               value={title}
               onChangeText={setTitle}
               placeholder={horseName ? `${horseName} en venta` : 'Ej: Cuarteron Polo 10 años'}
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               autoCapitalize="sentences"
             />
           </View>
@@ -365,7 +372,7 @@ export default function CrearRemateScreen() {
               value={location}
               onChangeText={setLocation}
               placeholder="Ej: Buenos Aires, Argentina"
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
             />
           </View>
 
@@ -427,21 +434,23 @@ export default function CrearRemateScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: space[4], paddingVertical: space[3],
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray100,
+    backgroundColor: c.surface, borderBottomWidth: 1, borderBottomColor: c.border,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900 },
+  headerTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
 
   scroll: { flex: 1 },
   content: { padding: space[4], gap: space[5] },
 
   section: { gap: space[3] },
-  sectionLabel: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray700 },
+  sectionLabel: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
 
   /* Horse selector */
   horseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
@@ -449,61 +458,61 @@ const s = StyleSheet.create({
     width: '30%',
     alignItems: 'center',
     padding: space[3],
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.xl,
     borderWidth: 2,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     gap: space[2],
     position: 'relative',
     ...shadow.sm,
   },
-  horseOptionActive: { borderColor: colors.brand, backgroundColor: '#e8ecf4' },
+  horseOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
   horseOptionAvatar: {
     width: 52, height: 52, borderRadius: radius.full,
-    backgroundColor: colors.gray100,
+    backgroundColor: c.surfaceAlt,
     justifyContent: 'center', alignItems: 'center',
   },
-  horseOptionAvatarActive: { backgroundColor: colors.brand },
-  horseOptionAvatarText: { fontSize: text.xl, fontWeight: weight.bold, color: colors.brand },
-  horseOptionName: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray700, textAlign: 'center' },
-  horseOptionNameActive: { color: colors.brand },
+  horseOptionAvatarActive: { backgroundColor: c.brand },
+  horseOptionAvatarText: { fontSize: text.xl, fontWeight: weight.bold, color: c.brand },
+  horseOptionName: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted, textAlign: 'center' },
+  horseOptionNameActive: { color: c.brand },
   horseCheckMark: {
     position: 'absolute', top: 6, right: 6,
     width: 20, height: 20, borderRadius: 10,
-    backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center',
   },
   emptyHorses: { alignItems: 'center', padding: space[8], gap: space[3] },
-  emptyHorsesText: { fontSize: text.sm, color: colors.gray400 },
+  emptyHorsesText: { fontSize: text.sm, color: c.textFaint },
 
   /* Type options */
   typeOption: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    borderWidth: 2, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    borderWidth: 2, borderColor: c.borderStrong,
     padding: space[4],
     ...shadow.sm,
   },
   typeIcon: { width: 48, height: 48, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center' },
   typeBody: { flex: 1 },
-  typeTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  typeDesc: { fontSize: text.xs, color: colors.gray500, marginTop: 2, lineHeight: 16 },
-  typeRadio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.gray300, justifyContent: 'center', alignItems: 'center' },
+  typeTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  typeDesc: { fontSize: text.xs, color: c.textMuted, marginTop: 2, lineHeight: 16 },
+  typeRadio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: c.borderStrong, justifyContent: 'center', alignItems: 'center' },
   typeRadioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.white },
 
   /* Price */
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   currencyToggle: {
     flexDirection: 'row', borderRadius: radius.lg, overflow: 'hidden',
-    borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.gray100,
+    borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt,
   },
   currencyBtn: { paddingHorizontal: space[4], paddingVertical: space[3] },
-  currencyBtnActive: { backgroundColor: colors.brand },
-  currencyBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray500 },
+  currencyBtnActive: { backgroundColor: c.brand },
+  currencyBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   currencyBtnTextActive: { color: colors.white },
   priceInput: {
-    flex: 1, fontSize: 28, fontWeight: weight.extrabold, color: colors.gray900,
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.gray200,
+    flex: 1, fontSize: 28, fontWeight: weight.extrabold, color: c.text,
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: c.borderStrong,
     paddingHorizontal: space[4], paddingVertical: space[3],
     textAlign: 'right',
     ...shadow.sm,
@@ -511,71 +520,71 @@ const s = StyleSheet.create({
 
   row: { flexDirection: 'row', gap: space[3] },
   input: {
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong,
     paddingHorizontal: space[4], paddingVertical: space[3] + 2,
-    fontSize: text.base, color: colors.gray900,
+    fontSize: text.base, color: c.text,
     ...shadow.sm,
   },
 
   /* Date picker */
   dateTrigger: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    borderWidth: 2, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    borderWidth: 2, borderColor: c.borderStrong,
     padding: space[4],
     ...shadow.sm,
   },
-  dateTriggerFilled: { borderColor: colors.brand, backgroundColor: '#f0f4ff' },
-  dateTriggerIcon: { width: 44, height: 44, borderRadius: radius.lg, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
-  dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: colors.gray900 },
-  dateTriggerSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
+  dateTriggerFilled: { borderColor: c.brand, backgroundColor: c.brandSoft },
+  dateTriggerIcon: { width: 44, height: 44, borderRadius: radius.lg, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  dateTriggerSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  pickerSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  pickerOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  pickerSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   pickerHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: space[5], paddingVertical: space[4],
-    borderBottomWidth: 1, borderBottomColor: colors.gray100,
+    borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  pickerTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  pickerCancel: { fontSize: text.base, color: colors.gray500 },
-  pickerConfirm: { fontSize: text.base, fontWeight: weight.bold, color: colors.brand },
+  pickerTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  pickerCancel: { fontSize: text.base, color: c.textMuted },
+  pickerConfirm: { fontSize: text.base, fontWeight: weight.bold, color: c.brand },
 
   /* Time chips */
   timeSection: { gap: space[2], marginTop: space[1] },
-  timeSectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray500, textTransform: 'uppercase', letterSpacing: 0.5 },
+  timeSectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   timeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   timeChip: {
     paddingHorizontal: space[4], paddingVertical: space[2] + 2,
-    borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.gray200,
-    backgroundColor: colors.white,
+    borderRadius: radius.full, borderWidth: 1.5, borderColor: c.borderStrong,
+    backgroundColor: c.surface,
   },
-  timeChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  timeChipText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray600 },
+  timeChipActive: { backgroundColor: c.brand, borderColor: c.brand },
+  timeChipText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   timeChipTextActive: { color: colors.white },
 
   dateTimeSummary: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: '#e8ecf4', borderRadius: radius.lg, padding: space[3],
+    backgroundColor: c.brandSoft, borderRadius: radius.lg, padding: space[3],
   },
-  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.brand },
+  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
 
   /* Checks */
   checkRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4],
   },
   checkRowActive: { borderColor: '#10b981', backgroundColor: '#f0fdf4' },
   checkbox: {
     width: 24, height: 24, borderRadius: 6,
-    borderWidth: 2, borderColor: colors.gray300,
+    borderWidth: 2, borderColor: c.borderStrong,
     justifyContent: 'center', alignItems: 'center',
   },
   checkboxActive: { backgroundColor: '#10b981', borderColor: '#10b981' },
-  checkLabel: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray700, flex: 1 },
+  checkLabel: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, flex: 1 },
 
   /* Error */
   errorBox: {
@@ -587,19 +596,19 @@ const s = StyleSheet.create({
 
   /* Footer */
   footer: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     paddingHorizontal: space[4],
     paddingTop: space[3],
     borderTopWidth: 1,
-    borderTopColor: colors.gray100,
+    borderTopColor: c.border,
     ...shadow.sm,
   },
   publishBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: space[2], backgroundColor: colors.brand,
+    gap: space[2], backgroundColor: c.brand,
     borderRadius: radius.xl, paddingVertical: space[4],
     ...shadow.sm,
   },
-  publishBtnDisabled: { backgroundColor: colors.gray300 },
+  publishBtnDisabled: { backgroundColor: c.borderStrong },
   publishBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
 });

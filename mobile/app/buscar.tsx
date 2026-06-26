@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -9,34 +9,36 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, ChevronRight, Calendar, Stethoscope, type LucideIcon } from 'lucide-react-native';
 import { HorseIcon } from '../components/icons/equine';
 import { useSearch } from '../hooks/use-search';
-import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 import { Routes, nav } from '../lib/routes';
 
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({ label, s }: { label: string; s: Styles }) {
   return (
     <Text style={s.sectionLabel}>{label}</Text>
   );
 }
 
 function ResultRow({
-  icon: Icon, title, subtitle, onPress,
+  icon: Icon, title, subtitle, onPress, c, s,
 }: {
   icon: LucideIcon | typeof HorseIcon;
   title: string;
   subtitle?: string;
   onPress: () => void;
+  c: ThemeColors;
+  s: Styles;
 }) {
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.7}>
       <View style={s.rowIcon}>
-        <Icon size={18} color={colors.brand} />
+        <Icon size={18} color={c.brand} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.rowTitle} numberOfLines={1}>{title}</Text>
         {subtitle ? <Text style={s.rowSub} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
-      <ChevronRight size={14} color={colors.gray300} strokeWidth={2} />
+      <ChevronRight size={14} color={c.textFaint} strokeWidth={2} />
     </TouchableOpacity>
   );
 }
@@ -44,6 +46,8 @@ function ResultRow({
 export default function BuscarScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
   const { data, isFetching } = useSearch(query);
@@ -59,19 +63,19 @@ export default function BuscarScreen() {
       {/* Header con buscador */}
       <View style={s.header}>
         <View style={s.searchBar}>
-          <Search size={18} color={colors.gray400} strokeWidth={2} />
+          <Search size={18} color={c.textFaint} strokeWidth={2} />
           <TextInput
             ref={inputRef}
             style={s.input}
             value={query}
             onChangeText={setQuery}
             placeholder="Buscar caballos, eventos, historial..."
-            placeholderTextColor={colors.gray400}
+            placeholderTextColor={c.textFaint}
             autoFocus
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
-          {isFetching && <ActivityIndicator size="small" color={colors.gray400} />}
+          {isFetching && <ActivityIndicator size="small" color={c.textFaint} />}
         </View>
         <TouchableOpacity onPress={() => router.back()} style={s.cancelBtn} activeOpacity={0.8}>
           <Text style={s.cancelText}>Cancelar</Text>
@@ -85,7 +89,7 @@ export default function BuscarScreen() {
       >
         {!query.trim() && (
           <View style={s.hint}>
-            <Search size={36} color={colors.gray200} strokeWidth={2} />
+            <Search size={36} color={c.borderStrong} strokeWidth={2} />
             <Text style={s.hintText}>Escribí para buscar en toda la app</Text>
           </View>
         )}
@@ -98,7 +102,7 @@ export default function BuscarScreen() {
 
         {data?.horses && data.horses.length > 0 && (
           <View>
-            <SectionHeader label="Caballos" />
+            <SectionHeader label="Caballos" s={s} />
             {data.horses.map((h, index) => (
               <Animated.View key={h.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 <ResultRow
@@ -106,6 +110,8 @@ export default function BuscarScreen() {
                   title={h.name}
                   subtitle={[h.breed, h.activity].filter(Boolean).join(' · ') || undefined}
                   onPress={() => { nav.push(router, Routes.caballo(h.id)); }}
+                  c={c}
+                  s={s}
                 />
               </Animated.View>
             ))}
@@ -114,7 +120,7 @@ export default function BuscarScreen() {
 
         {data?.events && data.events.length > 0 && (
           <View>
-            <SectionHeader label="Eventos" />
+            <SectionHeader label="Eventos" s={s} />
             {data.events.map((e, index) => (
               <Animated.View key={e.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 <ResultRow
@@ -122,6 +128,8 @@ export default function BuscarScreen() {
                   title={e.description}
                   subtitle={[e.type, e.date ? new Date(e.date).toLocaleDateString('es-AR') : undefined].filter(Boolean).join(' · ')}
                   onPress={() => { nav.push(router, Routes.tabsEventos); }}
+                  c={c}
+                  s={s}
                 />
               </Animated.View>
             ))}
@@ -130,7 +138,7 @@ export default function BuscarScreen() {
 
         {data?.medical && data.medical.length > 0 && (
           <View>
-            <SectionHeader label="Historial médico" />
+            <SectionHeader label="Historial médico" s={s} />
             {data.medical.map((m, index) => (
               <Animated.View key={m.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 <ResultRow
@@ -138,6 +146,8 @@ export default function BuscarScreen() {
                   title={m.name}
                   subtitle={m.type}
                   onPress={() => { nav.push(router, Routes.tabsCaballos); }}
+                  c={c}
+                  s={s}
                 />
               </Animated.View>
             ))}
@@ -148,19 +158,21 @@ export default function BuscarScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: colors.gray100, borderRadius: radius.lg, paddingHorizontal: space[3], height: 40 },
-  input: { flex: 1, fontSize: text.sm, color: colors.gray900, height: 40 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: 40 },
+  input: { flex: 1, fontSize: text.sm, color: c.text, height: 40 },
   cancelBtn: { paddingVertical: space[2] },
-  cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.brand },
+  cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
   results: { padding: space[4], gap: space[4], paddingBottom: space[10] },
-  sectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray400, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: space[2] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  rowIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
-  rowTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  rowSub: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  sectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: space[2] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
+  rowIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  rowTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
   hint: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
-  hintText: { fontSize: text.sm, color: colors.gray400, textAlign: 'center' },
+  hintText: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },
 });

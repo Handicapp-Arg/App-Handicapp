@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal,
   KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, RefreshControl,
@@ -15,6 +15,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Skeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -39,12 +40,14 @@ Entre el establecimiento y el propietario, se acuerda:
 Firmado digitalmente en HandicApp.`;
 
 function ContractCard({
-  contract, userId, role, onSign, onReject, onDelete,
+  contract, userId, role, onSign, onReject, onDelete, c, cs,
 }: {
   contract: Contract; userId: string; role: string;
   onSign: (c: Contract) => void;
   onReject: (c: Contract) => void;
   onDelete: (id: string) => void;
+  c: ThemeColors;
+  cs: CStyles;
 }) {
   const [expanded, setExpanded] = useState(false);
   const sc = STATUS_COLORS[contract.status] ?? STATUS_COLORS.pending;
@@ -53,75 +56,75 @@ function ContractCard({
   const dateStr = new Date(contract.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
-    <View style={cStyles.card}>
-      <TouchableOpacity onPress={() => setExpanded((p) => !p)} activeOpacity={0.7} style={cStyles.cardHeader}>
-        <View style={cStyles.docIcon}>
-          <FileText size={22} color={colors.gray900} strokeWidth={2} />
+    <View style={cs.card}>
+      <TouchableOpacity onPress={() => setExpanded((p) => !p)} activeOpacity={0.7} style={cs.cardHeader}>
+        <View style={cs.docIcon}>
+          <FileText size={22} color={c.text} strokeWidth={2} />
         </View>
         <View style={{ flex: 1, gap: 3 }}>
-          <Text style={cStyles.title} numberOfLines={1}>{contract.title}</Text>
-          <Text style={cStyles.meta} numberOfLines={1}>
+          <Text style={cs.title} numberOfLines={1}>{contract.title}</Text>
+          <Text style={cs.meta} numberOfLines={1}>
             {isOwner ? `De ${contract.establishment?.name}` : `Para ${contract.owner?.name}`} · {dateStr}
           </Text>
-          <View style={cStyles.tagRow}>
-            <View style={[cStyles.statusBadge, { backgroundColor: sc.bg }]}>
-              <View style={[cStyles.statusDot, { backgroundColor: sc.text }]} />
-              <Text style={[cStyles.statusText, { color: sc.text }]}>{STATUS_LABEL[contract.status]}</Text>
+          <View style={cs.tagRow}>
+            <View style={[cs.statusBadge, { backgroundColor: c.isDark ? sc.text + '26' : sc.bg }]}>
+              <View style={[cs.statusDot, { backgroundColor: sc.text }]} />
+              <Text style={[cs.statusText, { color: sc.text }]}>{STATUS_LABEL[contract.status]}</Text>
             </View>
             {contract.horse && (
-              <View style={cStyles.horseBadge}>
-                <Text style={cStyles.horseText}>{contract.horse.name}</Text>
+              <View style={cs.horseBadge}>
+                <Text style={cs.horseText}>{contract.horse.name}</Text>
               </View>
             )}
           </View>
         </View>
         <ChevronDown
           size={18}
-          color={colors.gray300}
+          color={c.textFaint}
           strokeWidth={2}
           style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}
         />
       </TouchableOpacity>
 
       {contract.status === 'signed' && contract.signed_name && (
-        <View style={cStyles.signedBanner}>
-          <Text style={cStyles.signedText}>
+        <View style={cs.signedBanner}>
+          <Text style={cs.signedText}>
             ✓ Firmado por {contract.signed_name} · {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
           </Text>
         </View>
       )}
       {contract.status === 'rejected' && contract.rejection_reason && (
-        <View style={cStyles.rejectedBanner}>
-          <Text style={cStyles.rejectedText}>✕ Motivo: {contract.rejection_reason}</Text>
+        <View style={cs.rejectedBanner}>
+          <Text style={cs.rejectedText}>✕ Motivo: {contract.rejection_reason}</Text>
         </View>
       )}
 
       {expanded && (
-        <View style={cStyles.body}>
-          <ScrollView style={cStyles.bodyScroll} nestedScrollEnabled>
-            <Text style={cStyles.bodyText}>{contract.body}</Text>
+        <View style={cs.body}>
+          <ScrollView style={cs.bodyScroll} nestedScrollEnabled>
+            <Text style={cs.bodyText}>{contract.body}</Text>
           </ScrollView>
 
           {isOwner && contract.status === 'pending' && (
-            <View style={cStyles.actions}>
-              <PressableScale style={cStyles.rejectBtn} onPress={() => onReject(contract)}>
-                <Text style={cStyles.rejectBtnText}>Rechazar</Text>
+            <View style={cs.actions}>
+              <PressableScale style={cs.rejectBtn} onPress={() => onReject(contract)}>
+                <Text style={cs.rejectBtnText}>Rechazar</Text>
               </PressableScale>
-              <PressableScale style={cStyles.signBtn} onPress={() => onSign(contract)}>
-                <Text style={cStyles.signBtnText}>Firmar</Text>
+              <PressableScale style={cs.signBtn} onPress={() => onSign(contract)}>
+                <Text style={cs.signBtnText}>Firmar</Text>
               </PressableScale>
             </View>
           )}
           {isEstab && contract.status === 'pending' && (
             <TouchableOpacity
-              style={cStyles.deleteBtn}
+              style={cs.deleteBtn}
               onPress={() => Alert.alert('Cancelar contrato', '¿Querés cancelar este contrato?', [
                 { text: 'No', style: 'cancel' },
                 { text: 'Sí, cancelar', style: 'destructive', onPress: () => onDelete(contract.id) },
               ])}
               activeOpacity={0.8}
             >
-              <Text style={cStyles.deleteBtnText}>Cancelar contrato</Text>
+              <Text style={cs.deleteBtnText}>Cancelar contrato</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -134,6 +137,9 @@ export default function ContratosScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const cs = useMemo(() => makeCStyles(c), [c]);
   const { data: contracts, isLoading, refetch, isRefetching } = useContracts();
   const createContract = useCreateContract();
   const signContract = useSignContract();
@@ -176,15 +182,15 @@ export default function ContratosScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
       >
         {header}
         <View style={s.body}>
           {isLoading && pending.length === 0 && others.length === 0 ? (
             <View style={{ gap: space[3] }}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <View key={i} style={cStyles.card}>
-                  <View style={cStyles.cardHeader}>
+                <View key={i} style={cs.card}>
+                  <View style={cs.cardHeader}>
                     <View style={{ flex: 1, gap: space[1] + 2 }}>
                       <Skeleton width={80} height={18} borderRadius={radius.full} />
                       <Skeleton width="65%" height={14} />
@@ -206,10 +212,10 @@ export default function ContratosScreen() {
               {pending.length > 0 && (
                 <View style={s.group}>
                   <Text style={s.groupLabel}>PENDIENTES ({pending.length})</Text>
-                  {pending.map((c, index) => (
-                    <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                      <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
-                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                  {pending.map((ct, index) => (
+                    <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                      <ContractCard contract={ct} userId={user?.id ?? ''} role={user?.role ?? ''}
+                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
                     </Animated.View>
                   ))}
                 </View>
@@ -217,10 +223,10 @@ export default function ContratosScreen() {
               {others.length > 0 && (
                 <View style={s.group}>
                   <Text style={s.groupLabel}>HISTORIAL</Text>
-                  {others.map((c, index) => (
-                    <Animated.View key={c.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                      <ContractCard contract={c} userId={user?.id ?? ''} role={user?.role ?? ''}
-                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} />
+                  {others.map((ct, index) => (
+                    <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                      <ContractCard contract={ct} userId={user?.id ?? ''} role={user?.role ?? ''}
+                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
                     </Animated.View>
                   ))}
                 </View>
@@ -249,7 +255,7 @@ export default function ContratosScreen() {
                   value={createOwnerEmail}
                   onChangeText={setCreateOwnerEmail}
                   placeholder="propietario@email.com"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={c.textFaint}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   returnKeyType="search"
@@ -286,11 +292,11 @@ export default function ContratosScreen() {
               )}
 
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Título *</Text>
-              <TextInput style={s.input} value={createTitle} onChangeText={setCreateTitle} placeholderTextColor="#9ca3af" />
+              <TextInput style={s.input} value={createTitle} onChangeText={setCreateTitle} placeholderTextColor={c.textFaint} />
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Cuerpo del contrato *</Text>
               <TextInput
                 style={[s.input, { height: 180, textAlignVertical: 'top', paddingTop: 10 }]}
-                value={createBody} onChangeText={setCreateBody} multiline placeholderTextColor="#9ca3af"
+                value={createBody} onChangeText={setCreateBody} multiline placeholderTextColor={c.textFaint}
               />
               <Text style={s.hint}>El propietario podrá firmar o rechazar el contrato desde su app.</Text>
             </ScrollView>
@@ -335,7 +341,7 @@ export default function ContratosScreen() {
               <Text style={s.fieldLabel}>Escribí tu nombre completo tal como aparecerá en la firma:</Text>
               <TextInput
                 style={s.input} value={signedName} onChangeText={setSignedName}
-                placeholder="Tu nombre completo" placeholderTextColor="#9ca3af"
+                placeholder="Tu nombre completo" placeholderTextColor={c.textFaint}
                 autoCapitalize="words"
               />
               <Text style={s.hint}>Al confirmar, la firma quedará registrada con fecha y hora.</Text>
@@ -379,7 +385,7 @@ export default function ContratosScreen() {
               <TextInput
                 style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
                 value={rejectReason} onChangeText={setRejectReason}
-                placeholder="Indicá el motivo..." placeholderTextColor="#9ca3af"
+                placeholder="Indicá el motivo..." placeholderTextColor={c.textFaint}
                 multiline
               />
             </View>
@@ -411,39 +417,41 @@ export default function ContratosScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: c.surface, borderBottomWidth: 1, borderBottomColor: c.border },
   backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginRight: space[2] },
-  backBtnText: { fontSize: 28, color: colors.brand, lineHeight: 32, marginTop: -2 },
-  headerTitle: { flex: 1, fontSize: text.lg, fontWeight: weight.extrabold, color: colors.gray900 },
-  addBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: space[3], paddingVertical: space[2] },
+  backBtnText: { fontSize: 28, color: c.brand, lineHeight: 32, marginTop: -2 },
+  headerTitle: { flex: 1, fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
+  addBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: space[3], paddingVertical: space[2] },
   addBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   content: { paddingBottom: space[10] },
   body: { paddingHorizontal: space[4], paddingTop: space[2], gap: space[4] },
   empty: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
   emptyIcon: { fontSize: 40 },
-  emptyTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray700 },
-  emptyMsg: { fontSize: text.sm, color: colors.gray400, textAlign: 'center', paddingHorizontal: space[6] },
+  emptyTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  emptyMsg: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', paddingHorizontal: space[6] },
   group: { gap: space[3] },
-  groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray400, letterSpacing: 0.8 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  modalTitle: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.gray900 },
-  modalClose: { fontSize: 18, color: colors.gray400 },
+  groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8 },
+  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border },
+  modalTitle: { fontSize: text.base, fontWeight: weight.extrabold, color: c.text },
+  modalClose: { fontSize: 18, color: c.textFaint },
   modalBody: { padding: space[5], gap: space[2] },
-  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: colors.gray100 },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: colors.gray900, backgroundColor: colors.gray50 },
-  hint: { fontSize: text.xs, color: colors.gray400, marginTop: space[2] },
-  cancelBtn: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, paddingVertical: space[3] + 1, alignItems: 'center' },
-  cancelBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
-  submitBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingVertical: space[3] + 1, alignItems: 'center' },
+  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: c.border },
+  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
+  hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
+  cancelBtn: { borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, paddingVertical: space[3] + 1, alignItems: 'center' },
+  cancelBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
+  submitBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingVertical: space[3] + 1, alignItems: 'center' },
   submitBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
   signSubmitBtn: { borderRadius: radius.md, backgroundColor: '#16a34a', paddingVertical: space[3] + 1, alignItems: 'center' },
   rejectSubmitBtn: { borderRadius: radius.md, backgroundColor: colors.red500, paddingVertical: space[3] + 1, alignItems: 'center' },
-  searchBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
+  searchBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
   searchBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
   userFoundIcon: { fontSize: 18, color: '#16a34a' },
@@ -453,30 +461,32 @@ const s = StyleSheet.create({
   userNotFoundText: { fontSize: text.xs, color: '#b91c1c' },
 });
 
-const cStyles = StyleSheet.create({
-  card: { backgroundColor: colors.white, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+type CStyles = ReturnType<typeof makeCStyles>;
+
+const makeCStyles = (c: ThemeColors) => StyleSheet.create({
+  card: { backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.border, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3] },
   docIcon: { width: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  title: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  meta: { fontSize: text.xs, color: colors.gray400 },
+  title: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  meta: { fontSize: text.xs, color: c.textFaint },
   tagRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
-  horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: colors.gray100 },
-  horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray700 },
+  horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: c.surfaceAlt },
+  horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
   signedBanner: { marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3] },
   signedText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#15803d' },
   rejectedBanner: { marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3] },
   rejectedText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#b91c1c' },
-  body: { borderTopWidth: 1, borderTopColor: colors.gray100 },
+  body: { borderTopWidth: 1, borderTopColor: c.border },
   bodyScroll: { maxHeight: 200, padding: space[4] },
-  bodyText: { fontSize: text.sm, color: colors.gray700, lineHeight: 20 },
+  bodyText: { fontSize: text.sm, color: c.text, lineHeight: 20 },
   actions: { flexDirection: 'row', gap: space[3], padding: space[4], paddingTop: space[3] },
   signBtn: { flex: 1, borderRadius: radius.lg, backgroundColor: '#16a34a', paddingVertical: space[3] + 2, alignItems: 'center' },
   signBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
-  rejectBtn: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, paddingVertical: space[3] + 2, alignItems: 'center' },
-  rejectBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  deleteBtn: { margin: space[4], marginTop: 0, borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, paddingVertical: space[3], alignItems: 'center' },
-  deleteBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray500 },
+  rejectBtn: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, paddingVertical: space[3] + 2, alignItems: 'center' },
+  rejectBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  deleteBtn: { margin: space[4], marginTop: 0, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, paddingVertical: space[3], alignItems: 'center' },
+  deleteBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
 });

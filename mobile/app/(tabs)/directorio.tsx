@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
   RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
@@ -16,6 +16,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { ListRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 
 interface DirectorioItem {
@@ -38,9 +39,13 @@ function useDirectorio(search: string) {
 function RequestModal({
   establishment,
   onClose,
+  c,
+  s,
 }: {
   establishment: DirectorioItem;
   onClose: () => void;
+  c: ThemeColors;
+  s: Styles;
 }) {
   const { data: horses } = useHorses();
   const { data: requests } = useBoardingRequests();
@@ -114,7 +119,7 @@ function RequestModal({
               value={message}
               onChangeText={setMessage}
               placeholder="Presentate brevemente..."
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               multiline
             />
           </ScrollView>
@@ -144,6 +149,8 @@ function RequestModal({
 export default function DirectorioScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [requesting, setRequesting] = useState<DirectorioItem | null>(null);
@@ -179,19 +186,19 @@ export default function DirectorioScreen() {
 
       {/* Buscador */}
       <View style={s.searchWrap}>
-        <Search size={16} color={colors.gray400} strokeWidth={2} />
+        <Search size={16} color={c.textFaint} strokeWidth={2} />
         <TextInput
           style={s.searchInput}
           value={search}
           onChangeText={handleSearch}
           placeholder="Buscar establecimiento..."
-          placeholderTextColor={colors.gray400}
+          placeholderTextColor={c.textFaint}
           clearButtonMode="while-editing"
           autoCapitalize="none"
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); haptic.selection(); }}>
-            <XCircle size={16} color={colors.gray300} strokeWidth={2} />
+            <XCircle size={16} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
@@ -255,54 +262,56 @@ export default function DirectorioScreen() {
             );
           }}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
         />
       )}
 
-      {requesting && <RequestModal establishment={requesting} onClose={() => setRequesting(null)} />}
+      {requesting && <RequestModal establishment={requesting} onClose={() => setRequesting(null)} c={c} s={s} />}
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f0f3f8' },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: colors.gray200, borderTopColor: colors.brand },
+  spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: c.borderStrong, borderTopColor: c.brand },
   pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: '#fffbeb', borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: '#fde68a' },
   pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#92400e' },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: space[3], paddingVertical: 2 },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: colors.gray900 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: space[3], paddingVertical: 2 },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: c.text },
   list: { paddingBottom: space[8] },
   itemWrap: { marginHorizontal: space[4] },
-  card: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: '#e8edf5', padding: space[4], shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray700 },
-  cardName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
-  cardSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
-  requestBtn: { borderRadius: radius.md, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 7 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, padding: space[4], shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
+  cardName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  cardSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  requestBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 7 },
   requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
   pendingChip: { borderRadius: radius.full, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#fde68a' },
   pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: '#92400e' },
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  modalClose: { fontSize: 18, color: colors.gray400 },
+  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border },
+  modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  modalClose: { fontSize: 18, color: c.textFaint },
   modalBody: { padding: space[5], gap: space[3] },
-  modalDesc: { fontSize: text.sm, color: colors.gray500, lineHeight: 20 },
-  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: colors.gray100 },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  emptyText: { fontSize: text.xs, color: colors.gray400 },
+  modalDesc: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
+  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: c.border },
+  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  emptyText: { fontSize: text.xs, color: c.textFaint },
   horseList: { gap: 8 },
-  horseItem: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: colors.white },
-  horseItemActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  horseItemText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
+  horseItem: { borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: c.surface },
+  horseItemActive: { backgroundColor: c.brand, borderColor: c.brand },
+  horseItemText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   horseItemTextActive: { color: colors.white },
-  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: colors.gray900, backgroundColor: colors.gray50 },
+  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.brand },
+  btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
 });

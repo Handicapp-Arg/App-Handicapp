@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   User, ChevronRight, Lock, LogOut, Crown,
   type LucideIcon,
@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
 
@@ -33,8 +34,9 @@ const MONTHS_OPTIONS = [
 
 /* ─── Plan Card ─── */
 
-function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
+function PlanCard({ plan, horseCount, horseLimit, isLimited, c, s }: {
   plan: string; horseCount: number; horseLimit: number | null; isLimited: boolean;
+  c: ThemeColors; s: Styles;
 }) {
   const isPro = plan === 'pro';
   const pct = horseLimit ? Math.min((horseCount / horseLimit) * 100, 100) : 0;
@@ -69,7 +71,7 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
       </View>
       {horseLimit && (
         <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : colors.brand }]} />
+          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : c.brand }]} />
         </View>
       )}
       <Text style={s.planFreeMsg}>
@@ -81,11 +83,12 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited }: {
 
 /* ─── Admin User Row ─── */
 
-function AdminUserRow({ u, onActivate, onRevoke, isPending }: {
+function AdminUserRow({ u, onActivate, onRevoke, isPending, c, s }: {
   u: AdminPlanUser;
   onActivate: (userId: string, months: number) => void;
   onRevoke: (userId: string) => void;
   isPending: boolean;
+  c: ThemeColors; s: Styles;
 }) {
   const [months, setMonths] = useState(1);
   const [showMonths, setShowMonths] = useState(false);
@@ -156,10 +159,11 @@ function AdminUserRow({ u, onActivate, onRevoke, isPending }: {
 
 /* ─── Main Screen ─── */
 
-function EditProfileModal({ visible, user, onClose }: {
+function EditProfileModal({ visible, user, onClose, c, s }: {
   visible: boolean;
   user: { name: string; email: string };
   onClose: () => void;
+  c: ThemeColors; s: Styles;
 }) {
   const { updateProfile } = useAuth();
   const [name, setName] = useState(user.name);
@@ -200,7 +204,7 @@ function EditProfileModal({ visible, user, onClose }: {
               value={name}
               onChangeText={setName}
               placeholder="Tu nombre"
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               autoCapitalize="words"
             />
           </View>
@@ -211,7 +215,7 @@ function EditProfileModal({ visible, user, onClose }: {
               value={email}
               onChangeText={setEmail}
               placeholder="tu@email.com"
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -236,7 +240,7 @@ function EditProfileModal({ visible, user, onClose }: {
   );
 }
 
-function ChangePasswordModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
   const { changePassword } = useAuth();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -285,7 +289,7 @@ function ChangePasswordModal({ visible, onClose }: { visible: boolean; onClose: 
                 value={f.value}
                 onChangeText={f.setter}
                 secureTextEntry
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 placeholder="••••••••"
                 autoComplete="off"
                 textContentType="oneTimeCode"
@@ -315,6 +319,8 @@ function ChangePasswordModal({ visible, onClose }: { visible: boolean; onClose: 
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const { data: planStatus } = usePlanStatus();
   const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers(user?.role === 'admin');
   const setPlan = useAdminSetPlan();
@@ -376,6 +382,8 @@ export default function PerfilScreen() {
                 horseCount={planStatus.horse_count}
                 horseLimit={planStatus.horse_limit}
                 isLimited={planStatus.is_limited}
+                c={c}
+                s={s}
               />
             </View>
           )}
@@ -390,12 +398,12 @@ export default function PerfilScreen() {
                 value={adminSearch}
                 onChangeText={setAdminSearch}
                 placeholder="Buscar por nombre o email..."
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 autoCapitalize="none"
                 clearButtonMode="while-editing"
               />
               {loadingAdminUsers ? (
-                <ActivityIndicator size="small" color={colors.brand} style={{ marginTop: space[3] }} />
+                <ActivityIndicator size="small" color={c.brand} style={{ marginTop: space[3] }} />
               ) : !filteredAdminUsers?.length ? (
                 <Text style={s.emptyText}>No hay usuarios registrados.</Text>
               ) : (
@@ -407,6 +415,8 @@ export default function PerfilScreen() {
                         onActivate={(userId, months) => setPlan.mutate({ userId, plan: 'pro', months })}
                         onRevoke={(userId) => setPlan.mutate({ userId, plan: 'free' })}
                         isPending={setPlan.isPending}
+                        c={c}
+                        s={s}
                       />
                     </Animated.View>
                   ))}
@@ -424,12 +434,12 @@ export default function PerfilScreen() {
                 onPress={() => setShowEditProfile(true)}
                 activeOpacity={0.8}
               >
-                <User size={18} color={colors.gray900} strokeWidth={2} />
+                <User size={18} color={c.text} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.accountRowLabel}>Editar datos personales</Text>
                   <Text style={s.accountRowSub}>{user.name} · {user.email}</Text>
                 </View>
-                <ChevronRight size={16} color={colors.gray400} strokeWidth={2} />
+                <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
               </TouchableOpacity>
               <View style={s.accountDivider} />
               <TouchableOpacity
@@ -437,11 +447,11 @@ export default function PerfilScreen() {
                 onPress={() => setShowChangePassword(true)}
                 activeOpacity={0.8}
               >
-                <Lock size={18} color={colors.gray900} strokeWidth={2} />
+                <Lock size={18} color={c.text} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.accountRowLabel}>Cambiar contraseña</Text>
                 </View>
-                <ChevronRight size={16} color={colors.gray400} strokeWidth={2} />
+                <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
               </TouchableOpacity>
             </View>
           </View>
@@ -460,10 +470,14 @@ export default function PerfilScreen() {
             visible={showEditProfile}
             user={user}
             onClose={() => setShowEditProfile(false)}
+            c={c}
+            s={s}
           />
           <ChangePasswordModal
             visible={showChangePassword}
             onClose={() => setShowChangePassword(false)}
+            c={c}
+            s={s}
           />
         </>
       )}
@@ -471,19 +485,21 @@ export default function PerfilScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
 
   hero: {
     alignItems: 'center',
     gap: space[1] + 2,
-    backgroundColor: colors.brand,
+    backgroundColor: c.brand,
     paddingBottom: space[10],
     paddingTop: space[5],
     paddingHorizontal: space[5],
   },
   sheet: {
-    backgroundColor: colors.gray50,
+    backgroundColor: c.bg,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     marginTop: -24,
@@ -512,50 +528,50 @@ const s = StyleSheet.create({
 
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
   tabBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: space[1] + 2, paddingVertical: space[3],
     borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
-  tabBtnActive: { borderBottomColor: colors.brand },
-  tabLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray400 },
-  tabLabelActive: { color: colors.brand },
+  tabBtnActive: { borderBottomColor: c.brand },
+  tabLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
+  tabLabelActive: { color: c.brand },
 
   /* My posts */
   postsList: { padding: space[4], gap: space[3] },
   postCard: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.gray100,
+    borderWidth: 1, borderColor: c.border,
     overflow: 'hidden',
     ...shadow.sm,
   },
   postThumb: { width: '100%', height: 160 },
   postBody: { padding: space[3], gap: space[1] + 2 },
-  postContent: { fontSize: text.sm, color: colors.gray800, lineHeight: 20 },
-  postHorse: { fontSize: text.xs, color: colors.gray500 },
+  postContent: { fontSize: text.sm, color: c.text, lineHeight: 20 },
+  postHorse: { fontSize: text.xs, color: c.textMuted },
   postMeta: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[1] },
   postStat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  postStatText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
-  postTime: { fontSize: text.xs, color: colors.gray400, marginLeft: 'auto' },
+  postStatText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
+  postTime: { fontSize: text.xs, color: c.textFaint, marginLeft: 'auto' },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyActivity: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[2], paddingHorizontal: space[8], paddingTop: 60 },
-  emptyActivityTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray700 },
-  emptyActivitySub: { fontSize: text.sm, color: colors.gray400, textAlign: 'center', lineHeight: 20 },
+  emptyActivityTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  emptyActivitySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', lineHeight: 20 },
 
   section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
-  sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  sectionSubtitle: { fontSize: text.sm, color: colors.gray500 },
-  emptyText: { fontSize: text.sm, color: colors.gray400 },
+  sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  sectionSubtitle: { fontSize: text.sm, color: c.textMuted },
+  emptyText: { fontSize: text.sm, color: c.textFaint },
   searchInput: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 10,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
+    fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
   },
 
   // Plan Pro (gradiente premium)
@@ -566,100 +582,100 @@ const s = StyleSheet.create({
   planProTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
   planProSub: { fontSize: text.xs, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
   // Plan Free
-  planFree: { backgroundColor: colors.white, borderRadius: radius.xl, padding: space[4], gap: space[2], borderWidth: 1, borderColor: colors.gray100 },
-  planFreeBadge: { backgroundColor: colors.gray100, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
-  planFreeBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.gray600 },
-  planFreeUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  progressTrack: { height: 6, backgroundColor: colors.gray100, borderRadius: radius.full, overflow: 'hidden' },
+  planFree: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2], borderWidth: 1, borderColor: c.border },
+  planFreeBadge: { backgroundColor: c.surfaceAlt, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
+  planFreeBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
+  planFreeUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  progressTrack: { height: 6, backgroundColor: c.surfaceAlt, borderRadius: radius.full, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: radius.full },
-  planFreeMsg: { fontSize: text.xs, color: colors.gray400 },
+  planFreeMsg: { fontSize: text.xs, color: c.textFaint },
 
   adminRow: {
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], gap: space[2] + 2,
   },
   adminRowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
-  adminRowName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
-  adminRowEmail: { fontSize: text.xs, color: colors.gray500, marginTop: 2 },
-  adminRowMeta: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
-  adminExpires: { fontSize: text.xs, color: colors.gray400 },
+  adminRowName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  adminRowEmail: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
+  adminRowMeta: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  adminExpires: { fontSize: text.xs, color: c.textFaint },
   planPill: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
-  planPillFree: { backgroundColor: colors.gray100 },
+  planPillFree: { backgroundColor: c.surfaceAlt },
   planPillPro: { backgroundColor: colors.amber50 },
   planPillText: { fontSize: text.xs, fontWeight: weight.bold },
-  planPillTextFree: { color: colors.gray500 },
+  planPillTextFree: { color: c.textMuted },
   planPillTextPro: { color: colors.amber600 },
   monthsToggle: {
-    borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200,
-    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.gray50,
+    borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
+    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt,
   },
-  monthsToggleText: { fontSize: text.sm, color: colors.gray700 },
+  monthsToggleText: { fontSize: text.sm, color: c.text },
   monthsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   monthsOption: {
-    borderRadius: radius.md, borderWidth: 1, borderColor: colors.gray200,
-    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: colors.white,
+    borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
+    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surface,
   },
-  monthsOptionActive: { borderColor: colors.brand, backgroundColor: '#eff6ff' },
-  monthsOptionText: { fontSize: text.sm, color: colors.gray600 },
-  monthsOptionTextActive: { color: colors.brand, fontWeight: weight.semibold },
+  monthsOptionActive: { borderColor: c.brand, backgroundColor: '#eff6ff' },
+  monthsOptionText: { fontSize: text.sm, color: c.textMuted },
+  monthsOptionTextActive: { color: c.brand, fontWeight: weight.semibold },
   activateBtn: { backgroundColor: colors.amber600, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   activateBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   revokeBtn: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md,
-    paddingVertical: space[3], alignItems: 'center', backgroundColor: colors.gray50,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    paddingVertical: space[3], alignItems: 'center', backgroundColor: c.surfaceAlt,
   },
-  revokeBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray500 },
+  revokeBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
 
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
-    backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong,
     paddingVertical: space[3] + 2, marginHorizontal: space[4], marginTop: space[5],
   },
   logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.red500 },
 
   accountCard: {
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden',
+    backgroundColor: c.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong, overflow: 'hidden',
   },
   accountRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     paddingHorizontal: space[4], paddingVertical: space[4],
   },
-  accountRowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  accountRowSub: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
-  accountDivider: { height: 1, backgroundColor: colors.gray100, marginHorizontal: space[4] },
+  accountRowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  accountRowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  accountDivider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
 
   modalOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: c.overlay,
   },
   editModalSheet: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: space[6], paddingBottom: space[8],
     gap: space[3],
     marginTop: 'auto',
   },
   editModalHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: colors.gray200,
+    width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong,
     alignSelf: 'center', marginBottom: space[2],
   },
-  editModalTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray900 },
+  editModalTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
   editModalError: { fontSize: text.sm, color: colors.red700, backgroundColor: '#fef2f2', padding: space[3], borderRadius: radius.md },
   editField: { gap: space[1] + 2 },
-  editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
+  editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   editInput: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50,
+    fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
   },
   editSaveBtn: {
-    backgroundColor: colors.brand, borderRadius: radius.lg,
+    backgroundColor: c.brand, borderRadius: radius.lg,
     paddingVertical: space[4], alignItems: 'center', marginTop: space[2],
   },
   editSaveBtnDisabled: { opacity: 0.6 },
   editSaveBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
   editCancelBtn: { alignItems: 'center', paddingVertical: space[2] },
-  editCancelText: { fontSize: text.sm, color: colors.gray400, fontWeight: weight.medium },
+  editCancelText: { fontSize: text.sm, color: c.textFaint, fontWeight: weight.medium },
 });

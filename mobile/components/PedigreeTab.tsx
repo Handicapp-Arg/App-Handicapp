@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Modal, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { X, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus } from 'lucide-react-native';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import {
   usePedigree, usePedigreeValidations, useUpsertPedigree,
   useValidatePedigree, useSearchHorsesForPedigree, type CreatePedigreeDto,
@@ -42,6 +43,8 @@ const STATUS_BG: Record<string, string> = {
 };
 
 function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: number; dim?: boolean }) {
+  const { c } = useTheme();
+  const n = useMemo(() => makeN(c), [c]);
   if (!data) {
     return (
       <View style={[n.node, n.nodeEmpty, { width }]}>
@@ -55,17 +58,19 @@ function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: numb
   const bg  = STATUS_BG[st] ?? colors.gray50;
 
   return (
-    <View style={[n.node, { width, backgroundColor: bg, borderColor: dim ? colors.gray200 : col + '50', opacity: dim ? 0.7 : 1 }]}>
+    <View style={[n.node, { width, backgroundColor: bg, borderColor: dim ? c.borderStrong : col + '50', opacity: dim ? 0.7 : 1 }]}>
       {data.status && data.status !== 'unverified' && (
         <View style={[n.statusDot, { backgroundColor: col }]} />
       )}
-      <Text style={[n.name, { color: dim ? colors.gray500 : colors.gray900 }]} numberOfLines={2}>{data.name}</Text>
+      <Text style={[n.name, { color: dim ? c.textMuted : c.text }]} numberOfLines={2}>{data.name}</Text>
       {data.reg ? <Text style={n.reg} numberOfLines={1}>#{data.reg}</Text> : null}
     </View>
   );
 }
 
 function ConnectorLine({ vertical = false }: { vertical?: boolean }) {
+  const { c } = useTheme();
+  const n = useMemo(() => makeN(c), [c]);
   if (vertical) return <View style={n.vLine} />;
   return <View style={n.hLine} />;
 }
@@ -86,6 +91,8 @@ function PedigreeTree({ horseName, pedigree }: {
     pedigree_status?: string | null;
   };
 }) {
+  const { c } = useTheme();
+  const n = useMemo(() => makeN(c), [c]);
   const sireName = pedigree.sire?.name ?? pedigree.sire_name;
   const damName  = pedigree.dam?.name  ?? pedigree.dam_name;
 
@@ -213,24 +220,24 @@ function PedigreeTree({ horseName, pedigree }: {
   );
 }
 
-const n = StyleSheet.create({
+const makeN = (c: ThemeColors) => StyleSheet.create({
   tree: { padding: 16, gap: 4 },
   gen: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
-  vLine: { width: 2, height: 16, backgroundColor: colors.gray200, marginVertical: 0 },
-  hLine: { height: 2, flex: 1, backgroundColor: colors.gray200 },
+  vLine: { width: 2, height: 16, backgroundColor: c.border, marginVertical: 0 },
+  hLine: { height: 2, flex: 1, backgroundColor: c.border },
 
   node: {
-    borderRadius: 12, borderWidth: 1.5, borderColor: colors.gray200,
+    borderRadius: 12, borderWidth: 1.5, borderColor: c.borderStrong,
     padding: 10, gap: 3, position: 'relative', overflow: 'hidden',
   },
-  nodeEmpty: { backgroundColor: colors.gray50, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', minHeight: 52 },
-  emptyText: { color: colors.gray300, fontSize: 18 },
+  nodeEmpty: { backgroundColor: c.surfaceAlt, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', minHeight: 52 },
+  emptyText: { color: c.textFaint, fontSize: 18 },
   statusDot: { position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: 4 },
-  name: { fontSize: 12, fontWeight: '700', color: colors.gray900, lineHeight: 16 },
-  reg: { fontSize: 10, color: colors.gray400 },
+  name: { fontSize: 12, fontWeight: '700', color: c.text, lineHeight: 16 },
+  reg: { fontSize: 10, color: c.textFaint },
 
   nodeHorse: {
-    backgroundColor: colors.brand, borderColor: colors.brand,
+    backgroundColor: c.brand, borderColor: c.brand,
     alignItems: 'center', gap: 4, paddingVertical: 14,
   },
   horseIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
@@ -241,8 +248,8 @@ const n = StyleSheet.create({
   parentLabel: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 4 },
   parentLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
 
-  grandLabel: { fontSize: 9, fontWeight: '700', color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
-  grandRole: { fontSize: 9, color: colors.gray400, textAlign: 'center', marginBottom: 3 },
+  grandLabel: { fontSize: 9, fontWeight: '700', color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
+  grandRole: { fontSize: 9, color: c.textFaint, textAlign: 'center', marginBottom: 3 },
 });
 
 // ──────────────────────────────────────────────
@@ -254,6 +261,8 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
   onChange: (v: string) => void;
   onSelect: (id: string, name: string) => void;
 }) {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [open, setOpen] = useState(false);
   const { data: results = [] } = useSearchHorsesForPedigree(value);
 
@@ -267,7 +276,7 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Buscar en HandicApp..."
-        placeholderTextColor={colors.gray400}
+        placeholderTextColor={c.textFaint}
         autoCapitalize="words"
       />
       {open && results.length > 0 && (
@@ -295,6 +304,8 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
 // ──────────────────────────────────────────────
 
 function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () => void }) {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const { data: existing } = usePedigree(horseId);
   const upsert = useUpsertPedigree(horseId);
   const validate = useValidatePedigree(horseId);
@@ -358,13 +369,13 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
       failed:   { icon: '❌', title: 'Sin coincidencias',   msg: 'No se encontró en ningún registro oficial. Verificá la ortografía del nombre.', color: colors.red500 },
       disputed: { icon: '⚠️', title: 'Datos inconsistentes', msg: 'Distintas fuentes muestran información contradictoria.', color: '#b91c1c' },
     };
-    const cfg = map[validationResult.status] ?? { icon: 'ℹ️', title: validationResult.status, msg: '', color: colors.gray500 };
+    const cfg = map[validationResult.status] ?? { icon: 'ℹ️', title: validationResult.status, msg: '', color: c.textMuted };
     return (
       <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
           <Text style={{ fontSize: 48 }}>{cfg.icon}</Text>
           <Text style={{ fontSize: 18, fontWeight: '800', color: cfg.color, marginTop: 16, textAlign: 'center' }}>{cfg.title}</Text>
-          {cfg.msg ? <Text style={{ fontSize: 14, color: colors.gray600, textAlign: 'center', marginTop: 10, lineHeight: 20 }}>{cfg.msg}</Text> : null}
+          {cfg.msg ? <Text style={{ fontSize: 14, color: c.textMuted, textAlign: 'center', marginTop: 10, lineHeight: 20 }}>{cfg.msg}</Text> : null}
           <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 32, width: '100%' }]} onPress={onClose}>
             <Text style={s.btnPrimaryText}>Cerrar</Text>
           </TouchableOpacity>
@@ -379,7 +390,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Editar pedigrí</Text>
           <TouchableOpacity onPress={onClose}>
-            <X size={22} color={colors.gray400} strokeWidth={2} />
+            <X size={22} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -399,7 +410,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             <Text style={s.fieldLabel}>N° de registro (opcional)</Text>
             <TextInput style={s.input} value={form.sire_registration_number ?? ''}
               onChangeText={(v) => setForm((f) => ({ ...f, sire_registration_number: v }))}
-              placeholder="SBA #12345" placeholderTextColor={colors.gray400} />
+              placeholder="SBA #12345" placeholderTextColor={c.textFaint} />
           </View>
 
           {/* Madre */}
@@ -417,7 +428,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             <Text style={s.fieldLabel}>N° de registro (opcional)</Text>
             <TextInput style={s.input} value={form.dam_registration_number ?? ''}
               onChangeText={(v) => setForm((f) => ({ ...f, dam_registration_number: v }))}
-              placeholder="SBA #67890" placeholderTextColor={colors.gray400} />
+              placeholder="SBA #67890" placeholderTextColor={c.textFaint} />
           </View>
 
           {/* Abuelos */}
@@ -428,13 +439,13 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
                 <Text style={s.grandLabel}>Abuelo paterno</Text>
                 <TextInput style={s.inputSm} value={form.paternal_grandsire_name ?? ''}
                   onChangeText={(v) => setForm((f) => ({ ...f, paternal_grandsire_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={colors.gray400} autoCapitalize="words" />
+                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.grandLabel}>Abuela paterna</Text>
                 <TextInput style={s.inputSm} value={form.paternal_granddam_name ?? ''}
                   onChangeText={(v) => setForm((f) => ({ ...f, paternal_granddam_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={colors.gray400} autoCapitalize="words" />
+                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
               </View>
             </View>
             <View style={s.grandRow}>
@@ -442,13 +453,13 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
                 <Text style={s.grandLabel}>Abuelo materno</Text>
                 <TextInput style={s.inputSm} value={form.maternal_grandsire_name ?? ''}
                   onChangeText={(v) => setForm((f) => ({ ...f, maternal_grandsire_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={colors.gray400} autoCapitalize="words" />
+                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.grandLabel}>Abuela materna</Text>
                 <TextInput style={s.inputSm} value={form.maternal_granddam_name ?? ''}
                   onChangeText={(v) => setForm((f) => ({ ...f, maternal_granddam_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={colors.gray400} autoCapitalize="words" />
+                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
               </View>
             </View>
           </View>
@@ -469,7 +480,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           <TouchableOpacity style={[s.btn, s.btnOutline, { flex: 1 }]}
             onPress={() => handleSave(false)} disabled={isPending}>
             {upsert.isPending && !validate.isPending
-              ? <ActivityIndicator color={colors.brand} size="small" />
+              ? <ActivityIndicator color={c.brand} size="small" />
               : <Text style={s.btnOutlineText}>Guardar</Text>}
           </TouchableOpacity>
           <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1.4 }]}
@@ -489,6 +500,8 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
 // ──────────────────────────────────────────────
 
 function ValidationBanner({ validations }: { validations: PedigreeValidation[] }) {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   if (!validations.length) return null;
 
   const bySource: Record<string, PedigreeValidation> = {};
@@ -550,6 +563,8 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   horseName?: string;
   canEdit: boolean;
 }) {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [showForm, setShowForm] = useState(false);
   const { data: pedigree, isLoading } = usePedigree(horseId);
   const { data: validations = [] } = usePedigreeValidations(horseId);
@@ -558,7 +573,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   if (isLoading) {
     return (
       <View style={s.center}>
-        <ActivityIndicator color={colors.brand} size="large" />
+        <ActivityIndicator color={c.brand} size="large" />
         <Text style={s.loadingText}>Cargando pedigrí...</Text>
       </View>
     );
@@ -595,7 +610,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {canEdit && (
             <TouchableOpacity style={s.actionBtn} onPress={() => setShowForm(true)}>
-              <Pencil size={15} color={colors.brand} strokeWidth={2} />
+              <Pencil size={15} color={c.brand} strokeWidth={2} />
               <Text style={s.actionBtnText}>Editar</Text>
             </TouchableOpacity>
           )}
@@ -625,7 +640,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
       {/* Sin validar aún */}
       {validations.length === 0 && hasData && (
         <View style={s.noValidation}>
-          <Info size={16} color={colors.gray400} strokeWidth={2} />
+          <Info size={16} color={c.textFaint} strokeWidth={2} />
           <Text style={s.noValidationText}>
             Datos guardados. Tocá <Text style={{ fontWeight: '700' }}>Verificar</Text> para contrastar con los registros oficiales.
           </Text>
@@ -657,7 +672,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
           <Text style={s.docsTitle}>Documentos adjuntos</Text>
           {pedigree.documents!.map((doc) => (
             <View key={doc.id} style={s.docRow}>
-              <File size={14} color={colors.gray500} strokeWidth={2} />
+              <File size={14} color={c.textMuted} strokeWidth={2} />
               <Text style={s.docName} numberOfLines={1}>{doc.file_name}</Text>
             </View>
           ))}
@@ -670,104 +685,104 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
-  loadingText: { fontSize: 13, color: colors.gray400 },
+  loadingText: { fontSize: 13, color: c.textFaint },
 
   empty: { flex: 1, padding: 32, alignItems: 'center', gap: 12 },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.gray900, textAlign: 'center' },
-  emptyMsg: { fontSize: 13, color: colors.gray500, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 17, fontWeight: '800', color: c.text, textAlign: 'center' },
+  emptyMsg: { fontSize: 13, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
   },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: colors.gray900 },
+  headerTitle: { fontSize: 16, fontWeight: '800', color: c.text },
 
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 8, borderWidth: 1, borderColor: colors.gray200,
-    backgroundColor: colors.white,
+    borderRadius: 8, borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.surface,
   },
-  actionBtnPrimary: { backgroundColor: colors.brand, borderColor: colors.brand },
-  actionBtnText: { fontSize: 12, fontWeight: '600', color: colors.brand },
+  actionBtnPrimary: { backgroundColor: c.brand, borderColor: c.brand },
+  actionBtnText: { fontSize: 12, fontWeight: '600', color: c.brand },
 
   banner: {
     borderRadius: 12, borderWidth: 1, padding: 14, gap: 6, marginBottom: 8,
   },
   bannerTitle: { fontSize: 14, fontWeight: '700' },
-  bannerMsg: { fontSize: 12, color: colors.gray600, lineHeight: 18 },
+  bannerMsg: { fontSize: 12, color: c.textMuted, lineHeight: 18 },
   sourceRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 },
   sourceChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
   sourceChipText: { fontSize: 10, fontWeight: '700' },
 
   noValidation: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: colors.gray100, borderRadius: 10, marginHorizontal: 16,
+    backgroundColor: c.surfaceAlt, borderRadius: 10, marginHorizontal: 16,
     padding: 12, marginBottom: 4,
   },
-  noValidationText: { fontSize: 12, color: colors.gray500, flex: 1, lineHeight: 18 },
+  noValidationText: { fontSize: 12, color: c.textMuted, flex: 1, lineHeight: 18 },
 
   treeCard: {
-    backgroundColor: colors.white, borderRadius: 16,
+    backgroundColor: c.surface, borderRadius: 16,
     marginHorizontal: 16, marginBottom: 12,
-    borderWidth: 1, borderColor: colors.gray100,
+    borderWidth: 1, borderColor: c.border,
     overflow: 'hidden',
   },
 
-  noData: { margin: 16, padding: 16, backgroundColor: colors.gray100, borderRadius: 12, alignItems: 'center', gap: 6 },
-  noDataText: { fontSize: 13, color: colors.gray500, textAlign: 'center' },
+  noData: { margin: 16, padding: 16, backgroundColor: c.surfaceAlt, borderRadius: 12, alignItems: 'center', gap: 6 },
+  noDataText: { fontSize: 13, color: c.textMuted, textAlign: 'center' },
 
-  docsCard: { margin: 16, backgroundColor: colors.white, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.gray100, gap: 8 },
-  docsTitle: { fontSize: 13, fontWeight: '700', color: colors.gray900 },
+  docsCard: { margin: 16, backgroundColor: c.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: c.border, gap: 8 },
+  docsTitle: { fontSize: 13, fontWeight: '700', color: c.text },
   docRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  docName: { fontSize: 13, color: colors.gray600, flex: 1 },
+  docName: { fontSize: 13, color: c.textMuted, flex: 1 },
 
   // Modal
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100,
+    padding: 20, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.gray900 },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: c.text },
   modalBody: { padding: 20, gap: 4, paddingBottom: 40 },
   modalFooter: {
     flexDirection: 'row', gap: 8, padding: 16,
-    borderTopWidth: 1, borderTopColor: colors.gray100,
+    borderTopWidth: 1, borderTopColor: c.border,
   },
 
-  fieldset: { backgroundColor: colors.gray50, borderRadius: 12, padding: 14, gap: 4, marginBottom: 12 },
+  fieldset: { backgroundColor: c.surfaceAlt, borderRadius: 12, padding: 14, gap: 4, marginBottom: 12 },
   fieldsetHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
-  fieldsetTitle: { fontSize: 11, fontWeight: '800', color: colors.gray500, letterSpacing: 0.8, textTransform: 'uppercase' },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: colors.gray700, marginBottom: 4, marginTop: 8 },
+  fieldsetTitle: { fontSize: 11, fontWeight: '800', color: c.textMuted, letterSpacing: 0.8, textTransform: 'uppercase' },
+  fieldLabel: { fontSize: 12, fontWeight: '600', color: c.textMuted, marginBottom: 4, marginTop: 8 },
   input: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 10,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 14, color: colors.gray900, backgroundColor: colors.white,
+    fontSize: 14, color: c.text, backgroundColor: c.surface,
   },
   grandRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  grandLabel: { fontSize: 11, fontWeight: '600', color: colors.gray500, marginBottom: 4 },
+  grandLabel: { fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 4 },
   inputSm: {
-    borderWidth: 1, borderColor: colors.gray200, borderRadius: 8,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 8,
-    fontSize: 13, color: colors.gray900, backgroundColor: colors.white,
+    fontSize: 13, color: c.text, backgroundColor: c.surface,
   },
   dropdown: {
-    backgroundColor: colors.white, borderRadius: 10, borderWidth: 1,
-    borderColor: colors.gray200, overflow: 'hidden', marginTop: 4,
+    backgroundColor: c.surface, borderRadius: 10, borderWidth: 1,
+    borderColor: c.borderStrong, overflow: 'hidden', marginTop: 4,
   },
-  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: colors.gray50 },
-  dropdownName: { fontSize: 14, color: colors.gray900, fontWeight: '500' },
-  dropdownReg: { fontSize: 12, color: colors.gray400 },
+  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: c.border },
+  dropdownName: { fontSize: 14, color: c.text, fontWeight: '500' },
+  dropdownReg: { fontSize: 12, color: c.textFaint },
   errorText: { fontSize: 13, color: colors.red500, marginTop: 8 },
-  hint: { fontSize: 12, color: colors.gray400, marginTop: 12, lineHeight: 18 },
+  hint: { fontSize: 12, color: c.textFaint, marginTop: 12, lineHeight: 18 },
 
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 12, gap: 6 },
-  btnPrimary: { backgroundColor: colors.brand },
+  btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
-  btnSecondary: { backgroundColor: colors.gray100 },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
-  btnOutline: { borderWidth: 1.5, borderColor: colors.brand },
-  btnOutlineText: { fontSize: 14, fontWeight: '600', color: colors.brand },
+  btnSecondary: { backgroundColor: c.surfaceAlt },
+  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnOutline: { borderWidth: 1.5, borderColor: c.brand },
+  btnOutlineText: { fontSize: 14, fontWeight: '600', color: c.brand },
 });

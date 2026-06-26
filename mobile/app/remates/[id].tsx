@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Alert,
@@ -10,6 +10,7 @@ import { ArrowLeft, CheckCircle2, XCircle, Info, Star } from 'lucide-react-nativ
 import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../hooks/use-auctions';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 
 function formatARS(n: number | null | undefined, cur: string) {
@@ -17,7 +18,7 @@ function formatARS(n: number | null | undefined, cur: string) {
   return `${cur} ${new Intl.NumberFormat('es-AR').format(Number(n))}`;
 }
 
-function Countdown({ end }: { end: string }) {
+function Countdown({ end, s }: { end: string; s: Styles }) {
   const [left, setLeft] = useState(Math.max(0, new Date(end).getTime() - Date.now()));
 
   useEffect(() => {
@@ -52,6 +53,9 @@ export default function AuctionDetailScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+
   const { data: auction, isLoading } = useAuction(id);
   const { data: bids } = useAuctionBids(id);
   const placeBid = usePlaceBid();
@@ -64,7 +68,7 @@ export default function AuctionDetailScreen() {
   if (isLoading || !auction) {
     return (
       <View style={[s.root, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.brand} />
+        <ActivityIndicator color={c.brand} />
       </View>
     );
   }
@@ -95,14 +99,14 @@ export default function AuctionDetailScreen() {
       {/* Nav */}
       <View style={s.nav}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ArrowLeft size={20} color={colors.gray700} strokeWidth={2} />
+          <ArrowLeft size={20} color={c.text} strokeWidth={2} />
           <Text style={s.backText}>Volver</Text>
         </TouchableOpacity>
         {!isSeller && (
           <TouchableOpacity onPress={() => toggleWatch.mutate(id)} style={s.watchBtn}>
             <Star
               size={20}
-              color={auction.watching ? '#d97706' : colors.gray400}
+              color={auction.watching ? '#d97706' : c.textFaint}
               fill={auction.watching ? '#d97706' : 'none'}
               strokeWidth={2}
             />
@@ -142,7 +146,7 @@ export default function AuctionDetailScreen() {
           {isRemate && isActive && auction.auction_end && (
             <View style={{ marginTop: space[4] }}>
               <Text style={s.priceLabelSmall}>Tiempo restante</Text>
-              <Countdown end={auction.auction_end} />
+              <Countdown end={auction.auction_end} s={s} />
             </View>
           )}
         </View>
@@ -156,7 +160,7 @@ export default function AuctionDetailScreen() {
               <TextInput
                 style={s.bidInput}
                 placeholder={String(minNextBid)}
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 keyboardType="numeric"
                 value={bidAmount}
                 onChangeText={setBidAmount}
@@ -187,11 +191,11 @@ export default function AuctionDetailScreen() {
               { ok: auction.has_health_cert, label: 'Certificado SENASA vigente' },
               { ok: auction.has_ownership_docs, label: 'Docs de propiedad (Studbook/SRA)' },
             ].map(({ ok, label }) => (
-              <View key={label} style={[s.docRow, { backgroundColor: ok ? '#d1fae5' : colors.gray50, borderColor: ok ? '#6ee7b7' : colors.gray200 }]}>
+              <View key={label} style={[s.docRow, { backgroundColor: ok ? '#d1fae5' : c.surfaceAlt, borderColor: ok ? '#6ee7b7' : c.borderStrong }]}>
                 {ok
                   ? <CheckCircle2 size={16} color="#059669" strokeWidth={2} />
-                  : <XCircle size={16} color={colors.gray300} strokeWidth={2} />}
-                <Text style={[s.docLabel, { color: ok ? '#065f46' : colors.gray400 }]}>{label}</Text>
+                  : <XCircle size={16} color={c.textFaint} strokeWidth={2} />}
+                <Text style={[s.docLabel, { color: ok ? '#065f46' : c.textFaint }]}>{label}</Text>
               </View>
             ))}
           </View>
@@ -249,48 +253,50 @@ export default function AuctionDetailScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   nav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: space[4], paddingBottom: space[3],
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
-  backText: { fontSize: text.sm, color: colors.gray600, fontWeight: weight.medium },
+  backText: { fontSize: text.sm, color: c.textMuted, fontWeight: weight.medium },
   watchBtn: { padding: space[2] },
   publishBtn: { backgroundColor: '#0f1f3d', paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.lg },
   publishBtnText: { color: colors.white, fontSize: text.sm, fontWeight: weight.bold },
 
   scroll: { paddingHorizontal: space[4], paddingBottom: space[16] },
 
-  auctionTitle: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.gray900, letterSpacing: -0.4, marginBottom: 4 },
-  horseName: { fontSize: text.sm, color: colors.gray500 },
-  location: { fontSize: text.xs, color: colors.gray400, marginTop: 4, marginBottom: space[4] },
+  auctionTitle: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.4, marginBottom: 4 },
+  horseName: { fontSize: text.sm, color: c.textMuted },
+  location: { fontSize: text.xs, color: c.textFaint, marginTop: 4, marginBottom: space[4] },
 
   priceCard: {
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[5], marginBottom: space[4], ...shadow.sm,
   },
-  priceLabelSmall: { fontSize: 10, fontWeight: weight.bold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  priceLabelSmall: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   priceMain: { fontSize: 28, fontWeight: weight.extrabold, color: '#0f1f3d', letterSpacing: -0.5 },
-  bidCount: { fontSize: text.xs, color: colors.gray400, marginTop: 4 },
+  bidCount: { fontSize: text.xs, color: c.textFaint, marginTop: 4 },
 
   countBox: { backgroundColor: '#0f1f3d', borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
   countNum: { color: colors.white, fontSize: text.lg, fontWeight: weight.extrabold },
-  countLabel: { fontSize: 10, color: colors.gray400, marginTop: 2, textTransform: 'uppercase' },
+  countLabel: { fontSize: 10, color: c.textFaint, marginTop: 2, textTransform: 'uppercase' },
 
   bidBox: {
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], marginBottom: space[4], ...shadow.sm,
   },
-  bidHint: { fontSize: text.xs, color: colors.gray400, marginBottom: space[2] },
+  bidHint: { fontSize: text.xs, color: c.textFaint, marginBottom: space[2] },
   bidInputRow: { flexDirection: 'row', gap: space[2] },
   bidInput: {
-    flex: 1, borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.lg,
+    flex: 1, borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.lg,
     paddingHorizontal: space[3], paddingVertical: space[2] + 2,
-    fontSize: text.sm, color: colors.gray900,
+    fontSize: text.sm, color: c.text,
   },
   bidBtn: {
     backgroundColor: '#0f1f3d', borderRadius: radius.lg,
@@ -300,9 +306,9 @@ const s = StyleSheet.create({
   bidError: { color: '#ef4444', fontSize: text.xs, marginTop: space[1] },
 
   section: { marginBottom: space[4] },
-  sectionTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray800, marginBottom: space[2] },
-  sectionBody: { fontSize: text.sm, color: colors.gray600, lineHeight: 20 },
-  condLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  sectionTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, marginBottom: space[2] },
+  sectionBody: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
+  condLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
 
   docRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
@@ -313,17 +319,17 @@ const s = StyleSheet.create({
   bidRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     padding: space[3], borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.gray100,
-    backgroundColor: colors.gray50, marginBottom: space[2],
+    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.surfaceAlt, marginBottom: space[2],
   },
   bidRowActive: { backgroundColor: '#ecfdf5', borderColor: '#6ee7b7' },
   bidAvatar: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.gray200, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: c.borderStrong, justifyContent: 'center', alignItems: 'center',
   },
-  bidAvatarText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray600 },
-  bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  bidDate: { fontSize: 10, color: colors.gray400 },
+  bidAvatarText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
+  bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  bidDate: { fontSize: 10, color: c.textFaint },
   bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: '#0f1f3d' },
 
   legalBox: {

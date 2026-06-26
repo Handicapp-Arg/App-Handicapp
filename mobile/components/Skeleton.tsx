@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { radius } from '../styles/tokens';
 
 interface SkeletonProps {
@@ -17,6 +17,8 @@ interface SkeletonProps {
 /** Bloque de carga con shimmer (un brillo que se desliza), estilo apps modernas. */
 export function Skeleton({ width = '100%', height = 16, borderRadius = radius.sm, style }: SkeletonProps) {
   const progress = useSharedValue(0);
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   useEffect(() => {
     progress.value = withRepeat(withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }), -1, false);
@@ -27,7 +29,7 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = radius.sm
   }));
 
   return (
-    <View style={[styles.base, { width: width as any, height, borderRadius }, style]}>
+    <View style={[s.base, { width: width as any, height, borderRadius }, style]}>
       <Animated.View style={[StyleSheet.absoluteFill, shimmer]}>
         <LinearGradient
           colors={['transparent', 'rgba(255,255,255,0.6)', 'transparent']}
@@ -42,8 +44,10 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = radius.sm
 
 /** Skeleton completo para una card de caballo */
 export function HorseCardSkeleton() {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={sk.card}>
+    <View style={s.card}>
       <Skeleton height={120} borderRadius={radius.lg} />
       <View style={{ padding: 10, gap: 6 }}>
         <Skeleton height={14} width="70%" />
@@ -55,8 +59,10 @@ export function HorseCardSkeleton() {
 
 /** Skeleton para una fila de evento */
 export function EventRowSkeleton() {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={sk.eventRow}>
+    <View style={s.eventRow}>
       <Skeleton width={52} height={22} borderRadius={radius.full} />
       <View style={{ flex: 1, gap: 5 }}>
         <Skeleton height={13} width="80%" />
@@ -69,10 +75,12 @@ export function EventRowSkeleton() {
 
 /** Skeleton para el home screen */
 export function HomeSkeleton() {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={sk.homePad}>
+    <View style={s.homePad}>
       <Skeleton height={130} borderRadius={radius.xl} style={{ marginBottom: 20 }} />
-      <View style={sk.statsRow}>
+      <View style={s.statsRow}>
         <Skeleton height={80} style={{ flex: 1 }} borderRadius={radius.lg} />
         <Skeleton height={80} style={{ flex: 1 }} borderRadius={radius.lg} />
       </View>
@@ -84,8 +92,10 @@ export function HomeSkeleton() {
 
 /** Skeleton para una fila de lista genérica (avatar + 2 líneas) */
 export function ListRowSkeleton() {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={sk.listRow}>
+    <View style={s.listRow}>
       <Skeleton width={44} height={44} borderRadius={radius.full} />
       <View style={{ flex: 1, gap: 6 }}>
         <Skeleton height={13} width="60%" />
@@ -97,9 +107,11 @@ export function ListRowSkeleton() {
 
 /** Skeleton para una publicación del muro */
 export function PostSkeleton() {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={sk.post}>
-      <View style={sk.postHead}>
+    <View style={s.post}>
+      <View style={s.postHead}>
         <Skeleton width={40} height={40} borderRadius={radius.full} />
         <View style={{ gap: 6 }}>
           <Skeleton height={13} width={120} />
@@ -112,15 +124,14 @@ export function PostSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
-  base: { backgroundColor: colors.gray200, overflow: 'hidden' },
-});
+type Styles = ReturnType<typeof makeStyles>;
 
-const sk = StyleSheet.create({
-  card: { flex: 1, backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.gray100 },
-  eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: colors.white, marginBottom: 2 },
-  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: colors.white, marginBottom: 8, borderRadius: radius.lg },
-  post: { backgroundColor: colors.white, borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12 },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  base: { backgroundColor: c.borderStrong, overflow: 'hidden' },
+  card: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: c.border },
+  eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: c.surface, marginBottom: 2 },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: c.surface, marginBottom: 8, borderRadius: radius.lg },
+  post: { backgroundColor: c.surface, borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12 },
   postHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsRow: { flexDirection: 'row', gap: 12 },
   homePad: { padding: 16, gap: 0 },

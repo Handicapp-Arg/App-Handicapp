@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, Alert,
@@ -8,6 +8,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 import {
   useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest,
@@ -30,8 +31,8 @@ const STATUS_META: Record<Filter, { bg: string; text: string; label: string }> =
 };
 
 function RequestRow({
-  req, onAccept, onReject, pending,
-}: { req: BoardingRequest; onAccept: () => void; onReject: () => void; pending: boolean }) {
+  req, onAccept, onReject, pending, s, c,
+}: { req: BoardingRequest; onAccept: () => void; onReject: () => void; pending: boolean; s: Styles; c: ThemeColors }) {
   const status = STATUS_META[req.status];
   const isPending = req.status === 'pending';
 
@@ -41,7 +42,7 @@ function RequestRow({
         <Text style={s.horseName} numberOfLines={1}>
           {req.horse?.name ?? 'Caballo'}
         </Text>
-        <View style={[s.statusPill, { backgroundColor: status.bg }]}>
+        <View style={[s.statusPill, { backgroundColor: c.isDark ? status.text + '26' : status.bg }]}>
           <Text style={[s.statusText, { color: status.text }]}>{status.label}</Text>
         </View>
       </View>
@@ -83,6 +84,8 @@ export default function SolicitudesScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useBoardingRequests();
   const accept = useAcceptBoardingRequest();
   const reject = useRejectBoardingRequest();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const filtered = (data ?? []).filter((r) => r.status === filter);
 
@@ -151,7 +154,7 @@ export default function SolicitudesScreen() {
           data={filtered}
           keyExtractor={(r) => r.id}
           contentContainerStyle={s.list}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
               <RequestRow
@@ -159,6 +162,8 @@ export default function SolicitudesScreen() {
                 pending={accept.isPending || reject.isPending}
                 onAccept={() => handleAccept(item.id, item.horse?.name ?? 'el caballo')}
                 onReject={() => handleReject(item.id, item.horse?.name ?? 'el caballo')}
+                s={s}
+                c={c}
               />
             </Animated.View>
           )}
@@ -168,8 +173,10 @@ export default function SolicitudesScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   tabs: {
     flexDirection: 'row',
@@ -180,28 +187,28 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: space[2],
     borderRadius: radius.md,
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.gray100,
+    borderColor: c.border,
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: colors.brand,
-    borderColor: colors.brand,
+    backgroundColor: c.brand,
+    borderColor: c.brand,
   },
   tabText: {
     fontSize: text.sm,
     fontWeight: weight.semibold,
-    color: colors.gray500,
+    color: c.textMuted,
   },
   tabTextActive: { color: colors.white },
   list: { padding: space[3], gap: space[3], paddingBottom: space[8] },
   row: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     padding: space[4],
     borderWidth: 1,
-    borderColor: colors.gray100,
+    borderColor: c.border,
   },
   rowHead: {
     flexDirection: 'row',
@@ -209,13 +216,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginBottom: space[2],
   },
-  horseName: { flex: 1, fontSize: text.md, fontWeight: weight.bold, color: colors.gray900, marginRight: space[2] },
+  horseName: { flex: 1, fontSize: text.md, fontWeight: weight.bold, color: c.text, marginRight: space[2] },
   statusPill: { paddingHorizontal: space[2], paddingVertical: 3, borderRadius: radius.full },
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
-  requester: { fontSize: text.sm, color: colors.gray700, marginBottom: space[2] },
-  muted: { color: colors.gray400 },
-  message: { fontSize: text.sm, color: colors.gray600, fontStyle: 'italic', marginBottom: space[2] },
-  date: { fontSize: text.xs, color: colors.gray400 },
+  requester: { fontSize: text.sm, color: c.text, marginBottom: space[2] },
+  muted: { color: c.textFaint },
+  message: { fontSize: text.sm, color: c.textMuted, fontStyle: 'italic', marginBottom: space[2] },
+  date: { fontSize: text.xs, color: c.textFaint },
   actions: {
     flexDirection: 'row',
     gap: space[2],
@@ -228,8 +235,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   actionDisabled: { opacity: 0.5 },
-  actionReject: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200 },
-  actionRejectText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray700 },
-  actionAccept: { backgroundColor: colors.brand },
+  actionReject: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.borderStrong },
+  actionRejectText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  actionAccept: { backgroundColor: c.brand },
   actionAcceptText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 });

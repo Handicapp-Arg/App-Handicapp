@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
   Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
@@ -13,10 +13,12 @@ import { EmptyState } from '../../components/EmptyState';
 import { Skeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
-import { layout, typography, modal as modalStyle, button } from '../../styles/common';
+import { useCommonStyles } from '../../styles/common';
 
-function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void }) {
+function DisputeModal({ billId, onClose, c, s }: { billId: string; onClose: () => void; c: ThemeColors; s: Styles }) {
+  const { typography, modal: modalStyle, button } = useCommonStyles();
   const dispute = useDisputeBill();
   const [reason, setReason] = useState('');
 
@@ -30,13 +32,13 @@ function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void
         <View style={[modalStyle.body, { gap: space[4] }]}>
           <Text style={typography.body}>Explicá el motivo de la disputa para que el establecimiento pueda revisarlo.</Text>
           <TextInput
-            style={styles.textarea}
+            style={s.textarea}
             value={reason}
             onChangeText={setReason}
             multiline
             numberOfLines={4}
             placeholder="Motivo de la disputa..."
-            placeholderTextColor={colors.gray400}
+            placeholderTextColor={c.textFaint}
           />
         </View>
         <View style={modalStyle.footer}>
@@ -44,7 +46,7 @@ function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void
             <Text style={button.secondaryText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.disputeBtn, (!reason.trim() || dispute.isPending) && { opacity: 0.6 }]}
+            style={[s.disputeBtn, (!reason.trim() || dispute.isPending) && { opacity: 0.6 }]}
             disabled={!reason.trim() || dispute.isPending}
             onPress={async () => {
               await dispute.mutateAsync({ id: billId, reason });
@@ -65,6 +67,9 @@ function DisputeModal({ billId, onClose }: { billId: string; onClose: () => void
 export default function FacturacionScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const { layout } = useCommonStyles();
+  const s = useMemo(() => makeStyles(c), [c]);
   const { data: bills, isLoading, refetch, isRefetching } = useBills();
   const sendBill = useSendBill();
   const approveBill = useApproveBill();
@@ -96,8 +101,8 @@ export default function FacturacionScreen() {
           <ScreenHeader scrollable title="Facturación" />
           <View style={{ padding: space[4], gap: space[3] }}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} style={styles.billCard}>
-                <View style={styles.billHeader}>
+              <View key={i} style={s.billCard}>
+                <View style={s.billHeader}>
                   <View style={{ flex: 1, gap: 6 }}>
                     <Skeleton width={70} height={18} borderRadius={radius.full} />
                     <Skeleton width="55%" height={13} />
@@ -117,7 +122,7 @@ export default function FacturacionScreen() {
             icon="receipt-outline"
             title={isEst ? 'Sin facturas creadas' : 'Sin facturas recibidas'}
             message={isEst ? 'Creá facturas de pensión para enviar a los propietarios.' : 'Las facturas del establecimiento aparecerán aquí para que puedas aprobarlas.'}
-            tint="#9d6c35"
+            tint={c.brand}
           />
         </View>
       ) : (
@@ -129,85 +134,87 @@ export default function FacturacionScreen() {
           renderItem={({ item: bill, index }) => {
             const meta = STATUS_META[bill.status];
             return (
-              <Animated.View style={[styles.billCard, { marginHorizontal: space[4] }]} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+              <Animated.View style={[s.billCard, { marginHorizontal: space[4] }]} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 {/* Header */}
-                <View style={styles.billHeader}>
+                <View style={s.billHeader}>
                   <View style={{ flex: 1, gap: 4 }}>
-                    <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
-                      <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
+                    <View style={[s.statusBadge, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
+                      <Text style={[s.statusText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
-                    {bill.horse && <Text style={styles.horseName}>{bill.horse.name}</Text>}
-                    <Text style={styles.period}>{monthLabel(bill.month, bill.year)}</Text>
+                    {bill.horse && <Text style={s.horseName}>{bill.horse.name}</Text>}
+                    <Text style={s.period}>{monthLabel(bill.month, bill.year)}</Text>
                   </View>
-                  <Text style={styles.total}>{formatCurrency(bill.total, bill.currency)}</Text>
+                  <Text style={s.total}>{formatCurrency(bill.total, bill.currency)}</Text>
                 </View>
 
                 {/* Items */}
-                <View style={styles.itemsBox}>
+                <View style={s.itemsBox}>
                   {bill.items.map((item, i) => (
-                    <View key={i} style={styles.itemRow}>
-                      <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
-                      <Text style={styles.itemTotal}>{formatCurrency(item.total, bill.currency)}</Text>
+                    <View key={i} style={s.itemRow}>
+                      <Text style={s.itemDesc} numberOfLines={1}>{item.description}</Text>
+                      <Text style={s.itemTotal}>{formatCurrency(item.total, bill.currency)}</Text>
                     </View>
                   ))}
                 </View>
 
                 {bill.dispute_reason && (
-                  <Text style={styles.disputeReason}>Disputa: {bill.dispute_reason}</Text>
+                  <Text style={s.disputeReason}>Disputa: {bill.dispute_reason}</Text>
                 )}
-                {bill.notes && <Text style={styles.notes}>{bill.notes}</Text>}
+                {bill.notes && <Text style={s.notes}>{bill.notes}</Text>}
 
                 {/* Acciones */}
                 {isEst && bill.status === 'borrador' && (
-                  <TouchableOpacity style={styles.actionBtnBlue} onPress={() => handleSend(bill.id)}>
-                    <Text style={styles.actionBtnText}>Enviar al propietario</Text>
+                  <TouchableOpacity style={s.actionBtnBlue} onPress={() => handleSend(bill.id)}>
+                    <Text style={s.actionBtnText}>Enviar al propietario</Text>
                   </TouchableOpacity>
                 )}
                 {isProp && bill.status === 'enviada' && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity style={[styles.actionBtnGreen, { flex: 1 }]} onPress={() => handleApprove(bill.id)}>
-                      <Text style={styles.actionBtnText}>Aprobar</Text>
+                  <View style={s.actionRow}>
+                    <TouchableOpacity style={[s.actionBtnGreen, { flex: 1 }]} onPress={() => handleApprove(bill.id)}>
+                      <Text style={s.actionBtnText}>Aprobar</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtnRed, { flex: 1 }]} onPress={() => setDisputingId(bill.id)}>
-                      <Text style={styles.actionBtnText}>Disputar</Text>
+                    <TouchableOpacity style={[s.actionBtnRed, { flex: 1 }]} onPress={() => setDisputingId(bill.id)}>
+                      <Text style={s.actionBtnText}>Disputar</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               </Animated.View>
             );
           }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       <Modal visible={!!disputingId} animationType="fade" transparent statusBarTranslucent>
-        {disputingId && <DisputeModal billId={disputingId} onClose={() => setDisputingId(null)} />}
+        {disputingId && <DisputeModal billId={disputingId} onClose={() => setDisputingId(null)} c={c} s={s} />}
       </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[2] },
-  billCard: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.gray100, padding: space[4], gap: space[3] },
+  billCard: { backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.border, padding: space[4], gap: space[3] },
   billHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   statusBadge: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start' },
   statusText: { fontSize: text.xs, fontWeight: weight.semibold },
-  horseName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
-  period: { fontSize: text.xs, color: colors.gray500 },
-  total: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.gray900 },
-  itemsBox: { backgroundColor: colors.gray50, borderRadius: radius.md, padding: space[3], gap: space[1] + 2 },
+  horseName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  period: { fontSize: text.xs, color: c.textMuted },
+  total: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text },
+  itemsBox: { backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3], gap: space[1] + 2 },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  itemDesc: { fontSize: text.xs, color: colors.gray600, flex: 1, marginRight: space[2] },
-  itemTotal: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray900 },
+  itemDesc: { fontSize: text.xs, color: c.textMuted, flex: 1, marginRight: space[2] },
+  itemTotal: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
   disputeReason: { fontSize: text.xs, color: colors.red700, fontStyle: 'italic' },
-  notes: { fontSize: text.xs, color: colors.gray400 },
+  notes: { fontSize: text.xs, color: c.textFaint },
   actionRow: { flexDirection: 'row', gap: space[2] },
   actionBtnBlue: { backgroundColor: '#eff6ff', borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   actionBtnGreen: { backgroundColor: '#f0fdf4', borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   actionBtnRed: { backgroundColor: '#fef2f2', borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   actionBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray700 },
-  textarea: { borderWidth: 1, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: colors.gray900, backgroundColor: colors.gray50, height: 100, textAlignVertical: 'top' },
+  textarea: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt, height: 100, textAlignVertical: 'top' },
   disputeBtn: { flex: 1, backgroundColor: colors.red700, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
 });

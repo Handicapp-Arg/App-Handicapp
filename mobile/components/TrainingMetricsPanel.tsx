@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ActivityIndicator, ScrollView,
@@ -6,6 +6,7 @@ import {
 import { useTrainingMetrics, useUpsertTrainingMetrics } from '../hooks/use-training-metrics';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
+import { useTheme } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 
 const INTENSITY_LABELS = ['', 'Muy liviano', 'Liviano', 'Moderado', 'Intenso', 'Máximo'];
@@ -16,6 +17,9 @@ interface Props {
 }
 
 export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
+  const { c } = useTheme();
+  const pal = c.isDark ? YELLOW_DARK : YELLOW;
+  const s = useMemo(() => makeStyles(pal), [pal]);
   const { data: metrics } = useTrainingMetrics(eventId);
   const upsert = useUpsertTrainingMetrics(eventId);
   const [editing, setEditing] = useState(false);
@@ -191,48 +195,63 @@ const YELLOW = {
   link: '#d97706',
   btnBg: '#d97706',
   empty: '#d97706',
+  inputBg: '#ffffff',
+  inputBorder: '#fde68a',
 };
 
-const s = StyleSheet.create({
+const YELLOW_DARK: typeof YELLOW = {
+  bg: 'rgba(217,119,6,0.12)',
+  border: 'rgba(217,119,6,0.35)',
+  title: '#fcd34d',
+  label: '#fbbf24',
+  value: '#fde68a',
+  link: '#fbbf24',
+  btnBg: '#b45309',
+  empty: '#fbbf24',
+  inputBg: 'rgba(217,119,6,0.10)',
+  inputBorder: 'rgba(217,119,6,0.40)',
+};
+
+const makeStyles = (p: typeof YELLOW) => StyleSheet.create({
   container: {
-    backgroundColor: YELLOW.bg,
+    backgroundColor: p.bg,
     borderWidth: 1,
-    borderColor: YELLOW.border,
+    borderColor: p.border,
     borderRadius: radius.md,
     padding: space[3],
     marginTop: space[2],
     gap: space[2],
   },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: text.xs, fontWeight: weight.bold, color: YELLOW.title, textTransform: 'uppercase', letterSpacing: 0.5 },
-  editLink: { fontSize: text.xs, fontWeight: weight.semibold, color: YELLOW.link },
+  title: { fontSize: text.xs, fontWeight: weight.bold, color: p.title, textTransform: 'uppercase', letterSpacing: 0.5 },
+  editLink: { fontSize: text.xs, fontWeight: weight.semibold, color: p.link },
   dataRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
   statItem: { gap: 1 },
-  statLabel: { fontSize: 10, fontWeight: weight.semibold, color: YELLOW.label, textTransform: 'uppercase', letterSpacing: 0.4 },
-  statValue: { fontSize: text.sm, fontWeight: weight.bold, color: YELLOW.value },
-  statSub: { fontSize: 10, color: YELLOW.label },
-  empty: { fontSize: text.xs, color: YELLOW.empty },
+  statLabel: { fontSize: 10, fontWeight: weight.semibold, color: p.label, textTransform: 'uppercase', letterSpacing: 0.4 },
+  statValue: { fontSize: text.sm, fontWeight: weight.bold, color: p.value },
+  statSub: { fontSize: 10, color: p.label },
+  empty: { fontSize: text.xs, color: p.empty },
   form: { gap: space[3] },
   formRow: { flexDirection: 'row', gap: space[2] },
   formField: { flex: 1, gap: 4 },
-  fieldLabel: { fontSize: 10, fontWeight: weight.bold, color: YELLOW.label, textTransform: 'uppercase', letterSpacing: 0.4 },
+  fieldLabel: { fontSize: 10, fontWeight: weight.bold, color: p.label, textTransform: 'uppercase', letterSpacing: 0.4 },
   input: {
-    borderWidth: 1, borderColor: '#fde68a', borderRadius: radius.sm,
+    borderWidth: 1, borderColor: p.inputBorder, borderRadius: radius.sm,
     paddingHorizontal: space[3], paddingVertical: space[2],
-    fontSize: text.sm, color: YELLOW.value, backgroundColor: '#ffffff',
+    fontSize: text.sm, color: p.value, backgroundColor: p.inputBg,
   },
   intensityRow: { gap: space[2], paddingVertical: 4 },
   intensityBtn: {
-    borderRadius: radius.sm, borderWidth: 1, borderColor: '#fde68a',
+    borderRadius: radius.sm, borderWidth: 1, borderColor: p.inputBorder,
     paddingHorizontal: space[3], paddingVertical: space[1] + 2,
-    backgroundColor: '#ffffff', alignItems: 'center', minWidth: 52,
+    backgroundColor: p.inputBg, alignItems: 'center', minWidth: 52,
   },
-  intensityBtnActive: { backgroundColor: YELLOW.btnBg, borderColor: YELLOW.btnBg },
-  intensityBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: YELLOW.value },
+  intensityBtnActive: { backgroundColor: p.btnBg, borderColor: p.btnBg },
+  intensityBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: p.value },
   intensityBtnTextActive: { color: colors.white },
-  intensitySubText: { fontSize: 9, color: YELLOW.label, marginTop: 1 },
+  intensitySubText: { fontSize: 9, color: p.label, marginTop: 1 },
   formActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space[4] },
   cancelLink: { fontSize: text.xs, color: colors.gray500 },
-  saveBtn: { borderRadius: radius.sm, backgroundColor: YELLOW.btnBg, paddingHorizontal: space[4], paddingVertical: space[2] },
+  saveBtn: { borderRadius: radius.sm, backgroundColor: p.btnBg, paddingHorizontal: space[4], paddingVertical: space[2] },
   saveBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
 });

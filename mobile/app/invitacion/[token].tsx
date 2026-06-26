@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image as RNImage,
 } from 'react-native';
@@ -8,6 +8,7 @@ import { useAuth } from '../../lib/auth';
 import { useInvitationByToken, useAcceptInvitation, ROLE_LABELS } from '../../hooks/use-organizations';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
 
@@ -18,6 +19,8 @@ export default function InvitationScreen() {
   const { user, loading: authLoading } = useAuth();
   const { data: invitation, isLoading, error } = useInvitationByToken(user ? token : null);
   const accept = useAcceptInvitation();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -28,7 +31,7 @@ export default function InvitationScreen() {
   if (authLoading || !user || isLoading) {
     return (
       <View style={[s.root, s.center]}>
-        <ActivityIndicator color={colors.brand} />
+        <ActivityIndicator color={c.brand} />
       </View>
     );
   }
@@ -115,25 +118,25 @@ export default function InvitationScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f0f3f8' },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   center: { justifyContent: 'center', alignItems: 'center' },
   heroBlock: { backgroundColor: '#0f1f3d', paddingHorizontal: space[5], paddingVertical: space[6], alignItems: 'center', gap: space[2] },
   logo: { width: 140, height: 32, marginBottom: 12 },
   heroLabel: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: weight.medium, textTransform: 'uppercase', letterSpacing: 0.8 },
   heroOrgName: { fontSize: text.xl, fontWeight: weight.bold, color: colors.white, letterSpacing: -0.5 },
   body: { padding: space[5], gap: space[4] },
-  copy: { fontSize: text.sm, color: colors.gray700, lineHeight: 22 },
-  note: { backgroundColor: colors.gray50, borderRadius: radius.lg, padding: space[3] },
-  noteText: { fontSize: text.xs, color: colors.gray500, lineHeight: 18 },
+  copy: { fontSize: text.sm, color: c.text, lineHeight: 22 },
+  note: { backgroundColor: c.surfaceAlt, borderRadius: radius.lg, padding: space[3] },
+  noteText: { fontSize: text.xs, color: c.textMuted, lineHeight: 18 },
 
   errorIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  errorTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  errorMsg: { fontSize: text.sm, color: colors.gray500, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  errorTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  errorMsg: { fontSize: text.sm, color: c.textMuted, textAlign: 'center', marginTop: 6, lineHeight: 20 },
 
   btn: { borderRadius: radius.lg, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.brand },
+  btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray600 },
+  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
 });

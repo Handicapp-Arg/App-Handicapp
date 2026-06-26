@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS,
@@ -33,6 +33,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { Spinner } from '../../../components/Spinner';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
 import { colors } from '../../../lib/colors';
+import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
 
@@ -59,7 +60,7 @@ const EXPENSE_CATEGORY_META: Record<string, { icon: string; color: string }> = {
 };
 
 /* ─── EditHorseModal ─── */
-function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void }) {
+function EditHorseModal({ horse, onClose, c, s }: { horse: Horse; onClose: () => void; c: ThemeColors; s: Styles }) {
   const updateHorse = useUpdateHorse();
   const [name, setName] = useState(horse.name);
   const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
@@ -78,14 +79,14 @@ function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void 
       <View style={s.modalCard}>
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Editar {horse.name}</Text>
-          <TouchableOpacity onPress={onClose}><X size={22} color={colors.gray400} strokeWidth={2} /></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
         </View>
         <View style={s.modalBody}>
           <Text style={s.fieldLabel}>Nombre *</Text>
-          <TextInput style={s.input} value={name} onChangeText={setName} placeholder="Nombre del caballo" placeholderTextColor={colors.gray400} autoCapitalize="words" />
+          <TextInput style={s.input} value={name} onChangeText={setName} placeholder="Nombre del caballo" placeholderTextColor={c.textFaint} autoCapitalize="words" />
           <DatePicker label="Fecha de nacimiento" value={birthDate} onChange={setBirthDate} maxDate={new Date()} />
           <Text style={s.fieldLabel}>Microchip (15 dígitos)</Text>
-          <TextInput style={s.input} value={microchip} onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))} placeholder="123456789012345" placeholderTextColor={colors.gray400} keyboardType="numeric" />
+          <TextInput style={s.input} value={microchip} onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))} placeholder="123456789012345" placeholderTextColor={c.textFaint} keyboardType="numeric" />
           {error ? <Text style={s.fieldError}>{error}</Text> : null}
         </View>
         <View style={s.modalFooter}>
@@ -100,7 +101,7 @@ function EditHorseModal({ horse, onClose }: { horse: Horse; onClose: () => void 
 }
 
 /* ─── InfoItem ─── */
-function InfoItem({ label, value }: { label: string; value: string }) {
+function InfoItem({ label, value, s }: { label: string; value: string; s: Styles }) {
   return (
     <View style={s.infoItem}>
       <Text style={s.infoLabel} numberOfLines={1}>{label}</Text>
@@ -110,7 +111,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 }
 
 /* ─── EventCommentThread ─── */
-function EventCommentThread({ eventId, currentUserId }: { eventId: string; currentUserId?: string }) {
+function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string; currentUserId?: string; c: ThemeColors; s: Styles }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const { data: comments } = useEventComments(eventId, open);
@@ -120,7 +121,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
   return (
     <View style={s.commentRoot}>
       <TouchableOpacity style={s.commentToggle} onPress={() => setOpen((p) => !p)} activeOpacity={0.7}>
-        <MessageCircle size={12} color={colors.gray400} strokeWidth={2} />
+        <MessageCircle size={12} color={c.textFaint} strokeWidth={2} />
         <Text style={s.commentToggleText}>
           {open ? 'Ocultar' : 'Comentarios'}{comments && comments.length > 0 ? ` (${comments.length})` : ''}
         </Text>
@@ -145,7 +146,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
             </View>
           ))}
           <View style={s.commentInputRow}>
-            <TextInput style={s.commentInput} value={text} onChangeText={setText} placeholder="Escribí un comentario..." placeholderTextColor={colors.gray400} multiline />
+            <TextInput style={s.commentInput} value={text} onChangeText={setText} placeholder="Escribí un comentario..." placeholderTextColor={c.textFaint} multiline />
             <TouchableOpacity
               style={[s.commentSend, (!text.trim() || add.isPending) && { opacity: 0.4 }]}
               disabled={!text.trim() || add.isPending}
@@ -162,7 +163,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
 }
 
 /* ─── EventCard ─── */
-function EventCard({ event, currentUserId, canEdit }: { event: Event; currentUserId?: string; canEdit?: boolean }) {
+function EventCard({ event, currentUserId, canEdit, c, s }: { event: Event; currentUserId?: string; canEdit?: boolean; c: ThemeColors; s: Styles }) {
   let _ed = new Date(event.date + 'T12:00:00');
   if (isNaN(_ed.getTime())) _ed = new Date(event.date);
   const date = isNaN(_ed.getTime()) ? '' : _ed.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -179,7 +180,7 @@ function EventCard({ event, currentUserId, canEdit }: { event: Event; currentUse
       {event.type === 'entrenamiento' && (
         <TrainingMetricsPanel eventId={event.id} canEdit={canEdit ?? false} />
       )}
-      <EventCommentThread eventId={event.id} currentUserId={currentUserId} />
+      <EventCommentThread eventId={event.id} currentUserId={currentUserId} c={c} s={s} />
     </View>
   );
 }
@@ -191,6 +192,8 @@ export default function HorseDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { can, user } = useAuth();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
@@ -385,8 +388,8 @@ export default function HorseDetailScreen() {
   if (!horse) {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={{ fontSize: 15, color: colors.gray500 }}>Caballo no encontrado</Text>
-        <TouchableOpacity onPress={() => router.back()}><Text style={{ fontSize: 14, fontWeight: '600', color: colors.brand }}>← Volver</Text></TouchableOpacity>
+        <Text style={{ fontSize: 15, color: c.textMuted }}>Caballo no encontrado</Text>
+        <TouchableOpacity onPress={() => router.back()}><Text style={{ fontSize: 14, fontWeight: '600', color: c.brand }}>← Volver</Text></TouchableOpacity>
       </View>
     );
   }
@@ -409,7 +412,7 @@ export default function HorseDetailScreen() {
       style={s.root}
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
     >
       {/* ─── Hero: aspect ratio, Dynamic Island safe ─── */}
       <View style={s.heroWrap}>
@@ -480,7 +483,7 @@ export default function HorseDetailScreen() {
       >
         {TABS.map(({ key, label, icon }) => {
           const TabIconCmp = icon;
-          const tabColor = activeTab === key ? colors.gray900 : colors.gray400;
+          const tabColor = activeTab === key ? c.text : c.textFaint;
           return (
             <TouchableOpacity
               key={key}
@@ -511,13 +514,13 @@ export default function HorseDetailScreen() {
                 activeOpacity={0.85}
               >
                 <View style={s.sellHorseBtnIcon}>
-                  <Megaphone size={22} color={colors.brand} strokeWidth={2} />
+                  <Megaphone size={22} color={c.brand} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.sellHorseBtnTitle}>Publicar en venta</Text>
                   <Text style={s.sellHorseBtnSub}>Vendé {horse.name} en Remates</Text>
                 </View>
-                <ChevronRight size={16} color={colors.brand} strokeWidth={2} />
+                <ChevronRight size={16} color={c.brand} strokeWidth={2} />
               </TouchableOpacity>
             </View>
           )}
@@ -526,7 +529,7 @@ export default function HorseDetailScreen() {
           {infoItems.length > 0 && (
             <View style={s.section}>
               <View style={s.infoGrid}>
-                {infoItems.map((item) => <InfoItem key={item.label} label={item.label} value={item.value} />)}
+                {infoItems.map((item) => <InfoItem key={item.label} label={item.label} value={item.value} s={s} />)}
               </View>
             </View>
           )}
@@ -537,18 +540,18 @@ export default function HorseDetailScreen() {
               <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
                 <Text style={s.sectionTitle}>Finanzas</Text>
                 <TouchableOpacity onPress={() => setActiveTab('finanzas')}>
-                  <Text style={{ fontSize: 12, color: colors.brand, fontWeight: '600' }}>Ver detalle →</Text>
+                  <Text style={{ fontSize: 12, color: c.brand, fontWeight: '600' }}>Ver detalle →</Text>
                 </TouchableOpacity>
               </View>
               <View style={s.financialCard}>
                 <View style={s.financialGrid}>
-                  <View style={[s.financialStat, { backgroundColor: '#faf3e9' }]}>
-                    <Text style={[s.financialStatValue, { color: colors.brand }]} numberOfLines={1} adjustsFontSizeToFit>
+                  <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
+                    <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
                       ${financial.total.toLocaleString('es-AR')}
                     </Text>
-                    <Text style={[s.financialStatLabel, { color: colors.brand }]}>Total gastos</Text>
+                    <Text style={[s.financialStatLabel, { color: c.brand }]}>Total gastos</Text>
                   </View>
-                  <View style={[s.financialStat, { backgroundColor: colors.gray50 }]}>
+                  <View style={[s.financialStat, { backgroundColor: c.surfaceAlt }]}>
                     <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
                       ${financial.average_monthly.toLocaleString('es-AR')}
                     </Text>
@@ -590,16 +593,16 @@ export default function HorseDetailScreen() {
                     <View key={v.id}>
                       {i > 0 && <View style={s.docDivider} />}
                       <View style={s.docRow}>
-                        <View style={[s.docIcon, { backgroundColor: '#faf3e9' }]}>
-                          <User size={16} color="#9d6c35" strokeWidth={2} />
+                        <View style={[s.docIcon, { backgroundColor: c.brandSoft }]}>
+                          <User size={16} color={c.brand} strokeWidth={2} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={s.docName}>{v.user.name}</Text>
-                          <Text style={{ fontSize: 11, color: colors.gray400 }}>{v.user.email}</Text>
+                          <Text style={{ fontSize: 11, color: c.textFaint }}>{v.user.email}</Text>
                         </View>
                         {can('horses', 'update') && (
                           <TouchableOpacity onPress={() => handleRemoveVet(v.user_id, v.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                            <XCircle size={20} color={colors.gray300} strokeWidth={2} />
+                            <XCircle size={20} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -626,10 +629,10 @@ export default function HorseDetailScreen() {
                   <Text style={s.emptyText}>Historial de movimientos:</Text>
                   {movements.slice(0, 5).map((m) => (
                     <View key={m.id} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
-                      <Text style={{ fontSize: 11, color: colors.gray400 }}>
+                      <Text style={{ fontSize: 11, color: c.textFaint }}>
                         {new Date(m.created_at).toLocaleDateString('es-AR')}
                       </Text>
-                      <Text style={{ fontSize: 11, color: colors.gray600, flex: 1 }}>{m.description}</Text>
+                      <Text style={{ fontSize: 11, color: c.textMuted, flex: 1 }}>{m.description}</Text>
                     </View>
                   ))}
                 </View>
@@ -661,7 +664,7 @@ export default function HorseDetailScreen() {
                       </TouchableOpacity>
                       {can('horses', 'update') && (
                         <TouchableOpacity onPress={() => handleDeleteDoc(doc.id, doc.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Trash2 size={16} color={colors.gray300} strokeWidth={2} />
+                          <Trash2 size={16} color={c.textFaint} strokeWidth={2} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -715,7 +718,7 @@ export default function HorseDetailScreen() {
                     <Text style={{ fontSize: text.xs, color: pct >= 70 ? '#16a34a' : pct >= 40 ? colors.amber600 : colors.red500, fontWeight: weight.bold }}>
                       {pct}%
                     </Text>
-                    <Text style={{ fontSize: 10, color: colors.gray400 }}>últimos {routines.length}d</Text>
+                    <Text style={{ fontSize: 10, color: c.textFaint }}>últimos {routines.length}d</Text>
                   </View>
                 );
               })()}
@@ -753,9 +756,9 @@ export default function HorseDetailScreen() {
                       <View key={r.date} style={s.routineTrendDay}>
                         <View style={[s.routineTrendBar, {
                           height: Math.max(4, pct * 36),
-                          backgroundColor: pct >= 0.7 ? '#16a34a' : pct >= 0.4 ? colors.amber600 : pct > 0 ? colors.red500 : colors.gray200,
+                          backgroundColor: pct >= 0.7 ? '#16a34a' : pct >= 0.4 ? colors.amber600 : pct > 0 ? colors.red500 : c.borderStrong,
                         }]} />
-                        <Text style={[s.routineTrendLabel, isToday && { color: colors.brand, fontWeight: weight.bold }]}>{dayLabel}</Text>
+                        <Text style={[s.routineTrendLabel, isToday && { color: c.brand, fontWeight: weight.bold }]}>{dayLabel}</Text>
                       </View>
                     );
                   })}
@@ -786,7 +789,7 @@ export default function HorseDetailScreen() {
             <View style={s.empty}><Text style={s.emptyText}>Sin eventos registrados</Text></View>
           ) : (
             <View style={s.eventsList}>
-              {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} />)}
+              {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} c={c} s={s} />)}
             </View>
           )}
         </View>
@@ -811,8 +814,8 @@ export default function HorseDetailScreen() {
                   activeOpacity={0.75}
                 >
                   {pdfLoading
-                    ? <ActivityIndicator size="small" color={colors.brand} />
-                    : <><FileText size={13} color={colors.brand} strokeWidth={2} /><Text style={s.pdfBtnText}>PDF</Text></>
+                    ? <ActivityIndicator size="small" color={c.brand} />
+                    : <><FileText size={13} color={c.brand} strokeWidth={2} /><Text style={s.pdfBtnText}>PDF</Text></>
                   }
                 </TouchableOpacity>
               )}
@@ -886,7 +889,7 @@ export default function HorseDetailScreen() {
           </View>
           <View style={s.activityTypeRow}>
             {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
-              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: m.bg, borderColor: m.color }]} onPress={() => setActivityType(v)}>
+              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg, borderColor: m.color }]} onPress={() => setActivityType(v)}>
                 <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
               </TouchableOpacity>
             ))}
@@ -900,7 +903,7 @@ export default function HorseDetailScreen() {
                 return (
                   <TouchableOpacity key={p.id} style={s.photoWrap} onPress={() => Linking.openURL(p.url)} activeOpacity={0.85}>
                     <Image source={{ uri: p.url }} style={s.photoThumb} />
-                    <View style={[s.photoBadge, { backgroundColor: meta.bg }]}>
+                    <View style={[s.photoBadge, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
                       <Text style={[s.photoBadgeText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
                   </TouchableOpacity>
@@ -919,13 +922,13 @@ export default function HorseDetailScreen() {
           <View style={[s.menuSheet, { paddingBottom: insets.bottom + 16 }]}>
             {can('horses', 'update') && (
               <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); handlePickImage(); }} activeOpacity={0.7}>
-                <Camera size={20} color={colors.gray700} strokeWidth={2} />
+                <Camera size={20} color={c.text} strokeWidth={2} />
                 <Text style={s.menuItemText}>Cambiar foto</Text>
               </TouchableOpacity>
             )}
             {can('horses', 'update') && (
               <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); setShowEdit(true); }} activeOpacity={0.7}>
-                <Pencil size={20} color={colors.gray700} strokeWidth={2} />
+                <Pencil size={20} color={c.text} strokeWidth={2} />
                 <Text style={s.menuItemText}>Editar caballo</Text>
               </TouchableOpacity>
             )}
@@ -969,11 +972,11 @@ export default function HorseDetailScreen() {
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Registrar peso</Text>
-              <TouchableOpacity onPress={() => setShowAddWeight(false)}><X size={22} color={colors.gray400} strokeWidth={2} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowAddWeight(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={s.fieldLabel}>Peso (kg) *</Text>
-              <TextInput style={s.input} value={newWeight} onChangeText={setNewWeight} placeholder="450.0" placeholderTextColor={colors.gray400} keyboardType="decimal-pad" />
+              <TextInput style={s.input} value={newWeight} onChangeText={setNewWeight} placeholder="450.0" placeholderTextColor={c.textFaint} keyboardType="decimal-pad" />
               <DatePicker label="Fecha" value={newWeightDate} onChange={setNewWeightDate} maxDate={new Date()} />
             </View>
             <View style={s.modalFooter}>
@@ -997,7 +1000,7 @@ export default function HorseDetailScreen() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Nuevo registro médico</Text>
               <TouchableOpacity onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}>
-                <X size={22} color={colors.gray400} strokeWidth={2} />
+                <X size={22} color={c.textFaint} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.modalBody, { paddingBottom: 8 }]}>
@@ -1014,13 +1017,13 @@ export default function HorseDetailScreen() {
                 })}
               </View>
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Nombre / producto *</Text>
-              <TextInput style={s.input} value={medicalForm.name} onChangeText={(v) => setMedicalForm((p) => ({ ...p, name: v }))} placeholder="Ej: Triple viral, Ivermectina..." placeholderTextColor={colors.gray400} />
+              <TextInput style={s.input} value={medicalForm.name} onChangeText={(v) => setMedicalForm((p) => ({ ...p, name: v }))} placeholder="Ej: Triple viral, Ivermectina..." placeholderTextColor={c.textFaint} />
               <DatePicker label="Fecha *" value={medicalForm.date} onChange={(v) => setMedicalForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
               <DatePicker label="Próxima dosis" value={medicalForm.next_due ?? ''} onChange={(v) => setMedicalForm((p) => ({ ...p, next_due: v || undefined }))} />
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Marca / laboratorio</Text>
-              <TextInput style={s.input} value={medicalForm.brand ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))} placeholder="Opcional" placeholderTextColor={colors.gray400} />
+              <TextInput style={s.input} value={medicalForm.brand ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))} placeholder="Opcional" placeholderTextColor={c.textFaint} />
               <Text style={[s.fieldLabel, { marginTop: 10 }]}>Notas</Text>
-              <TextInput style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]} value={medicalForm.notes ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))} placeholder="Observaciones adicionales" placeholderTextColor={colors.gray400} multiline />
+              <TextInput style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]} value={medicalForm.notes ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))} placeholder="Observaciones adicionales" placeholderTextColor={c.textFaint} multiline />
             </ScrollView>
             <View style={s.modalFooter}>
               <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}><Text style={s.btnSecondaryText}>Cancelar</Text></TouchableOpacity>
@@ -1040,7 +1043,7 @@ export default function HorseDetailScreen() {
       {/* ─── Modal editar ─── */}
       <Modal visible={showEdit} animationType="slide" transparent>
         <View style={s.modalOverlay}>
-          <EditHorseModal horse={horse} onClose={() => setShowEdit(false)} />
+          <EditHorseModal horse={horse} onClose={() => setShowEdit(false)} c={c} s={s} />
         </View>
       </Modal>
 
@@ -1067,7 +1070,7 @@ export default function HorseDetailScreen() {
                         onPress={() => setSelectedVetId(v.id)}
                         activeOpacity={0.75}
                       >
-                        <User size={16} color={selectedVetId === v.id ? colors.white : colors.brand} strokeWidth={2} />
+                        <User size={16} color={selectedVetId === v.id ? colors.white : c.brand} strokeWidth={2} />
                         <Text style={[s.smallBtnText, selectedVetId === v.id && { color: colors.white }]}>{v.name}</Text>
                       </TouchableOpacity>
                     ))}
@@ -1106,7 +1109,7 @@ export default function HorseDetailScreen() {
             </View>
             <View style={s.modalBody}>
               <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Nuevo propietario</Text>
-              <Text style={{ fontSize: 12, color: colors.gray500, marginBottom: 12 }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
+              <Text style={{ fontSize: 12, color: c.textMuted, marginBottom: 12 }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
               {!propietarios?.length ? (
                 <Text style={s.emptyText}>No hay otros propietarios en el sistema.</Text>
               ) : (
@@ -1158,10 +1161,10 @@ export default function HorseDetailScreen() {
                 value={docName}
                 onChangeText={setDocName}
                 placeholder="Ej: Pedigree, Certificado..."
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 autoCapitalize="sentences"
               />
-              <Text style={{ fontSize: 11, color: colors.gray400, marginTop: 8 }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
+              <Text style={{ fontSize: 11, color: c.textFaint, marginTop: 8 }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
             </View>
             <View style={s.modalFooter}>
               <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowUploadDoc(false)}>
@@ -1187,7 +1190,7 @@ export default function HorseDetailScreen() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Registrar evento</Text>
               <TouchableOpacity onPress={() => setShowAddEvent(false)}>
-                <X size={22} color={colors.gray400} strokeWidth={2} />
+                <X size={22} color={c.textFaint} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={s.modalBody}>
@@ -1229,7 +1232,7 @@ export default function HorseDetailScreen() {
                   newEventType === 'salud' ? 'Ej: Vacunación influenza equina Dr. García' :
                   'Ej: Gran Premio Palermo 1200m - 3° puesto'
                 }
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 multiline
                 autoCapitalize="sentences"
               />
@@ -1275,17 +1278,17 @@ export default function HorseDetailScreen() {
             <>
               {/* KPIs */}
               <View style={s.financialGrid}>
-                <View style={[s.financialStat, { backgroundColor: '#faf3e9' }]}>
-                  <Text style={[s.financialStatValue, { color: colors.brand }]} numberOfLines={1} adjustsFontSizeToFit>
+                <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
+                  <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
                     ${financial.total.toLocaleString('es-AR')}
                   </Text>
-                  <Text style={[s.financialStatLabel, { color: colors.brand }]}>Total acumulado</Text>
+                  <Text style={[s.financialStatLabel, { color: c.brand }]}>Total acumulado</Text>
                 </View>
-                <View style={[s.financialStat, { backgroundColor: '#faf3e9' }]}>
-                  <Text style={[s.financialStatValue, { color: '#9d6c35' }]} numberOfLines={1} adjustsFontSizeToFit>
+                <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
+                  <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
                     ${financial.average_monthly.toLocaleString('es-AR')}
                   </Text>
-                  <Text style={[s.financialStatLabel, { color: '#9d6c35' }]}>Promedio/mes</Text>
+                  <Text style={[s.financialStatLabel, { color: c.brand }]}>Promedio/mes</Text>
                 </View>
               </View>
 
@@ -1343,15 +1346,15 @@ export default function HorseDetailScreen() {
                   {financial.recent_expenses.map((exp) => {
                     const meta = EXPENSE_CATEGORY_META[exp.expense_category ?? ''] ?? { icon: '📦', color: '#6b7280' };
                     return (
-                      <View key={exp.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                      <View key={exp.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.border }}>
                         <Text style={{ fontSize: 20 }}>{meta.icon}</Text>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: '#1f2937' }} numberOfLines={1}>{exp.description}</Text>
-                          <Text style={{ fontSize: 11, color: '#9ca3af' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: c.text }} numberOfLines={1}>{exp.description}</Text>
+                          <Text style={{ fontSize: 11, color: c.textFaint }}>
                             {(() => { let d = new Date(exp.date + 'T12:00:00'); if (isNaN(d.getTime())) d = new Date(exp.date); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>${exp.amount.toLocaleString('es-AR')}</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: c.text }}>${exp.amount.toLocaleString('es-AR')}</Text>
                       </View>
                     );
                   })}
@@ -1365,8 +1368,10 @@ export default function HorseDetailScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f0f2f5' },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
 
   /* Hero */
@@ -1381,10 +1386,10 @@ const s = StyleSheet.create({
   heroPillDanger: { backgroundColor: 'rgba(220,38,38,0.55)' },
   heroPillStatic: { position: 'relative', top: undefined, left: undefined },
   heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
-  menuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  menuSheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 8 },
+  menuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  menuSheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 8 },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 22, paddingVertical: 15 },
-  menuItemText: { fontSize: 15, fontWeight: '600', color: colors.gray800 },
+  menuItemText: { fontSize: 15, fontWeight: '600', color: c.text },
   heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 20 },
   heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   horseName: { fontSize: 24, fontWeight: '800', color: colors.white, lineHeight: 30, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
@@ -1399,130 +1404,130 @@ const s = StyleSheet.create({
     marginTop: -12,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: c.bg,
     overflow: 'hidden',
   },
   tabBar: {
-    backgroundColor: colors.white,
-    borderBottomWidth: 1, borderBottomColor: colors.gray100,
+    backgroundColor: c.surface,
+    borderBottomWidth: 1, borderBottomColor: c.border,
     flexGrow: 0,
   },
   tabBarContent: { paddingHorizontal: 8 },
   tabItem: { alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 16, gap: 5, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabItemActive: { borderBottomColor: colors.gray900 },
-  tabLabel: { fontSize: 12, fontWeight: '600', color: colors.gray400 },
-  tabLabelActive: { color: colors.gray900 },
+  tabItemActive: { borderBottomColor: c.text },
+  tabLabel: { fontSize: 12, fontWeight: '600', color: c.textFaint },
+  tabLabelActive: { color: c.text },
 
   /* Sections */
   section: { margin: 16, gap: 10 },
   sellHorseBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#faf3e9', borderRadius: 16,
+    backgroundColor: c.brandSoft, borderRadius: 16,
     borderWidth: 1.5, borderColor: '#f3e3cc',
     padding: 16,
   },
   sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f3e3cc', justifyContent: 'center', alignItems: 'center' },
   sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: '#5f3f18' },
-  sellHorseBtnSub: { fontSize: 12, color: colors.brand, marginTop: 2 },
+  sellHorseBtnSub: { fontSize: 12, color: c.brand, marginTop: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.gray900 },
-  countBadge: { backgroundColor: colors.gray200, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  countText: { fontSize: 11, fontWeight: '700', color: colors.gray600 },
-  emptyText: { fontSize: 13, color: colors.gray400 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: c.text },
+  countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  countText: { fontSize: 11, fontWeight: '700', color: c.textMuted },
+  emptyText: { fontSize: 13, color: c.textFaint },
   empty: { alignItems: 'center', paddingVertical: 24 },
   emptyBox: { alignItems: 'center', paddingVertical: 32, gap: 8 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.gray700 },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: c.text },
 
   /* Info */
-  infoGrid: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, padding: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  infoItem: { width: '47%', backgroundColor: colors.gray50, borderRadius: 10, padding: 10 },
-  infoLabel: { fontSize: 10, fontWeight: '600', color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5 },
-  infoValue: { fontSize: 13, fontWeight: '600', color: colors.gray900, marginTop: 2 },
+  infoGrid: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  infoItem: { width: '47%', backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 10 },
+  infoLabel: { fontSize: 10, fontWeight: '600', color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  infoValue: { fontSize: 13, fontWeight: '600', color: c.text, marginTop: 2 },
 
   /* Financial */
-  financialCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, padding: 14, gap: 10 },
+  financialCard: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 14, gap: 10 },
   financialGrid: { flexDirection: 'row', gap: 10 },
   financialStat: { flex: 1, borderRadius: 12, padding: 12 },
-  financialStatValue: { fontSize: 18, fontWeight: '800', color: colors.gray900 },
-  financialStatLabel: { fontSize: 10, fontWeight: '600', color: colors.gray500, marginTop: 2, textTransform: 'uppercase' },
+  financialStatValue: { fontSize: 18, fontWeight: '800', color: c.text },
+  financialStatLabel: { fontSize: 10, fontWeight: '600', color: c.textMuted, marginTop: 2, textTransform: 'uppercase' },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  barLabel: { width: 36, fontSize: 10, color: colors.gray400, textAlign: 'right' },
-  barTrack: { flex: 1, height: 6, backgroundColor: colors.gray100, borderRadius: 999, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: colors.brand, borderRadius: 999 },
-  barValue: { width: 64, fontSize: 10, fontWeight: '600', color: colors.gray700, textAlign: 'right' },
+  barLabel: { width: 36, fontSize: 10, color: c.textFaint, textAlign: 'right' },
+  barTrack: { flex: 1, height: 6, backgroundColor: c.border, borderRadius: 999, overflow: 'hidden' },
+  barFill: { height: '100%', backgroundColor: c.brand, borderRadius: 999 },
+  barValue: { width: 64, fontSize: 10, fontWeight: '600', color: c.textMuted, textAlign: 'right' },
 
   /* Docs */
-  docsCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
+  docsCard: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
   docRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
   docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center' },
-  docName: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.gray700 },
-  docDivider: { height: 1, backgroundColor: colors.gray50, marginHorizontal: 12 },
+  docName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.text },
+  docDivider: { height: 1, backgroundColor: c.border, marginHorizontal: 12 },
 
   /* Peso */
-  weightCard: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.gray100, padding: 12 },
+  weightCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
   weightLatest: { backgroundColor: '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
   weightValue: { fontSize: 28, fontWeight: '800', color: '#c2410c' },
   weightCC: { fontSize: 12, color: '#ea580c', marginTop: 2 },
   weightDate: { fontSize: 11, color: '#9a3412', marginTop: 2 },
-  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: colors.gray50 },
-  weightRowValue: { fontSize: 14, fontWeight: '600', color: colors.gray700 },
-  weightRowDate: { fontSize: 12, color: colors.gray400 },
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: c.border },
+  weightRowValue: { fontSize: 14, fontWeight: '600', color: c.text },
+  weightRowDate: { fontSize: 12, color: c.textFaint },
 
   /* Rutina */
   routineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
+  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
   routineItemChecked: { borderColor: '#86efac', backgroundColor: '#f0fdf4' },
   routineEmoji: { fontSize: 16 },
-  routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: colors.gray600 },
+  routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: c.textMuted },
   routineLabelChecked: { color: '#15803d' },
-  routineTrend: { marginTop: 12, backgroundColor: colors.gray50, borderRadius: radius.md, padding: space[3] },
-  routineTrendTitle: { fontSize: 10, fontWeight: weight.semibold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  routineTrend: { marginTop: 12, backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
+  routineTrendTitle: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   routineTrendDays: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 52 },
   routineTrendDay: { alignItems: 'center', gap: 4, flex: 1 },
   routineTrendBar: { width: 14, borderRadius: 4, minHeight: 4 },
-  routineTrendLabel: { fontSize: 9, color: colors.gray400, fontWeight: weight.medium },
+  routineTrendLabel: { fontSize: 9, color: c.textFaint, fontWeight: weight.medium },
 
   /* Eventos */
   eventsList: { gap: 8 },
-  eventCard: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.gray100, padding: 14, gap: 6 },
+  eventCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 14, gap: 6 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  eventDate: { fontSize: 11, color: colors.gray400 },
-  eventDesc: { fontSize: 14, color: colors.gray700, lineHeight: 20 },
-  eventAmount: { fontSize: 14, fontWeight: '700', color: colors.brand },
+  eventDate: { fontSize: 11, color: c.textFaint },
+  eventDesc: { fontSize: 14, color: c.text, lineHeight: 20 },
+  eventAmount: { fontSize: 14, fontWeight: '700', color: c.brand },
 
   /* Comentarios */
-  commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.gray100, paddingTop: 8 },
+  commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 8 },
   commentToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  commentToggleText: { fontSize: 11, color: colors.gray400, fontWeight: '600' },
+  commentToggleText: { fontSize: 11, color: c.textFaint, fontWeight: '600' },
   commentBody: { marginTop: 8, gap: 8 },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  commentAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.gray200, justifyContent: 'center', alignItems: 'center' },
-  commentAvatarText: { fontSize: 10, fontWeight: '700', color: colors.gray600 },
-  commentAuthor: { fontSize: 11, fontWeight: '700', color: colors.gray700 },
-  commentDate: { fontSize: 10, color: colors.gray400 },
-  commentText: { fontSize: 12, color: colors.gray700, marginTop: 2 },
+  commentAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  commentAvatarText: { fontSize: 10, fontWeight: '700', color: c.textMuted },
+  commentAuthor: { fontSize: 11, fontWeight: '700', color: c.text },
+  commentDate: { fontSize: 10, color: c.textFaint },
+  commentText: { fontSize: 12, color: c.text, marginTop: 2 },
   commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },
-  commentInput: { flex: 1, borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: colors.gray900, backgroundColor: colors.gray50, minHeight: 36, maxHeight: 80 },
-  commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
+  commentInput: { flex: 1, borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: c.text, backgroundColor: c.surfaceAlt, minHeight: 36, maxHeight: 80 },
+  commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
   /* Médico */
-  medCard: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.gray100, padding: 12 },
+  medCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   medTypeText: { fontSize: 10, fontWeight: '700' },
-  medName: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.gray900 },
-  medDate: { fontSize: 10, color: colors.gray400 },
+  medName: { flex: 1, fontSize: 13, fontWeight: '600', color: c.text },
+  medDate: { fontSize: 10, color: c.textFaint },
   medNextDue: { fontSize: 11, color: '#d97706', fontWeight: '500' },
-  medBrand: { fontSize: 11, color: colors.gray400 },
-  medNotes: { fontSize: 11, color: colors.gray500, fontStyle: 'italic' },
+  medBrand: { fontSize: 11, color: c.textFaint },
+  medNotes: { fontSize: 11, color: c.textMuted, fontStyle: 'italic' },
   medTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  medTypeOption: { borderRadius: 10, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.white },
-  medTypeOptionText: { fontSize: 12, color: colors.gray600 },
+  medTypeOption: { borderRadius: 10, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: c.surface },
+  medTypeOptionText: { fontSize: 12, color: c.textMuted },
 
   /* Fotos */
   activityTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  activityChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: colors.gray100, borderWidth: 1, borderColor: colors.gray200 },
-  activityChipText: { fontSize: 11, fontWeight: '600', color: colors.gray600 },
+  activityChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  activityChipText: { fontSize: 11, fontWeight: '600', color: c.textMuted },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   photoWrap: { width: '31%', aspectRatio: 1, position: 'relative' },
   photoThumb: { width: '100%', height: '100%', borderRadius: 10 },
@@ -1530,40 +1535,40 @@ const s = StyleSheet.create({
   photoBadgeText: { fontSize: 8, fontWeight: '700' },
 
   /* Botones pequeños */
-  smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: colors.brand },
-  typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: colors.gray50 },
-  typeChipText: { fontSize: 13, fontWeight: '600', color: colors.gray600 },
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.brand, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.white, minWidth: 44, justifyContent: 'center' },
-  pdfBtnText: { fontSize: 11, fontWeight: '700', color: colors.brand },
+  smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: c.surface },
+  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.brand },
+  typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.surfaceAlt },
+  typeChipText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: c.brand, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: c.surface, minWidth: 44, justifyContent: 'center' },
+  pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.brand },
 
   /* QR Modal */
   qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  qrCard: { backgroundColor: colors.white, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden' },
-  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 16, backgroundColor: colors.brand },
+  qrCard: { backgroundColor: c.surface, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden' },
+  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 16, backgroundColor: c.brand },
   qrSub: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8 },
   qrTitle: { fontSize: 20, fontWeight: '800', color: colors.white, marginTop: 2 },
   qrWrap: { alignItems: 'center', paddingVertical: 28, backgroundColor: '#f8fafc' },
-  qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '600', color: colors.gray700, paddingHorizontal: 20, marginTop: 4 },
-  qrBtn: { margin: 16, marginTop: 12, borderRadius: 14, backgroundColor: colors.brand, paddingVertical: 14, alignItems: 'center' },
+  qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '600', color: c.text, paddingHorizontal: 20, marginTop: 4 },
+  qrBtn: { margin: 16, marginTop: 12, borderRadius: 14, backgroundColor: c.brand, paddingVertical: 14, alignItems: 'center' },
   qrBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 
   /* Modales generales */
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' },
-  modalCloseText: { fontSize: 18, color: colors.gray400 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.gray900 },
+  modalCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' },
+  modalCloseText: { fontSize: 18, color: c.textFaint },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: c.border },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: c.text },
   modalBody: { padding: 20, gap: 10 },
-  modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: colors.gray100 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.gray700 },
+  modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: c.border },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: c.text },
   fieldError: { fontSize: 13, color: colors.red500 },
-  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: colors.gray900, backgroundColor: colors.gray50 },
+  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.brand },
+  btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: colors.gray200 },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: colors.gray600 },
+  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong },
+  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
 });

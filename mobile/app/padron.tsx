@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity,
   StyleSheet, ActivityIndicator, ScrollView, Modal,
@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { X, CheckCircle2, Info, ChevronLeft, Search } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { haptic } from '../lib/haptics';
 import { useHorseRecordTree, type HorseRecord, type HorseRecordNode } from '../hooks/use-horse-records';
@@ -77,25 +78,25 @@ const STATUS_LABEL: Record<string, string> = {
 
 // ─── Search result card ───────────────────────────────────────────────────────
 
-function RecordCard({ record, onPress }: { record: HorseRecord; onPress: () => void }) {
+function RecordCard({ record, onPress, cs }: { record: HorseRecord; onPress: () => void; cs: CardStyles }) {
   const st = record.ownership_status ?? 'unverified';
   return (
-    <TouchableOpacity style={c.card} onPress={onPress} activeOpacity={0.8}>
-      <View style={c.cardHeader}>
-        <Text style={c.cardName} numberOfLines={1}>{record.name}</Text>
-        <View style={[c.badge, { backgroundColor: STATUS_BG[st] }]}>
-          <View style={[c.badgeDot, { backgroundColor: STATUS_COLOR[st] }]} />
-          <Text style={[c.badgeText, { color: STATUS_COLOR[st] }]}>{STATUS_LABEL[st]}</Text>
+    <TouchableOpacity style={cs.card} onPress={onPress} activeOpacity={0.8}>
+      <View style={cs.cardHeader}>
+        <Text style={cs.cardName} numberOfLines={1}>{record.name}</Text>
+        <View style={[cs.badge, { backgroundColor: STATUS_BG[st] }]}>
+          <View style={[cs.badgeDot, { backgroundColor: STATUS_COLOR[st] }]} />
+          <Text style={[cs.badgeText, { color: STATUS_COLOR[st] }]}>{STATUS_LABEL[st]}</Text>
         </View>
       </View>
-      <View style={c.cardMeta}>
-        {record.birth_year != null && <Text style={c.metaItem}>{record.birth_year}</Text>}
-        {record.sex && <Text style={c.metaItem}>{SEX_LABEL[record.sex]}</Text>}
-        {record.country_code && <Text style={c.metaItem}>{record.country_code}</Text>}
-        {record.color && <Text style={c.metaItem} numberOfLines={1}>{record.color}</Text>}
+      <View style={cs.cardMeta}>
+        {record.birth_year != null && <Text style={cs.metaItem}>{record.birth_year}</Text>}
+        {record.sex && <Text style={cs.metaItem}>{SEX_LABEL[record.sex]}</Text>}
+        {record.country_code && <Text style={cs.metaItem}>{record.country_code}</Text>}
+        {record.color && <Text style={cs.metaItem} numberOfLines={1}>{record.color}</Text>}
       </View>
       {(record.sire_name || record.dam_name) && (
-        <Text style={c.cardPedigree} numberOfLines={1}>
+        <Text style={cs.cardPedigree} numberOfLines={1}>
           {record.sire_name ? `♂ ${record.sire_name}` : ''}
           {record.sire_name && record.dam_name ? '   ' : ''}
           {record.dam_name ? `♀ ${record.dam_name}` : ''}
@@ -107,7 +108,7 @@ function RecordCard({ record, onPress }: { record: HorseRecord; onPress: () => v
 
 // ─── Pedigree tree ────────────────────────────────────────────────────────────
 
-function TreeNode({ node, level = 0 }: { node: HorseRecordNode | null; level?: number }) {
+function TreeNode({ node, level = 0, tr }: { node: HorseRecordNode | null; level?: number; tr: TreeStyles }) {
   if (!node) {
     return (
       <View style={[tr.node, tr.nodeEmpty, { marginLeft: level * 16 }]}>
@@ -126,13 +127,13 @@ function TreeNode({ node, level = 0 }: { node: HorseRecordNode | null; level?: n
           {node.sire && (
             <View>
               <Text style={tr.parentLabel}>Padre</Text>
-              <TreeNode node={node.sire} level={level + 1} />
+              <TreeNode node={node.sire} level={level + 1} tr={tr} />
             </View>
           )}
           {node.dam && (
             <View>
               <Text style={tr.parentLabel}>Madre</Text>
-              <TreeNode node={node.dam} level={level + 1} />
+              <TreeNode node={node.dam} level={level + 1} tr={tr} />
             </View>
           )}
         </View>
@@ -145,7 +146,7 @@ function TreeNode({ node, level = 0 }: { node: HorseRecordNode | null; level?: n
 
 type DetailTab = 'info' | 'pedigree' | 'progeny';
 
-function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
+function DetailModal({ id, onClose, c, d, tr }: { id: string; onClose: () => void; c: ThemeColors; d: DetailStyles; tr: TreeStyles }) {
   const [tab, setTab] = useState<DetailTab>('info');
   const { data: detail, isLoading } = useHorseDetail(id);
   const { data: tree, isLoading: treeLoading } = useHorseRecordTree(tab === 'pedigree' ? id : null, 3);
@@ -163,7 +164,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
         <View style={d.header}>
           <View style={{ flex: 1 }}>
             {isLoading
-              ? <ActivityIndicator color={colors.brand} />
+              ? <ActivityIndicator color={c.brand} />
               : <Text style={d.name} numberOfLines={2}>{detail?.name ?? '...'}</Text>
             }
             {detail && (
@@ -175,7 +176,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             )}
           </View>
           <TouchableOpacity onPress={onClose} style={d.closeBtn} hitSlop={8}>
-            <X size={22} color={colors.gray500} strokeWidth={2} />
+            <X size={22} color={c.textMuted} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -195,7 +196,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           {tab === 'info' && (
             isLoading
-              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.brand} />
+              ? <ActivityIndicator style={{ marginTop: space[8] }} color={c.brand} />
               : detail ? (
                 <View style={{ gap: 0 }}>
                   {([
@@ -233,12 +234,12 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           {tab === 'pedigree' && (
             treeLoading
-              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.brand} />
+              ? <ActivityIndicator style={{ marginTop: space[8] }} color={c.brand} />
               : tree
                 ? (
                   <View>
                     <Text style={d.sectionTitle}>Árbol genealógico</Text>
-                    <TreeNode node={tree} level={0} />
+                    <TreeNode node={tree} level={0} tr={tr} />
                   </View>
                 )
                 : <Text style={d.empty}>Sin datos de pedigree</Text>
@@ -246,7 +247,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           {tab === 'progeny' && (
             progenyLoading
-              ? <ActivityIndicator style={{ marginTop: space[8] }} color={colors.brand} />
+              ? <ActivityIndicator style={{ marginTop: space[8] }} color={c.brand} />
               : progeny && progeny.length > 0
                 ? (
                   <View>
@@ -277,6 +278,11 @@ export default function PadronScreen() {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const cardS = useMemo(() => makeCardStyles(c), [c]);
+  const treeS = useMemo(() => makeTreeStyles(c), [c]);
+  const detailS = useMemo(() => makeDetailStyles(c), [c]);
 
   const { data, isLoading, isFetching } = useSearch(query);
 
@@ -292,22 +298,22 @@ export default function PadronScreen() {
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={8}>
-          <ChevronLeft size={24} color={colors.gray700} strokeWidth={2} />
+          <ChevronLeft size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.title}>Padrón</Text>
           <Text style={s.subtitle}>Registro oficial de caballos</Text>
         </View>
-        {isFetching && <ActivityIndicator size="small" color={colors.brand} />}
+        {isFetching && <ActivityIndicator size="small" color={c.brand} />}
       </View>
 
       <View style={s.searchWrap}>
         <View style={s.searchBox}>
-          <Search size={18} color={colors.gray400} strokeWidth={2} style={{ marginRight: space[2] }} />
+          <Search size={18} color={c.textFaint} strokeWidth={2} style={{ marginRight: space[2] }} />
           <TextInput
             style={s.searchInput}
             placeholder="Buscar por nombre..."
-            placeholderTextColor={colors.gray400}
+            placeholderTextColor={c.textFaint}
             value={query}
             onChangeText={setQuery}
             autoCapitalize="characters"
@@ -332,14 +338,14 @@ export default function PadronScreen() {
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-              <RecordCard record={item} onPress={() => handleSelect(item.id)} />
+              <RecordCard record={item} onPress={() => handleSelect(item.id)} cs={cardS} />
             </Animated.View>
           )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.center}>
-              <Search size={40} color={colors.gray300} strokeWidth={2} />
+              <Search size={40} color={c.textFaint} strokeWidth={2} />
               <Text style={s.emptyTitle}>Sin resultados</Text>
               {query ? <Text style={s.emptySubtitle}>No encontramos "{query}"</Text> : null}
             </View>
@@ -348,7 +354,7 @@ export default function PadronScreen() {
       )}
 
       {selectedId && (
-        <DetailModal id={selectedId} onClose={() => setSelectedId(null)} />
+        <DetailModal id={selectedId} onClose={() => setSelectedId(null)} c={c} d={detailS} tr={treeS} />
       )}
     </View>
   );
@@ -356,57 +362,59 @@ export default function PadronScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space[4],
     paddingVertical: space[3],
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
   backBtn: { padding: space[1], marginRight: space[2] },
-  title: { fontSize: text.xl, fontWeight: weight.bold, color: colors.gray900 },
-  subtitle: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  title: { fontSize: text.xl, fontWeight: weight.bold, color: c.text },
+  subtitle: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
   searchWrap: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     paddingHorizontal: space[4],
     paddingBottom: space[3],
     paddingTop: space[2],
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.gray100,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
     paddingHorizontal: space[3],
     height: 44,
   },
-  searchInput: { flex: 1, fontSize: text.sm, color: colors.gray900 },
-  totalText: { fontSize: text.xs, color: colors.gray400, marginTop: space[2], paddingLeft: space[1] },
+  searchInput: { flex: 1, fontSize: text.sm, color: c.text },
+  totalText: { fontSize: text.xs, color: c.textFaint, marginTop: space[2], paddingLeft: space[1] },
   list: { padding: space[4], paddingBottom: 80 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[8], marginTop: space[10] },
-  loadingText: { fontSize: text.sm, color: colors.gray400, marginTop: space[3] },
-  emptyTitle: { fontSize: text.base, fontWeight: weight.semibold, color: colors.gray500, marginTop: space[3] },
-  emptySubtitle: { fontSize: text.sm, color: colors.gray400, marginTop: space[1] },
+  loadingText: { fontSize: text.sm, color: c.textFaint, marginTop: space[3] },
+  emptyTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted, marginTop: space[3] },
+  emptySubtitle: { fontSize: text.sm, color: c.textFaint, marginTop: space[1] },
 });
 
-const c = StyleSheet.create({
+type CardStyles = ReturnType<typeof makeCardStyles>;
+
+const makeCardStyles = (c: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     padding: space[4],
     marginBottom: space[3],
     ...shadow.sm,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: space[2] },
-  cardName: { flex: 1, fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
+  cardName: { flex: 1, fontSize: text.base, fontWeight: weight.bold, color: c.text },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -420,44 +428,46 @@ const c = StyleSheet.create({
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: space[1] },
   metaItem: {
     fontSize: text.xs,
-    color: colors.gray500,
-    backgroundColor: colors.gray100,
+    color: c.textMuted,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginRight: space[1],
     marginBottom: space[1],
   },
-  cardPedigree: { fontSize: text.xs, color: colors.gray400, fontStyle: 'italic' },
+  cardPedigree: { fontSize: text.xs, color: c.textFaint, fontStyle: 'italic' },
 });
 
-const tr = StyleSheet.create({
+type TreeStyles = ReturnType<typeof makeTreeStyles>;
+
+const makeTreeStyles = (c: ThemeColors) => StyleSheet.create({
   node: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     paddingHorizontal: space[3],
     paddingVertical: space[2],
     marginBottom: space[1],
   },
-  nodeRoot: { borderColor: colors.brand + '60', backgroundColor: '#f0f7ff' },
-  nodeEmpty: { borderStyle: 'dashed', borderColor: colors.gray200 },
-  nodeName: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray900 },
-  nodeNameRoot: { fontSize: text.base, fontWeight: weight.bold, color: colors.brand },
-  nodeMeta: { fontSize: text.xs, color: colors.gray400 },
-  emptyText: { fontSize: text.sm, color: colors.gray300, textAlign: 'center' },
+  nodeRoot: { borderColor: c.brand + '60', backgroundColor: c.brandSoft },
+  nodeEmpty: { borderStyle: 'dashed', borderColor: c.borderStrong },
+  nodeName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  nodeNameRoot: { fontSize: text.base, fontWeight: weight.bold, color: c.brand },
+  nodeMeta: { fontSize: text.xs, color: c.textFaint },
+  emptyText: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },
   children: {
     marginLeft: space[3],
     borderLeftWidth: 2,
-    borderLeftColor: colors.gray200,
+    borderLeftColor: c.borderStrong,
     paddingLeft: space[3],
     marginBottom: space[2],
   },
   parentLabel: {
     fontSize: text.xs,
     fontWeight: weight.semibold,
-    color: colors.gray400,
+    color: c.textFaint,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -465,8 +475,10 @@ const tr = StyleSheet.create({
   },
 });
 
-const d = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.white },
+type DetailStyles = ReturnType<typeof makeDetailStyles>;
+
+const makeDetailStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.surface },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -474,14 +486,14 @@ const d = StyleSheet.create({
     padding: space[5],
     paddingBottom: space[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
-  name: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.gray900 },
+  name: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space[1] },
   meta: {
     fontSize: text.xs,
-    color: colors.gray500,
-    backgroundColor: colors.gray100,
+    color: c.textMuted,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -492,19 +504,19 @@ const d = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
+    borderBottomColor: c.borderStrong,
     paddingHorizontal: space[4],
   },
   tab: { paddingVertical: space[3], paddingHorizontal: space[4], marginBottom: -1 },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: colors.brand },
-  tabText: { fontSize: text.sm, fontWeight: weight.medium, color: colors.gray500 },
-  tabTextActive: { color: colors.brand, fontWeight: weight.semibold },
+  tabActive: { borderBottomWidth: 2, borderBottomColor: c.brand },
+  tabText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
+  tabTextActive: { color: c.brand, fontWeight: weight.semibold },
   scroll: { flex: 1 },
   scrollContent: { padding: space[4] },
   sectionTitle: {
     fontSize: text.xs,
     fontWeight: weight.bold,
-    color: colors.gray400,
+    color: c.textFaint,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: space[3],
@@ -515,16 +527,16 @@ const d = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: space[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
-  infoLabel: { fontSize: text.sm, color: colors.gray500, fontWeight: weight.medium, flex: 1 },
-  infoValue: { fontSize: text.sm, color: colors.gray900, fontWeight: weight.semibold, flex: 2, textAlign: 'right' },
+  infoLabel: { fontSize: text.sm, color: c.textMuted, fontWeight: weight.medium, flex: 1 },
+  infoValue: { fontSize: text.sm, color: c.text, fontWeight: weight.semibold, flex: 2, textAlign: 'right' },
   ownerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: space[3],
     borderTopWidth: 1,
-    borderTopColor: colors.gray100,
+    borderTopColor: c.border,
     marginTop: space[2],
   },
   ownerText: { fontSize: text.sm, color: '#15803d', fontWeight: weight.medium, marginLeft: space[2] },
@@ -545,9 +557,9 @@ const d = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
-  progenyName: { fontSize: text.sm, color: colors.gray900, fontWeight: weight.medium },
-  progenyYear: { fontSize: text.xs, color: colors.gray400 },
-  empty: { textAlign: 'center', color: colors.gray400, fontSize: text.sm, marginTop: space[8] },
+  progenyName: { fontSize: text.sm, color: c.text, fontWeight: weight.medium },
+  progenyYear: { fontSize: text.xs, color: c.textFaint },
+  empty: { textAlign: 'center', color: c.textFaint, fontSize: text.sm, marginTop: space[8] },
 });

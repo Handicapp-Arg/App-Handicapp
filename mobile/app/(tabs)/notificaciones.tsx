@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, Modal,
 } from 'react-native';
@@ -15,6 +15,7 @@ import { useNotifications, type NotificationItem } from '../../lib/notifications
 import { clearBadge } from '../../lib/push-notifications';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
 
@@ -58,12 +59,17 @@ function formatTime(iso: string): string {
 function NotifRow({
   item,
   onPress,
+  c,
+  s,
 }: {
   item: NotificationItem;
   onPress: (n: NotificationItem) => void;
+  c: ThemeColors;
+  s: Styles;
 }) {
   const meta = TYPE_META[item.type] ?? TYPE_META.default;
   const MetaIcon = meta.icon;
+  const iconBg = c.isDark ? meta.color + '26' : meta.bg;
 
   return (
     <TouchableOpacity
@@ -72,7 +78,7 @@ function NotifRow({
       activeOpacity={0.75}
     >
       {/* Ícono */}
-      <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
+      <View style={[s.iconWrap, { backgroundColor: iconBg }]}>
         <MetaIcon size={20} color={meta.color} strokeWidth={2} />
       </View>
 
@@ -91,7 +97,7 @@ function NotifRow({
 }
 
 /* ─── Section label ─── */
-function SectionLabel({ label }: { label: string }) {
+function SectionLabel({ label, s }: { label: string; s: Styles }) {
   return <Text style={s.sectionLabel}>{label}</Text>;
 }
 
@@ -101,6 +107,8 @@ export default function NotificacionesScreen() {
   const insets = useSafeAreaInsets();
   const { notifications, loading, unread, refresh, markAllRead, markOneRead } = useNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   // Limpiar badge al abrir la pantalla
   useEffect(() => {
@@ -145,7 +153,7 @@ export default function NotificacionesScreen() {
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <ChevronLeft size={22} color={colors.gray900} strokeWidth={2} />
+          <ChevronLeft size={22} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
 
         <View style={s.headerCenter}>
@@ -163,7 +171,7 @@ export default function NotificacionesScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <MoreVertical size={22} color={colors.gray700} strokeWidth={2} />
+          <MoreVertical size={22} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -175,7 +183,7 @@ export default function NotificacionesScreen() {
       ) : notifications.length === 0 ? (
         <View style={s.centered}>
           <View style={s.emptyIcon}>
-            <BellOff size={32} color={colors.gray300} strokeWidth={2} />
+            <BellOff size={32} color={c.textFaint} strokeWidth={2} />
           </View>
           <Text style={s.emptyTitle}>Sin notificaciones</Text>
           <Text style={s.emptyMsg}>Cuando haya actividad en tus caballos, aparecerá aquí.</Text>
@@ -189,12 +197,14 @@ export default function NotificacionesScreen() {
           onRefresh={refresh}
           refreshing={loading}
           renderItem={({ item: row, index }) => {
-            if (row.kind === 'section') return <SectionLabel label={row.label} />;
+            if (row.kind === 'section') return <SectionLabel label={row.label} s={s} />;
             return (
               <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 <NotifRow
                   item={row.item}
                   onPress={handlePress}
+                  c={c}
+                  s={s}
                 />
               </Animated.View>
             );
@@ -211,7 +221,7 @@ export default function NotificacionesScreen() {
               activeOpacity={0.7}
               onPress={() => { setMenuOpen(false); haptic.medium(); void markAllRead(); }}
             >
-              <CheckCheck size={18} color={colors.gray700} strokeWidth={2} />
+              <CheckCheck size={18} color={c.text} strokeWidth={2} />
               <Text style={s.menuItemText}>Marcar todas como leídas</Text>
             </TouchableOpacity>
           </View>
@@ -221,10 +231,12 @@ export default function NotificacionesScreen() {
   );
 }
 
-const s = StyleSheet.create({
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.gray50,
+    backgroundColor: c.bg,
   },
 
   /* Header */
@@ -233,7 +245,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: space[4],
     paddingVertical: space[3],
-    backgroundColor: colors.gray50,
+    backgroundColor: c.bg,
   },
   backBtn: {
     width: 32,
@@ -254,7 +266,7 @@ const s = StyleSheet.create({
     fontSize: text.lg,
     fontWeight: weight.extrabold,
     fontFamily: fontFamily.extrabold,
-    color: colors.gray900,
+    color: c.text,
     letterSpacing: -0.3,
   },
   badge: {
@@ -286,12 +298,12 @@ const s = StyleSheet.create({
   menu: {
     position: 'absolute',
     right: space[4],
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     paddingVertical: space[1],
     minWidth: 230,
     borderWidth: 1,
-    borderColor: colors.gray100,
+    borderColor: c.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -309,7 +321,7 @@ const s = StyleSheet.create({
     fontSize: text.sm,
     fontWeight: weight.semibold,
     fontFamily: fontFamily.semibold,
-    color: colors.gray800,
+    color: c.text,
   },
 
   /* Lista */
@@ -321,7 +333,7 @@ const s = StyleSheet.create({
     fontSize: text.xs,
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
-    color: colors.gray400,
+    color: c.textFaint,
     letterSpacing: 1,
     textTransform: 'uppercase',
     paddingHorizontal: space[4],
@@ -333,15 +345,15 @@ const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     paddingVertical: space[3] + 1,
     paddingHorizontal: space[4],
     gap: space[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
+    borderBottomColor: c.border,
   },
   rowUnread: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: c.isDark ? 'rgba(59,130,246,0.14)' : '#eff6ff',
   },
   iconWrap: {
     width: 40,
@@ -365,22 +377,22 @@ const s = StyleSheet.create({
     fontSize: text.sm,
     fontWeight: weight.semibold,
     fontFamily: fontFamily.semibold,
-    color: colors.gray500,
+    color: c.textMuted,
     letterSpacing: -0.1,
   },
   rowTitleUnread: {
-    color: colors.gray900,
+    color: c.text,
   },
   rowMsg: {
     fontSize: text.sm,
     fontFamily: fontFamily.regular,
-    color: colors.gray500,
+    color: c.textMuted,
     lineHeight: 18,
   },
   rowTime: {
     fontSize: text.xs,
     fontFamily: fontFamily.regular,
-    color: colors.gray300,
+    color: c.textFaint,
     marginTop: 2,
   },
   /* Empty / Loading */
@@ -395,7 +407,7 @@ const s = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: radius.full,
-    backgroundColor: colors.gray100,
+    backgroundColor: c.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -403,13 +415,13 @@ const s = StyleSheet.create({
     fontSize: text.md,
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
-    color: colors.gray700,
+    color: c.text,
     textAlign: 'center',
   },
   emptyMsg: {
     fontSize: text.sm,
     fontFamily: fontFamily.regular,
-    color: colors.gray400,
+    color: c.textFaint,
     textAlign: 'center',
     lineHeight: 20,
   },

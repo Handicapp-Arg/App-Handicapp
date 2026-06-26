@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Modal, ScrollView,
@@ -19,6 +19,7 @@ import {
 import { useHorses } from '../../hooks/use-horses';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
 import {
@@ -31,7 +32,7 @@ import { PostSkeleton } from '../../components/Skeleton';
 import { InlineSearch } from '../../components/InlineSearch';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
 
-function Avatar({ name, size = 38 }: { name: string; size?: number }) {
+function Avatar({ name, size = 38, s }: { name: string; size?: number; s: Styles }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
@@ -49,11 +50,13 @@ function timeAgo(date: string) {
 }
 
 // ─── Comments Sheet ──────────────────────────────────────────────────────────
-function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
+function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
   post: FeedPost;
   onClose: () => void;
   currentUserId: string;
   isAdmin: boolean;
+  c: ThemeColors;
+  s: Styles;
 }) {
   const { data: comments = [], isLoading } = useFeedComments(post.id);
   const addComment = useAddComment(post.id);
@@ -72,31 +75,31 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
       <View style={s.sheetHeader}>
         <Text style={s.sheetTitle}>Comentarios</Text>
         <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-          <X size={22} color={colors.gray500} strokeWidth={2} />
+          <X size={22} color={c.textMuted} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.brand} style={{ margin: space[6] }} />
+        <ActivityIndicator color={c.brand} style={{ margin: space[6] }} />
       ) : (
         <ScrollView contentContainerStyle={s.commentsList} showsVerticalScrollIndicator={false}>
           {comments.length === 0 && (
             <Text style={s.emptyComments}>Sin comentarios aún. ¡Sé el primero!</Text>
           )}
-          {(comments as FeedComment[]).map((c) => (
-            <View key={c.id} style={s.commentRow}>
-              <Avatar name={c.user?.name ?? 'U'} size={30} />
+          {(comments as FeedComment[]).map((cm) => (
+            <View key={cm.id} style={s.commentRow}>
+              <Avatar name={cm.user?.name ?? 'U'} size={30} s={s} />
               <View style={s.commentBubble}>
-                <Text style={s.commentAuthor}>{c.user?.name}</Text>
-                <Text style={s.commentText}>{c.content}</Text>
+                <Text style={s.commentAuthor}>{cm.user?.name}</Text>
+                <Text style={s.commentText}>{cm.content}</Text>
               </View>
-              {(c.user_id === currentUserId || isAdmin) && (
+              {(cm.user_id === currentUserId || isAdmin) && (
                 <TouchableOpacity
-                  onPress={() => { haptic.light(); deleteComment.mutate(c.id); }}
+                  onPress={() => { haptic.light(); deleteComment.mutate(cm.id); }}
                   activeOpacity={0.7}
                   style={s.commentDelete}
                 >
-                  <Trash2 size={14} color={colors.gray300} strokeWidth={2} />
+                  <Trash2 size={14} color={c.textFaint} strokeWidth={2} />
                 </TouchableOpacity>
               )}
             </View>
@@ -108,7 +111,7 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
         <TextInput
           style={s.commentInputField}
           placeholder="Escribí un comentario…"
-          placeholderTextColor={colors.gray400}
+          placeholderTextColor={c.textFaint}
           value={text}
           onChangeText={setText}
           multiline
@@ -127,11 +130,13 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin }: {
 }
 
 // ─── Post Card ───────────────────────────────────────────────────────────────
-function PostItem({ post, currentUserId, isAdmin, onComment }: {
+function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
   post: FeedPost;
   currentUserId: string;
   isAdmin: boolean;
   onComment: (post: FeedPost) => void;
+  c: ThemeColors;
+  s: Styles;
 }) {
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
@@ -162,7 +167,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
     ]}>
       {/* Header */}
       <View style={s.cardHeader}>
-        <Avatar name={post.author?.name ?? 'U'} />
+        <Avatar name={post.author?.name ?? 'U'} s={s} />
         <View style={s.authorInfo}>
           <View style={s.authorRow}>
             <Text style={s.authorName}>{post.author?.name ?? 'Usuario'}</Text>
@@ -180,7 +185,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
 
         {(isOwner || isAdmin) && (
           <TouchableOpacity onPress={() => setMenuOpen(true)} activeOpacity={0.7} style={s.menuBtn}>
-            <MoreHorizontal size={18} color={colors.gray400} strokeWidth={2} />
+            <MoreHorizontal size={18} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
@@ -229,7 +234,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
         <TouchableOpacity onPress={handleLike} activeOpacity={0.7} style={s.actionBtn}>
           <Heart
             size={20}
-            color={post.liked_by_me ? '#ef4444' : colors.gray400}
+            color={post.liked_by_me ? '#ef4444' : c.textFaint}
             fill={post.liked_by_me ? '#ef4444' : 'none'}
             strokeWidth={2}
           />
@@ -245,7 +250,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
           activeOpacity={0.7}
           style={s.actionBtn}
         >
-          <MessageCircle size={19} color={colors.gray400} strokeWidth={2} />
+          <MessageCircle size={19} color={c.textFaint} strokeWidth={2} />
           {post.comments_count > 0 && (
             <Text style={s.actionCount}>{post.comments_count}</Text>
           )}
@@ -263,7 +268,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
                   onPress={() => { haptic.light(); togglePin.mutate(post.id); setMenuOpen(false); }}
                   activeOpacity={0.75}
                 >
-                  <Pin size={18} color={colors.gray700} strokeWidth={2} />
+                  <Pin size={18} color={c.text} strokeWidth={2} />
                   <Text style={s.menuItemText}>{post.is_pinned ? 'Desfijar' : 'Fijar post'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -272,8 +277,8 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
                   activeOpacity={0.75}
                 >
                   {post.is_hidden
-                    ? <Eye size={18} color={colors.gray700} strokeWidth={2} />
-                    : <EyeOff size={18} color={colors.gray700} strokeWidth={2} />}
+                    ? <Eye size={18} color={c.text} strokeWidth={2} />
+                    : <EyeOff size={18} color={c.text} strokeWidth={2} />}
                   <Text style={s.menuItemText}>{post.is_hidden ? 'Mostrar' : 'Ocultar'}</Text>
                 </TouchableOpacity>
                 <View style={s.menuDivider} />
@@ -293,7 +298,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment }: {
 }
 
 // ─── Composer ────────────────────────────────────────────────────────────────
-function Composer({ user }: { user: { name: string; role: string } }) {
+function Composer({ user, c, s }: { user: { name: string; role: string }; c: ThemeColors; s: Styles }) {
   const createPost = useCreatePost();
   const { data: myHorses } = useHorses();
   const insets = useSafeAreaInsets();
@@ -365,9 +370,9 @@ function Composer({ user }: { user: { name: string; role: string } }) {
   if (!open) {
     return (
       <TouchableOpacity style={s.composerClosed} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Avatar name={user.name} size={34} />
+        <Avatar name={user.name} size={34} s={s} />
         <Text style={s.composerPlaceholder}>¿Qué querés compartir?</Text>
-        <Images size={20} color={colors.gray300} strokeWidth={2} />
+        <Images size={20} color={c.textFaint} strokeWidth={2} />
       </TouchableOpacity>
     );
   }
@@ -411,11 +416,11 @@ function Composer({ user }: { user: { name: string; role: string } }) {
             )}
 
             <View style={s.composerRow}>
-              <Avatar name={user.name} />
+              <Avatar name={user.name} s={s} />
               <TextInput
                 style={s.composerInput}
                 placeholder="¿Qué querés compartir?"
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 value={text}
                 onChangeText={setText}
                 multiline
@@ -460,18 +465,18 @@ function Composer({ user }: { user: { name: string; role: string } }) {
           <View style={s.composerFooter}>
             <View style={s.footerLeft}>
               <TouchableOpacity onPress={pickFromLibrary} disabled={media.length >= 4} activeOpacity={0.7} style={s.photoBtn}>
-                <Images size={20} strokeWidth={2} color={media.length >= 4 ? colors.gray300 : colors.gray600} />
-                <Text style={[s.photoBtnText, media.length >= 4 && { color: colors.gray300 }]}>Galería</Text>
+                <Images size={20} strokeWidth={2} color={media.length >= 4 ? c.textFaint : c.textMuted} />
+                <Text style={[s.photoBtnText, media.length >= 4 && { color: c.textFaint }]}>Galería</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={openCamera} disabled={media.length >= 4} activeOpacity={0.7} style={[s.photoBtn, { marginLeft: space[5] }]}>
-                <Camera size={20} strokeWidth={2} color={media.length >= 4 ? colors.gray300 : colors.gray600} />
-                <Text style={[s.photoBtnText, media.length >= 4 && { color: colors.gray300 }]}>Cámara</Text>
+                <Camera size={20} strokeWidth={2} color={media.length >= 4 ? c.textFaint : c.textMuted} />
+                <Text style={[s.photoBtnText, media.length >= 4 && { color: c.textFaint }]}>Cámara</Text>
               </TouchableOpacity>
             </View>
             {(myHorses?.length ?? 0) > 0 && (
               <TouchableOpacity onPress={() => setShowHorseSelect(true)} activeOpacity={0.7} style={s.tagBtn}>
-                <HorseIcon size={16} color={colors.gray600} />
-                <Text style={[s.tagBtnText, selectedHorse && { color: colors.gray800 }]} numberOfLines={1}>
+                <HorseIcon size={16} color={c.textMuted} />
+                <Text style={[s.tagBtnText, selectedHorse && { color: c.text }]} numberOfLines={1}>
                   {selectedHorse ? selectedHorse.name : 'Etiquetar caballo'}
                 </Text>
               </TouchableOpacity>
@@ -489,10 +494,10 @@ function Composer({ user }: { user: { name: string; role: string } }) {
           <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
             <TouchableOpacity style={s.selectRow} activeOpacity={0.7} onPress={() => { setSelectedHorseId(undefined); setShowHorseSelect(false); }}>
               <View style={[s.selectThumb, s.selectThumbNone]}>
-                <X size={18} color={colors.gray400} strokeWidth={2} />
+                <X size={18} color={c.textFaint} strokeWidth={2} />
               </View>
               <Text style={[s.selectRowText, !selectedHorseId && s.selectRowTextActive]}>Ninguno</Text>
-              {!selectedHorseId && <Check size={20} color={colors.brand} strokeWidth={2} />}
+              {!selectedHorseId && <Check size={20} color={c.brand} strokeWidth={2} />}
             </TouchableOpacity>
             {(myHorses ?? []).map((h) => (
               <TouchableOpacity key={h.id} style={s.selectRow} activeOpacity={0.7} onPress={() => { setSelectedHorseId(h.id); setShowHorseSelect(false); }}>
@@ -502,7 +507,7 @@ function Composer({ user }: { user: { name: string; role: string } }) {
                     : <Text style={s.selectThumbInitial}>{h.name[0]?.toUpperCase()}</Text>}
                 </View>
                 <Text style={[s.selectRowText, selectedHorseId === h.id && s.selectRowTextActive]} numberOfLines={1}>{h.name}</Text>
-                {selectedHorseId === h.id && <Check size={20} color={colors.brand} strokeWidth={2} />}
+                {selectedHorseId === h.id && <Check size={20} color={c.brand} strokeWidth={2} />}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -518,6 +523,8 @@ export default function MuroTab() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const isAdmin = user?.role === 'admin';
   const { posts, isLoading, isFetchingMore, isRefreshing, loadMore, refresh } = useFeedPosts(
     isAdmin ? { include_hidden: true } : undefined,
@@ -532,19 +539,21 @@ export default function MuroTab() {
         currentUserId={user?.id ?? ''}
         isAdmin={isAdmin}
         onComment={setCommentPost}
+        c={c}
+        s={s}
       />
     </Animated.View>
-  ), [user?.id, isAdmin]);
+  ), [user?.id, isAdmin, c, s]);
 
   const Navbar = (
     <View style={s.navbar}>
       <Text style={s.navTitle}>Muro</Text>
       <View style={s.navActions}>
         <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={8} activeOpacity={0.7}>
-          <Search size={24} color={colors.gray700} strokeWidth={2} />
+          <Search size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/notificaciones')} hitSlop={8} activeOpacity={0.7}>
-          <Bell size={24} color={colors.gray700} strokeWidth={2} />
+          <Bell size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
       </View>
     </View>
@@ -554,7 +563,7 @@ export default function MuroTab() {
     <View>
       {Navbar}
       <View style={{ paddingHorizontal: space[4], paddingBottom: space[3], paddingTop: space[2] }}>
-        {user && <Composer user={user} />}
+        {user && <Composer user={user} c={c} s={s} />}
       </View>
     </View>
   );
@@ -584,12 +593,12 @@ export default function MuroTab() {
           refreshing={isRefreshing}
           ListFooterComponent={
             isFetchingMore
-              ? <ActivityIndicator color={colors.gray300} style={{ marginVertical: space[4] }} />
+              ? <ActivityIndicator color={c.textFaint} style={{ marginVertical: space[4] }} />
               : null
           }
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <Newspaper size={52} color={colors.gray300} strokeWidth={2} />
+              <Newspaper size={52} color={c.textFaint} strokeWidth={2} />
               <Text style={s.emptyTitle}>Todavía no hay publicaciones</Text>
               <Text style={s.emptySub}>¡Sé el primero en compartir algo!</Text>
             </View>
@@ -610,6 +619,8 @@ export default function MuroTab() {
             onClose={() => setCommentPost(null)}
             currentUserId={user?.id ?? ''}
             isAdmin={isAdmin}
+            c={c}
+            s={s}
           />
         )}
       </Modal>
@@ -621,41 +632,43 @@ export default function MuroTab() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingBottom: space[10] },
 
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[3] },
-  navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: colors.gray900, letterSpacing: -0.3 },
+  navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: c.text, letterSpacing: -0.3 },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: space[5] },
 
   screenHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] },
-  screenTitle: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.gray900, letterSpacing: -0.5 },
+  screenTitle: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
   adminBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#faf5ff', paddingHorizontal: space[2] + 2, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: '#e9d5ff' },
   adminBadgeText: { fontSize: 11, fontWeight: weight.semibold, color: '#7e22ce' },
 
   // Avatar
-  avatar: { backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatar: { backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   avatarText: { color: colors.white, fontWeight: weight.bold },
 
   // Card
-  card: { backgroundColor: colors.white, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, borderWidth: 1, borderColor: colors.gray200, overflow: 'hidden', ...shadow.sm },
+  card: { backgroundColor: c.surface, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, borderWidth: 1, borderColor: c.borderStrong, overflow: 'hidden', ...shadow.sm },
   cardPinned: { borderColor: '#fcd34d', backgroundColor: '#fffbeb' },
   cardHidden: { opacity: 0.55, borderColor: '#fca5a5' },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], paddingBottom: 0, gap: space[3] },
   authorInfo: { flex: 1 },
   authorRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  authorName: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900 },
+  authorName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   roleBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.full },
   roleBadgeText: { fontSize: 10, fontWeight: weight.semibold },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
   pinnedText: { fontSize: 10, color: '#b45309', fontWeight: weight.semibold },
-  timeAgo: { fontSize: text.xs, color: colors.gray400, marginTop: 2 },
+  timeAgo: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   menuBtn: { padding: 4, marginTop: -2 },
 
-  content: { fontSize: text.sm, color: colors.gray800, lineHeight: 20, paddingHorizontal: space[4], paddingVertical: space[3] },
+  content: { fontSize: text.sm, color: c.text, lineHeight: 20, paddingHorizontal: space[4], paddingVertical: space[3] },
 
   imageGrid: { overflow: 'hidden', marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.lg, gap: 2 },
   imageGrid1: {},
@@ -664,77 +677,77 @@ const s = StyleSheet.create({
   imageItem1: { width: '100%', height: 200, borderRadius: radius.lg },
   imageItem2: { width: '49%', height: 120, borderRadius: radius.md },
 
-  actions: { flexDirection: 'row', gap: space[5], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: colors.gray100 },
+  actions: { flexDirection: 'row', gap: space[5], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: c.border },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionCount: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.gray400 },
+  actionCount: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
 
   // Menu
-  menuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  menuSheet: { backgroundColor: colors.white, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingBottom: space[8], paddingTop: space[2] },
+  menuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  menuSheet: { backgroundColor: c.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingBottom: space[8], paddingTop: space[2] },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[5], paddingVertical: space[4] },
-  menuItemText: { fontSize: text.base, color: colors.gray700 },
-  menuDivider: { height: 1, backgroundColor: colors.gray100, marginVertical: space[1] },
+  menuItemText: { fontSize: text.base, color: c.text },
+  menuDivider: { height: 1, backgroundColor: c.border, marginVertical: space[1] },
 
   // Composer closed
-  composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: colors.white, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.gray200, padding: space[3], ...shadow.sm },
-  composerPlaceholder: { flex: 1, fontSize: text.sm, color: colors.gray400 },
+  composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.borderStrong, padding: space[3], ...shadow.sm },
+  composerPlaceholder: { flex: 1, fontSize: text.sm, color: c.textFaint },
 
   // Composer modal
-  composerModal: { flex: 1, backgroundColor: colors.white },
-  composerModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  composerModalTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
-  composerCancel: { fontSize: text.sm, color: colors.gray500 },
-  postBtn: { backgroundColor: colors.brand, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.full },
+  composerModal: { flex: 1, backgroundColor: c.surface },
+  composerModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: c.border },
+  composerModalTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  composerCancel: { fontSize: text.sm, color: c.textMuted },
+  postBtn: { backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.full },
   postBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   typeRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
-  typeBtn: { paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  typeBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
+  typeBtn: { paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  typeBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
+  typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   typeBtnTextActive: { color: colors.white },
   composerRow: { flexDirection: 'row', gap: space[3], padding: space[4], alignItems: 'flex-start' },
-  composerInput: { flex: 1, fontSize: text.base, color: colors.gray900, minHeight: 100 },
-  horsePickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: colors.gray50 },
-  horseChip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: 5, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white },
-  horseChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  horseChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray600 },
+  composerInput: { flex: 1, fontSize: text.base, color: c.text, minHeight: 100 },
+  horsePickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: c.border },
+  horseChip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: 5, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  horseChipActive: { backgroundColor: c.brand, borderColor: c.brand },
+  horseChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   horseChipTextActive: { color: colors.white },
-  composerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.gray100, paddingHorizontal: space[4], paddingVertical: space[3] },
+  composerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: c.border, paddingHorizontal: space[4], paddingVertical: space[3] },
   footerLeft: { flexDirection: 'row', alignItems: 'center' },
-  tagBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: 160, backgroundColor: colors.gray50, borderRadius: 20, paddingHorizontal: space[3], paddingVertical: space[2] },
-  tagBtnText: { fontSize: text.sm, color: colors.gray500, fontWeight: weight.medium, fontFamily: fontFamily.medium },
-  selectOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  selectSheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: space[4], paddingBottom: 36, paddingHorizontal: space[4] },
-  selectTitle: { fontSize: text.base, fontWeight: weight.bold, fontFamily: fontFamily.semibold, color: colors.gray900, marginBottom: space[2], paddingHorizontal: space[2] },
-  selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  selectRowText: { fontSize: text.base, color: colors.gray700, fontFamily: fontFamily.medium, flex: 1 },
-  selectRowTextActive: { color: colors.gray900, fontFamily: fontFamily.semibold },
-  selectHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.gray200, marginBottom: space[3] },
-  selectThumb: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.gray100, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', marginRight: space[3] },
-  selectThumbNone: { backgroundColor: colors.gray100 },
+  tagBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: 160, backgroundColor: c.surfaceAlt, borderRadius: 20, paddingHorizontal: space[3], paddingVertical: space[2] },
+  tagBtnText: { fontSize: text.sm, color: c.textMuted, fontWeight: weight.medium, fontFamily: fontFamily.medium },
+  selectOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  selectSheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: space[4], paddingBottom: 36, paddingHorizontal: space[4] },
+  selectTitle: { fontSize: text.base, fontWeight: weight.bold, fontFamily: fontFamily.semibold, color: c.text, marginBottom: space[2], paddingHorizontal: space[2] },
+  selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: 1, borderBottomColor: c.border },
+  selectRowText: { fontSize: text.base, color: c.textMuted, fontFamily: fontFamily.medium, flex: 1 },
+  selectRowTextActive: { color: c.text, fontFamily: fontFamily.semibold },
+  selectHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong, marginBottom: space[3] },
+  selectThumb: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.surfaceAlt, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', marginRight: space[3] },
+  selectThumbNone: { backgroundColor: c.surfaceAlt },
   selectThumbImg: { width: '100%', height: '100%' },
-  selectThumbInitial: { color: colors.gray500, fontWeight: '800', fontSize: 15, fontFamily: fontFamily.bold },
+  selectThumbInitial: { color: c.textMuted, fontWeight: '800', fontSize: 15, fontFamily: fontFamily.bold },
   photoBtn: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  photoBtnText: { fontSize: text.sm, color: colors.gray600, fontWeight: weight.medium, fontFamily: fontFamily.medium },
+  photoBtnText: { fontSize: text.sm, color: c.textMuted, fontWeight: weight.medium, fontFamily: fontFamily.medium },
   removePhoto: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: radius.full, padding: 3 },
   videoIndicator: { position: 'absolute', inset: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
   videoPlayer: { width: '100%', height: 220, backgroundColor: '#000', borderRadius: radius.lg },
 
   // Comments sheet
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  sheetTitle: { fontSize: text.base, fontWeight: weight.bold, color: colors.gray900 },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: c.border },
+  sheetTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
   commentsList: { padding: space[4], gap: space[3] },
-  emptyComments: { textAlign: 'center', color: colors.gray400, fontSize: text.sm, paddingVertical: space[6] },
+  emptyComments: { textAlign: 'center', color: c.textFaint, fontSize: text.sm, paddingVertical: space[6] },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] },
-  commentBubble: { flex: 1, backgroundColor: colors.gray50, borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: space[2] },
-  commentAuthor: { fontSize: 11, fontWeight: weight.bold, color: colors.gray700, marginBottom: 2 },
-  commentText: { fontSize: text.sm, color: colors.gray800 },
+  commentBubble: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: space[2] },
+  commentAuthor: { fontSize: 11, fontWeight: weight.bold, color: c.text, marginBottom: 2 },
+  commentText: { fontSize: text.sm, color: c.text },
   commentDelete: { padding: space[1], marginTop: space[2] },
-  commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: colors.gray100, alignItems: 'flex-end' },
-  commentInputField: { flex: 1, backgroundColor: colors.gray50, borderRadius: radius.xl, paddingHorizontal: space[3], paddingVertical: space[2] + 2, fontSize: text.sm, color: colors.gray900, maxHeight: 100 },
-  sendBtn: { backgroundColor: colors.brand, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: c.border, alignItems: 'flex-end' },
+  commentInputField: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.xl, paddingHorizontal: space[3], paddingVertical: space[2] + 2, fontSize: text.sm, color: c.text, maxHeight: 100 },
+  sendBtn: { backgroundColor: c.brand, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
 
   // Empty
   emptyBox: { alignItems: 'center', paddingTop: 60, paddingHorizontal: space[6], gap: space[3] },
-  emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray700 },
-  emptySub: { fontSize: text.sm, color: colors.gray400, textAlign: 'center' },
+  emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
+  emptySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },
 });

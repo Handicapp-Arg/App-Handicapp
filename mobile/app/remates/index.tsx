@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   StyleSheet,
@@ -11,6 +11,7 @@ import { useAuctions } from '../../hooks/use-auctions';
 import { HorseCardSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { nav, Routes } from '../../lib/routes';
 import type { Auction } from '../../../packages/shared/src/types';
@@ -33,7 +34,7 @@ function formatARS(n: number, cur: string) {
   return `${cur} ${new Intl.NumberFormat('es-AR').format(n)}`;
 }
 
-function AuctionCard({ item, onPress }: { item: Auction; onPress: () => void }) {
+function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => void; c: ThemeColors; s: Styles }) {
   const isRemate = item.type === 'remate';
   const price = isRemate ? (item.top_bid ?? item.starting_bid) : item.asking_price;
 
@@ -41,7 +42,7 @@ function AuctionCard({ item, onPress }: { item: Auction; onPress: () => void }) 
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
       <View style={s.cardHeader}>
         <View style={s.cardLeft}>
-          <View style={[s.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.gray400 }]} />
+          <View style={[s.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? c.textFaint }]} />
           <View>
             <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
             <Text style={s.cardSub} numberOfLines={1}>{item.horse?.name}</Text>
@@ -95,6 +96,9 @@ export default function RematesScreen() {
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('active');
 
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+
   const { data, isLoading, refetch, isRefetching } = useAuctions({
     q: q || undefined,
     status: filterStatus || undefined,
@@ -121,11 +125,11 @@ export default function RematesScreen() {
       {/* Búsqueda */}
       <View style={s.searchRow}>
         <View style={s.searchBox}>
-          <Search size={16} color={colors.gray400} strokeWidth={2} />
+          <Search size={16} color={c.textFaint} strokeWidth={2} />
           <TextInput
             style={s.searchInput}
             placeholder="Buscar subasta..."
-            placeholderTextColor={colors.gray400}
+            placeholderTextColor={c.textFaint}
             value={q}
             onChangeText={setQ}
           />
@@ -163,7 +167,7 @@ export default function RematesScreen() {
           refreshing={isRefetching}
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <Trophy size={52} color={colors.gray300} strokeWidth={2} />
+              <Trophy size={52} color={c.textFaint} strokeWidth={2} />
               <Text style={s.emptyTitle}>No hay subastas</Text>
               <Text style={s.emptySub}>
                 {filterStatus === 'active' ? 'No hay caballos en venta en este momento.' : 'No hay resultados para este filtro.'}
@@ -183,6 +187,8 @@ export default function RematesScreen() {
               <AuctionCard
                 item={item}
                 onPress={() => nav.push(router, Routes.remate(item.id))}
+                c={c}
+                s={s}
               />
             </Animated.View>
           )}
@@ -192,17 +198,19 @@ export default function RematesScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
     paddingHorizontal: space[5], paddingBottom: space[3],
   },
-  title: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: colors.gray900, letterSpacing: -0.5 },
-  subtitle: { fontSize: text.sm, color: colors.gray400, marginTop: 2 },
+  title: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: text.sm, color: c.textFaint, marginTop: 2 },
   publishBtn: {
     flexDirection: 'row', alignItems: 'center', gap: space[1] + 2,
-    backgroundColor: colors.brand, borderRadius: radius.lg,
+    backgroundColor: c.brand, borderRadius: radius.lg,
     paddingHorizontal: space[3] + 2, paddingVertical: space[2] + 2,
     marginTop: 4,
   },
@@ -211,41 +219,41 @@ const s = StyleSheet.create({
   searchRow: { paddingHorizontal: space[4], paddingBottom: space[2] },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.gray200,
+    backgroundColor: c.surface, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: c.borderStrong,
     paddingHorizontal: space[3], paddingVertical: space[2] + 2,
     ...shadow.sm,
   },
-  searchInput: { flex: 1, fontSize: text.sm, color: colors.gray900 },
+  searchInput: { flex: 1, fontSize: text.sm, color: c.text },
 
   filterRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingBottom: space[3] },
   filterBtn: {
     paddingHorizontal: space[3], paddingVertical: space[1] + 2,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray200,
-    backgroundColor: colors.white,
+    borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.surface,
   },
-  filterBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray500 },
+  filterBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
+  filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterBtnTextActive: { color: colors.white },
 
   list: { paddingHorizontal: space[4], paddingBottom: space[10] },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyBox: { alignItems: 'center', paddingTop: 48, paddingHorizontal: space[6], gap: space[3] },
-  emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.gray700 },
-  emptySub: { fontSize: text.sm, color: colors.gray400, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
+  emptySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', lineHeight: 20 },
   emptyAction: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: colors.brand, borderRadius: radius.xl,
+    backgroundColor: c.brand, borderRadius: radius.xl,
     paddingHorizontal: space[5], paddingVertical: space[3] + 2,
     marginTop: space[2],
   },
   emptyActionText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     padding: space[4],
     marginBottom: space[3],
     ...shadow.sm,
@@ -253,8 +261,8 @@ const s = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: space[3] },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1 },
   statusDot: { width: 8, height: 8, borderRadius: 4, marginTop: 2, flexShrink: 0 },
-  cardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: colors.gray900, flex: 1 },
-  cardSub: { fontSize: text.xs, color: colors.gray400, marginTop: 1 },
+  cardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, flex: 1 },
+  cardSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   typeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -266,10 +274,10 @@ const s = StyleSheet.create({
   typeBadgeText: { fontSize: 10, fontWeight: weight.semibold },
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  priceLabel: { fontSize: 10, fontWeight: weight.semibold, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 0.5 },
-  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.brand, letterSpacing: -0.3 },
+  priceLabel: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.brand, letterSpacing: -0.3 },
   metaRight: { alignItems: 'flex-end', gap: 2 },
-  metaText: { fontSize: text.xs, color: colors.gray400 },
+  metaText: { fontSize: text.xs, color: c.textFaint },
   watchingBadge: { fontSize: 10, color: '#d97706', fontWeight: weight.semibold },
 
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },

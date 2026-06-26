@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, TextInput, Alert,
@@ -8,6 +8,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 import { useAuth } from '../lib/auth';
 import {
@@ -38,10 +39,10 @@ const STATUS_META: Record<SuperAdminOrg['status'], { bg: string; text: string; l
   trial:     { bg: colors.amber50,   text: colors.amber600,   label: 'Trial' },
 };
 
-function MetricBox({ label, value, sub, tone = 'navy' }: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'gray' }) {
-  const bg = tone === 'navy' ? colors.brand : tone === 'gold' ? colors.amber50 : colors.white;
-  const fg = tone === 'navy' ? colors.white : tone === 'gold' ? colors.amber600 : colors.gray900;
-  const labelColor = tone === 'navy' ? 'rgba(255,255,255,0.6)' : tone === 'gold' ? colors.amber600 : colors.gray400;
+function MetricBox({ label, value, sub, tone = 'navy', c, s }: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'gray'; c: ThemeColors; s: Styles }) {
+  const bg = tone === 'navy' ? colors.brand : tone === 'gold' ? colors.amber50 : c.surface;
+  const fg = tone === 'navy' ? colors.white : tone === 'gold' ? colors.amber600 : c.text;
+  const labelColor = tone === 'navy' ? 'rgba(255,255,255,0.6)' : tone === 'gold' ? colors.amber600 : c.textFaint;
   return (
     <View style={[s.metric, { backgroundColor: bg }]}>
       <Text style={[s.metricLabel, { color: labelColor }]}>{label}</Text>
@@ -51,7 +52,7 @@ function MetricBox({ label, value, sub, tone = 'navy' }: { label: string; value:
   );
 }
 
-function OrgRow({ org, onToggle, pending }: { org: SuperAdminOrg; onToggle: () => void; pending: boolean }) {
+function OrgRow({ org, onToggle, pending, s, c }: { org: SuperAdminOrg; onToggle: () => void; pending: boolean; s: Styles; c: ThemeColors }) {
   const planMeta = PLAN_META[org.plan];
   const statusMeta = STATUS_META[org.status];
   const expired = org.plan_expires_at && new Date(org.plan_expires_at) < new Date();
@@ -60,7 +61,7 @@ function OrgRow({ org, onToggle, pending }: { org: SuperAdminOrg; onToggle: () =
     <View style={s.orgRow}>
       <View style={s.orgHead}>
         <Text style={s.orgName} numberOfLines={1}>{org.name}</Text>
-        <View style={[s.pill, { backgroundColor: statusMeta.bg }]}>
+        <View style={[s.pill, { backgroundColor: c.isDark ? statusMeta.text + '26' : statusMeta.bg }]}>
           <Text style={[s.pillText, { color: statusMeta.text }]}>{statusMeta.label}</Text>
         </View>
       </View>
@@ -68,7 +69,7 @@ function OrgRow({ org, onToggle, pending }: { org: SuperAdminOrg; onToggle: () =
         <Text style={s.orgOwner} numberOfLines={1}>{org.owner.email}</Text>
       )}
       <View style={s.orgMeta}>
-        <View style={[s.pill, { backgroundColor: planMeta.bg }]}>
+        <View style={[s.pill, { backgroundColor: c.isDark ? planMeta.text + '26' : planMeta.bg }]}>
           <Text style={[s.pillText, { color: planMeta.text }]}>{PLAN_LABEL[org.plan]}</Text>
         </View>
         <Text style={s.orgCount}>{org.horse_count} caballos · {org.member_count} miembros</Text>
@@ -96,6 +97,8 @@ function OrgRow({ org, onToggle, pending }: { org: SuperAdminOrg; onToggle: () =
 export default function SuperAdminScreen() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
 
   const { data: metrics } = useSuperAdminMetrics(user?.role === 'admin');
   const { data: orgs, isLoading, isError, refetch, isRefetching } = useSuperAdminOrgs({ search }, user?.role === 'admin');
@@ -123,7 +126,7 @@ export default function SuperAdminScreen() {
         data={orgs ?? []}
         keyExtractor={(o) => o.id}
         contentContainerStyle={s.list}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />}
         ListHeaderComponent={
           <View style={{ gap: space[3], marginBottom: space[3] }}>
             {metrics && (
@@ -133,24 +136,32 @@ export default function SuperAdminScreen() {
                   value={formatARS(metrics.mrr_ars)}
                   sub={`ARR ${formatARS(metrics.arr_ars)}`}
                   tone="navy"
+                  c={c}
+                  s={s}
                 />
                 <MetricBox
                   label="ORGS"
                   value={String(metrics.total_organizations)}
                   sub={`${metrics.active_organizations} activas`}
                   tone="gray"
+                  c={c}
+                  s={s}
                 />
                 <MetricBox
                   label="CABALLOS"
                   value={String(metrics.total_horses)}
                   sub={`prom ${metrics.avg_horses_per_org}/org`}
                   tone="gray"
+                  c={c}
+                  s={s}
                 />
                 <MetricBox
                   label="PLANES"
                   value={`${metrics.by_plan.pro ?? 0} Pro`}
                   sub={`${metrics.by_plan.basic ?? 0} Bas · ${metrics.by_plan.free ?? 0} Fr`}
                   tone="gold"
+                  c={c}
+                  s={s}
                 />
               </View>
             )}
@@ -158,7 +169,7 @@ export default function SuperAdminScreen() {
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar organización o email…"
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               style={s.search}
             />
           </View>
@@ -168,6 +179,8 @@ export default function SuperAdminScreen() {
             <OrgRow
               org={item}
               pending={setStatus.isPending}
+              s={s}
+              c={c}
               onToggle={() => {
                 const next = item.status === 'active' ? 'suspended' : 'active';
                 Alert.alert(
@@ -198,8 +211,10 @@ export default function SuperAdminScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.gray50 },
+type Styles = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
   center: { padding: space[8], alignItems: 'center' },
   list: { padding: space[3], gap: space[3], paddingBottom: space[8] },
   metricsGrid: {
@@ -213,52 +228,52 @@ const s = StyleSheet.create({
     borderRadius: radius.lg,
     padding: space[3],
     borderWidth: 1,
-    borderColor: colors.gray100,
+    borderColor: c.border,
   },
   metricLabel: { fontSize: text.xs, fontWeight: weight.bold, letterSpacing: 0.4 },
   metricValue: { fontSize: text.xl, fontWeight: weight.extrabold, marginTop: 4 },
   metricSub: { fontSize: text.xs, marginTop: 2 },
   search: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: space[4],
     paddingVertical: space[3],
     fontSize: text.sm,
-    color: colors.gray900,
+    color: c.text,
   },
   orgRow: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     padding: space[4],
     borderWidth: 1,
-    borderColor: colors.gray100,
+    borderColor: c.border,
     gap: space[2],
   },
   orgHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orgName: { flex: 1, fontSize: text.md, fontWeight: weight.bold, color: colors.gray900, marginRight: space[2] },
-  orgOwner: { fontSize: text.xs, color: colors.gray400 },
+  orgName: { flex: 1, fontSize: text.md, fontWeight: weight.bold, color: c.text, marginRight: space[2] },
+  orgOwner: { fontSize: text.xs, color: c.textFaint },
   orgMeta: { flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' },
-  orgCount: { fontSize: text.xs, color: colors.gray500 },
+  orgCount: { fontSize: text.xs, color: c.textMuted },
   orgFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: space[1],
   },
-  orgRevenue: { fontSize: text.sm, color: colors.gray700, fontWeight: weight.semibold },
+  orgRevenue: { fontSize: text.sm, color: c.text, fontWeight: weight.semibold },
   expiredText: { color: colors.red500, fontWeight: weight.bold },
   pill: { paddingHorizontal: space[2], paddingVertical: 3, borderRadius: radius.full, alignSelf: 'flex-start' },
   pillText: { fontSize: text.xs, fontWeight: weight.bold },
   toggleBtn: {
-    backgroundColor: colors.white,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: c.borderStrong,
     paddingHorizontal: space[3],
     paddingVertical: space[2],
     borderRadius: radius.md,
   },
-  toggleText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.gray700 },
+  toggleText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
   disabled: { opacity: 0.5 },
 });

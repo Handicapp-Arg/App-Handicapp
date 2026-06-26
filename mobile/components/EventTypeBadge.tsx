@@ -1,10 +1,12 @@
 import { Text, View, StyleSheet } from 'react-native';
 import { eventTypeColors } from '../lib/colors';
+import { useTheme } from '../lib/theme';
 
 export function EventTypeBadge({ type }: { type: string }) {
+  const { c } = useTheme();
   const style = eventTypeColors[type] ?? eventTypeColors.nota;
   return (
-    <View style={[styles.badge, { backgroundColor: style.bg }]}>
+    <View style={[styles.badge, { backgroundColor: c.isDark ? style.text + '26' : style.bg }]}>
       <Text style={[styles.text, { color: style.text }]}>{style.label}</Text>
     </View>
   );
