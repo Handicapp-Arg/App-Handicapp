@@ -52,7 +52,7 @@ export function Topbar() {
       {/* Título de la página */}
       <h1 className="text-xl font-bold tracking-tight text-gray-900">{pageTitle}</h1>
 
-      <div className="flex items-center gap-1 rounded-2xl bg-white p-1 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-1 rounded-2xl bg-[var(--surface-card)] p-1 shadow-[var(--shadow-card)]">
 
       {/* Notificaciones */}
       <Link
@@ -86,7 +86,7 @@ export function Topbar() {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-[var(--surface-card-border)] bg-white py-1 shadow-[var(--shadow-lg)]">
+          <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] py-1 shadow-[var(--shadow-lg)]">
             <Link
               href="/perfil"
               onClick={() => setOpen(false)}

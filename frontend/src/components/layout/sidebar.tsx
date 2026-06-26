@@ -13,14 +13,14 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
         active
-          ? 'bg-white/[0.13] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
-          : 'text-white/45 hover:bg-white/[0.06] hover:text-white/90'
+          ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-fg)]'
+          : 'text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
       }`}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#d2aa78]" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--color-primary)]" />
       )}
-      <span className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-white/40 group-hover:text-white/75'}`}>
+      <span className={`shrink-0 transition-colors ${active ? 'text-[var(--color-primary)]' : 'text-[var(--sidebar-fg-faint)] group-hover:text-[var(--sidebar-fg-muted)]'}`}>
         {item.icon}
       </span>
       <span className="flex-1 truncate tracking-[-0.01em] leading-none">{item.label}</span>
@@ -37,8 +37,8 @@ function SectionDivider({ label }: { label: string }) {
   return (
     <div className="px-3 pt-5 pb-2">
       <div className="flex items-center gap-2">
-        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/20">{label}</p>
-        <div className="flex-1 h-px bg-white/[0.06]" />
+        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--sidebar-fg-faint)]">{label}</p>
+        <div className="flex-1 h-px bg-[var(--sidebar-border)]" />
       </div>
     </div>
   );
@@ -125,13 +125,13 @@ export function Sidebar() {
       ].filter((s) => s.items.length > 0);
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] flex-col bg-[#20160e] text-white">
+    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]">
 
       {/* Brand — wordmark provisional */}
       <div className="px-5 pt-6 pb-5">
         <Link href="/" className="flex items-center">
-          <span className="text-[21px] font-bold tracking-[-0.02em] text-white">
-            Handic<span className="text-clay-300">App</span>
+          <span className="text-[21px] font-bold tracking-[-0.02em] text-[var(--sidebar-fg)]">
+            Handic<span className="text-[var(--color-primary)]">App</span>
           </span>
         </Link>
       </div>

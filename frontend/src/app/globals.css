@@ -128,7 +128,16 @@
   --surface-page:        var(--color-surface-page);
   --surface-card:        var(--color-surface-card);
   --surface-card-border: var(--color-surface-border);
-  --surface-sidebar:     var(--color-navy-700);
+  --surface-sidebar:     var(--color-surface-card);
+
+  /* Sidebar / navbar — superficie + acento cuero (unificado con móvil) */
+  --sidebar-bg:         #ffffff;
+  --sidebar-border:     var(--color-surface-border);
+  --sidebar-fg:         var(--color-espresso);
+  --sidebar-fg-muted:   var(--color-bark-600);
+  --sidebar-fg-faint:   var(--color-bark-400);
+  --sidebar-active-bg:  var(--color-clay-50);
+  --sidebar-hover-bg:   rgba(44, 33, 26, 0.05);
 
   --shadow-xs:   0 1px 2px 0 rgb(15 31 61 / 0.06);
   --shadow-sm:   0 1px 3px 0 rgb(15 31 61 / 0.08), 0 1px 2px -1px rgb(15 31 61 / 0.06);
@@ -143,32 +152,61 @@
    componentes que ya consumen --color-* muten sin tocar JSX.
    ─────────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --background: #060d18;
-  --foreground: #e7ecf5;
+  /* Neutrales oscuros del móvil (zinc cálido), no navy. */
+  --background: #0b0b0c;
+  --foreground: #fafafa;
 
-  --color-surface-page:   #060d18;
-  --color-surface-card:   #9d6c35;
-  --color-surface-border: #1d2f57;
+  --color-surface-page:   #0b0b0c;
+  --color-surface-card:   #18181b;
+  --color-surface-border: #27272a;
 
-  --color-navy-50:  #1d2f57;
-  --color-navy-100: #162f5c;
-  --color-navy-200: #2f4474;
-  --color-navy-300: #5a6d99;
-  --color-navy-400: #93a0c2;
-  --color-navy-500: #c5cee0;
-  --color-navy-700: #e7ecf5;
-  --color-navy-800: #f5f7fb;
-  --color-navy-900: #ffffff;
+  /* Marca: en dark el cuero se aclara (clay-300) para contraste sobre fondo oscuro */
+  --color-primary:       var(--color-clay-300);
+  --color-primary-light: var(--color-clay-200);
+  --color-primary-hover: var(--color-clay-400);
+  --color-accent:        var(--color-amber-glow);
+  --color-accent-light:  rgba(210, 170, 120, 0.16);
 
-  --color-gray-50:  #20160e;
-  --color-gray-100: #9d6c35;
-  --color-gray-200: #1d2f57;
-  --color-gray-300: #2f4474;
-  --color-gray-400: #5a6d99;
-  --color-gray-500: #93a0c2;
-  --color-gray-600: #c5cee0;
-  --color-gray-700: #e7ecf5;
-  --color-gray-900: #f5f7fb;
+  /* Escala gris neutra invertida (50 = más oscuro … 900 = más claro) */
+  --color-gray-50:  #18181b;
+  --color-gray-100: #232327;
+  --color-gray-200: #27272a;
+  --color-gray-300: #3f3f46;
+  --color-gray-400: #6b6b73;
+  --color-gray-500: #a1a1aa;
+  --color-gray-600: #d4d4d8;
+  --color-gray-700: #e4e4e7;
+  --color-gray-900: #fafafa;
+
+  /* Navy legacy → mismos neutros (navy-700 = acento cuero para foco/marca) */
+  --color-navy-50:  #18181b;
+  --color-navy-100: #232327;
+  --color-navy-200: #27272a;
+  --color-navy-300: #3f3f46;
+  --color-navy-400: #6b6b73;
+  --color-navy-500: #a1a1aa;
+  --color-navy-700: #d2aa78;
+  --color-navy-800: #e4e4e7;
+  --color-navy-900: #fafafa;
+
+  /* Neutrales cálidos y tipografía → mutan en dark */
+  --color-espresso:  #fafafa;
+  --color-bark-600:  #a1a1aa;
+  --color-bark-400:  #6b6b73;
+  --color-cream-50:  #18181b;
+  --color-cream-100: #0b0b0c;
+  --color-cream-200: #232327;
+  --color-sand-300:  #27272a;
+  --color-sand-400:  #3f3f46;
+
+  /* Sidebar / navbar en dark — superficie oscura, acento cuero claro */
+  --sidebar-bg:        #18181b;
+  --sidebar-border:    #27272a;
+  --sidebar-fg:        #fafafa;
+  --sidebar-fg-muted:  #a1a1aa;
+  --sidebar-fg-faint:  #6b6b73;
+  --sidebar-active-bg: rgba(210, 170, 120, 0.14);
+  --sidebar-hover-bg:  rgba(255, 255, 255, 0.06);
 
   --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);

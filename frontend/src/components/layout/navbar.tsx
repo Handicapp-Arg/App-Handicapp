@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { X, Menu, Command } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -34,14 +33,14 @@ function DrawerNavLink({
       onClick={onClose}
       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
         active
-          ? 'bg-white/[0.13] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
-          : 'text-white/45 hover:bg-white/[0.06] hover:text-white/90'
+          ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-fg)]'
+          : 'text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
       }`}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#c4922a]" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--color-primary)]" />
       )}
-      <span className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-white/40 group-hover:text-white/75'}`}>
+      <span className={`shrink-0 transition-colors ${active ? 'text-[var(--sidebar-fg)]' : 'text-[var(--sidebar-fg-faint)] group-hover:text-[var(--sidebar-fg)]'}`}>
         {item.icon}
       </span>
       <span className="flex-1 truncate tracking-[-0.01em]">{item.label}</span>
@@ -130,14 +129,14 @@ export function Navbar() {
   return (
     <>
       {/* ─── Top bar (solo en mobile / ventana angosta) ─── */}
-      <header className="md:hidden sticky top-0 z-40 bg-[#20160e] shadow-lg">
+      <header className="md:hidden sticky top-0 z-40 bg-[var(--sidebar-bg)] border-b border-[var(--sidebar-border)] shadow-lg">
         <div className="flex h-14 items-center justify-between px-4 gap-3">
 
           {/* Hamburguesa */}
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)] transition"
             aria-label="Abrir menú"
           >
             <Menu className="h-5 w-5" />
@@ -145,21 +144,13 @@ export function Navbar() {
 
           {/* Logo centrado */}
           <Link href="/caballos" className="flex-1 flex justify-center">
-            <Image
-              src="https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png"
-              alt="HandicApp"
-              width={110}
-              height={28}
-              className="h-6 w-auto object-contain"
-              priority
-              unoptimized
-            />
+            <span className="text-[19px] font-bold tracking-[-0.02em] text-[var(--sidebar-fg)]">Handic<span className="text-[var(--color-primary)]">App</span></span>
           </Link>
 
           {/* Notificaciones */}
           <Link
             href="/notificaciones"
-            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)] transition"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
@@ -183,22 +174,15 @@ export function Navbar() {
           />
 
           {/* Panel */}
-          <aside className="relative flex h-full w-[280px] flex-col bg-[#20160e] text-white shadow-2xl overflow-y-auto">
+          <aside className="relative flex h-full w-[280px] flex-col bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] text-[var(--sidebar-fg)] shadow-2xl overflow-y-auto">
 
             {/* Header del drawer */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-              <Image
-                src="https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png"
-                alt="HandicApp"
-                width={110}
-                height={28}
-                className="h-6 w-auto object-contain"
-                unoptimized
-              />
+              <span className="text-[19px] font-bold tracking-[-0.02em] text-[var(--sidebar-fg)]">Handic<span className="text-[var(--color-primary)]">App</span></span>
               <button
                 type="button"
                 onClick={closeDrawer}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)] transition"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -209,27 +193,27 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => { openPalette(); closeDrawer(); }}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[12px] text-white/55 transition hover:border-white/15 hover:bg-white/[0.06] hover:text-white/85"
+                className="flex w-full items-center justify-between gap-2 rounded-lg border border-[var(--sidebar-border)] bg-[var(--sidebar-hover-bg)] px-3 py-2 text-[12px] text-[var(--sidebar-fg-muted)] transition hover:border-[var(--sidebar-border)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]"
               >
                 <span className="flex items-center gap-2">
                   <Command className="h-3.5 w-3.5" />
                   Comandos
                 </span>
-                <kbd className="rounded border border-white/12 bg-white/5 px-1 py-0.5 text-[10px] font-semibold text-white/55">
+                <kbd className="rounded border border-[var(--sidebar-border)] bg-[var(--sidebar-hover-bg)] px-1 py-0.5 text-[10px] font-semibold text-[var(--sidebar-fg-muted)]">
                   ⌘K
                 </kbd>
               </button>
             </div>
 
-            <div className="mx-4 h-px bg-white/8 shrink-0" />
+            <div className="mx-4 h-px bg-[var(--sidebar-border)] shrink-0" />
 
             {/* Nav */}
             <nav className="flex-1 px-2 py-2">
               {sections.map((section, si) => (
                 <div key={section.label}>
-                  {si > 0 && <div className="my-1.5 mx-3 h-px bg-white/7" />}
+                  {si > 0 && <div className="my-1.5 mx-3 h-px bg-[var(--sidebar-border)]" />}
                   <div className="px-3 pt-4 pb-1.5">
-                    <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-white/22">
+                    <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[var(--sidebar-fg-faint)]">
                       {section.label}
                     </p>
                   </div>
@@ -248,27 +232,27 @@ export function Navbar() {
             </nav>
 
             {/* Footer del drawer */}
-            <div className="border-t border-white/8 p-2 space-y-px shrink-0">
+            <div className="border-t border-[var(--sidebar-border)] p-2 space-y-px shrink-0">
               <Link
                 href="/perfil"
                 onClick={closeDrawer}
                 className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all duration-150 ${
-                  pathname === '/perfil' ? 'bg-white/12 text-white' : 'text-white/50 hover:bg-white/7 hover:text-white/85'
+                  pathname === '/perfil' ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-fg)]' : 'text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
                 }`}
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#c4922a]/80 text-[11px] font-bold text-white uppercase ring-1 ring-[#c4922a]/40">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-[11px] font-bold text-white uppercase ring-1 ring-transparent">
                   {user?.name?.charAt(0) ?? '?'}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="truncate text-[13px] font-semibold text-white/90 tracking-[-0.01em]">{user?.name}</span>
-                  <span className="truncate text-[10px] font-medium text-white/35 tracking-[0.03em]">
+                  <span className="truncate text-[13px] font-semibold text-[var(--sidebar-fg)] tracking-[-0.01em]">{user?.name}</span>
+                  <span className="truncate text-[10px] font-medium text-[var(--sidebar-fg-muted)] tracking-[0.03em]">
                     {roleLabel[user?.role || ''] || user?.role}
                   </span>
                 </span>
               </Link>
               <button
                 onClick={() => { logout(); closeDrawer(); }}
-                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/35 transition-all duration-150 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-[var(--sidebar-fg-muted)] transition-all duration-150 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
               >
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
