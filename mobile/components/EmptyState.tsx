@@ -47,13 +47,15 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, message, actionLabel, onAction, tint }: EmptyStateProps) {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const accent = tint ?? c.brand;
+  const accent = tint ?? c.brand;            // CTA (botón)
+  const iconColor = tint ?? c.textMuted;     // ícono neutro por defecto (se adapta al tema)
+  const iconBg = tint ? `${tint}15` : c.surfaceAlt;
   return (
     <Animated.View entering={FadeInDown.duration(350)} style={s.wrap}>
-      <View style={[s.iconCircle, { backgroundColor: `${accent}15` }]}>
+      <View style={[s.iconCircle, { backgroundColor: iconBg }]}>
         {(() => {
           const L = ICON_MAP[icon];
-          return L ? <L size={32} color={accent} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={accent} />;
+          return L ? <L size={32} color={iconColor} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={iconColor} />;
         })()}
       </View>
       <Text style={s.title}>{title}</Text>
