@@ -1359,10 +1359,11 @@ export default function HorseDetailScreen() {
                 <View style={[s.financialCard, { marginTop: 14 }]}>
                   <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Últimos gastos</Text>
                   {financial.recent_expenses.map((exp) => {
-                    const meta = EXPENSE_CATEGORY_META[exp.expense_category ?? ''] ?? { icon: '📦', color: '#6b7280' };
+                    const meta = EXPENSE_CATEGORY_META[exp.expense_category ?? ''] ?? { Icon: Package, color: '#6b7280' };
+                    const MetaIcon = meta.Icon;
                     return (
                       <View key={exp.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.border }}>
-                        <Text style={{ fontSize: 20 }}>{meta.icon}</Text>
+                        <MetaIcon size={18} color={meta.color} strokeWidth={2} />
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 13, fontWeight: '600', color: c.text }} numberOfLines={1}>{exp.description}</Text>
                           <Text style={{ fontSize: 11, color: c.textFaint }}>
