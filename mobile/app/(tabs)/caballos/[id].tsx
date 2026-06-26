@@ -14,6 +14,7 @@ import {
   Info, Clock, Images, Banknote,
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse,
   Wheat, Syringe, Hammer, Wrench, Truck, Package,
+  MoreVertical, Download,
   type LucideIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -803,7 +804,7 @@ export default function HorseDetailScreen() {
                 >
                   {pdfLoading
                     ? <ActivityIndicator size="small" color={c.brand} />
-                    : <><FileText size={13} color={c.brand} strokeWidth={2} /><Text style={s.pdfBtnText}>PDF</Text></>
+                    : <><Download size={14} color={c.brand} strokeWidth={2.2} /><Text style={s.pdfBtnText}>PDF</Text></>
                   }
                 </TouchableOpacity>
               )}
@@ -835,7 +836,7 @@ export default function HorseDetailScreen() {
                             { text: 'Cancelar', style: 'cancel' },
                             { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteMedical.mutate(rec.id); } },
                           ])}>
-                            <X size={16} color={colors.gray300} strokeWidth={2} />
+                            <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -1528,11 +1529,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoBadgeText: { fontSize: 8, fontWeight: '700' },
 
   /* Botones pequeños */
-  smallBtn: { borderRadius: 8, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: c.surface },
+  smallBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surface },
   smallBtnText: { fontSize: 11, fontWeight: '600', color: c.brand },
   typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.surfaceAlt },
   typeChipText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, borderColor: c.brand, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: c.surface, minWidth: 44, justifyContent: 'center' },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.brandSoft, minWidth: 44, justifyContent: 'center' },
   pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.brand },
 
   /* QR Modal */
