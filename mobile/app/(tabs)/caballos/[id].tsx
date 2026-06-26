@@ -1417,11 +1417,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sellHorseBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: c.brandSoft, borderRadius: 16,
-    borderWidth: 1.5, borderColor: '#f3e3cc',
+    borderWidth: 1, borderColor: c.brandSoft,
     padding: 16,
   },
-  sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f3e3cc', justifyContent: 'center', alignItems: 'center' },
-  sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: '#5f3f18' },
+  sellHorseBtnIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: c.surface, justifyContent: 'center', alignItems: 'center' },
+  sellHorseBtnTitle: { fontSize: 15, fontWeight: '700', color: c.text },
   sellHorseBtnSub: { fontSize: 12, color: c.brand, marginTop: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: c.text },
@@ -1453,7 +1453,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Docs */
   docsCard: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
   docRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
-  docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center' },
+  docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   docName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.text },
   docDivider: { height: 1, backgroundColor: c.border, marginHorizontal: 12 },
 
