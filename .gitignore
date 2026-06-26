@@ -7,3 +7,7 @@ dist/
 .DS_Store
 .claude/
 uploads/
+
+# Capturas de QA / preview (no versionar)
+qa-*.png
+.playwright-mcp/
