@@ -7,6 +7,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import { X, Camera, Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package } from 'lucide-react-native';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
@@ -26,13 +27,13 @@ import { useCommonStyles } from '../../styles/common';
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'carrera', 'gasto', 'nota'] as const;
 
 const EXPENSE_CATEGORIES_MOBILE = [
-  { value: 'alimentacion',  label: 'Alimento',     icon: '🌾' },
-  { value: 'veterinario',   label: 'Veterinario',  icon: '💉' },
-  { value: 'herradero',     label: 'Herradero',    icon: '🔨' },
-  { value: 'entrenamiento', label: 'Entreno',      icon: '🏇' },
-  { value: 'mantenimiento', label: 'Mant.',        icon: '🔧' },
-  { value: 'transporte',    label: 'Transporte',   icon: '🚛' },
-  { value: 'otros',         label: 'Otros',        icon: '📦' },
+  { value: 'alimentacion',  label: 'Alimento',     Icon: Wheat,    color: '#16a34a' },
+  { value: 'veterinario',   label: 'Veterinario',  Icon: Syringe,  color: '#dc2626' },
+  { value: 'herradero',     label: 'Herradero',    Icon: Hammer,   color: '#d97706' },
+  { value: 'entrenamiento', label: 'Entreno',      Icon: Activity, color: '#a16207' },
+  { value: 'mantenimiento', label: 'Mant.',        Icon: Wrench,   color: '#0284c7' },
+  { value: 'transporte',    label: 'Transporte',   Icon: Truck,    color: '#0891b2' },
+  { value: 'otros',         label: 'Otros',        Icon: Package,  color: '#6b7280' },
 ];
 
 /* ─── Modal crear evento ─── */
@@ -83,7 +84,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Nuevo evento</Text>
           <TouchableOpacity onPress={onClose}>
-            <Text style={modalStyle.closeText}>✕</Text>
+            <X size={22} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -165,7 +166,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
                       onPress={() => setExpenseCategory(expenseCategory === cat.value ? '' : cat.value)}
                       activeOpacity={0.75}
                     >
-                      <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
+                      <cat.Icon size={14} color={expenseCategory === cat.value ? '#fff' : cat.color} strokeWidth={2} />
                       <Text style={[s.categoryBtnText, expenseCategory === cat.value && { color: '#fff' }]}>{cat.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -186,13 +187,13 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
                     onPress={() => setPhotoUris((p) => p.filter((_, idx) => idx !== i))}
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <Text style={s.photoRemoveText}>✕</Text>
+                    <X size={12} color="#fff" strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
               ))}
               {photoUris.length < 5 && (
                 <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
-                  <Text style={s.photoAddIcon}>📷</Text>
+                  <Camera size={20} color={c.textMuted} strokeWidth={2} />
                   <Text style={s.photoAddText}>Agregar</Text>
                 </TouchableOpacity>
               )}

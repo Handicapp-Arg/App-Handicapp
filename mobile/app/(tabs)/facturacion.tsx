@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { X } from 'lucide-react-native';
 import { useBills, useSendBill, useApproveBill, useDisputeBill, STATUS_META, monthLabel } from '../../hooks/use-billing';
 import { formatCurrency } from '../../lib/currency';
 import { useAuth } from '../../lib/auth';
@@ -28,7 +29,7 @@ function DisputeModal({ billId, onClose, c, s }: { billId: string; onClose: () =
       <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Disputar factura</Text>
-          <TouchableOpacity onPress={onClose}><Text style={modalStyle.closeText}>✕</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
         </View>
         <View style={[modalStyle.body, { gap: space[4] }]}>
           <Text style={typography.body}>Explicá el motivo de la disputa para que el establecimiento pueda revisarlo.</Text>

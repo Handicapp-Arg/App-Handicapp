@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Search, XCircle } from 'lucide-react-native';
+import { Clock, Search, XCircle, X } from 'lucide-react-native';
 import api from '../../lib/api';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
@@ -80,7 +80,7 @@ function RequestModal({
         <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Solicitar alojamiento</Text>
-            <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
           </View>
 
           <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">

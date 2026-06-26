@@ -320,8 +320,8 @@ export default function HorseDetailScreen() {
     } else {
       Alert.alert('Foto del caballo', '¿De dónde querés actualizar la foto?', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: '📷 Tomar foto', onPress: () => doUpload('camera') },
-        { text: '🖼️ Elegir de galería', onPress: () => doUpload('gallery') },
+        { text: 'Tomar foto', onPress: () => doUpload('camera') },
+        { text: 'Elegir de galería', onPress: () => doUpload('gallery') },
       ]);
     }
   };
@@ -1065,7 +1065,7 @@ export default function HorseDetailScreen() {
           <View style={s.modalSheet}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Asignar veterinario</Text>
-              <TouchableOpacity onPress={() => setShowAssignVet(false)}><Text style={s.modalCloseText}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowAssignVet(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={s.fieldLabel}>Veterinario</Text>
@@ -1117,7 +1117,7 @@ export default function HorseDetailScreen() {
           <View style={s.modalSheet}>
             <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Transferir propiedad</Text>
-              <TouchableOpacity onPress={() => setShowTransfer(false)}><Text style={[s.modalCloseText, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowTransfer(false)}><X size={22} color="rgba(255,255,255,0.7)" strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Nuevo propietario</Text>
@@ -1164,7 +1164,7 @@ export default function HorseDetailScreen() {
           <View style={[s.modalSheet, { maxHeight: '45%' }]}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Subir documento</Text>
-              <TouchableOpacity onPress={() => setShowUploadDoc(false)}><Text style={s.modalCloseText}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowUploadDoc(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={s.fieldLabel}>Nombre del documento</Text>

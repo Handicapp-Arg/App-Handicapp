@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image as RNImage,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { AlertTriangle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/auth';
 import { useInvitationByToken, useAcceptInvitation, ROLE_LABELS } from '../../hooks/use-organizations';
@@ -40,7 +41,7 @@ export default function InvitationScreen() {
     return (
       <View style={[s.root, s.center, { padding: space[5] }]}>
         <View style={s.errorIcon}>
-          <Text style={{ fontSize: 32 }}>⚠️</Text>
+          <AlertTriangle size={32} color="#f59e0b" strokeWidth={2} />
         </View>
         <Text style={s.errorTitle}>Invitación inválida</Text>
         <Text style={s.errorMsg}>El link que abriste no es válido, ya fue usado o expiró.</Text>
@@ -57,7 +58,7 @@ export default function InvitationScreen() {
     return (
       <View style={[s.root, s.center, { padding: space[5] }]}>
         <View style={s.errorIcon}>
-          <Text style={{ fontSize: 32 }}>⚠️</Text>
+          <AlertTriangle size={32} color="#f59e0b" strokeWidth={2} />
         </View>
         <Text style={s.errorTitle}>Email no coincide</Text>
         <Text style={s.errorMsg}>

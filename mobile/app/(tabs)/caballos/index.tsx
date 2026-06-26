@@ -10,7 +10,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ShieldCheck, Building2, TrendingUp, ChevronRight,
-  CheckCircle2, Info, Paperclip, FileText, Camera, Search, XCircle, Plus,
+  CheckCircle2, Info, Paperclip, FileText, Camera, Search, XCircle, Plus, X,
+  Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package,
+  type LucideIcon,
 } from 'lucide-react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
@@ -93,14 +95,14 @@ function HorseCard({ horse, monthlySpend, c, s }: {
   );
 }
 
-const GASTO_CATEGORIES = [
-  { key: 'alimentacion', icon: '🌾', label: 'Alimentación' },
-  { key: 'veterinario', icon: '💉', label: 'Veterinario' },
-  { key: 'herradero', icon: '🔨', label: 'Herradero' },
-  { key: 'entrenamiento', icon: '🏇', label: 'Entrenamiento' },
-  { key: 'mantenimiento', icon: '🔧', label: 'Mantenimiento' },
-  { key: 'transporte', icon: '🚛', label: 'Transporte' },
-  { key: 'otros', icon: '📦', label: 'Otros' },
+const GASTO_CATEGORIES: { key: string; Icon: LucideIcon; color: string; label: string }[] = [
+  { key: 'alimentacion', Icon: Wheat, color: '#16a34a', label: 'Alimentación' },
+  { key: 'veterinario', Icon: Syringe, color: '#dc2626', label: 'Veterinario' },
+  { key: 'herradero', Icon: Hammer, color: '#d97706', label: 'Herradero' },
+  { key: 'entrenamiento', Icon: Activity, color: '#a16207', label: 'Entrenamiento' },
+  { key: 'mantenimiento', Icon: Wrench, color: '#0284c7', label: 'Mantenimiento' },
+  { key: 'transporte', Icon: Truck, color: '#0891b2', label: 'Transporte' },
+  { key: 'otros', Icon: Package, color: '#6b7280', label: 'Otros' },
 ];
 
 function QuickGastoModal({
@@ -159,7 +161,7 @@ function QuickGastoModal({
             <Text style={s.modalTitle}>Registrar gasto</Text>
             {selectedHorse && <Text style={s.quickModalSub}>{selectedHorse.name}</Text>}
           </View>
-          <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={s.quickModalBody} keyboardShouldPersistTaps="handled">
@@ -204,17 +206,20 @@ function QuickGastoModal({
           {/* Category */}
           <Text style={s.fieldLabel}>Categoría</Text>
           <View style={s.categoryGrid}>
-            {GASTO_CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.key}
-                style={[s.catChip, category === cat.key && s.catChipActive]}
-                onPress={() => { haptic.selection(); setCategory(cat.key); }}
-                activeOpacity={0.7}
-              >
-                <Text style={s.catIcon}>{cat.icon}</Text>
-                <Text style={[s.catLabel, category === cat.key && s.catLabelActive]}>{cat.label}</Text>
-              </TouchableOpacity>
-            ))}
+            {GASTO_CATEGORIES.map((cat) => {
+              const CatIcon = cat.Icon;
+              return (
+                <TouchableOpacity
+                  key={cat.key}
+                  style={[s.catChip, category === cat.key && s.catChipActive]}
+                  onPress={() => { haptic.selection(); setCategory(cat.key); }}
+                  activeOpacity={0.7}
+                >
+                  <CatIcon size={14} color={cat.color} strokeWidth={2} />
+                  <Text style={[s.catLabel, category === cat.key && s.catLabelActive]}>{cat.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* Description */}
@@ -308,8 +313,8 @@ function RecordMatchModal({
     } else {
       Alert.alert('Documento', '¿Cómo querés adjuntar el documento?', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: '📷 Tomar foto', onPress: () => pickDoc('camera') },
-        { text: '🖼️ Elegir de galería', onPress: () => pickDoc('gallery') },
+        { text: 'Tomar foto', onPress: () => pickDoc('camera') },
+        { text: 'Elegir de galería', onPress: () => pickDoc('gallery') },
       ]);
     }
   };
@@ -370,7 +375,7 @@ function RecordMatchModal({
               <Text style={s.matchSubtitle}>{selectedRecord.name}</Text>
             </View>
             <TouchableOpacity onPress={() => { setStep('list'); setDocUri(null); setRegistrationNumber(''); setError(''); }}>
-              <Text style={s.modalClose}>✕</Text>
+              <X size={22} color={c.textFaint} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
@@ -442,7 +447,7 @@ function RecordMatchModal({
           <Text style={s.modalTitle}>Posibles coincidencias</Text>
           <Text style={s.matchSubtitle}>Encontramos este caballo en el padrón</Text>
         </View>
-        <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+        <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
         {matches.map((r) => (
@@ -514,8 +519,8 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
     } else {
       Alert.alert('Foto del caballo', '¿De dónde querés subir la foto?', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: '📷 Tomar foto', onPress: () => pickPhoto('camera') },
-        { text: '🖼️ Elegir de galería', onPress: () => pickPhoto('gallery') },
+        { text: 'Tomar foto', onPress: () => pickPhoto('camera') },
+        { text: 'Elegir de galería', onPress: () => pickPhoto('gallery') },
       ]);
     }
   };
@@ -561,7 +566,7 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
       <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Nuevo caballo</Text>
-          <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={s.modalBody}>
 

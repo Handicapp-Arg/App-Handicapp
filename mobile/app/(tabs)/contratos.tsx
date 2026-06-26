@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FileText, ChevronDown } from 'lucide-react-native';
+import { FileText, ChevronDown, X } from 'lucide-react-native';
 import { PressableScale } from '../../components/PressableScale';
 import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../../hooks/use-contracts';
 import { useAuth } from '../../lib/auth';
@@ -245,7 +245,7 @@ export default function ContratosScreen() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Nuevo contrato</Text>
               <TouchableOpacity onPress={() => { setShowCreate(false); setEmailToSearch(''); setCreateOwnerEmail(''); }}>
-                <Text style={s.modalClose}>✕</Text>
+                <X size={22} color={c.textFaint} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
@@ -337,7 +337,7 @@ export default function ContratosScreen() {
           <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
             <View style={[s.modalHeader, { backgroundColor: '#16a34a' }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Firmar digitalmente</Text>
-              <TouchableOpacity onPress={() => setSigningContract(null)}><Text style={[s.modalClose, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSigningContract(null)}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={s.fieldLabel}>Escribí tu nombre completo tal como aparecerá en la firma:</Text>
@@ -380,7 +380,7 @@ export default function ContratosScreen() {
           <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
             <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Rechazar contrato</Text>
-              <TouchableOpacity onPress={() => setRejectingContract(null)}><Text style={[s.modalClose, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setRejectingContract(null)}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
               <Text style={s.fieldLabel}>Motivo del rechazo (opcional):</Text>

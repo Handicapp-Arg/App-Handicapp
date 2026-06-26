@@ -57,7 +57,7 @@ function InviteModal({ orgId, onClose, c, s }: { orgId: string; onClose: () => v
         <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{createdLink ? 'Invitación lista' : 'Invitar miembro'}</Text>
-            <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
           </View>
 
           {!createdLink ? (
