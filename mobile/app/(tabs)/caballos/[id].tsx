@@ -12,6 +12,7 @@ import {
   ShieldCheck, Megaphone, ChevronRight, User, XCircle, FileText,
   Trash2, CheckCircle2, Camera, Pencil, Stethoscope, Network,
   Info, Clock, Images, Banknote,
+  Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse,
   type LucideIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -101,6 +102,17 @@ function EditHorseModal({ horse, onClose, c, s }: { horse: Horse; onClose: () =>
 }
 
 /* ─── InfoItem ─── */
+/** Íconos de la rutina diaria — lucide con color (en vez de emojis). */
+const ROUTINE_ICON: Record<string, { Icon: LucideIcon; color: string }> = {
+  morning_feed:   { Icon: Sunrise,    color: '#f59e0b' },
+  afternoon_feed: { Icon: Sun,        color: '#eab308' },
+  evening_feed:   { Icon: Moon,       color: '#6366f1' },
+  water_ok:       { Icon: Droplets,   color: '#3b82f6' },
+  paddock:        { Icon: Sprout,     color: '#22c55e' },
+  trained:        { Icon: Activity,   color: '#f97316' },
+  health_check:   { Icon: HeartPulse, color: '#ef4444' },
+};
+
 function InfoItem({ label, value, s }: { label: string; value: string; s: Styles }) {
   return (
     <View style={s.infoItem}>
@@ -720,8 +732,10 @@ export default function HorseDetailScreen() {
             </View>
 
             <View style={s.routineGrid}>
-              {ROUTINE_ITEMS.map(({ key, label, emoji }) => {
+              {ROUTINE_ITEMS.map(({ key, label }) => {
                 const checked = todayRoutine?.[key] ?? false;
+                const ri = ROUTINE_ICON[key];
+                const RIcon = ri?.Icon ?? Info;
                 return (
                   <TouchableOpacity
                     key={key}
@@ -729,7 +743,7 @@ export default function HorseDetailScreen() {
                     onPress={() => { haptic.selection(); upsertRoutine.mutate({ date: todayISO, [key]: !checked }); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={s.routineEmoji}>{emoji}</Text>
+                    <RIcon size={16} color={ri?.color ?? c.textFaint} strokeWidth={2} />
                     <Text style={[s.routineLabel, checked && s.routineLabelChecked]} numberOfLines={1}>{label}</Text>
                     {checked && <CheckCircle2 size={16} color="#16a34a" strokeWidth={2} />}
                   </TouchableOpacity>
@@ -1470,10 +1484,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Rutina */
   routineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
-  routineItemChecked: { borderColor: '#86efac', backgroundColor: '#f0fdf4' },
-  routineEmoji: { fontSize: 16 },
+  routineItemChecked: { borderColor: c.isDark ? 'rgba(34,197,94,0.4)' : '#86efac', backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
   routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: c.textMuted },
-  routineLabelChecked: { color: '#15803d' },
+  routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d' },
   routineTrend: { marginTop: 12, backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
   routineTrendTitle: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   routineTrendDays: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 52 },
