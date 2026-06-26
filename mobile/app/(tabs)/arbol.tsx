@@ -404,6 +404,7 @@ export default function ArbolScreen() {
 
       {/* Legend (deja espacio para la tab bar inferior) */}
       <View style={[s.legendBar, { paddingBottom: insets.bottom + 64 }]}>
+        <Text style={s.legendTitle}>Referencias</Text>
         <Legend s={s} />
       </View>
     </View>
@@ -492,13 +493,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   depthRow: {
     flexDirection: 'row',
     backgroundColor: c.surfaceAlt,
-    borderRadius: 8,
-    padding: 2,
+    borderRadius: 9,
+    padding: 3,
   },
   depthBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 7,
   },
   depthBtnActive: {
     backgroundColor: c.surface,
@@ -654,24 +655,34 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
   },
+  legendTitle: {
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    color: c.textFaint,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'center',
+    columnGap: 18,
+    rowGap: 8,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   legendLine: {
-    width: 18,
-    height: 2,
-    borderRadius: 1,
-    opacity: 0.6,
+    width: 14,
+    height: 3,
+    borderRadius: 2,
   },
   legendText: {
-    fontSize: 10,
+    fontSize: 11,
     color: c.textMuted,
     fontWeight: '500',
   },
