@@ -21,7 +21,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)]">
         <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
       </div>
     );
@@ -29,7 +29,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)]">
         <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
       </div>
     );
@@ -37,8 +37,8 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
 
   if (error || !invitation) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8] p-4">
-        <div className="w-full max-w-md rounded-2xl border border-red-100 bg-white p-8 text-center shadow-md">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)] p-4">
+        <div className="w-full max-w-md rounded-2xl border border-red-100 bg-[var(--surface-card)] p-8 text-center shadow-md">
           <div className="mb-4 flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
               <svg className="h-7 w-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -61,8 +61,8 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
 
   if (!emailMatch) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8] p-4">
-        <div className="w-full max-w-md rounded-2xl border border-amber-100 bg-white p-8 text-center shadow-md">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)] p-4">
+        <div className="w-full max-w-md rounded-2xl border border-amber-100 bg-[var(--surface-card)] p-8 text-center shadow-md">
           <div className="mb-4 flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
               <svg className="h-7 w-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -86,8 +86,8 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0f3f8] p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)] p-4">
+      <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
         <div className="bg-[#9d6c35] px-6 py-8 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -109,7 +109,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
           <button
             onClick={handleAccept}
             disabled={accept.isPending}
-            className="w-full rounded-xl bg-[#9d6c35] py-3 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#20160e] transition"
+            className="w-full rounded-xl bg-[#9d6c35] py-3 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[var(--color-primary-hover)] transition"
           >
             {accept.isPending ? 'Aceptando...' : 'Aceptar invitación'}
           </button>

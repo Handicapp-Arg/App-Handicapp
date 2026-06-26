@@ -57,7 +57,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="border-b border-gray-200 bg-white px-4 py-4 sm:px-8">
+      <div className="border-b border-gray-200 bg-[var(--surface-card)] px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: '#9d6c35' }}>
@@ -74,7 +74,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
       <div className="mx-auto max-w-2xl p-4 sm:p-8 space-y-6">
 
         {/* Info del caballo */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-6 shadow-sm">
           <h1 className="text-2xl font-bold text-gray-900">{horse.name}</h1>
           <div className="mt-2 flex flex-wrap gap-2">
             {horse.breed && (
@@ -93,7 +93,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
 
         {/* Peso */}
         {weights.length > 0 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
             <h2 className="text-base font-bold text-gray-900 mb-3">Registro de peso</h2>
             <div className="space-y-2">
               {weights.map((w) => (
@@ -113,7 +113,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
 
         {/* Historial de eventos */}
         {events.length > 0 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
             <h2 className="text-base font-bold text-gray-900 mb-3">Historial de eventos ({events.length})</h2>
             <div className="space-y-2">
               {events.map((ev) => (

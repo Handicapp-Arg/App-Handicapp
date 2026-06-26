@@ -26,13 +26,13 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
     onClose();
   };
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none';
 
   return createPortal(
     <>
       <div className="fixed inset-0 z-[998] bg-black/50 hidden sm:block" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Nuevo turno</h2>
             <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">✕</button>
@@ -123,7 +123,7 @@ export default function AgendaPage() {
             {(['upcoming', 'all'] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
-                  view === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  view === v ? 'bg-[var(--surface-card)] text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {v === 'upcoming' ? 'Próximos' : 'Todos'}
@@ -168,7 +168,7 @@ export default function AgendaPage() {
                 const meta = APPOINTMENT_TYPES[appt.type] ?? APPOINTMENT_TYPES.otro;
                 const time = new Date(appt.scheduled_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
                 return (
-                  <div key={appt.id} className={`rounded-xl border bg-white p-4 shadow-sm transition ${appt.completed ? 'opacity-50' : ''}`}>
+                  <div key={appt.id} className={`rounded-xl border bg-[var(--surface-card)] p-4 shadow-sm transition ${appt.completed ? 'opacity-50' : ''}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap flex-1">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${meta.bg} ${meta.color}`}>

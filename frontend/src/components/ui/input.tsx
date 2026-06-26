@@ -36,7 +36,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={[errorId, hintId].filter(Boolean).join(' ') || undefined}
             className={cn(
               'w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm text-slate-900 transition',
-              'focus:bg-white focus:outline-none focus:ring-2',
+              'focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2',
               'disabled:cursor-not-allowed disabled:opacity-50',
               error
                 ? 'border-danger-500/40 focus:border-danger-500 focus:ring-danger-500/10'

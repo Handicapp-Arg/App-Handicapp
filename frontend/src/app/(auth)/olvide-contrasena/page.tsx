@@ -71,7 +71,7 @@ export default function OlvideContrasenaPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 transition-all"
+            className="w-full rounded-xl border border-gray-200 bg-[var(--surface-card)] px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 transition-all"
           />
         </div>
 

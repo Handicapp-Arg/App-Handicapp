@@ -180,7 +180,7 @@ function CreateOrgModal({ open, onClose }: { open: boolean; onClose: () => void 
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 transition focus:border-navy-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy-700/10"
+            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 transition focus:border-navy-700 focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-navy-700/10"
             placeholder="Pagó por transferencia, etc..."
           />
         </div>

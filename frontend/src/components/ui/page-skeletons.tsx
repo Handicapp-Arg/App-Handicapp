@@ -11,7 +11,7 @@ function Bar({ className }: { className?: string }) {
 
 function CardBox({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-2xl border border-slate-100 bg-white p-5', className)}>
+    <div className={cn('rounded-2xl border border-slate-100 bg-[var(--surface-card)] p-5', className)}>
       {children}
     </div>
   );
@@ -127,7 +127,7 @@ export function ListSkeleton({ rows = 6 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3"
+          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[var(--surface-card)] px-4 py-3"
         >
           <Bar className="h-10 w-10 shrink-0 rounded-xl" />
           <div className="flex-1 space-y-2">

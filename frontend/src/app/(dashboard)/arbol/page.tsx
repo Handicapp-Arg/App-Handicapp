@@ -110,7 +110,7 @@ const OWN: Record<string, { border: string; bg: string; badge: React.ReactNode; 
   },
   unverified: {
     border: 'border-gray-200',
-    bg: 'bg-white',
+    bg: 'bg-[var(--surface-card)]',
     ring: '',
     badge: null,
   },
@@ -309,7 +309,7 @@ function HorseSearchSelector({ onSelect }: { onSelect: (r: HorseRecord) => void 
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl shadow-sm px-3 py-2">
+      <div className="flex items-center gap-2 bg-[var(--surface-card)] border border-gray-200 rounded-xl shadow-sm px-3 py-2">
         <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
         <input
           value={q}
@@ -323,7 +323,7 @@ function HorseSearchSelector({ onSelect }: { onSelect: (r: HorseRecord) => void 
       {open && data?.items && data.items.length > 0 && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute top-full mt-1 left-0 z-20 bg-white rounded-xl border border-gray-200 shadow-xl py-1 min-w-full max-h-64 overflow-y-auto">
+          <div className="absolute top-full mt-1 left-0 z-20 bg-[var(--surface-card)] rounded-xl border border-gray-200 shadow-xl py-1 min-w-full max-h-64 overflow-y-auto">
             {data.items.map(r => (
               <button
                 key={r.id}
@@ -439,10 +439,10 @@ export default function ArbolPage() {
     setZoom(z => Math.max(0.4, Math.min(1.5, +(z + delta).toFixed(1))));
 
   return (
-    <div className="flex flex-col h-screen bg-[#f8f9fb] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[var(--surface-page)] overflow-hidden">
 
       {/* ── Top toolbar ── */}
-      <div className="flex items-center gap-4 px-6 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 flex-wrap">
+      <div className="flex items-center gap-4 px-6 py-3 bg-[var(--surface-card)] border-b border-gray-100 shadow-sm flex-shrink-0 flex-wrap">
         <div className="flex items-center gap-2 text-gray-800">
           <TreePine className="h-5 w-5 text-emerald-600" />
           <span className="font-bold text-base">Árbol Genealógico</span>
@@ -462,7 +462,7 @@ export default function ArbolPage() {
               onClick={() => setMaxGen(d)}
               className={cn(
                 'px-3 py-1 rounded-md text-xs font-semibold transition',
-                maxGen === d ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+                maxGen === d ? 'bg-[var(--surface-card)] text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
               )}
             >
               {d} gen
@@ -472,14 +472,14 @@ export default function ArbolPage() {
 
         {/* Zoom controls */}
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-          <button onClick={() => adjustZoom(-0.1)} className="p-1.5 text-gray-500 hover:text-gray-800 transition rounded-md hover:bg-white">
+          <button onClick={() => adjustZoom(-0.1)} className="p-1.5 text-gray-500 hover:text-gray-800 transition rounded-md hover:bg-[var(--surface-card)]">
             <ZoomOut className="h-3.5 w-3.5" />
           </button>
           <span className="text-xs font-mono w-10 text-center text-gray-600">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => adjustZoom(0.1)} className="p-1.5 text-gray-500 hover:text-gray-800 transition rounded-md hover:bg-white">
+          <button onClick={() => adjustZoom(0.1)} className="p-1.5 text-gray-500 hover:text-gray-800 transition rounded-md hover:bg-[var(--surface-card)]">
             <ZoomIn className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => setZoom(1)} className="p-1.5 text-gray-500 hover:text-gray-800 transition rounded-md hover:bg-white">
+          <button onClick={() => setZoom(1)} className="p-1.5 text-gray-500 hover:text-gray-800 transition rounded-md hover:bg-[var(--surface-card)]">
             <RotateCcw className="h-3 w-3" />
           </button>
         </div>
@@ -537,7 +537,7 @@ export default function ArbolPage() {
       </div>
 
       {/* ── Bottom legend ── */}
-      <div className="px-6 py-2.5 bg-white border-t border-gray-100 flex-shrink-0">
+      <div className="px-6 py-2.5 bg-[var(--surface-card)] border-t border-gray-100 flex-shrink-0">
         <Legend />
       </div>
     </div>

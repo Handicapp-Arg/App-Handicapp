@@ -56,7 +56,7 @@ function RoleNotifCard({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <p className="font-semibold text-gray-900">{roleLabels[role] || role}</p>
         <div className="flex items-center gap-2">

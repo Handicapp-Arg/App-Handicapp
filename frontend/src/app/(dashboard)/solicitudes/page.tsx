@@ -47,7 +47,7 @@ function RequestCard({
   });
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-surface-border bg-white p-5 shadow-[var(--shadow-card)] sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-surface-border bg-[var(--surface-card)] p-5 shadow-[var(--shadow-card)] sm:flex-row sm:items-start sm:justify-between">
       <div className="flex items-start gap-4 min-w-0">
         {/* Ícono caballo */}
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xl">
@@ -153,7 +153,7 @@ export default function SolicitudesPage() {
             className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
               filter === f.value
                 ? 'bg-navy-700 text-white shadow-sm'
-                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                : 'bg-[var(--surface-card)] border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
             }`}
           >
             {f.label}

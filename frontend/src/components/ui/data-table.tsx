@@ -44,7 +44,7 @@ export function DataTable<T>({
   className,
 }: DataTableProps<T>) {
   return (
-    <div className={cn('overflow-hidden rounded-2xl border border-surface-border bg-white shadow-[var(--shadow-card)]', className)}>
+    <div className={cn('overflow-hidden rounded-2xl border border-surface-border bg-[var(--surface-card)] shadow-[var(--shadow-card)]', className)}>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50/80">

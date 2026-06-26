@@ -67,7 +67,7 @@ function FeedSidebar({ user, stats, isAdmin }: {
   return (
     <div className="space-y-4">
       {/* Profile card — replica el diseño del perfil (cuero) */}
-      <div className="overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
         <div className="relative h-16 bg-gradient-to-r from-clay-400 via-clay-500 to-clay-600">
           {user?.cover_url && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -100,7 +100,7 @@ function FeedSidebar({ user, stats, isAdmin }: {
 
       {/* Admin stats */}
       {isAdmin && stats && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 space-y-3">
+        <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm p-4 space-y-3">
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Estadísticas</p>
           <div className="grid grid-cols-2 gap-2">
             <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Total" value={stats.total} color="bg-gray-50 border-gray-100 text-gray-700" />
@@ -112,7 +112,7 @@ function FeedSidebar({ user, stats, isAdmin }: {
       )}
 
       {/* Quick links */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Accesos rápidos</p>
         </div>
@@ -181,7 +181,7 @@ export default function MuroPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3 animate-pulse">
+                <div key={i} className="bg-[var(--surface-card)] rounded-xl border border-gray-200 p-4 space-y-3 animate-pulse">
                   <div className="flex gap-3">
                     <div className="h-10 w-10 rounded-full bg-gray-200 shrink-0" />
                     <div className="space-y-2 flex-1">
@@ -202,7 +202,7 @@ export default function MuroPage() {
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="text-center py-20 bg-[var(--surface-card)] rounded-xl border border-gray-200 shadow-sm">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mx-auto mb-4">
                 <Rss className="h-8 w-8 text-gray-300" />
               </div>

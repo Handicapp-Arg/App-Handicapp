@@ -211,14 +211,14 @@ export default function AuctionDetailPage() {
 
             {/* Descripción */}
             {auction.description && (
-              <div className="rounded-2xl border border-gray-100 bg-white p-5">
+              <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-5">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Descripción</h3>
                 <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{auction.description}</p>
               </div>
             )}
 
             {/* Documentación */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-5">
+            <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-5">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Documentación</h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -237,7 +237,7 @@ export default function AuctionDetailPage() {
 
             {/* Condiciones */}
             {(auction.payment_terms || auction.delivery_terms) && (
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-3">
+              <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-5 space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700">Condiciones</h3>
                 {auction.payment_terms && (
                   <div>
@@ -256,7 +256,7 @@ export default function AuctionDetailPage() {
 
             {/* Historial de pujas */}
             {isRemate && (
-              <div className="rounded-2xl border border-gray-100 bg-white p-5">
+              <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-5">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                   Historial de pujas {bids?.length ? `(${bids.length})` : ''}
                 </h3>
@@ -285,7 +285,7 @@ export default function AuctionDetailPage() {
           {/* Columna derecha */}
           <div className="space-y-4">
             {/* Precio / Puja */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
                 {isRemate ? (topBidAmount ? 'Puja actual' : 'Puja inicial') : 'Precio pedido'}
               </p>
@@ -351,7 +351,7 @@ export default function AuctionDetailPage() {
             </div>
 
             {/* Vendedor */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-4">
+            <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Vendedor</p>
               <div className="flex items-center gap-2.5">
                 <div className="h-9 w-9 rounded-full bg-[#9d6c35]/10 flex items-center justify-center font-bold text-[#9d6c35] text-sm">

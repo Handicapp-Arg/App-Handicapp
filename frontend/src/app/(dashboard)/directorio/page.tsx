@@ -52,7 +52,7 @@ function RequestModal({
   if (sent) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-        <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-xl">
+        <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] p-8 text-center shadow-xl">
           <div className="mb-4 flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
               <svg className="h-7 w-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -70,7 +70,7 @@ function RequestModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+      <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
         <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
           <p className="font-bold text-white">Solicitar alojamiento</p>
           <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -183,7 +183,7 @@ export default function DirectorioPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Buscar por nombre..."
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-[#9d6c35] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/8"
+          className="w-full rounded-xl border border-gray-200 bg-[var(--surface-card)] py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-[#9d6c35] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/8"
         />
       </div>
 
@@ -203,7 +203,7 @@ export default function DirectorioPage() {
           {items.map((item) => {
             const hasPending = pendingForEstab(item.id);
             return (
-              <div key={item.id} className="group rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 duration-200">
+              <div key={item.id} className="group rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 duration-200">
                 <div className="flex items-start gap-4">
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white text-lg font-bold"

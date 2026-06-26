@@ -189,6 +189,18 @@
   --color-navy-800: #e4e4e7;
   --color-navy-900: #fafafa;
 
+  /* Slate (Tailwind default, muy usado en inputs/modales) → neutros invertidos */
+  --color-slate-50:  #18181b;
+  --color-slate-100: #232327;
+  --color-slate-200: #27272a;
+  --color-slate-300: #3f3f46;
+  --color-slate-400: #6b6b73;
+  --color-slate-500: #a1a1aa;
+  --color-slate-600: #d4d4d8;
+  --color-slate-700: #e4e4e7;
+  --color-slate-800: #f4f4f5;
+  --color-slate-900: #fafafa;
+
   /* Neutrales cálidos y tipografía → mutan en dark */
   --color-espresso:  #fafafa;
   --color-bark-600:  #a1a1aa;
@@ -262,7 +274,7 @@ body {
 
 /* ─── Cards (legacy) ─── */
 .card {
-  background: #ffffff;
+  background: var(--surface-card);
   border-radius: 1rem;
   border: 1px solid var(--surface-card-border);
   box-shadow: var(--shadow-card);
@@ -304,7 +316,6 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background-color: #fff;
   color: var(--color-gray-700);
   font-size: 0.875rem;
   font-weight: 500;
@@ -316,6 +327,7 @@ body {
   transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
   cursor: pointer;
   outline: none;
+  background-color: var(--surface-card);
 }
 .btn-secondary:hover { background-color: var(--color-gray-50); border-color: var(--color-gray-300); }
 .btn-secondary:active { transform: scale(0.97); }
@@ -335,7 +347,7 @@ body {
 }
 .input-base:focus {
   border-color: var(--color-primary);
-  background-color: #ffffff;
+  background-color: var(--surface-card);
   box-shadow: 0 0 0 3px rgb(15 31 61 / 0.08);
 }
 .input-base::placeholder { color: var(--color-gray-400); }

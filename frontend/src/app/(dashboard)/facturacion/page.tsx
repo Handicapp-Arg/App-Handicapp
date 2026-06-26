@@ -36,7 +36,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
 
   const total = items.reduce((sum, i) => sum + (parseFloat(i.quantity || '0') * parseFloat(i.unit_price || '0')), 0);
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +61,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
     <>
       <div className="fixed inset-0 z-[998] bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 overflow-y-auto">
-        <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl my-4">
+        <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-xl my-4">
           <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Nueva factura</h2>
             <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">✕</button>
@@ -211,7 +211,7 @@ export default function FacturacionPage() {
           {bills.map((bill) => {
             const meta = STATUS_META[bill.status];
             return (
-              <div key={bill.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+              <div key={bill.id} className="rounded-xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm space-y-3">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -308,11 +308,11 @@ export default function FacturacionPage() {
         <>
           <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setDisputingId(null)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl p-5 space-y-4">
+            <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl p-5 space-y-4">
               <h3 className="text-base font-bold text-gray-900">Disputar factura</h3>
               <textarea rows={3} value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)}
                 placeholder="Explicá el motivo de la disputa..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:bg-white focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none"
               />
               <div className="flex gap-2">
                 <button onClick={() => setDisputingId(null)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer">Cancelar</button>

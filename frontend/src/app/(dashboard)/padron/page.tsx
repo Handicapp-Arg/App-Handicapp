@@ -72,7 +72,7 @@ function PedigreeNode({
           depth === 0
             ? 'bg-black text-white border-black text-sm cursor-default'
             : node.id
-            ? 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-sm cursor-pointer'
+            ? 'bg-[var(--surface-card)] border-gray-200 hover:border-gray-400 hover:shadow-sm cursor-pointer'
             : 'bg-gray-50 border-gray-100 text-gray-400 cursor-default',
         )}
       >
@@ -658,7 +658,7 @@ export default function RegistroPage() {
         <div className="flex gap-4">
           {/* Left panel: search + list */}
           <div className={cn(
-            'bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col transition-all',
+            'bg-[var(--surface-card)] rounded-xl border border-gray-200 shadow-sm flex flex-col transition-all',
             selectedId ? 'w-full max-w-sm flex-shrink-0' : 'w-full',
           )}>
             {/* Search bar */}
@@ -734,7 +734,7 @@ export default function RegistroPage() {
 
           {/* Right panel: detail */}
           {selectedId && (
-            <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+            <div className="flex-1 bg-[var(--surface-card)] rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
               <RecordDetail
                 id={selectedId}
                 onClose={() => setSelectedId(null)}

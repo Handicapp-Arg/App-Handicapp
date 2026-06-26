@@ -34,7 +34,7 @@ export function ThemeToggle({ className }: { className?: string }) {
             className={cn(
               'inline-flex h-6 w-6 items-center justify-center rounded-full transition',
               active
-                ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
+                ? 'bg-[var(--surface-card)] text-gray-900 shadow-sm ring-1 ring-gray-200'
                 : 'text-gray-400 hover:text-gray-700',
             )}
             aria-label={label}

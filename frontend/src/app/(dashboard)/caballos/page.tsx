@@ -32,7 +32,7 @@ import { Button } from '@/components/ui/button';
 import type { Horse, HorseOwnership } from '@/types';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-clay-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-clay-500/12';
+  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-clay-500 focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-clay-500/12';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -409,7 +409,7 @@ function EditModal({
   return createPortal(
     <>
       {/* ── MOBILE: pantalla completa ── */}
-      <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
+      <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
         <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <p className="font-bold text-white">Editar caballo</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -436,7 +436,7 @@ function EditModal({
       {/* ── DESKTOP: backdrop + modal ── */}
       <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-        <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
+        <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
           <div className="flex items-center justify-between bg-[#9d6c35] rounded-t-2xl px-6 py-4">
             <p className="font-bold text-white">Editar caballo</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -633,7 +633,7 @@ export default function CaballosPage() {
         <>
           <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setRecordMatches(null)} />
           <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+            <div className="w-full sm:max-w-md bg-[var(--surface-card)] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
               <div className="flex items-start justify-between px-5 pt-5 pb-3">
                 <div>
                   <p className="font-bold text-gray-900">Posibles coincidencias</p>
@@ -724,7 +724,7 @@ export default function CaballosPage() {
       {showForm && createPortal(
         <>
           {/* Mobile */}
-          <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
+          <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
             <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
               <p className="font-bold text-white">Nuevo caballo</p>
               <button onClick={closeCreateForm} className="p-2 text-white/70 hover:text-white cursor-pointer">✕</button>
@@ -798,7 +798,7 @@ export default function CaballosPage() {
           {/* Desktop */}
           <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50 backdrop-blur-sm" onClick={closeCreateForm} />
           <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-            <div className="relative flex flex-col w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '90dvh' }}>
+            <div className="relative flex flex-col w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '90dvh' }}>
               {/* Header */}
               <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
                 <div>
@@ -914,7 +914,7 @@ export default function CaballosPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar"
-              className="w-full rounded-xl bg-white py-2.5 pl-9 pr-4 text-sm text-gray-700 shadow-[var(--shadow-card)] focus:outline-none focus:ring-2 focus:ring-clay-500/15"
+              className="w-full rounded-xl bg-[var(--surface-card)] py-2.5 pl-9 pr-4 text-sm text-gray-700 shadow-[var(--shadow-card)] focus:outline-none focus:ring-2 focus:ring-clay-500/15"
             />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
@@ -969,7 +969,7 @@ export default function CaballosPage() {
           {filteredHorses.map((horse) => (
             <div key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
-              className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
+              className="group cursor-pointer overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
 
               {/* Media: foto o placeholder cálido con inicial */}
               <div className="relative aspect-[4/3] overflow-hidden">

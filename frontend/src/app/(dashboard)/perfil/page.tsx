@@ -18,7 +18,7 @@ const planLabel: Record<string, string> = { free: 'Gratis', pro: 'Pro' };
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-card)]">
+    <div className="rounded-2xl bg-[var(--surface-card)] p-6 shadow-[var(--shadow-card)]">
       <h2 className="mb-5 text-sm font-bold uppercase tracking-wider text-gray-400">{title}</h2>
       {children}
     </div>
@@ -34,14 +34,14 @@ function MisPublicaciones({ userId }: { userId: string }) {
     return (
       <div className="space-y-4">
         {[1, 2].map((i) => (
-          <div key={i} className="h-32 animate-pulse rounded-2xl bg-white shadow-[var(--shadow-card)]" />
+          <div key={i} className="h-32 animate-pulse rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)]" />
         ))}
       </div>
     );
   }
   if (!posts.length) {
     return (
-      <div className="rounded-2xl bg-white p-10 text-center shadow-[var(--shadow-card)]">
+      <div className="rounded-2xl bg-[var(--surface-card)] p-10 text-center shadow-[var(--shadow-card)]">
         <p className="text-sm font-semibold text-gray-700">Todavía no publicaste nada</p>
         <p className="mt-1 text-sm text-gray-400">Cuando compartas algo en el muro, va a aparecer acá.</p>
       </div>
@@ -69,7 +69,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-clay-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-clay-500/12 sm:max-w-sm';
+const inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-clay-500 focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-clay-500/12 sm:max-w-sm';
 
 function PasswordInput(props: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
   const [show, setShow] = useState(false);
@@ -199,7 +199,7 @@ export default function PerfilPage() {
       <input ref={coverInput} type="file" accept="image/*" hidden onChange={(e) => handleImageUpload('cover', e.target.files?.[0])} />
 
       {/* Hero del perfil */}
-      <div className="overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
         {/* Banner / portada */}
         <div className="relative h-40 bg-gradient-to-r from-clay-400 via-clay-500 to-clay-600">
           {user?.cover_url && (

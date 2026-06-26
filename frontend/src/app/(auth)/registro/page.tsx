@@ -76,7 +76,7 @@ export default function RegistroPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Tu nombre"
             className={inputClass}
-            style={{ border: '1px solid #d1d5db', backgroundColor: '#ffffff' }}
+            style={{ border: '1px solid #d1d5db', backgroundColor: 'var(--surface-card)' }}
             onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
             onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
           />
@@ -92,7 +92,7 @@ export default function RegistroPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
             className={inputClass}
-            style={{ border: '1px solid #d1d5db', backgroundColor: '#ffffff' }}
+            style={{ border: '1px solid #d1d5db', backgroundColor: 'var(--surface-card)' }}
             onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
             onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
           />
@@ -109,7 +109,7 @@ export default function RegistroPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
               className={inputClass + ' pr-11'}
-              style={{ border: '1px solid #d1d5db', backgroundColor: '#ffffff' }}
+              style={{ border: '1px solid #d1d5db', backgroundColor: 'var(--surface-card)' }}
               onFocus={e => e.currentTarget.style.borderColor = '#6b7280'}
               onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
             />
@@ -142,8 +142,8 @@ export default function RegistroPage() {
                 onClick={() => setRole(r.name)}
                 className="rounded-xl border py-2.5 text-sm font-medium transition cursor-pointer"
                 style={{
-                  backgroundColor: role === r.name ? '#9d6c35' : '#ffffff',
-                  color: role === r.name ? '#ffffff' : '#374151',
+                  backgroundColor: role === r.name ? '#9d6c35' : 'var(--surface-card)',
+                  color: role === r.name ? '#ffffff' : 'var(--foreground)',
                   borderColor: role === r.name ? '#9d6c35' : '#d1d5db',
                 }}
               >

@@ -50,7 +50,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-16 text-center',
+        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-[var(--surface-card)] px-8 py-16 text-center',
         className,
       )}
     >

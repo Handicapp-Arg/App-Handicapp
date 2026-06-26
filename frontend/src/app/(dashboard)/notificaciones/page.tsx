@@ -34,7 +34,7 @@ function NotifItem({
       onClick={() => onClick(n)}
       className={`group flex cursor-pointer items-start gap-3.5 rounded-2xl p-4 transition-all duration-150 ${
         n.read
-          ? 'bg-white shadow-[var(--shadow-card)] hover:shadow-md'
+          ? 'bg-[var(--surface-card)] shadow-[var(--shadow-card)] hover:shadow-md'
           : 'bg-clay-50 ring-1 ring-clay-100 hover:bg-clay-100/50'
       }`}
     >

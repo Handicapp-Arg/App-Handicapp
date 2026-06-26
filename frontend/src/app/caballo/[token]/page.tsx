@@ -112,7 +112,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header branding */}
-      <div className="border-b border-gray-200 bg-white px-4 py-3 sm:px-8">
+      <div className="border-b border-gray-200 bg-[var(--surface-card)] px-4 py-3 sm:px-8">
         <div className="mx-auto max-w-2xl flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: '#9d6c35' }}>
             <span className="text-sm font-bold text-white">H</span>
@@ -124,7 +124,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
       <div className="mx-auto max-w-2xl p-4 sm:p-8 space-y-5">
 
         {/* Hero caballo */}
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
           {data.image_url && (
             <div className="aspect-[16/7] overflow-hidden">
               <img src={data.image_url} alt={data.name} className="w-full h-full object-cover" />
@@ -181,7 +181,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
 
         {/* Feed público — fotos/videos de eventos */}
         {publicFeed.length > 0 && (
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
             <div className="px-5 pt-4 pb-2">
               <h2 className="text-base font-bold text-gray-900">Publicaciones recientes</h2>
             </div>
@@ -226,7 +226,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
 
         {/* Historial médico */}
         {data.medical.length > 0 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
             <h2 className="text-base font-bold text-gray-900 mb-3">Historial médico ({data.medical.length})</h2>
             <div className="space-y-2">
               {data.medical.map((m) => (
@@ -246,7 +246,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ token:
 
         {/* Historial de eventos (salud y entrenamiento) */}
         {data.events.filter((e) => ['salud', 'entrenamiento'].includes(e.type)).length > 0 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
             <h2 className="text-base font-bold text-gray-900 mb-3">Eventos relevantes</h2>
             <div className="space-y-2">
               {data.events

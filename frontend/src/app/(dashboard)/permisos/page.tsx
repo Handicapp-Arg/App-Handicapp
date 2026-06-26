@@ -67,7 +67,7 @@ function RoleCard({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <p className="font-semibold text-gray-900">{roleLabels[role] || role}</p>
         <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ function RoleNotifCard({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <p className="font-semibold text-gray-900">{roleLabels[role] || role}</p>
         <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ function CatalogList({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm overflow-hidden">
       <div className="px-5 py-3.5 border-b border-gray-100">
         <p className="font-semibold text-gray-900">{title}</p>
       </div>
@@ -236,7 +236,7 @@ function CatalogList({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={`Nueva ${title.toLowerCase().slice(0, -1)}...`}
-            className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
           />
           <button
             type="submit"
@@ -374,7 +374,7 @@ export default function PermisosPage() {
       {/* Sección: Roles y Permisos */}
       {tab === 'permisos' && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
             <form onSubmit={handleCreateRole} className="flex gap-2 items-end">
               <div className="flex-1 space-y-1.5">
                 <label className="block text-sm font-medium text-gray-700">Nuevo rol</label>
@@ -383,7 +383,7 @@ export default function PermisosPage() {
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                   placeholder="ej: veterinario"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-white focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                 />
               </div>
               <button

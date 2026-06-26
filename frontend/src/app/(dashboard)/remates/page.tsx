@@ -42,7 +42,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
 
   return (
     <div
-      className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-[#9d6c35]/30 hover:shadow-md"
+      className="cursor-pointer rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm transition hover:border-[#9d6c35]/30 hover:shadow-md"
       onClick={onClick}
     >
       {/* Caballo imagen + nombre */}
@@ -129,10 +129,10 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
 }
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
+  'w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
 
 const selectClass =
-  'rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
+  'rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
 
 function CreateAuctionModal({
   onClose,
@@ -203,8 +203,8 @@ function CreateAuctionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+      <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-[var(--surface-card)] border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-base font-bold text-gray-900">Nueva subasta</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
         </div>
@@ -396,7 +396,7 @@ export default function RematesPage() {
               key={key}
               onClick={() => setTab(key)}
               className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
-                tab === key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                tab === key ? 'bg-[var(--surface-card)] shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {label}
@@ -411,7 +411,7 @@ export default function RematesPage() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
-                  className="w-full rounded-lg border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 bg-[var(--surface-card)] pl-9 pr-4 py-2.5 text-sm focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 focus:outline-none"
                   placeholder="Buscar por nombre o caballo…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

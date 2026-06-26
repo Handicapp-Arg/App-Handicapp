@@ -41,7 +41,7 @@ const typeOptions = [
 ];
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
+  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
 
 const EXPENSE_CATEGORIES = [
   { value: 'alimentacion',  label: 'Alimentación', icon: '🌾' },
@@ -107,7 +107,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
     onClose();
   };
 
-  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none';
 
   const formContent = (
     <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -173,7 +173,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
+      <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
         <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <p className="font-bold text-white">Editar evento</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -182,7 +182,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       </div>
       <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-        <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
+        <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
           <div className="flex items-center justify-between rounded-t-2xl bg-[#9d6c35] px-6 py-4">
             <p className="font-bold text-white">Editar evento</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -247,7 +247,7 @@ function EventCommentThread({ eventId, currentUserId }: { eventId: string; curre
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Escribí un comentario..."
-              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs focus:border-gray-400 focus:bg-white focus:outline-none"
+              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
             />
             <button type="submit" disabled={!text.trim() || add.isPending}
               className="rounded-lg bg-[#9d6c35] px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40 cursor-pointer"
@@ -281,7 +281,7 @@ function EventCard({
   const badge = typeBadge[event.type] ?? typeBadge.nota;
   const hasMedia = (event.photos?.length ?? 0) > 0;
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-3.5">
+    <div className="rounded-xl border border-gray-100 bg-[var(--surface-card)] p-3.5">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.cls}`}>
@@ -528,7 +528,7 @@ function CreateEventModal({
               {RECURRENCE_OPTIONS.map((opt) => (
                 <button key={opt.value} type="button" onClick={() => setRecurrenceType(opt.value)}
                   className={`rounded-lg border py-2 text-xs font-medium transition cursor-pointer ${
-                    recurrenceType === opt.value ? 'border-amber-500 bg-amber-500 text-white' : 'border-amber-200 bg-white text-amber-700 hover:border-amber-300'
+                    recurrenceType === opt.value ? 'border-amber-500 bg-amber-500 text-white' : 'border-amber-200 bg-[var(--surface-card)] text-amber-700 hover:border-amber-300'
                   }`}
                 >
                   {opt.label}
@@ -595,7 +595,7 @@ function CreateEventModal({
   return createPortal(
     <>
       {/* Mobile */}
-      <div className="fixed inset-0 z-[999] flex flex-col bg-white sm:hidden">
+      <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
         <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <div>
             <p className="font-bold text-white">Nuevo evento</p>
@@ -619,7 +619,7 @@ function CreateEventModal({
       {/* Desktop */}
       <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
-        <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
+        <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
           <div className="flex items-center justify-between rounded-t-2xl bg-[#9d6c35] px-6 py-4">
             <div>
               <p className="font-bold text-white">Nuevo evento</p>
@@ -701,9 +701,9 @@ interface MedicalSectionProps {
 
 function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, isPending, horseId, horseName }: MedicalSectionProps) {
   const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(horseId, horseName);
-  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none';
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm lg:rounded-2xl lg:border-gray-200">
+    <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm lg:rounded-2xl lg:border-gray-200">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
@@ -857,7 +857,7 @@ function FinancialDashboard({
 }) {
   if (!financial) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center">
+      <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-6 shadow-sm text-center">
         <p className="text-sm text-gray-400">Cargando datos financieros...</p>
       </div>
     );
@@ -865,7 +865,7 @@ function FinancialDashboard({
 
   if (financial.total === 0 && financial.monthly.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 shadow-sm text-center">
+      <div className="rounded-2xl border border-dashed border-gray-200 bg-[var(--surface-card)] p-8 shadow-sm text-center">
         <span className="text-3xl">💰</span>
         <p className="mt-2 text-sm font-medium text-gray-500">Sin gastos registrados</p>
         <p className="mt-1 text-xs text-gray-400">Los gastos de tipo "Gasto" aparecerán aquí con su categoría</p>
@@ -879,7 +879,7 @@ function FinancialDashboard({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-900">Dashboard financiero</h2>
           <button onClick={onExportCSV}
@@ -905,7 +905,7 @@ function FinancialDashboard({
 
       {/* Categorías */}
       {financial.by_category.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-gray-900">Gasto por categoría</h3>
           <div className="space-y-3">
             {financial.by_category.map((c) => {
@@ -941,7 +941,7 @@ function FinancialDashboard({
 
       {/* Evolución mensual */}
       {financial.monthly.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-gray-900">Evolución mensual</h3>
           <div className="space-y-2">
             {financial.monthly.slice(0, 12).map((m) => {
@@ -963,7 +963,7 @@ function FinancialDashboard({
 
       {/* Gastos recientes */}
       {financial.recent_expenses.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold text-gray-900">Últimos gastos</h3>
           <div className="space-y-2">
             {financial.recent_expenses.map((exp) => {
@@ -1023,7 +1023,7 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
 
   if (sent) return createPortal(
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-xl">
+      <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] p-8 text-center shadow-xl">
         <div className="mb-4 flex justify-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
             <svg className="h-7 w-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1047,7 +1047,7 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
     <>
       <div className="fixed inset-0 z-[998] bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
           <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
             <p className="font-bold text-white">Enviar a establecimiento</p>
             <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
@@ -1064,10 +1064,10 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setSelectedEstab(null); }}
                 placeholder="Nombre del establecimiento..."
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#9d6c35] focus:bg-white focus:outline-none transition"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none transition"
               />
               {estabs.length > 0 && !selectedEstab && (
-                <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-[var(--surface-card)] shadow-sm">
                   {estabs.map((e) => (
                     <button
                       key={e.id}
@@ -1104,7 +1104,7 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
                 onChange={(e) => setMessage(e.target.value)}
                 rows={3}
                 placeholder="Presentate o aclará lo que necesitás..."
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:bg-white focus:outline-none transition"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none transition"
               />
             </div>
 
@@ -1343,7 +1343,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <>
           <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setShowAddWeight(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
               <div className="flex items-center justify-between bg-orange-600 px-5 py-4">
                 <p className="font-bold text-white">Registrar peso</p>
                 <button onClick={() => setShowAddWeight(false)} className="text-white/70 hover:text-white cursor-pointer">✕</button>
@@ -1354,28 +1354,28 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     <label className="block text-xs font-semibold text-gray-600">Peso (kg) *</label>
                     <input type="number" step="0.1" min="1" value={newWeight} onChange={(e) => setNewWeight(e.target.value)}
                       placeholder="450.0"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-gray-600">Condición (1-9)</label>
                     <input type="number" min="1" max="9" value={newBodyCondition} onChange={(e) => setNewBodyCondition(e.target.value)}
                       placeholder="5"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-gray-600">Fecha</label>
                   <input type="date" value={newWeightDate} onChange={(e) => setNewWeightDate(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-gray-600">Notas (opcional)</label>
                   <textarea rows={2} value={newWeightNotes} onChange={(e) => setNewWeightNotes(e.target.value)}
                     placeholder="Observaciones..."
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm resize-none focus:border-gray-400 focus:bg-white focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm resize-none focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -1423,7 +1423,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <>
           <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setShowAssignVet(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
               <div className="flex items-center justify-between bg-teal-600 px-5 py-4">
                 <p className="font-bold text-white">Asignar veterinario</p>
                 <button onClick={() => setShowAssignVet(false)} className="text-white/70 hover:text-white cursor-pointer">✕</button>
@@ -1440,7 +1440,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   <select
                     value={selectedVetId}
                     onChange={(e) => setSelectedVetId(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                   >
                     <option value="">Seleccionar veterinario...</option>
                     {veterinarios
@@ -1488,7 +1488,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <>
           <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setShowTransfer(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
               <div className="flex items-center justify-between bg-amber-600 px-5 py-4">
                 <p className="font-bold text-white">Transferir {horse?.name}</p>
                 <button onClick={() => setShowTransfer(false)} className="text-white/70 hover:text-white cursor-pointer">✕</button>
@@ -1500,7 +1500,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 <select
                   value={transferOwnerId}
                   onChange={(e) => setTransferOwnerId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-white focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
                 >
                   <option value="">Seleccionar propietario...</option>
                   {propietarios?.filter((p) => p.id !== horse?.owner_id).map((p) => (
@@ -1560,7 +1560,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Card flotante con datos del caballo (overlap con la imagen) */}
-        <div className="relative -mt-12 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl">
+        <div className="relative -mt-12 rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-xl">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">{horse.name}</h1>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {horse.horse_record_id && (
@@ -1640,7 +1640,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Tenencia */}
         {ownership && ownership.length > 0 && (
-          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-3 flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1664,7 +1664,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Veterinarios (mobile) */}
         {(isOwner || user?.role === 'admin') && (
-          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
@@ -1714,7 +1714,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* ─── Tab bar de contenido (mobile) ─── */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-1 shadow-sm flex gap-1">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-1 shadow-sm flex gap-1">
           {([
             { key: 'historial', label: 'Historial', count: sortedEvents.length },
             { key: 'galeria',   label: 'Galería',   count: galleryEvents.length },
@@ -1741,7 +1741,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Peso y condición corporal (mobile) */}
-        <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'medico' ? 'hidden' : ''}`}>
+        <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'medico' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
@@ -1806,7 +1806,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Documentos (mobile) */}
-        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -1876,7 +1876,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Rutina diaria (mobile) */}
         {canFillRoutine && contentTab === 'rutina' && (
-          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1915,7 +1915,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Historial de eventos */}
-        <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'historial' ? 'hidden' : ''}`}>
+        <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'historial' ? 'hidden' : ''}`}>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -1971,7 +1971,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Galería de eventos (mobile) */}
         {contentTab === 'galeria' && (
-          <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-bold text-gray-900">Galería</h2>
               {isOwner && galleryEvents.length > 0 && (
@@ -2040,7 +2040,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Fotos de actividad (mobile) */}
-        <div className={`rounded-3xl border border-gray-100 bg-white p-5 shadow-sm ${contentTab !== 'fotos' ? 'hidden' : ''}`}>
+        <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'fotos' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -2137,7 +2137,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* ─── Col izquierda: imagen + info ─── */}
         <div className="lg:sticky lg:top-6 space-y-4 mb-6 lg:mb-0">
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
 
             {/* Imagen con overlay mobile */}
             <div className="relative aspect-[4/3] bg-gray-100">
@@ -2244,7 +2244,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
           {/* ─── Tenencia ─── */}
           {ownership && ownership.length > 0 && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
               <h2 className="mb-2.5 text-sm font-semibold text-gray-900">Tenencia</h2>
               <div className="space-y-1.5">
                 {ownership.map((o) => (
@@ -2261,7 +2261,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
           {/* ─── Veterinarios (desktop) ─── */}
           {(isOwner || user?.role === 'admin') && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
               <div className="mb-2.5 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-900">Veterinarios</h2>
                 <button
@@ -2301,7 +2301,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           )}
 
           {/* ─── Documentos (desktop) ─── */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
             <div className="mb-2.5 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">
                 Documentos
@@ -2351,7 +2351,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
           {/* ─── Resumen financiero (desktop sidebar) ─── */}
           {financial && financial.total > 0 && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-900">Finanzas</h2>
                 <button onClick={() => setContentTab('finanzas')}
@@ -2391,7 +2391,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           )}
         {/* ─── Movimientos ─── */}
           {movements && movements.length > 0 && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
               <h2 className="mb-2.5 text-sm font-semibold text-gray-900">Historial de movimientos</h2>
               <div className="space-y-2">
                 {movements.map((m) => (
@@ -2419,7 +2419,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               key={key}
               onClick={() => setContentTab(key)}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition cursor-pointer ${
-                contentTab === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                contentTab === key ? 'bg-[var(--surface-card)] text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {label}
@@ -2433,7 +2433,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Peso (desktop) */}
-        {contentTab === 'medico' && <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        {contentTab === 'medico' && <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">Peso y condición corporal</h2>
             {canEdit && (
@@ -2481,7 +2481,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Rutina diaria (desktop) */}
         {canFillRoutine && contentTab === 'rutina' && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Rutina de hoy</h2>
               <p className="text-[10px] text-gray-400">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
@@ -2513,7 +2513,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Eventos (desktop) */}
-        {contentTab === 'historial' && <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        {contentTab === 'historial' && <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">
               Eventos
@@ -2556,7 +2556,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Galería (desktop) */}
         {contentTab === 'galeria' && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">
                 Galería
@@ -2644,7 +2644,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Fotos (desktop) */}
         {contentTab === 'fotos' && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">Fotos verificadas</h2>
               <div className="flex items-center gap-2">
@@ -2706,7 +2706,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <>
           <div className="fixed inset-0 z-[998] bg-black/60 backdrop-blur-sm" onClick={() => setShowQR(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-xs rounded-3xl bg-white shadow-2xl overflow-hidden">
+            <div className="w-full max-w-xs rounded-3xl bg-[var(--surface-card)] shadow-2xl overflow-hidden">
               <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #9d6c35 0%, #1a3a6b 100%)' }}>
                 <div>
                   <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Código QR</p>

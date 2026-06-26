@@ -101,7 +101,7 @@ function AdminMetrics() {
       value: sa ? `${sa.new_orgs_30d}` : '—',
       sub: sa && sa.suspended_count > 0 ? `${sa.suspended_count} suspendidas` : undefined,
       accent: 'text-gray-700',
-      bg: 'bg-white border-gray-100',
+      bg: 'bg-[var(--surface-card)] border-gray-100',
     },
   ];
 
@@ -173,17 +173,17 @@ function AdminPanel() {
       {/* Quick links */}
       <div className="flex flex-wrap gap-2">
         <Link href="/superadmin"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-[var(--surface-card)] px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" /></svg>
           Organizaciones
         </Link>
         <Link href="/permisos"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-[var(--surface-card)] px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
           Permisos
         </Link>
         <Link href="/catalogo"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-[var(--surface-card)] px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
           Catálogo
         </Link>
@@ -194,7 +194,7 @@ function AdminPanel() {
         {tabs.map((t) => (
           <button key={t.key} onClick={() => handleTabChange(t.key)}
             className={`flex-1 rounded-md px-2 py-2 text-sm font-medium transition cursor-pointer whitespace-nowrap ${
-              tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === t.key ? 'bg-[var(--surface-card)] text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {t.label}
@@ -289,7 +289,7 @@ function RematesAdminTab() {
         {all.length} remate{all.length !== 1 ? 's' : ''} · {active.length} activo{active.length !== 1 ? 's' : ''}
       </p>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
         <div className="divide-y divide-gray-50">
           {all.map((a) => (
             <div key={a.id} className="flex items-center gap-3 px-4 py-3">
@@ -333,7 +333,7 @@ function RematesAdminTab() {
       {/* Confirm modal */}
       {confirmCancel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] p-6 shadow-2xl">
             <h3 className="font-bold text-gray-900 mb-2">Cancelar remate</h3>
             <p className="text-sm text-gray-500 mb-4">
               Vas a cancelar <strong>{confirmCancel.title}</strong> de {confirmCancel.seller?.name ?? '—'}. Esta acción no se puede deshacer.
@@ -430,7 +430,7 @@ function FraudesTab() {
         const approvalLabel = APPROVAL_REASON_LABELS[claim.matched_fields?.[0] ?? ''] ?? '—';
 
         return (
-          <div key={claim.id} className={`rounded-xl border bg-white overflow-hidden ${claim.fraud_risk === 'high' ? 'border-red-200' : claim.fraud_risk === 'medium' ? 'border-amber-200' : 'border-gray-200'}`}>
+          <div key={claim.id} className={`rounded-xl border bg-[var(--surface-card)] overflow-hidden ${claim.fraud_risk === 'high' ? 'border-red-200' : claim.fraud_risk === 'medium' ? 'border-amber-200' : 'border-gray-200'}`}>
             {claim.fraud_risk !== 'none' && (
               <div className={`h-1 w-full ${claim.fraud_risk === 'high' ? 'bg-red-400' : claim.fraud_risk === 'medium' ? 'bg-amber-400' : 'bg-blue-300'}`} />
             )}
@@ -539,7 +539,7 @@ function FraudesTab() {
 
       {revokeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] p-6 shadow-2xl">
             <h3 className="font-bold text-gray-900 mb-1">Revocar claim</h3>
             <p className="text-sm text-gray-500 mb-4">
               Vas a revocar la propiedad de <strong>{revokeTarget.name}</strong>.
@@ -603,7 +603,7 @@ function PlansAdminTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-sm">
       <div className="hidden sm:grid grid-cols-[1fr_1fr_90px_100px_180px] gap-0 border-b border-gray-100 bg-gray-50 px-4 py-2.5">
         <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Usuario</span>
         <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Email</span>
@@ -727,22 +727,22 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Mis caballos</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{data.horses.length}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Gasto en {monthName}</p>
           <p className="mt-1 text-2xl font-bold text-purple-700">${data.monthly_spend.toLocaleString('es-AR')}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm col-span-2 sm:col-span-1">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm col-span-2 sm:col-span-1">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Eventos recientes</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{data.recent_events.length}</p>
         </div>
       </div>
 
       {data.horses.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Mis caballos</h2>
             <Link href="/caballos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
@@ -774,7 +774,7 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
       )}
 
       {data.recent_events.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Actividad reciente</h2>
             <Link href="/eventos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
@@ -847,7 +847,7 @@ function BoardingRequestsPanel() {
               <button
                 onClick={() => accept.mutate(req.id)}
                 disabled={accept.isPending || reject.isPending}
-                className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#20160e] transition cursor-pointer disabled:opacity-50"
+                className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white hover:bg-clay-700 transition cursor-pointer disabled:opacity-50"
               >
                 {accept.isPending ? '...' : 'Aceptar'}
               </button>
@@ -868,18 +868,18 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
       <BoardingRequestsPanel />
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Caballos en pensión</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{data.horses.length}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Eventos en {monthName}</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{data.monthly_events_count}</p>
         </div>
       </div>
 
       {data.horses.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Caballos en pensión</h2>
             <Link href="/caballos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
@@ -911,7 +911,7 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
       )}
 
       {data.recent_events.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Actividad reciente</h2>
             <Link href="/eventos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
@@ -958,15 +958,15 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Mis pacientes</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{data.total_horses}</p>
         </div>
-        <div className="rounded-2xl border border-red-50 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-red-50 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">Eventos salud</p>
           <p className="mt-1 text-3xl font-bold text-red-700">{data.total_salud_events}</p>
         </div>
-        <div className={`rounded-2xl border p-4 shadow-sm ${data.upcoming_medical.length > 0 ? 'border-amber-100 bg-amber-50' : 'border-gray-100 bg-white'}`}>
+        <div className={`rounded-2xl border p-4 shadow-sm ${data.upcoming_medical.length > 0 ? 'border-amber-100 bg-amber-50' : 'border-gray-100 bg-[var(--surface-card)]'}`}>
           <p className={`text-[10px] font-semibold uppercase tracking-wide ${data.upcoming_medical.length > 0 ? 'text-amber-500' : 'text-gray-400'}`}>Vencen pronto</p>
           <p className={`mt-1 text-3xl font-bold ${data.upcoming_medical.length > 0 ? 'text-amber-700' : 'text-gray-900'}`}>{data.upcoming_medical.length}</p>
         </div>
@@ -1010,7 +1010,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">Mis pacientes</h2>
           <Link href="/caballos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
@@ -1042,7 +1042,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
       </div>
 
       {data.recent_health_events.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Últimos registros de salud</h2>
             <Link href="/eventos" className="text-xs font-medium text-[#9d6c35] hover:underline">Ver todos</Link>
