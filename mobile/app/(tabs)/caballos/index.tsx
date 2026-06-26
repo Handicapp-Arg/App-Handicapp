@@ -869,7 +869,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: c.brand, borderRadius: 28,
     paddingVertical: 12, paddingHorizontal: 18,
-    shadowColor: c.brand, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
+    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
   },
   fabLabel: { fontSize: 14, fontWeight: '700', color: '#fff' },
   // ─── Quick gasto modal ─────────────────────────────────────────────────────
