@@ -36,20 +36,12 @@ export function Horseshoe({ size = 24, color = '#000', strokeWidth = 2 }: Props)
   );
 }
 
-/** Herradura + H — el isotipo de HandicApp en estilo línea (marca + coherencia con Lucide). */
-export function HorseshoeH({ size = 24, color = '#000', strokeWidth = 2 }: Props) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-      stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M6.8 3.4 C4.4 5 3.2 7.8 3.2 11.5 C3.2 16.6 7.2 20.8 12 20.8 C16.8 20.8 20.8 16.6 20.8 11.5 C20.8 7.8 19.6 5 17.2 3.4" />
-      <Path d="M6.8 3.4 L8.7 4.2" />
-      <Path d="M17.2 3.4 L15.3 4.2" />
-      {/* H de HandicApp */}
-      <Path d="M9.7 9.6 L9.7 15.2" />
-      <Path d="M14.3 9.6 L14.3 15.2" />
-      <Path d="M9.7 12.4 L14.3 12.4" />
-    </Svg>
-  );
+/** Isotipo OFICIAL de la marca (cabeza + herradura + H), recortado del logo. */
+const ISOTIPO_H_URL = 'https://res.cloudinary.com/dh2m9ychv/image/upload/c_crop,g_north,w_0.80,h_0.62,y_0.06/v1762370534/logo-full-white_suu2qt.png';
+
+/** Isotipo oficial de HandicApp, recoloreado con el color del contexto (cuero del tema). */
+export function HorseshoeH({ size = 24, color = '#000' }: Props) {
+  return <Image source={{ uri: ISOTIPO_H_URL }} style={{ width: size, height: size, tintColor: color }} resizeMode="contain" />;
 }
 
 /** Cabeza de caballo de perfil (FontAwesome sólido) — seria pero rellena. */
