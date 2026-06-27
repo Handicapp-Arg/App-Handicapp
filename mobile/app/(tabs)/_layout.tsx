@@ -60,7 +60,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         activeOpacity={0.85}
         onPress={() => { haptic.light(); router.push('/buscar'); }}
       >
-        <QrCode size={23} color="#ffffff" strokeWidth={2.2} />
+        <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />
       </TouchableOpacity>
       <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>QR</Text>
     </View>
@@ -128,18 +128,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   qrBtn: {
     position: 'absolute',
     left: '50%',
-    marginLeft: -25,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    marginLeft: -28,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: c.brand,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    borderWidth: 4,
+    borderColor: c.surface,
+    elevation: 7,
     shadowColor: c.brand,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: c.isDark ? 0.22 : 0.3,
+    shadowRadius: 7,
   },
   qrLabel: {
     position: 'absolute',
