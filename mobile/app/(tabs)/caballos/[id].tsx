@@ -8,7 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  X, MessageCircle, ArrowUp, ChevronLeft, MoreHorizontal, QrCode,
+  X, MessageCircle, ArrowUp, ChevronLeft, MoreHorizontal, QrCode, Link2,
   ShieldCheck, Megaphone, ChevronRight, User, XCircle, FileText,
   Trash2, CheckCircle2, Camera, Pencil, Stethoscope, Network,
   Info, Clock, Images, Banknote,
@@ -959,20 +959,25 @@ export default function HorseDetailScreen() {
         <View style={s.qrOverlay}>
           <View style={s.qrCard}>
             <View style={s.qrHeader}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={s.qrSub}>Código QR</Text>
                 <Text style={s.qrTitle} numberOfLines={1}>{horse.name}</Text>
               </View>
-              <TouchableOpacity onPress={() => setShowQR(false)}><X size={22} color="rgba(255,255,255,0.6)" strokeWidth={2} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowQR(false)} style={s.qrClose} activeOpacity={0.7}>
+                <X size={18} color={c.textFaint} strokeWidth={2} />
+              </TouchableOpacity>
             </View>
             <View style={s.qrWrap}>
-              {horse.public_token && (
-                <QRCode value={`https://app.handicapp.com/caballo/${horse.public_token}`} size={220} color="#0f1f3d" backgroundColor="#ffffff" />
-              )}
+              <View style={s.qrInner}>
+                {horse.public_token && (
+                  <QRCode value={`https://app.handicapp.com/caballo/${horse.public_token}`} size={200} color="#111827" backgroundColor="#ffffff" />
+                )}
+              </View>
             </View>
             <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
-            <TouchableOpacity style={s.qrBtn} onPress={() => Alert.alert('Enlace', `https://app.handicapp.com/caballo/${horse.public_token}`, [{ text: 'OK' }])} activeOpacity={0.85}>
-              <Text style={s.qrBtnText}>Ver enlace</Text>
+            <TouchableOpacity style={s.qrLinkBtn} onPress={() => Alert.alert('Enlace', `https://app.handicapp.com/caballo/${horse.public_token}`, [{ text: 'OK' }])} activeOpacity={0.85}>
+              <Link2 size={15} color={c.brand} strokeWidth={2.2} />
+              <Text style={s.qrLinkBtnText}>Ver enlace</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1553,15 +1558,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.isDark ? '#fca5a5' : '#dc2626' },
 
   /* QR Modal */
-  qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  qrCard: { backgroundColor: c.surface, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden' },
-  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 16, backgroundColor: c.brand },
-  qrSub: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8 },
-  qrTitle: { fontSize: 20, fontWeight: '800', color: colors.white, marginTop: 2 },
-  qrWrap: { alignItems: 'center', paddingVertical: 28, backgroundColor: '#f8fafc' },
-  qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '600', color: c.text, paddingHorizontal: 20, marginTop: 4 },
-  qrBtn: { margin: 16, marginTop: 12, borderRadius: 14, backgroundColor: c.brand, paddingVertical: 14, alignItems: 'center' },
-  qrBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  qrOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  qrCard: { backgroundColor: c.surface, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden', borderWidth: 1, borderColor: c.border },
+  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 4 },
+  qrSub: { fontSize: 11, fontWeight: '700', color: c.brand, textTransform: 'uppercase', letterSpacing: 0.8 },
+  qrTitle: { fontSize: 20, fontWeight: '800', color: c.text, marginTop: 2 },
+  qrClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
+  qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
+  qrLinkBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, margin: 16, marginTop: 14, borderRadius: 14, backgroundColor: c.surfaceAlt, paddingVertical: 13 },
+  qrLinkBtnText: { fontSize: 14, fontWeight: '700', color: c.brand },
 
   /* Modales generales */
   modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
