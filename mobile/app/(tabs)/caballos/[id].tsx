@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS,
 } from 'react-native';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -957,7 +958,8 @@ export default function HorseDetailScreen() {
       {/* ─── Modal QR ─── */}
       <Modal visible={showQR} animationType="fade" transparent>
         <View style={s.qrOverlay}>
-          <View style={s.qrCard}>
+          <Animated.View style={[s.qrCard, { paddingBottom: insets.bottom + 8 }]} entering={SlideInDown.springify().damping(22).stiffness(180)}>
+            <View style={s.qrGrabber} />
             <View style={s.qrHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={s.qrSub}>Código QR</Text>
@@ -979,7 +981,7 @@ export default function HorseDetailScreen() {
               <Link2 size={15} color={c.brand} strokeWidth={2.2} />
               <Text style={s.qrLinkBtnText}>Ver enlace</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -1558,9 +1560,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.isDark ? '#fca5a5' : '#dc2626' },
 
   /* QR Modal */
-  qrOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  qrCard: { backgroundColor: c.surface, borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden', borderWidth: 1, borderColor: c.border },
-  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, paddingBottom: 4 },
+  qrOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  qrCard: { backgroundColor: c.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', overflow: 'hidden', borderTopWidth: 1, borderColor: c.border },
+  qrGrabber: { width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong, alignSelf: 'center', marginTop: 10 },
+  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 },
   qrSub: { fontSize: 11, fontWeight: '700', color: c.brand, textTransform: 'uppercase', letterSpacing: 0.8 },
   qrTitle: { fontSize: 20, fontWeight: '800', color: c.text, marginTop: 2 },
   qrClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
