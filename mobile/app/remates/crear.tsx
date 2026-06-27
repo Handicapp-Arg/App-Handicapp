@@ -6,8 +6,9 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { SlideInDown } from 'react-native-reanimated';
-import { Check, Tag, Trophy, ArrowLeft, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
+import { Check, Tag, Trophy, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
 import { HorseIcon } from '../../components/icons/equine';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { useHorses } from '../../hooks/use-horses';
 import { useCreateAuction } from '../../hooks/use-auctions';
@@ -180,15 +181,9 @@ export default function CrearRemateScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={[s.root, { paddingTop: insets.top }]}>
-        {/* Header */}
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={c.text} strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Publicar caballo</Text>
-          <View style={{ width: 40 }} />
-        </View>
+      <View style={s.root}>
+        <ScreenHeader title="Publicar caballo" showBack />
+
 
         <ScrollView
           style={s.scroll}
@@ -438,13 +433,6 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: space[4], paddingVertical: space[3],
-    backgroundColor: c.surface, borderBottomWidth: 1, borderBottomColor: c.border,
-  },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
 
   scroll: { flex: 1 },
   content: { padding: space[4], gap: space[5] },
