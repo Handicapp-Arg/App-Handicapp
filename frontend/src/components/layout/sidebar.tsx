@@ -8,8 +8,9 @@ import {
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
+import { Horse } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth-context';
-import { HorseHeadLine, HorseshoeH } from '@/components/icons/equine';
+import { HorseshoeH } from '@/components/icons/equine';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number };
@@ -78,7 +79,7 @@ export function Sidebar() {
   /* ─── Íconos (lucide + ecuestres de marca, mismo set que el móvil) ─── */
   const icons = {
     panel:          <LayoutDashboard className={ic} strokeWidth={1.8} />,
-    caballos:       <HorseHeadLine size={20} strokeWidth={1.8} />,
+    caballos:       <Horse size={20} weight="regular" />,
     eventos:        <CalendarClock className={ic} strokeWidth={1.8} />,
     agenda:         <CalendarDays className={ic} strokeWidth={1.8} />,
     contratos:      <FileText className={ic} strokeWidth={1.8} />,

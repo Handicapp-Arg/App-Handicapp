@@ -8,7 +8,8 @@ import {
   LayoutDashboard, Newspaper, ScrollText, Network, CalendarClock, Gavel,
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
 } from 'lucide-react';
-import { HorseHeadLine, HorseshoeH } from '@/components/icons/equine';
+import { Horse } from '@phosphor-icons/react';
+import { HorseshoeH } from '@/components/icons/equine';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { useCommandPalette } from '@/lib/command-palette';
@@ -75,7 +76,7 @@ export function Navbar() {
   const ic = 'h-5 w-5';
   const icons = {
     panel:          <LayoutDashboard className={ic} strokeWidth={1.8} />,
-    caballos:       <HorseHeadLine size={20} strokeWidth={1.8} />,
+    caballos:       <Horse size={20} weight="regular" />,
     eventos:        <CalendarClock className={ic} strokeWidth={1.8} />,
     agenda:         <CalendarDays className={ic} strokeWidth={1.8} />,
     contratos:      <FileText className={ic} strokeWidth={1.8} />,
