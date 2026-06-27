@@ -465,10 +465,10 @@ export default function HorseDetailScreen() {
             <Text style={[s.horseName, { flex: 1 }]} numberOfLines={2}>{horse.name}</Text>
             {horse.public_token && (
               <TouchableOpacity
-                style={[s.heroPill, s.heroPillStatic, { backgroundColor: 'rgba(157,108,53,0.9)' }]}
-                onPress={() => { haptic.light(); setShowQR(true); }} activeOpacity={0.8}
+                style={[s.heroPill, s.heroPillStatic, s.heroPillQr]}
+                onPress={() => { haptic.light(); setShowQR(true); }} activeOpacity={0.85}
               >
-                <QrCode size={18} color={colors.white} strokeWidth={2} />
+                <QrCode size={18} color={c.isDark ? '#1a1207' : colors.white} strokeWidth={2.2} />
               </TouchableOpacity>
             )}
           </View>
@@ -1401,6 +1401,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   heroPillDanger: { backgroundColor: 'rgba(220,38,38,0.55)' },
+  heroPillQr: { backgroundColor: c.brand, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)' },
   heroPillStatic: { position: 'relative', top: undefined, left: undefined },
   heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
   menuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
