@@ -49,8 +49,8 @@
   --color-bark-600:  #6f5f52;   /* texto secundario */
   --color-bark-400:  #9a8a7a;   /* texto terciario / placeholder */
 
-  /* Tipografía display — serif con carácter (cargada por <link> en layout) */
-  --font-display: "Fraunces", "Georgia", "Times New Roman", serif;
+  /* Títulos en la MISMA sans que el móvil (Inter) — sin serif, paridad con la app */
+  --font-display: var(--font-sans);
 
   /* Estado */
   --color-success-50:  #ecfdf5;
