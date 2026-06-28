@@ -447,6 +447,14 @@ body {
 .animate-fade-in    { animation: fadeIn var(--duration-base) var(--ease-out-quart) both; }
 .animate-stagger    { animation: stagger-in var(--duration-base) var(--ease-out-quart) both; }
 
+/* Transición entre pantallas de auth (login / registro / recuperar) — desliza
+   desde la derecha con fade, equivalente al slide del móvil. */
+@keyframes authSlide {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-auth-slide { animation: authSlide var(--duration-base) var(--ease-out-quart) both; }
+
 /* Skeleton shimmer reutilizable */
 .skeleton-shimmer {
   background: linear-gradient(90deg, var(--color-gray-100) 0%, var(--color-gray-200) 50%, var(--color-gray-100) 100%);

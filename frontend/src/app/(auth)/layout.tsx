@@ -1,5 +1,6 @@
 import { HorseshoeH } from '@/components/icons/equine';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { AuthTransition } from '@/components/auth-transition';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -40,7 +41,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           className="relative animate-fade-in-up rounded-3xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] p-7 shadow-[var(--shadow-lg)]"
           style={{ animationDelay: '80ms' }}
         >
-          {children}
+          <AuthTransition>{children}</AuthTransition>
         </div>
 
         <p className="mt-10 text-center text-[11px] text-[var(--color-gray-400)] tracking-[0.15em] uppercase">
