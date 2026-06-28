@@ -26,7 +26,7 @@ function DisputeModal({ billId, onClose, c, s }: { billId: string; onClose: () =
 
   return (
     <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Disputar factura</Text>
           <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>

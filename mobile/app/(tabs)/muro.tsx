@@ -488,7 +488,7 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
 
     <Modal visible={showHorseSelect} transparent animationType="fade" onRequestClose={() => setShowHorseSelect(false)} statusBarTranslucent>
       <TouchableOpacity style={s.selectOverlay} activeOpacity={1} onPress={() => setShowHorseSelect(false)}>
-        <Animated.View style={s.selectSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+        <Animated.View style={s.selectSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
           <View style={s.selectHandle} />
           <Text style={s.selectTitle}>Etiquetar un caballo</Text>
           <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">

@@ -958,7 +958,7 @@ export default function HorseDetailScreen() {
       {/* ─── Modal QR ─── */}
       <Modal visible={showQR} animationType="fade" transparent>
         <View style={s.qrOverlay}>
-          <Animated.View style={[s.qrCard, { paddingBottom: insets.bottom + 8 }]} entering={SlideInDown.springify().damping(22).stiffness(180)}>
+          <Animated.View style={[s.qrCard, { paddingBottom: insets.bottom + 8 }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
             <View style={s.qrGrabber} />
             <View style={s.qrHeader}>
               <View style={{ flex: 1 }}>

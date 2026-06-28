@@ -194,7 +194,7 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
-        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
           <View style={s.editModalHandle} />
           <Text style={s.editModalTitle}>Editar perfil</Text>
           {error ? <Text style={s.editModalError}>{error}</Text> : null}
@@ -274,7 +274,7 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
-        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
           <View style={s.editModalHandle} />
           <Text style={s.editModalTitle}>Cambiar contraseña</Text>
           {error ? <Text style={s.editModalError}>{error}</Text> : null}

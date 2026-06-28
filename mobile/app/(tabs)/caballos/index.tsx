@@ -155,7 +155,7 @@ function QuickGastoModal({
 
   return (
     <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+      <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
         <View style={s.modalHeader}>
           <View>
             <Text style={s.modalTitle}>Registrar gasto</Text>
@@ -352,7 +352,7 @@ function RecordMatchModal({
 
   if (step === 'done') {
     return (
-      <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+      <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
         <View style={s.matchDoneWrap}>
           <CheckCircle2 size={52} color="#047857" strokeWidth={2} />
           <Text style={s.matchDoneTitle}>¡Reclamo aprobado!</Text>
@@ -368,7 +368,7 @@ function RecordMatchModal({
   if (step === 'form' && selectedRecord) {
     return (
       <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+        <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
           <View style={s.modalHeader}>
             <View>
               <Text style={s.modalTitle}>Validar posesión</Text>
@@ -441,7 +441,7 @@ function RecordMatchModal({
   }
 
   return (
-    <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+    <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
       <View style={s.modalHeader}>
         <View>
           <Text style={s.modalTitle}>Posibles coincidencias</Text>
@@ -563,7 +563,7 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
 
   return (
     <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+      <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Nuevo caballo</Text>
           <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>

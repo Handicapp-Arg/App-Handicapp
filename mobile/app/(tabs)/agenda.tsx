@@ -116,7 +116,7 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
 
   return (
     <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={[modalStyle.sheet, { maxHeight: '92%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+      <Animated.View style={[modalStyle.sheet, { maxHeight: '92%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Nuevo turno</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8}><X size={22} color={c.textMuted} strokeWidth={2} /></TouchableOpacity>

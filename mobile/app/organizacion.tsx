@@ -55,7 +55,7 @@ function InviteModal({ orgId, onClose, c, s }: { orgId: string; onClose: () => v
   return (
     <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{createdLink ? 'Invitación lista' : 'Invitar miembro'}</Text>
             <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>

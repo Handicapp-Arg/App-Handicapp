@@ -241,7 +241,7 @@ export default function ContratosScreen() {
       {/* Modal crear contrato */}
       <Modal visible={showCreate} animationType="fade" transparent onRequestClose={() => setShowCreate(false)} statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+          <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Nuevo contrato</Text>
               <TouchableOpacity onPress={() => { setShowCreate(false); setEmailToSearch(''); setCreateOwnerEmail(''); }}>
@@ -334,7 +334,7 @@ export default function ContratosScreen() {
       {/* Modal firmar */}
       <Modal visible={!!signingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
             <View style={[s.modalHeader, { backgroundColor: '#16a34a' }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Firmar digitalmente</Text>
               <TouchableOpacity onPress={() => setSigningContract(null)}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
@@ -377,7 +377,7 @@ export default function ContratosScreen() {
       {/* Modal rechazar */}
       <Modal visible={!!rejectingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
             <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Rechazar contrato</Text>
               <TouchableOpacity onPress={() => setRejectingContract(null)}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>

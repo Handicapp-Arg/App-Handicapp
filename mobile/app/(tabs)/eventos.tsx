@@ -79,7 +79,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
 
   return (
     <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
         {/* Header */}
         <View style={modalStyle.header}>
           <Text style={modalStyle.title}>Nuevo evento</Text>

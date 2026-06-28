@@ -292,7 +292,7 @@ export default function CrearRemateScreen() {
               {Platform.OS === 'ios' && (
                 <Modal visible={showDatePicker} transparent animationType="fade" statusBarTranslucent>
                   <View style={s.pickerOverlay}>
-                    <Animated.View style={s.pickerSheet} entering={SlideInDown.springify().damping(20).stiffness(170)}>
+                    <Animated.View style={s.pickerSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
                       <View style={s.pickerHeader}>
                         <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                           <Text style={s.pickerCancel}>Cancelar</Text>
