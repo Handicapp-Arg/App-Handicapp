@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Horse } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import type { FeedPost, FeedComment } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -24,16 +25,16 @@ const ROLE_CONFIG: Record<string, { label: string; gradient: string; badge: stri
 };
 
 // ─── Avatar ────────────────────────────────────────────────────────────────────
-function Avatar({ name, role, size = 'md' }: { name: string; role?: string; size?: 'sm' | 'md' }) {
-  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const gradClass = ROLE_CONFIG[role ?? '']?.gradient ?? 'from-bark-400 to-bark-600';
+function Avatar({ name, size = 'md' }: { name: string; role?: string; size?: 'sm' | 'md' }) {
   return (
-    <div className={cn(
-      'rounded-full bg-gradient-to-br text-white font-bold flex items-center justify-center flex-shrink-0 shadow-sm',
-      gradClass,
-      size === 'md' ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]',
-    )}>
-      {initials}
+    <div
+      style={{ backgroundImage: avatarGradient(name) }}
+      className={cn(
+        'rounded-full text-white font-bold flex items-center justify-center flex-shrink-0 shadow-sm',
+        size === 'md' ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]',
+      )}
+    >
+      {initialsOf(name)}
     </div>
   );
 }

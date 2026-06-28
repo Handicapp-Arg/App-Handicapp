@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { avatarColor, initialsOf } from '../../lib/avatar-color';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
@@ -330,7 +331,7 @@ export default function PerfilScreen() {
 
   if (!user) return null;
 
-  const initials = user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = initialsOf(user.name);
   const isAdmin = user.role === 'admin';
   const showPlan = user.role === 'propietario' || user.role === 'establecimiento';
 
@@ -362,7 +363,7 @@ export default function PerfilScreen() {
       >
         {/* Hero */}
         <View style={s.hero}>
-          <View style={s.avatar}>
+          <View style={[s.avatar, { backgroundColor: avatarColor(user.name) }]}>
             <Text style={s.avatarText}>{initials}</Text>
           </View>
           <Text style={s.userName}>{user.name}</Text>

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Bell, ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -35,7 +36,7 @@ export function Topbar() {
   const pageTitle = PAGE_TITLES[pathname.split('/')[1] ?? ''] ?? '';
 
   const unreadCount = unread?.count ?? 0;
-  const initials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '?';
+  const initials = initialsOf(user?.name);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -74,7 +75,10 @@ export function Topbar() {
           onClick={() => setOpen((v) => !v)}
           className="flex items-center gap-2.5 rounded-xl py-1.5 pl-1.5 pr-3 transition hover:bg-gray-100 cursor-pointer"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay-400 to-clay-600 text-[12px] font-bold text-white">
+          <span
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-white"
+            style={{ backgroundImage: avatarGradient(user?.name) }}
+          >
             {initials}
           </span>
           <span className="flex flex-col items-start leading-tight">

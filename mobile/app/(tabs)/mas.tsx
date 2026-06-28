@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { avatarColor, initialsOf } from '../../lib/avatar-color';
 import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
@@ -187,7 +188,7 @@ export default function MasScreen() {
     }] : []),
   ];
 
-  const initials = (user?.name ?? 'U').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const initials = initialsOf(user?.name);
 
   return (
     <ScrollView
@@ -201,7 +202,7 @@ export default function MasScreen() {
         onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
         activeOpacity={0.7}
       >
-        <View style={s.profileAvatar}>
+        <View style={[s.profileAvatar, { backgroundColor: avatarColor(user?.name) }]}>
           <Text style={s.profileAvatarText}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>

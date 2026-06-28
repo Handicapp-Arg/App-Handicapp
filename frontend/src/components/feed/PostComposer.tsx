@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useCreatePost } from '@/hooks/use-feed';
 import { ImageIcon, X, Send, Megaphone, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 
 const POST_TYPES = [
   { value: 'general', label: 'General', icon: null },
@@ -13,13 +14,15 @@ const POST_TYPES = [
 ] as const;
 
 function ComposerAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
-  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
-    <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-clay-400 to-clay-600 text-white font-bold flex items-center justify-center shrink-0 shadow-sm text-sm">
+    <div
+      className="h-10 w-10 overflow-hidden rounded-full text-white font-bold flex items-center justify-center shrink-0 shadow-sm text-sm"
+      style={{ backgroundImage: avatarGradient(name) }}
+    >
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
-      ) : initials}
+      ) : initialsOf(name)}
     </div>
   );
 }

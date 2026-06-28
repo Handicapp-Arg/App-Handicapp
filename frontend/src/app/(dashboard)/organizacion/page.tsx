@@ -11,6 +11,7 @@ import {
   ROLE_LABELS, PLAN_LABELS, type OrgRole,
 } from '@/hooks/use-organizations';
 import { useAuth } from '@/lib/auth-context';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import {
   PageHeader, EmptyState, Card, Badge, Button, Input, Modal, Select,
   OrganizacionSkeleton,
@@ -417,8 +418,11 @@ export default function OrganizacionPage() {
             const isMe = member.user_id === user?.id;
             return (
               <li key={member.id} className="flex items-center gap-3 px-5 py-3.5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-700 text-sm font-bold text-white">
-                  {member.user.name.charAt(0).toUpperCase()}
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{ backgroundImage: avatarGradient(member.user.name) }}
+                >
+                  {initialsOf(member.user.name)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-gray-900">

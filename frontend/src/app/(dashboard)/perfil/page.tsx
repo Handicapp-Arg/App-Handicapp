@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import { useFeed } from '@/hooks/use-feed';
 import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
@@ -185,9 +186,7 @@ export default function PerfilPage() {
     } finally { setSavingPassword(false); }
   };
 
-  const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
-    : '?';
+  const initials = initialsOf(user?.name);
 
   const memberSince = user?.created_at ? new Date(user.created_at).getFullYear() : null;
   const plan = (user as { plan?: string } | null)?.plan;
@@ -219,7 +218,10 @@ export default function PerfilPage() {
           <div className="-mt-10 flex items-end gap-4">
             {/* Avatar editable */}
             <div className="relative shrink-0">
-              <div className="h-20 w-20 overflow-hidden rounded-2xl bg-gradient-to-br from-clay-400 to-clay-600 ring-4 ring-white">
+              <div
+                className="h-20 w-20 overflow-hidden rounded-2xl ring-4 ring-white"
+                style={{ backgroundImage: avatarGradient(user?.name) }}
+              >
                 {user?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />

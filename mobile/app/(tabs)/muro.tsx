@@ -19,6 +19,7 @@ import {
 import { useHorses } from '../../hooks/use-horses';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { avatarColor, initialsOf } from '../../lib/avatar-color';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
@@ -33,10 +34,9 @@ import { InlineSearch } from '../../components/InlineSearch';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
 
 function Avatar({ name, size = 38, s }: { name: string; size?: number; s: Styles }) {
-  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
-    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Text style={[s.avatarText, { fontSize: size * 0.35 }]}>{initials}</Text>
+    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(name) }]}>
+      <Text style={[s.avatarText, { fontSize: size * 0.35 }]}>{initialsOf(name)}</Text>
     </View>
   );
 }

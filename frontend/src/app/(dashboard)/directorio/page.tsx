@@ -7,6 +7,7 @@ import { useHorses } from '@/hooks/use-horses';
 import { useAuth } from '@/lib/auth-context';
 import { useCreateBoardingRequest, useBoardingRequests } from '@/hooks/use-boarding-requests';
 import { PageHeader } from '@/components/ui/page-header';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 
 interface DirectorioItem {
   id: string;
@@ -207,9 +208,9 @@ export default function DirectorioPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white text-lg font-bold"
-                    style={{ backgroundColor: 'var(--color-clay-500)' }}
+                    style={{ backgroundImage: avatarGradient(item.name) }}
                   >
-                    {item.name[0].toUpperCase()}
+                    {initialsOf(item.name)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-900 truncate tracking-tight">{item.name}</p>

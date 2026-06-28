@@ -9,6 +9,7 @@ import {
   useToggleWatch,
 } from '@/hooks/use-auctions';
 import { useAuth } from '@/lib/auth-context';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -68,8 +69,11 @@ function BidRow({ bid, isSeller, onAccept }: { bid: AuctionBid; isSeller: boolea
   return (
     <div className={`flex items-center justify-between p-3 rounded-xl border ${bid.status === 'active' ? 'border-emerald-200 bg-emerald-50' : 'border-gray-100 bg-gray-50'}`}>
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-          {bid.bidder?.name?.charAt(0) ?? '?'}
+        <div
+          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+          style={{ backgroundImage: avatarGradient(bid.bidder?.name) }}
+        >
+          {initialsOf(bid.bidder?.name)}
         </div>
         <div>
           <p className="text-sm font-semibold text-gray-900">{bid.bidder?.name ?? 'Usuario'}</p>
@@ -354,8 +358,11 @@ export default function AuctionDetailPage() {
             <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Vendedor</p>
               <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-full bg-clay-500/10 flex items-center justify-center font-bold text-[var(--color-primary)] text-sm">
-                  {auction.seller?.name?.charAt(0) ?? '?'}
+                <div
+                  className="h-9 w-9 rounded-full flex items-center justify-center font-bold text-white text-sm"
+                  style={{ backgroundImage: avatarGradient(auction.seller?.name) }}
+                >
+                  {initialsOf(auction.seller?.name)}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{auction.seller?.name}</p>
