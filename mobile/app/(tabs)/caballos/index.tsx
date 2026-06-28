@@ -645,7 +645,6 @@ export default function CaballosScreen() {
   const [filterActivity, setFilterActivity] = useState('');
   const [filterEstab, setFilterEstab] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [quickGastoHorse, setQuickGastoHorse] = useState<Horse | null | undefined>(undefined);
   const insets = useSafeAreaInsets();
 
   const spendMap = useMemo(() => {
@@ -777,18 +776,6 @@ export default function CaballosScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* FAB — agregar gasto rápido */}
-      {(horses?.length ?? 0) > 0 && (
-        <TouchableOpacity
-          style={[s.fab, { bottom: insets.bottom + 16 }]}
-          onPress={() => { haptic.medium(); setQuickGastoHorse(null); }}
-          activeOpacity={0.85}
-        >
-          <Plus size={26} color="#fff" strokeWidth={2} />
-          <Text style={s.fabLabel}>Gasto</Text>
-        </TouchableOpacity>
-      )}
-
       {/* Modal: crear caballo */}
       <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
         <View style={s.modalOverlay}>
@@ -796,26 +783,6 @@ export default function CaballosScreen() {
         </View>
       </Modal>
 
-      {/* Modal: registrar gasto rápido */}
-      <Modal
-        visible={quickGastoHorse !== undefined}
-        animationType="fade"
-        transparent
-        statusBarTranslucent
-        onRequestClose={() => setQuickGastoHorse(undefined)}
-      >
-        <View style={s.modalOverlay}>
-          {quickGastoHorse !== undefined && (
-            <QuickGastoModal
-              horses={horses ?? []}
-              initialHorse={quickGastoHorse}
-              onClose={() => setQuickGastoHorse(undefined)}
-              c={c}
-              s={s}
-            />
-          )}
-        </View>
-      </Modal>
     </View>
   );
 }
