@@ -3,7 +3,10 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 py-12 bg-[var(--surface-page)]">
+    <div
+      className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 py-12"
+      style={{ background: 'linear-gradient(180deg, var(--color-cream-100) 0%, var(--surface-page) 58%)' }}
+    >
       {/* Fondo: doble glow de marca muy sutil — spotlight cuero tras el logo +
           halo cálido abajo, para que el oscuro no quede liso (discreto). */}
       <div

@@ -7,6 +7,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { Eye, EyeOff, Sun, Moon, Smartphone } from 'lucide-react-native';
 import { Link } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
@@ -53,11 +54,11 @@ function BackgroundGlow({ c }: { c: ThemeColors }) {
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
         <RadialGradient id="glowTop" cx="50%" cy="20%" rx="62%" ry="46%">
-          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.13 : 0.06} />
+          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.13 : 0.11} />
           <Stop offset="1" stopColor={c.brand} stopOpacity={0} />
         </RadialGradient>
         <RadialGradient id="glowBottom" cx="28%" cy="92%" rx="52%" ry="36%">
-          <Stop offset="0" stopColor="#d9a94e" stopOpacity={c.isDark ? 0.07 : 0.04} />
+          <Stop offset="0" stopColor="#d9a94e" stopOpacity={c.isDark ? 0.07 : 0.08} />
           <Stop offset="1" stopColor="#d9a94e" stopOpacity={0} />
         </RadialGradient>
       </Defs>
@@ -99,6 +100,7 @@ function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password:
 export default function LoginScreen() {
   const { login } = useAuth();
   const { c } = useTheme();
+  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -125,7 +127,7 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
         {/* Control de tema */}
-        <View style={s.themeRow}>
+        <View style={[s.themeRow, { top: insets.top + 8 }]}>
           <ThemeSwitch c={c} s={s} />
         </View>
 
