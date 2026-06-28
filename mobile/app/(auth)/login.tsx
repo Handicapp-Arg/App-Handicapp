@@ -53,17 +53,22 @@ function BackgroundGlow({ c }: { c: ThemeColors }) {
   return (
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
-        <RadialGradient id="glowTop" cx="50%" cy="20%" rx="62%" ry="46%">
-          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.13 : 0.11} />
+        <RadialGradient id="glowTop" cx="50%" cy="18%" rx="62%" ry="46%">
+          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.14 : 0.20} />
           <Stop offset="1" stopColor={c.brand} stopOpacity={0} />
         </RadialGradient>
-        <RadialGradient id="glowBottom" cx="28%" cy="92%" rx="52%" ry="36%">
-          <Stop offset="0" stopColor="#d9a94e" stopOpacity={c.isDark ? 0.07 : 0.08} />
+        <RadialGradient id="glowBottom" cx="24%" cy="94%" rx="54%" ry="38%">
+          <Stop offset="0" stopColor="#d9a94e" stopOpacity={c.isDark ? 0.08 : 0.14} />
           <Stop offset="1" stopColor="#d9a94e" stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="glowRight" cx="84%" cy="34%" rx="44%" ry="32%">
+          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.07 : 0.12} />
+          <Stop offset="1" stopColor={c.brand} stopOpacity={0} />
         </RadialGradient>
       </Defs>
       <Rect width="100%" height="100%" fill="url(#glowTop)" />
       <Rect width="100%" height="100%" fill="url(#glowBottom)" />
+      <Rect width="100%" height="100%" fill="url(#glowRight)" />
     </Svg>
   );
 }

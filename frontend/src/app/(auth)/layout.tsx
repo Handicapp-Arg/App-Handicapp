@@ -7,15 +7,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 py-12"
       style={{ background: 'linear-gradient(180deg, var(--color-cream-100) 0%, var(--surface-page) 58%)' }}
     >
-      {/* Fondo: doble glow de marca muy sutil — spotlight cuero tras el logo +
-          halo cálido abajo, para que el oscuro no quede liso (discreto). */}
+      {/* Fondo: globos de luz de marca — más presentes en claro para que el
+          blanco no quede liso, tenues en oscuro. Discretos en ambos. */}
       <div
-        className="pointer-events-none absolute left-1/2 top-[12%] h-[540px] w-[540px] -translate-x-1/2 rounded-full opacity-[0.11] blur-[140px]"
-        style={{ background: 'radial-gradient(circle, var(--color-clay-500) 0%, transparent 70%)' }}
+        className="pointer-events-none absolute left-1/2 top-[10%] h-[540px] w-[540px] -translate-x-1/2 rounded-full blur-[120px]"
+        style={{ background: 'radial-gradient(circle, var(--auth-glow-1) 0%, transparent 70%)' }}
       />
       <div
-        className="pointer-events-none absolute left-[28%] bottom-[6%] h-[380px] w-[380px] rounded-full opacity-[0.06] blur-[150px]"
-        style={{ background: 'radial-gradient(circle, var(--color-amber-glow) 0%, transparent 70%)' }}
+        className="pointer-events-none absolute left-[24%] bottom-[4%] h-[420px] w-[420px] rounded-full blur-[130px]"
+        style={{ background: 'radial-gradient(circle, var(--auth-glow-2) 0%, transparent 70%)' }}
+      />
+      <div
+        className="pointer-events-none absolute right-[16%] top-[30%] h-[320px] w-[320px] rounded-full blur-[120px]"
+        style={{ background: 'radial-gradient(circle, var(--auth-glow-3) 0%, transparent 70%)' }}
       />
 
       {/* Control de tema */}
