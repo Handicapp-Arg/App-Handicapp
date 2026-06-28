@@ -6,7 +6,8 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle2, XCircle, Info, Star } from 'lucide-react-native';
+import { CheckCircle2, XCircle, Info, Star } from 'lucide-react-native';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../hooks/use-auctions';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
@@ -95,29 +96,27 @@ export default function AuctionDetailScreen() {
   };
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
-      {/* Nav */}
-      <View style={s.nav}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ArrowLeft size={20} color={c.text} strokeWidth={2} />
-          <Text style={s.backText}>Volver</Text>
-        </TouchableOpacity>
-        {!isSeller && (
-          <TouchableOpacity onPress={() => toggleWatch.mutate(id)} style={s.watchBtn}>
-            <Star
-              size={20}
-              color={auction.watching ? '#d97706' : c.textFaint}
-              fill={auction.watching ? '#d97706' : 'none'}
-              strokeWidth={2}
-            />
-          </TouchableOpacity>
-        )}
-        {isSeller && auction.status === 'draft' && (
-          <TouchableOpacity onPress={() => publish.mutateAsync(id)} style={s.publishBtn}>
-            <Text style={s.publishBtnText}>Publicar</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+    <View style={s.root}>
+      <ScreenHeader
+        title="Remate"
+        showBack
+        right={
+          !isSeller ? (
+            <TouchableOpacity onPress={() => toggleWatch.mutate(id)} style={s.watchBtn}>
+              <Star
+                size={20}
+                color={auction.watching ? '#d97706' : c.textFaint}
+                fill={auction.watching ? '#d97706' : 'none'}
+                strokeWidth={2}
+              />
+            </TouchableOpacity>
+          ) : auction.status === 'draft' ? (
+            <TouchableOpacity onPress={() => publish.mutateAsync(id)} style={s.publishBtn}>
+              <Text style={s.publishBtnText}>Publicar</Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Título */}
@@ -257,14 +256,8 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  nav: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: space[4], paddingBottom: space[3],
-  },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
-  backText: { fontSize: text.sm, color: c.textMuted, fontWeight: weight.medium },
   watchBtn: { padding: space[2] },
-  publishBtn: { backgroundColor: '#0f1f3d', paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.lg },
+  publishBtn: { backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.lg },
   publishBtnText: { color: colors.white, fontSize: text.sm, fontWeight: weight.bold },
 
   scroll: { paddingHorizontal: space[4], paddingBottom: space[16] },
@@ -279,10 +272,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     padding: space[5], marginBottom: space[4], ...shadow.sm,
   },
   priceLabelSmall: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  priceMain: { fontSize: 28, fontWeight: weight.extrabold, color: '#0f1f3d', letterSpacing: -0.5 },
+  priceMain: { fontSize: 28, fontWeight: weight.extrabold, color: c.brand, letterSpacing: -0.5 },
   bidCount: { fontSize: text.xs, color: c.textFaint, marginTop: 4 },
 
-  countBox: { backgroundColor: '#0f1f3d', borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
+  countBox: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
   countNum: { color: colors.white, fontSize: text.lg, fontWeight: weight.extrabold },
   countLabel: { fontSize: 10, color: c.textFaint, marginTop: 2, textTransform: 'uppercase' },
 
@@ -299,7 +292,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: text.sm, color: c.text,
   },
   bidBtn: {
-    backgroundColor: '#0f1f3d', borderRadius: radius.lg,
+    backgroundColor: c.brand, borderRadius: radius.lg,
     paddingHorizontal: space[4], justifyContent: 'center', alignItems: 'center',
   },
   bidBtnText: { color: colors.white, fontWeight: weight.bold, fontSize: text.sm },
@@ -322,7 +315,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.border,
     backgroundColor: c.surfaceAlt, marginBottom: space[2],
   },
-  bidRowActive: { backgroundColor: '#ecfdf5', borderColor: '#6ee7b7' },
+  bidRowActive: { backgroundColor: c.isDark ? 'rgba(16,185,129,0.14)' : '#ecfdf5', borderColor: c.isDark ? 'rgba(16,185,129,0.4)' : '#6ee7b7' },
   bidAvatar: {
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: c.borderStrong, justifyContent: 'center', alignItems: 'center',
@@ -330,12 +323,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bidAvatarText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   bidDate: { fontSize: 10, color: c.textFaint },
-  bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: '#0f1f3d' },
+  bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: c.brand },
 
   legalBox: {
     flexDirection: 'row', gap: space[2], alignItems: 'flex-start',
-    backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a',
+    backgroundColor: c.isDark ? 'rgba(245,158,11,0.12)' : '#fffbeb', borderWidth: 1, borderColor: c.isDark ? 'rgba(245,158,11,0.3)' : '#fde68a',
     borderRadius: radius.xl, padding: space[4], marginTop: space[2],
   },
-  legalText: { flex: 1, fontSize: text.xs, color: '#92400e', lineHeight: 16 },
+  legalText: { flex: 1, fontSize: text.xs, color: c.isDark ? '#fcd34d' : '#92400e', lineHeight: 16 },
 });
