@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { Eye, EyeOff, Sun, Moon, Smartphone } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
@@ -43,6 +44,26 @@ function ThemeSwitch({ c, s }: { c: ThemeColors; s: Styles }) {
         );
       })}
     </View>
+  );
+}
+
+/** Fondo: doble glow de marca muy sutil (igual que el login web). */
+function BackgroundGlow({ c }: { c: ThemeColors }) {
+  return (
+    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <RadialGradient id="glowTop" cx="50%" cy="20%" rx="62%" ry="46%">
+          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.13 : 0.06} />
+          <Stop offset="1" stopColor={c.brand} stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="glowBottom" cx="28%" cy="92%" rx="52%" ry="36%">
+          <Stop offset="0" stopColor="#d9a94e" stopOpacity={c.isDark ? 0.07 : 0.04} />
+          <Stop offset="1" stopColor="#d9a94e" stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#glowTop)" />
+      <Rect width="100%" height="100%" fill="url(#glowBottom)" />
+    </Svg>
   );
 }
 
@@ -100,6 +121,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <BackgroundGlow c={c} />
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
         {/* Control de tema */}
@@ -109,7 +131,7 @@ export default function LoginScreen() {
 
         {/* Marca — isotipo + wordmark */}
         <Animated.View style={s.header} entering={FadeIn.duration(600)}>
-          <HorseshoeH size={46} strokeWidth={1.9} color={c.brand} />
+          <HorseshoeH size={64} color={c.brand} />
           <Text style={s.wordmark}>HandicApp</Text>
         </Animated.View>
 
@@ -214,7 +236,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   themeBtnActive: { backgroundColor: c.surface },
 
   header: { alignItems: 'center', marginBottom: 26, gap: 10 },
-  wordmark: { fontSize: 26, fontWeight: '700', letterSpacing: -0.3, color: c.text },
+  wordmark: { fontSize: 30, fontWeight: '700', letterSpacing: -0.3, color: c.text, marginTop: 2 },
 
   card: {
     backgroundColor: c.surface, borderRadius: 24, padding: 22, gap: 14,
