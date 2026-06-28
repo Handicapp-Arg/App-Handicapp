@@ -171,7 +171,10 @@ export class AuthService {
     }
 
     Object.assign(user, dto);
-    return this.userRepository.save(user);
+    await this.userRepository.save(user);
+    // Releer fresco: tras save() el entity en memoria puede quedar sin algunas
+    // columnas (name/email), lo que rompía la respuesta de PATCH /profile.
+    return (await this.userRepository.findOne({ where: { id: user.id } })) ?? user;
   }
 
   async getDirectorio(search?: string): Promise<{ id: string; name: string; avatar_color: string | null; horse_count: number }[]> {
