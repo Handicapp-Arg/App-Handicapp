@@ -777,7 +777,7 @@ export default function CaballosScreen() {
       />
 
       {/* Modal: crear caballo */}
-      <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
+      <Modal visible={showCreate} animationType="fade" transparent onRequestClose={() => setShowCreate(false)}>
         <View style={s.modalOverlay}>
           <CreateHorseModal onClose={() => setShowCreate(false)} c={c} s={s} />
         </View>
