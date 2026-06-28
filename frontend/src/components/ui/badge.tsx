@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn';
 
-export type BadgeTone = 'navy' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'gold';
+export type BadgeTone = 'navy' | 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'gold';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone;
@@ -8,7 +8,8 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const TONES: Record<BadgeTone, { bg: string; text: string; ring: string; dot: string }> = {
-  navy:    { bg: 'bg-navy-50',    text: 'text-navy-700',    ring: 'ring-navy-200',    dot: 'bg-navy-500' },
+  navy:    { bg: 'bg-clay-50',    text: 'text-[var(--color-primary)]', ring: 'ring-clay-500/25', dot: 'bg-clay-500' },
+  brand:   { bg: 'bg-clay-50',    text: 'text-[var(--color-primary)]', ring: 'ring-clay-500/25', dot: 'bg-clay-500' },
   success: { bg: 'bg-success-50', text: 'text-success-700', ring: 'ring-success-500/30', dot: 'bg-success-500' },
   warning: { bg: 'bg-warning-50', text: 'text-warning-700', ring: 'ring-warning-500/30', dot: 'bg-warning-500' },
   danger:  { bg: 'bg-danger-50',  text: 'text-danger-700',  ring: 'ring-danger-500/30',  dot: 'bg-danger-500' },

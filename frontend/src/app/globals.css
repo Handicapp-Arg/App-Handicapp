@@ -108,6 +108,10 @@
   --background: #ffffff;
   --foreground: #0d1117;
 
+  /* Overlay para backdrops de modales — SIEMPRE oscuro (no usar navy-900,
+     que en dark se vuelve claro y deja un velo blanco). */
+  --overlay: rgba(15, 12, 9, 0.5);
+
   --color-primary:       var(--color-clay-500);
   --color-primary-light: var(--color-clay-400);
   --color-primary-hover: var(--color-clay-600);
@@ -155,6 +159,7 @@
   /* Neutrales oscuros del móvil (zinc cálido), no navy. */
   --background: #0b0b0c;
   --foreground: #fafafa;
+  --overlay: rgba(0, 0, 0, 0.62);
 
   --color-surface-page:   #0b0b0c;
   --color-surface-card:   #18181b;

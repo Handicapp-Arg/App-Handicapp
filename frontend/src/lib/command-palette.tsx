@@ -193,7 +193,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
       {isOpen &&
         createPortal(
           <div className="animate-fade-in fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[10vh]">
-            <div className="absolute inset-0 bg-navy-900/40 backdrop-blur-sm" onClick={close} aria-hidden />
+            <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" onClick={close} aria-hidden />
             <div className="animate-fade-in-up relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[var(--surface-card)] shadow-2xl">
               <div className="flex items-center gap-3 border-b border-slate-100 px-4">
                 <Search className="h-4 w-4 text-slate-400" aria-hidden />

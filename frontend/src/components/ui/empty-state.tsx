@@ -50,14 +50,14 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-[var(--surface-card)] px-8 py-16 text-center',
+        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--surface-card-border)] bg-[var(--surface-card)] px-8 py-16 text-center',
         className,
       )}
     >
       <div
         className={cn(
-          'mb-4 flex items-center justify-center text-navy-500',
-          illustration ? 'h-32 w-32' : 'h-14 w-14 rounded-2xl bg-navy-50',
+          'mb-4 flex items-center justify-center text-[var(--color-bark-400)]',
+          illustration ? 'h-32 w-32' : 'h-14 w-14 rounded-2xl bg-gray-100',
         )}
       >
         {renderIcon(icon, illustration)}

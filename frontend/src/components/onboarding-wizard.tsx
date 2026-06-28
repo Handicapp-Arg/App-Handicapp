@@ -168,7 +168,7 @@ export function OnboardingWizard() {
 
   return createPortal(
     <>
-      <div className="animate-fade-in fixed inset-0 z-[990] bg-navy-900/60 backdrop-blur-md" onClick={finish} aria-hidden />
+      <div className="animate-fade-in fixed inset-0 z-[990] bg-[var(--overlay)] backdrop-blur-md" onClick={finish} aria-hidden />
       <div
         role="dialog"
         aria-modal="true"

@@ -70,7 +70,7 @@ export function Modal({
       className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       <div
-        className="absolute inset-0 bg-navy-900/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm"
         onClick={dismissible ? onClose : undefined}
         aria-hidden
       />
