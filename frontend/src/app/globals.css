@@ -118,16 +118,28 @@
   --color-accent:        var(--color-amber-glow);
   --color-accent-light:  var(--color-clay-100);
 
-  --color-gray-50:  #f8fafc;
-  --color-gray-100: #f1f5f9;
-  --color-gray-200: #e2e8f0;
-  --color-gray-300: #cbd5e1;
-  --color-gray-400: #94a3b8;
-  --color-gray-500: #64748b;
-  --color-gray-600: #475569;
-  --color-gray-700: #334155;
-  --color-gray-900: #0f172a;
+  /* Escala neutra CÁLIDA (warm gray / stone, no slate frío) — identidad cálida */
+  --color-gray-50:  #f8f7f4;
+  --color-gray-100: #f2f0ea;
+  --color-gray-200: #e8e4db;
+  --color-gray-300: #d7d1c6;
+  --color-gray-400: #a59c8d;
+  --color-gray-500: #756b5d;
+  --color-gray-600: #564d42;
+  --color-gray-700: #3e372e;
+  --color-gray-900: #231d16;
   --color-red-500:  #ef4444;
+
+  /* Slate (muy usado en UI/inputs/tablas legacy) → misma escala cálida en light */
+  --color-slate-50:  #f8f7f4;
+  --color-slate-100: #f2f0ea;
+  --color-slate-200: #e8e4db;
+  --color-slate-300: #d7d1c6;
+  --color-slate-400: #a59c8d;
+  --color-slate-500: #756b5d;
+  --color-slate-600: #564d42;
+  --color-slate-700: #3e372e;
+  --color-slate-900: #231d16;
 
   --surface-page:        var(--color-surface-page);
   --surface-card:        var(--color-surface-card);
