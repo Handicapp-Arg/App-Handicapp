@@ -18,6 +18,10 @@ import { useAdminAuctions, useAdminCancelAuction, useAdminPauseAuction } from '@
 import { useSuperAdminMetrics } from '@/hooks/use-superadmin';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import {
+  Check, AlertTriangle, Zap, Info, ArrowUpRight, Star, Syringe, Clock,
+} from 'lucide-react';
+import { Horse } from '@phosphor-icons/react';
 import type { Auction } from '@/types';
 
 /* ─── tipos ─── */
@@ -29,7 +33,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'establecimientos', label: 'Establecimientos' },
   { key: 'planes',          label: 'Planes' },
   { key: 'remates',         label: 'Remates' },
-  { key: 'fraudes',         label: '🚨 Fraudes' },
+  { key: 'fraudes',         label: 'Fraudes' },
 ];
 
 const roleForTab: Record<Tab, string | undefined> = {
@@ -277,7 +281,7 @@ function RematesAdminTab() {
   if (!all.length) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center">
-        <p className="text-3xl mb-2">🏇</p>
+        <Horse size={32} weight="regular" className="mx-auto mb-2 text-gray-300" />
         <p className="font-medium text-gray-700">Sin remates registrados</p>
       </div>
     );
@@ -403,7 +407,7 @@ function FraudesTab() {
   if (claims.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center">
-        <p className="text-3xl mb-2">✅</p>
+        <Check size={32} className="mx-auto mb-2 text-emerald-500" />
         <p className="font-medium text-gray-700">Sin claims para auditar</p>
         <p className="text-sm text-gray-400 mt-1">
           Todos los claims auto-aprobados tienen evidencia fuerte o ya fueron revisados.
@@ -498,7 +502,7 @@ function FraudesTab() {
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium cursor-help ${
                         s.weight >= 3 ? 'bg-red-50 text-red-700' : s.weight === 2 ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
                       }`}>
-                      {s.weight >= 3 ? '⚠️' : s.weight === 2 ? '⚡' : 'ℹ️'}
+                      {s.weight >= 3 ? <AlertTriangle size={12} /> : s.weight === 2 ? <Zap size={12} /> : <Info size={12} />}
                       {FRAUD_SIGNAL_LABELS[s.key] ?? s.key}
                     </span>
                   ))}
@@ -519,8 +523,8 @@ function FraudesTab() {
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-gray-400">Documento:</span>
                       <a href={claim.document_url} target="_blank" rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline truncate max-w-xs">
-                        Ver archivo adjunto ↗
+                        className="inline-flex items-center gap-0.5 text-blue-600 hover:underline truncate max-w-xs">
+                        Ver archivo adjunto <ArrowUpRight size={12} className="shrink-0" />
                       </a>
                     </div>
                   )}
@@ -631,7 +635,7 @@ function PlansAdminTable({
                 <span className="text-xs text-gray-500">{ROLE_LABELS[u.role] ?? u.role}</span>
                 <div>
                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {isPro ? '⭐ Pro' : 'Gratis'}
+                    {isPro ? <><Star size={12} className="fill-current" /> Pro</> : 'Gratis'}
                   </span>
                   {isPro && expiresStr && <p className="text-[10px] text-gray-400 mt-0.5">vence {expiresStr}</p>}
                 </div>
@@ -674,8 +678,8 @@ function PlansAdminTable({
                     <p className="text-xs text-gray-500">{u.email}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{ROLE_LABELS[u.role]} · {u.horse_count} caballos</p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {isPro ? '⭐ Pro' : 'Gratis'}
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {isPro ? <><Star size={12} className="fill-current" /> Pro</> : 'Gratis'}
                   </span>
                 </div>
                 {isPro && expiresStr && <p className="text-xs text-gray-400">Vence: {expiresStr}</p>}
@@ -948,7 +952,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
   if (data.horses.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
-        <p className="text-3xl mb-3">💉</p>
+        <Syringe size={32} className="mx-auto mb-3 text-[var(--color-primary)]" />
         <p className="text-sm font-semibold text-gray-600">Sin caballos asignados</p>
         <p className="mt-1 text-xs text-gray-400">Un propietario o establecimiento debe asignarte como veterinario desde el detalle del caballo.</p>
       </div>
@@ -975,7 +979,9 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
       {data.upcoming_medical.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-amber-100">
-            <h2 className="text-sm font-semibold text-amber-800">⏰ Próximos vencimientos (30 días)</h2>
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+              <Clock size={16} /> Próximos vencimientos (30 días)
+            </h2>
           </div>
           <div className="divide-y divide-amber-100">
             {data.upcoming_medical.map((m) => {

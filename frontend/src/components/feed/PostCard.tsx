@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import {
   Heart, MessageCircle, Trash2, Pin, EyeOff, Eye, MoreHorizontal, X,
 } from 'lucide-react';
+import { Horse } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { FeedPost, FeedComment } from '@/types';
 import { useAuth } from '@/lib/auth-context';
@@ -16,16 +17,16 @@ import {
 
 // ─── Role config ───────────────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; gradient: string; badge: string }> = {
-  propietario:    { label: 'Propietario',    gradient: 'from-clay-400 to-clay-600',     badge: 'bg-clay-50 text-clay-700 ring-1 ring-clay-100' },
-  establecimiento:{ label: 'Establecimiento',gradient: 'from-emerald-500 to-emerald-700',badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' },
-  veterinario:    { label: 'Veterinario',    gradient: 'from-violet-500 to-violet-700', badge: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100' },
-  admin:          { label: 'Admin',          gradient: 'from-slate-500 to-slate-700',   badge: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' },
+  propietario:    { label: 'Propietario',    gradient: 'from-clay-400 to-clay-600',      badge: 'bg-clay-50 text-clay-700 ring-1 ring-clay-100' },
+  establecimiento:{ label: 'Establecimiento',gradient: 'from-clay-500 to-clay-700',       badge: 'bg-clay-100 text-clay-800 ring-1 ring-clay-200' },
+  veterinario:    { label: 'Veterinario',    gradient: 'from-amber-glow to-clay-500',     badge: 'bg-[var(--color-amber-soft)] text-clay-700 ring-1 ring-clay-100' },
+  admin:          { label: 'Admin',          gradient: 'from-bark-400 to-bark-600',       badge: 'bg-sand-300 text-bark-600 ring-1 ring-sand-400' },
 };
 
 // ─── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ name, role, size = 'md' }: { name: string; role?: string; size?: 'sm' | 'md' }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const gradClass = ROLE_CONFIG[role ?? '']?.gradient ?? 'from-slate-500 to-slate-700';
+  const gradClass = ROLE_CONFIG[role ?? '']?.gradient ?? 'from-bark-400 to-bark-600';
   return (
     <div className={cn(
       'rounded-full bg-gradient-to-br text-white font-bold flex items-center justify-center flex-shrink-0 shadow-sm',
@@ -219,7 +220,7 @@ export default function PostCard({ post }: Props) {
                 <span className="text-xs text-gray-400">{timeAgo}</span>
                 {post.horse && (
                   <span className="text-xs text-gray-400 flex items-center gap-0.5">
-                    · <span className="text-gray-300">🐴</span> <span className="text-gray-500 font-medium">{post.horse.name}</span>
+                    · <Horse size={14} weight="regular" className="text-gray-300" /> <span className="text-gray-500 font-medium">{post.horse.name}</span>
                   </span>
                 )}
               </div>

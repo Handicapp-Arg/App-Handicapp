@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { Clock, AlertTriangle, Check, X } from 'lucide-react';
 import type { PedigreeNode, PedigreeStatus } from '@/types';
 
 interface Props {
@@ -12,12 +13,12 @@ interface Props {
   compact?: boolean;
 }
 
-const STATUS_CONFIG: Record<PedigreeStatus, { icon: string; cls: string; label: string }> = {
-  unverified: { icon: '', cls: '', label: 'Sin verificar' },
-  pending:    { icon: '⏳', cls: 'text-amber-500', label: 'Pendiente' },
-  partial:    { icon: '⚠️', cls: 'text-orange-500', label: 'Parcial' },
-  verified:   { icon: '✓', cls: 'text-green-600', label: 'Verificado' },
-  disputed:   { icon: '✕', cls: 'text-red-500', label: 'Disputado' },
+const STATUS_CONFIG: Record<PedigreeStatus, { icon: ReactNode; cls: string; label: string }> = {
+  unverified: { icon: null, cls: '', label: 'Sin verificar' },
+  pending:    { icon: <Clock size={13} />, cls: 'text-amber-500', label: 'Pendiente' },
+  partial:    { icon: <AlertTriangle size={13} />, cls: 'text-orange-500', label: 'Parcial' },
+  verified:   { icon: <Check size={13} />, cls: 'text-green-600', label: 'Verificado' },
+  disputed:   { icon: <X size={13} />, cls: 'text-red-500', label: 'Disputado' },
 };
 
 function NodeCard({ node, showValidation }: { node: PedigreeNode; showValidation?: boolean }) {

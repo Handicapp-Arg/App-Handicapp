@@ -16,7 +16,7 @@ export function PageHeader({ title, subtitle, badge, action, back }: PageHeaderP
         {back}
         <div className="min-w-0">
           <div className="flex items-baseline gap-2.5 flex-wrap">
-            <h1 className="text-[1.375rem] font-bold tracking-[-0.025em] text-gray-900 leading-tight">
+            <h1 className="font-display text-[1.375rem] font-bold tracking-[-0.025em] text-gray-900 leading-tight">
               {title}
             </h1>
             {badge && (

@@ -24,7 +24,7 @@ export default function ConfirmDialog({
   const isDanger = variant === 'danger';
 
   return createPortal(
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-[var(--overlay)]">
       <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
         <div className="p-5 space-y-2">
           <h3 className="text-base font-semibold text-gray-900">{title}</h3>
@@ -42,7 +42,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             className={`flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition cursor-pointer ${
-              isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-[#9d6c35] hover:bg-[#9d6c35]/90'
+              isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-clay-500 hover:bg-clay-600'
             }`}
           >
             {confirmLabel}

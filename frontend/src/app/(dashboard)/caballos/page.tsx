@@ -24,7 +24,7 @@ import { cldTransform } from '@/lib/cloudinary';
 import { calcAge } from '@/lib/utils';
 import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
-import { Plus, Search as SearchIcon, Filter as FilterIcon } from 'lucide-react';
+import { Plus, Search as SearchIcon, Filter as FilterIcon, X } from 'lucide-react';
 import { HorseIllustration } from '@/components/illustrations';
 import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -32,7 +32,7 @@ import { Button } from '@/components/ui/button';
 import type { Horse, HorseOwnership } from '@/types';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 transition focus:border-clay-500 focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-clay-500/12';
+  'w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm text-gray-900 transition focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/12';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -106,7 +106,7 @@ function OwnershipSection({
         <p className="text-sm font-medium text-gray-700">Tenencia</p>
         {canManage && !editing && (
           <button type="button" onClick={startEditing}
-            className="text-xs font-medium text-[#9d6c35] hover:underline cursor-pointer">
+            className="text-xs font-medium text-[var(--color-primary)] hover:underline cursor-pointer">
             Editar
           </button>
         )}
@@ -215,7 +215,7 @@ function OwnershipSection({
 
           {availablePropietarios.length > 0 && (
             <button type="button" onClick={addEntry}
-              className="flex items-center gap-1 text-xs font-medium text-[#9d6c35] hover:underline cursor-pointer">
+              className="flex items-center gap-1 text-xs font-medium text-[var(--color-primary)] hover:underline cursor-pointer">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
@@ -227,7 +227,7 @@ function OwnershipSection({
 
           <div className="flex gap-2">
             <button type="button" onClick={save} disabled={updateOwnership.isPending}
-              className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer">
+              className="rounded-lg bg-clay-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer">
               {updateOwnership.isPending ? 'Guardando...' : 'Guardar tenencia'}
             </button>
             <button type="button" onClick={() => setEditing(false)}
@@ -410,9 +410,9 @@ function EditModal({
     <>
       {/* ── MOBILE: pantalla completa ── */}
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
-        <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
+        <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
           <p className="font-bold text-white">Editar caballo</p>
-          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto">
@@ -422,7 +422,7 @@ function EditModal({
           </div>
           <div className="border-t border-gray-100 p-5 space-y-3">
             <button type="submit" disabled={isPending}
-              className="w-full rounded-xl bg-[#9d6c35] py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
+              className="w-full rounded-xl bg-clay-500 py-3.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
               {isPending ? 'Guardando...' : 'Guardar cambios'}
             </button>
             <button type="button" onClick={onClose}
@@ -434,12 +434,12 @@ function EditModal({
       </div>
 
       {/* ── DESKTOP: backdrop + modal ── */}
-      <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 z-[998] hidden sm:block bg-[var(--overlay)]" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
         <div className="relative flex flex-col w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
-          <div className="flex items-center justify-between bg-[#9d6c35] rounded-t-2xl px-6 py-4">
+          <div className="flex items-center justify-between bg-clay-500 rounded-t-2xl px-6 py-4">
             <p className="font-bold text-white">Editar caballo</p>
-            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
             <div className="overflow-y-auto">
@@ -449,7 +449,7 @@ function EditModal({
             </div>
             <div className="flex gap-2 border-t border-gray-100 p-4">
               <button type="submit" disabled={isPending}
-                className="flex-1 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
+                className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer">
                 {isPending ? 'Guardando...' : 'Guardar cambios'}
               </button>
               <button type="button" onClick={onClose}
@@ -631,7 +631,7 @@ export default function CaballosPage() {
       {/* Modal coincidencias en padrón */}
       {recordMatches && createPortal(
         <>
-          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setRecordMatches(null)} />
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={() => setRecordMatches(null)} />
           <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="w-full sm:max-w-md bg-[var(--surface-card)] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
               <div className="flex items-start justify-between px-5 pt-5 pb-3">
@@ -639,7 +639,7 @@ export default function CaballosPage() {
                   <p className="font-bold text-gray-900">Posibles coincidencias</p>
                   <p className="text-xs text-gray-400 mt-0.5">Encontramos este caballo en el padrón oficial</p>
                 </div>
-                <button onClick={() => setRecordMatches(null)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
+                <button onClick={() => setRecordMatches(null)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X className="h-4 w-4" /></button>
               </div>
               <div className="px-5 pb-3 space-y-3 max-h-72 overflow-y-auto">
                 {recordMatches.matches.map((r) => (
@@ -664,7 +664,7 @@ export default function CaballosPage() {
                         setRecordMatches(null);
                       }}
                       disabled={submitClaim.isPending}
-                      className="shrink-0 rounded-lg bg-[#9d6c35] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer"
+                      className="shrink-0 rounded-lg bg-clay-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 cursor-pointer"
                     >
                       {submitClaim.isPending ? '...' : 'Reclamar'}
                     </button>
@@ -707,7 +707,7 @@ export default function CaballosPage() {
           onClick={() => { setCreateError(null); setShowForm(!showForm); }}
           className="md:hidden fixed right-4 z-40 flex items-center gap-2 rounded-full py-2 pl-2 pr-4 text-xs font-semibold text-white shadow-xl cursor-pointer"
           style={{
-            backgroundColor: '#9d6c35',
+            backgroundColor: 'var(--color-primary)',
             bottom: 'calc(env(safe-area-inset-bottom) + 4.5rem)',
           }}
         >
@@ -727,7 +727,7 @@ export default function CaballosPage() {
           <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
             <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
               <p className="font-bold text-white">Nuevo caballo</p>
-              <button onClick={closeCreateForm} className="p-2 text-white/70 hover:text-white cursor-pointer">✕</button>
+              <button onClick={closeCreateForm} className="p-2 text-white/70 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -796,7 +796,7 @@ export default function CaballosPage() {
           </div>
 
           {/* Desktop */}
-          <div className="fixed inset-0 z-[998] hidden sm:block bg-black/50 backdrop-blur-sm" onClick={closeCreateForm} />
+          <div className="fixed inset-0 z-[998] hidden sm:block bg-[var(--overlay)] backdrop-blur-sm" onClick={closeCreateForm} />
           <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
             <div className="relative flex flex-col w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '90dvh' }}>
               {/* Header */}
@@ -1044,7 +1044,7 @@ export default function CaballosPage() {
                   className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#9d6c35] to-[#7f5628]">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-clay-500 to-clay-600">
                   <span className="text-5xl font-bold text-white/10 select-none">{horse.name[0]?.toUpperCase()}</span>
                 </div>
               )}

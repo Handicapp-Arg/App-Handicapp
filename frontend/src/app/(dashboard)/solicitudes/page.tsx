@@ -8,6 +8,7 @@ import {
   useRejectBoardingRequest,
   type BoardingRequest,
 } from '@/hooks/use-boarding-requests';
+import { Horse } from '@phosphor-icons/react';
 import {
   PageHeader, Badge, Button, EmptyState, ListSkeleton, type BadgeTone,
 } from '@/components/ui';
@@ -50,8 +51,8 @@ function RequestCard({
     <div className="flex flex-col gap-3 rounded-2xl border border-surface-border bg-[var(--surface-card)] p-5 shadow-[var(--shadow-card)] sm:flex-row sm:items-start sm:justify-between">
       <div className="flex items-start gap-4 min-w-0">
         {/* Ícono caballo */}
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xl">
-          🐴
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+          <Horse size={22} weight="regular" />
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

@@ -51,7 +51,7 @@ function RequestModal({
 
   if (sent) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4">
         <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] p-8 text-center shadow-xl">
           <div className="mb-4 flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
@@ -62,7 +62,7 @@ function RequestModal({
           </div>
           <p className="text-base font-bold text-gray-900">¡Solicitud enviada!</p>
           <p className="mt-2 text-sm text-gray-400">{establishment.name} recibirá una notificación y podrá aceptar o rechazar tu solicitud.</p>
-          <button onClick={onClose} className="mt-6 w-full rounded-xl bg-[#9d6c35] py-2.5 text-sm font-semibold text-white cursor-pointer">Cerrar</button>
+          <button onClick={onClose} className="mt-6 w-full rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white cursor-pointer">Cerrar</button>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ function RequestModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
+        <div className="flex items-center justify-between bg-clay-500 px-6 py-4">
           <p className="font-bold text-white">Solicitar alojamiento</p>
           <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
         </div>
@@ -88,7 +88,7 @@ function RequestModal({
               <select
                 value={horseId}
                 onChange={(e) => setHorseId(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#9d6c35] focus:outline-none"
+                className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
               >
                 <option value="">Seleccionar caballo...</option>
                 {available.map((h) => (
@@ -107,7 +107,7 @@ function RequestModal({
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
               placeholder="Presentate brevemente o aclará lo que necesitás..."
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm resize-none focus:border-[#9d6c35] focus:outline-none"
+              className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2.5 text-sm resize-none focus:border-[var(--color-primary)] focus:outline-none"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ function RequestModal({
           <button
             onClick={handleSubmit}
             disabled={!horseId || !available.length || create.isPending}
-            className="flex-1 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#20160e] transition"
+            className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-600 transition"
           >
             {create.isPending ? 'Enviando...' : 'Enviar solicitud'}
           </button>

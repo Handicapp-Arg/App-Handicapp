@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { usePermissions, useUpdatePermissions } from '@/hooks/use-permissions';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -72,7 +73,7 @@ function RoleCard({
         <p className="font-semibold text-gray-900">{roleLabels[role] || role}</p>
         <div className="flex items-center gap-2">
           {saved && (
-            <span className="text-xs text-emerald-600 font-medium">✓ Guardado</span>
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={14} /> Guardado</span>
           )}
           {canDelete && onDelete && (
             <button

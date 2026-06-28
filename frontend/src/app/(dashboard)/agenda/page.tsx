@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Check, X } from 'lucide-react';
 import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '@/hooks/use-agenda';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -35,7 +36,7 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
         <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: '#9d6c35' }}>
             <h2 className="text-base font-semibold text-white">Nuevo turno</h2>
-            <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">✕</button>
+            <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer"><X size={18} /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             <div className="space-y-1.5">
@@ -199,7 +200,7 @@ export default function AgendaPage() {
                     </div>
                     <p className="mt-1 text-sm font-medium text-gray-800">{appt.title}</p>
                     {appt.notes && <p className="mt-0.5 text-xs text-gray-500">{appt.notes}</p>}
-                    {appt.completed && <p className="mt-1 text-xs font-semibold text-emerald-600">✓ Completado</p>}
+                    {appt.completed && <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><Check size={14} /> Completado</p>}
                   </div>
                 );
               })}

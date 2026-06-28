@@ -7,11 +7,11 @@ interface StatCardProps {
 }
 
 const accentMap = {
-  navy:   { bg: '#9d6c35', text: '#ffffff', sub: 'rgba(255,255,255,0.55)', icon: 'rgba(255,255,255,0.15)', label: 'rgba(255,255,255,0.5)', border: 'transparent' },
-  blue:   { bg: '#eff6ff', text: '#1e3a8a', sub: '#3b82f6', icon: '#bfdbfe', label: '#60a5fa', border: '#bfdbfe' },
-  green:  { bg: '#f0fdf4', text: '#14532d', sub: '#16a34a', icon: '#bbf7d0', label: '#4ade80', border: '#bbf7d0' },
+  navy:   { bg: 'var(--color-primary)', text: '#ffffff', sub: 'rgba(255,255,255,0.55)', icon: 'rgba(255,255,255,0.15)', label: 'rgba(255,255,255,0.5)', border: 'transparent' },
+  blue:   { bg: 'var(--color-blue-50)', text: '#1e3a8a', sub: '#3b82f6', icon: 'var(--color-blue-200)', label: '#60a5fa', border: 'var(--color-blue-200)' },
+  green:  { bg: 'var(--color-green-50)', text: '#14532d', sub: '#16a34a', icon: 'var(--color-green-200)', label: '#4ade80', border: 'var(--color-green-200)' },
   purple: { bg: '#faf5ff', text: '#581c87', sub: '#9333ea', icon: '#e9d5ff', label: '#c084fc', border: '#e9d5ff' },
-  amber:  { bg: '#fffbeb', text: '#78350f', sub: '#d97706', icon: '#fde68a', label: '#fbbf24', border: '#fde68a' },
+  amber:  { bg: 'var(--color-amber-50)', text: '#78350f', sub: '#d97706', icon: 'var(--color-amber-200)', label: '#fbbf24', border: 'var(--color-amber-200)' },
 };
 
 export function StatCard({ label, value, icon, accent, sub }: StatCardProps) {
@@ -23,7 +23,7 @@ export function StatCard({ label, value, icon, accent, sub }: StatCardProps) {
       style={{
         borderColor: a ? a.border : 'var(--surface-card-border)',
         backgroundColor: a ? a.bg : 'var(--surface-card)',
-        boxShadow: a?.bg === '#9d6c35'
+        boxShadow: accent === 'navy'
           ? '0 4px 14px -2px rgb(15 31 61 / 0.35)'
           : 'var(--shadow-card)',
       }}
@@ -32,18 +32,18 @@ export function StatCard({ label, value, icon, accent, sub }: StatCardProps) {
         <div className="min-w-0 flex flex-col gap-1.5">
           <p
             className="text-[10.5px] font-bold uppercase tracking-[0.07em]"
-            style={{ color: a ? a.label : 'var(--color-gray-400)' }}
+            style={{ color: a ? a.label : 'var(--color-bark-400)' }}
           >
             {label}
           </p>
           <p
             className="text-[2rem] font-bold tracking-[-0.03em] leading-none"
-            style={{ color: a ? a.text : 'var(--color-gray-900)' }}
+            style={{ color: a ? a.text : 'var(--foreground)' }}
           >
             {value}
           </p>
           {sub && (
-            <p className="text-xs font-medium" style={{ color: a ? a.sub : 'var(--color-gray-400)' }}>
+            <p className="text-xs font-medium" style={{ color: a ? a.sub : 'var(--color-bark-400)' }}>
               {sub}
             </p>
           )}
@@ -51,7 +51,7 @@ export function StatCard({ label, value, icon, accent, sub }: StatCardProps) {
         {icon && (
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-            style={{ backgroundColor: a ? a.icon : 'var(--color-gray-100)', color: a ? a.text : 'var(--color-gray-400)' }}
+            style={{ backgroundColor: a ? a.icon : 'var(--color-gray-100)', color: a ? a.text : 'var(--color-bark-400)' }}
           >
             {icon}
           </div>

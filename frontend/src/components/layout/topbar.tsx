@@ -49,7 +49,7 @@ export function Topbar() {
     <header className="hidden md:flex sticky top-0 z-30 h-16 items-center justify-between gap-1 bg-[var(--surface-page)] px-6">
 
       {/* Título de la página */}
-      <h1 className="text-xl font-bold tracking-tight text-gray-900">{pageTitle}</h1>
+      <h1 className="font-display text-xl font-bold tracking-tight text-gray-900">{pageTitle}</h1>
 
       <div className="flex items-center gap-1 rounded-2xl bg-[var(--surface-card)] p-1 shadow-[var(--shadow-card)]">
 
@@ -61,7 +61,7 @@ export function Topbar() {
       >
         <Bell className="h-5 w-5" strokeWidth={1.8} />
         {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-danger-500)] px-1 text-[10px] font-bold leading-none text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

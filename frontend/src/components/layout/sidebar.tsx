@@ -37,7 +37,7 @@ function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; 
       </span>
       {!collapsed && <span className="flex-1 truncate tracking-[-0.01em] leading-none">{item.label}</span>}
       {!collapsed && item.badge != null && item.badge > 0 && (
-        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--color-danger-500)] px-1 text-[10px] font-bold text-white leading-none">
           {item.badge > 9 ? '9+' : item.badge}
         </span>
       )}

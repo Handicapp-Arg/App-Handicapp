@@ -1,16 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  Check, X, AlertTriangle, Info, Lightbulb, ChevronDown, ChevronRight, FileText,
+} from 'lucide-react';
+import { Horse } from '@phosphor-icons/react';
 import { usePedigree, usePedigreeTree, usePedigreeValidations, useUpsertPedigree, useValidatePedigree, useSearchHorsesForPedigree } from '@/hooks/use-pedigree';
 import PedigreeTree from './PedigreeTree';
-import type { Horse, PedigreeStatus } from '@/types';
+import type { Horse as HorseType, PedigreeStatus } from '@/types';
 
 const STATUS_CONFIG: Record<PedigreeStatus, { label: string; cls: string; dot: string }> = {
   unverified: { label: 'Sin verificar', cls: 'bg-gray-100 text-gray-600',  dot: 'bg-gray-400' },
   pending:    { label: 'Pendiente',     cls: 'bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
   partial:    { label: 'Parcial',       cls: 'bg-orange-50 text-orange-700', dot: 'bg-orange-500' },
-  verified:   { label: 'Verificado ✓',  cls: 'bg-green-50 text-green-700',  dot: 'bg-green-500' },
+  verified:   { label: 'Verificado',    cls: 'bg-green-50 text-green-700',  dot: 'bg-green-500' },
   disputed:   { label: 'Disputado',     cls: 'bg-red-50 text-red-700',      dot: 'bg-red-500' },
 };
 
@@ -155,8 +159,9 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           </div>
 
           <button type="button" onClick={() => setShowGrandparents((v) => !v)}
-            className="text-sm text-[#9d6c35] dark:text-blue-400 hover:underline cursor-pointer">
-            {showGrandparents ? '▾' : '▸'} {showGrandparents ? 'Ocultar abuelos' : 'Agregar abuelos (opcional)'}
+            className="inline-flex items-center gap-1 text-sm text-[#9d6c35] dark:text-blue-400 hover:underline cursor-pointer">
+            {showGrandparents ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            {showGrandparents ? 'Ocultar abuelos' : 'Agregar abuelos (opcional)'}
           </button>
 
           {showGrandparents && (
@@ -180,8 +185,9 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             <p className="text-xs text-red-500">Error al guardar. Intentá de nuevo.</p>
           )}
 
-          <p className="text-xs text-gray-400">
-            💡 "Guardar y validar" consultará el Stud Book Argentino, SRA y PedigreeQuery para verificar los datos.
+          <p className="flex items-start gap-1.5 text-xs text-gray-400">
+            <Lightbulb size={14} className="shrink-0 mt-0.5 text-[var(--color-primary)]" />
+            <span>"Guardar y validar" consultará el Stud Book Argentino, SRA y PedigreeQuery para verificar los datos.</span>
           </p>
 
           <div className="flex gap-2 pt-1">
@@ -194,8 +200,8 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
               {upsert.isPending && !validate.isPending ? 'Guardando...' : 'Guardar borrador'}
             </button>
             <button type="button" onClick={() => handleSave(true)} disabled={isPending}
-              className="flex-1 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#9d6c35]/90 transition">
-              {validate.isPending ? 'Validando...' : 'Guardar y validar ✓'}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#9d6c35] py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-[#9d6c35]/90 transition">
+              {validate.isPending ? 'Validando...' : <>Guardar y validar <Check size={16} /></>}
             </button>
           </div>
         </>
@@ -208,7 +214,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] dark:bg-gray-950 sm:hidden">
         <div className="flex items-center justify-between bg-[#9d6c35] px-5 py-4">
           <p className="font-bold text-white">Pedigrí</p>
-          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto flex-1">{content}</div>
       </div>
@@ -216,7 +222,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
         <div className="w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] dark:bg-gray-950 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between bg-[#9d6c35] px-6 py-4">
             <p className="font-bold text-white">Pedigrí</p>
-            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer">✕</button>
+            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
           </div>
           <div className="overflow-y-auto max-h-[80vh]">{content}</div>
         </div>
@@ -227,17 +233,17 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
 }
 
 function ValidationResultScreen({ result, onClose }: { result: { status: string }; onClose: () => void }) {
-  const cfg = {
-    verified: { icon: '✅', title: 'Pedigrí verificado', cls: 'text-green-700', bg: 'bg-green-50' },
-    partial: { icon: '⚠️', title: 'Validación parcial', cls: 'text-orange-700', bg: 'bg-orange-50' },
-    failed: { icon: '❌', title: 'No se encontraron coincidencias', cls: 'text-red-700', bg: 'bg-red-50' },
-    disputed: { icon: '⚠️', title: 'Datos inconsistentes', cls: 'text-orange-700', bg: 'bg-orange-50' },
-  }[result.status] ?? { icon: 'ℹ️', title: result.status, cls: 'text-gray-700', bg: 'bg-gray-50' };
+  const cfg: { icon: ReactNode; title: string; cls: string; bg: string } = {
+    verified: { icon: <Check size={26} />, title: 'Pedigrí verificado', cls: 'text-green-700', bg: 'bg-green-50' },
+    partial: { icon: <AlertTriangle size={26} />, title: 'Validación parcial', cls: 'text-orange-700', bg: 'bg-orange-50' },
+    failed: { icon: <X size={26} />, title: 'No se encontraron coincidencias', cls: 'text-red-700', bg: 'bg-red-50' },
+    disputed: { icon: <AlertTriangle size={26} />, title: 'Datos inconsistentes', cls: 'text-orange-700', bg: 'bg-orange-50' },
+  }[result.status] ?? { icon: <Info size={26} />, title: result.status, cls: 'text-gray-700', bg: 'bg-gray-50' };
 
   return (
     <div className={`rounded-xl p-5 space-y-3 ${cfg.bg}`}>
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{cfg.icon}</span>
+        <span className={cfg.cls}>{cfg.icon}</span>
         <p className={`font-semibold text-lg ${cfg.cls}`}>{cfg.title}</p>
       </div>
       {result.status === 'failed' && (
@@ -253,7 +259,7 @@ function ValidationResultScreen({ result, onClose }: { result: { status: string 
   );
 }
 
-export default function PedigreeSection({ horse, canEdit }: { horse: Horse; canEdit: boolean }) {
+export default function PedigreeSection({ horse, canEdit }: { horse: HorseType; canEdit: boolean }) {
   const [showForm, setShowForm] = useState(false);
   const [showValidations, setShowValidations] = useState(false);
   const [treeDepth, setTreeDepth] = useState<2 | 3>(2);
@@ -280,7 +286,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: Horse; canE
 
       {!pedigree ? (
         <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
-          <p className="text-3xl mb-3">🐴</p>
+          <Horse size={36} weight="regular" className="mx-auto mb-3 text-gray-300" />
           <p className="font-medium text-gray-700 dark:text-gray-300">Sin pedigrí registrado</p>
           <p className="text-sm text-gray-400 mt-1 mb-4">
             Agregá los datos del padre y madre para construir el árbol genealógico y validarlo contra registros oficiales.
@@ -325,7 +331,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: Horse; canE
                 {pedigree.documents!.map((doc) => (
                   <a key={doc.id} href={doc.file_url} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    📄 {doc.file_name}
+                    <FileText size={14} className="shrink-0 text-gray-400" /> {doc.file_name}
                   </a>
                 ))}
               </div>
@@ -336,8 +342,9 @@ export default function PedigreeSection({ horse, canEdit }: { horse: Horse; canE
           {validations.length > 0 && (
             <div>
               <button onClick={() => setShowValidations((v) => !v)}
-                className="text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
-                {showValidations ? '▾' : '▸'} Ver historial de validaciones ({validations.length})
+                className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
+                {showValidations ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                Ver historial de validaciones ({validations.length})
               </button>
               {showValidations && (
                 <div className="mt-2 space-y-1">
