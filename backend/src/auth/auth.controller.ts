@@ -80,6 +80,11 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async me(@GetUser() user: User) {
+    return this.buildUserResponse(user);
+  }
+
+  /** Shape único del usuario autenticado (lo consumen /me y PATCH /profile). */
+  private async buildUserResponse(user: User) {
     const perms = await this.permissionsService.findByRole(user.role);
     return {
       id: user.id,
@@ -162,7 +167,7 @@ export class AuthController {
     @GetUser() user: User,
   ) {
     const updated = await this.authService.updateProfile(user, dto);
-    return { id: updated.id, email: updated.email, name: updated.name };
+    return this.buildUserResponse(updated);
   }
 
   @Post('change-password')
