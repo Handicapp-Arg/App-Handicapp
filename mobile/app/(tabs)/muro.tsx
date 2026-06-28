@@ -28,7 +28,7 @@ import {
   Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
-import { HorseIcon } from '../../components/icons/equine';
+import { HorseIcon, HorseshoeH } from '../../components/icons/equine';
 import { PostSkeleton } from '../../components/Skeleton';
 import { InlineSearch } from '../../components/InlineSearch';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
@@ -547,7 +547,10 @@ export default function MuroTab() {
 
   const Navbar = (
     <View style={s.navbar}>
-      <Text style={s.navTitle}>Muro</Text>
+      <View style={s.navBrand}>
+        <HorseshoeH size={24} color={c.brand} />
+        <Text style={s.navTitle}>HandicApp</Text>
+      </View>
       <View style={s.navActions}>
         <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={8} activeOpacity={0.7}>
           <Search size={24} color={c.text} strokeWidth={2} />
@@ -640,6 +643,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   list: { paddingBottom: space[10] },
 
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[3] },
+  navBrand: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: c.text, letterSpacing: -0.3 },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: space[5] },
 
