@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, Plus, Trophy, Tag, Megaphone } from 'lucide-react-native';
+import { Search, Plus, Trophy, Tag, Megaphone, MapPin, Star, CheckCircle2 } from 'lucide-react-native';
 import { useAuctions } from '../../hooks/use-auctions';
 import { HorseCardSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
@@ -68,21 +68,31 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
             <Text style={s.metaText}>{item.bid_count} puja{item.bid_count !== 1 ? 's' : ''}</Text>
           )}
           {item.location && (
-            <Text style={s.metaText} numberOfLines={1}>📍 {item.location}</Text>
+            <View style={s.metaRow}>
+              <MapPin size={11} color={c.textFaint} strokeWidth={2} />
+              <Text style={s.metaText} numberOfLines={1}>{item.location}</Text>
+            </View>
           )}
-          {item.watching && <Text style={s.watchingBadge}>★ Siguiendo</Text>}
+          {item.watching && (
+            <View style={s.metaRow}>
+              <Star size={11} color="#d97706" fill="#d97706" strokeWidth={2} />
+              <Text style={s.watchingBadge}>Siguiendo</Text>
+            </View>
+          )}
         </View>
       </View>
 
       <View style={s.docRow}>
         {item.has_health_cert && (
           <View style={s.docTag}>
-            <Text style={s.docTagText}>✓ SENASA</Text>
+            <CheckCircle2 size={11} color={c.isDark ? '#6ee7b7' : '#065f46'} strokeWidth={2.5} />
+            <Text style={s.docTagText}>SENASA</Text>
           </View>
         )}
         {item.has_ownership_docs && (
           <View style={s.docTag}>
-            <Text style={s.docTagText}>✓ Docs</Text>
+            <CheckCircle2 size={11} color={c.isDark ? '#6ee7b7' : '#065f46'} strokeWidth={2.5} />
+            <Text style={s.docTagText}>Docs</Text>
           </View>
         )}
       </View>
@@ -276,14 +286,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   priceLabel: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
   price: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.brand, letterSpacing: -0.3 },
-  metaRight: { alignItems: 'flex-end', gap: 2 },
+  metaRight: { alignItems: 'flex-end', gap: 3 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   metaText: { fontSize: text.xs, color: c.textFaint },
   watchingBadge: { fontSize: 10, color: '#d97706', fontWeight: weight.semibold },
 
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },
   docTag: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: space[2], paddingVertical: 2,
-    backgroundColor: '#d1fae5', borderRadius: radius.full,
+    backgroundColor: c.isDark ? 'rgba(16,185,129,0.16)' : '#d1fae5', borderRadius: radius.full,
   },
-  docTagText: { fontSize: 10, color: '#065f46', fontWeight: weight.semibold },
+  docTagText: { fontSize: 10, color: c.isDark ? '#6ee7b7' : '#065f46', fontWeight: weight.semibold },
 });
