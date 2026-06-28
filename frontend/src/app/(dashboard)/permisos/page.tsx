@@ -25,7 +25,7 @@ const resourceLabels: Record<string, string> = { horses: 'Caballos', events: 'Ev
 const actionLabels: Record<string, string> = { create: 'Crear', read: 'Ver', update: 'Editar', delete: 'Eliminar' };
 const roleLabels: Record<string, string> = { admin: 'Administrador', propietario: 'Propietario', establecimiento: 'Establecimiento' };
 
-const BTN_NAVY = { backgroundColor: '#9d6c35' } as const;
+const BTN_NAVY = { backgroundColor: 'var(--color-clay-500)' } as const;
 const BTN_NAVY_HOVER = '#7f5628';
 const BTN_GREEN = { backgroundColor: '#22c55e' } as const;
 const BTN_GREEN_HOVER = '#16a34a';
@@ -112,7 +112,7 @@ function RoleCard({
                       checked={state[key] || false}
                       onChange={() => toggle(key)}
                       className="h-4 w-4 cursor-pointer"
-                      style={{ accentColor: '#9d6c35' }}
+                      style={{ accentColor: 'var(--color-primary)' }}
                     />
                     <span className="text-sm text-gray-700">{actionLabels[action]}</span>
                   </label>
@@ -193,7 +193,7 @@ function RoleNotifCard({
                 checked={state[et.value] || false}
                 onChange={() => toggle(et.value)}
                 className="h-4 w-4 cursor-pointer"
-                style={{ accentColor: '#9d6c35' }}
+                style={{ accentColor: 'var(--color-primary)' }}
               />
               <span className="text-sm text-gray-700">{et.label}</span>
             </label>
@@ -312,7 +312,7 @@ export default function PermisosPage() {
 
   if (loadingPerms || loadingRoles || loadingSettings || loadingTypes) return (
     <div className="flex justify-center py-20">
-      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
+      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: 'var(--color-primary)' }} />
     </div>
   );
 
@@ -364,7 +364,7 @@ export default function PermisosPage() {
             onClick={() => setTab(t.id)}
             className="flex-1 rounded-lg py-2 text-sm font-medium transition-colors cursor-pointer"
             style={tab === t.id
-              ? { backgroundColor: '#9d6c35', color: '#fff' }
+              ? { backgroundColor: 'var(--color-clay-500)', color: '#fff' }
               : { color: '#6b7280' }}
           >
             {t.label}

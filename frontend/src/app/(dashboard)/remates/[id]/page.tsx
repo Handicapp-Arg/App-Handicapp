@@ -51,7 +51,7 @@ function Countdown({ end }: { end: string }) {
     <div className="flex items-center gap-2">
       {[{ v: d, l: 'd' }, { v: h, l: 'h' }, { v: m, l: 'm' }, { v: s, l: 's' }].map(({ v, l }) => (
         <div key={l} className="text-center">
-          <div className="rounded-lg bg-[#9d6c35] text-white font-bold text-lg leading-none px-2.5 py-1.5 min-w-[36px]">
+          <div className="rounded-lg bg-clay-500 text-white font-bold text-lg leading-none px-2.5 py-1.5 min-w-[36px]">
             {String(v).padStart(2, '0')}
           </div>
           <p className="text-[10px] text-gray-400 mt-0.5 uppercase">{l}</p>
@@ -109,7 +109,7 @@ export default function AuctionDetailPage() {
   if (isLoading || !auction) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#9d6c35] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent" />
       </div>
     );
   }
@@ -289,7 +289,7 @@ export default function AuctionDetailPage() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
                 {isRemate ? (topBidAmount ? 'Puja actual' : 'Puja inicial') : 'Precio pedido'}
               </p>
-              <p className="text-3xl font-extrabold text-[#9d6c35] tracking-tight">
+              <p className="text-3xl font-extrabold text-[var(--color-primary)] tracking-tight">
                 {formatCurrency(
                   Number(isRemate ? (topBidAmount ?? auction.starting_bid) : auction.asking_price),
                   auction.currency,
@@ -325,7 +325,7 @@ export default function AuctionDetailPage() {
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 focus:outline-none"
+                      className="flex-1 rounded-lg border border-[var(--surface-card-border)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/10 focus:outline-none"
                       placeholder={`Mín. ${formatCurrency(minNextBid, auction.currency)}`}
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
@@ -354,7 +354,7 @@ export default function AuctionDetailPage() {
             <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Vendedor</p>
               <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-full bg-[#9d6c35]/10 flex items-center justify-center font-bold text-[#9d6c35] text-sm">
+                <div className="h-9 w-9 rounded-full bg-clay-500/10 flex items-center justify-center font-bold text-[var(--color-primary)] text-sm">
                   {auction.seller?.name?.charAt(0) ?? '?'}
                 </div>
                 <div>

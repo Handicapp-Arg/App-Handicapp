@@ -34,7 +34,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: 'var(--color-primary)' }} />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
       <div className="border-b border-gray-200 bg-[var(--surface-card)] px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: '#9d6c35' }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: 'var(--color-clay-500)' }}>
               <span className="text-base font-bold text-white">H</span>
             </div>
             <div>

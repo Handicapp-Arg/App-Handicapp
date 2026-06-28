@@ -42,7 +42,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
 
   return (
     <div
-      className="cursor-pointer rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm transition hover:border-[#9d6c35]/30 hover:shadow-md"
+      className="cursor-pointer rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-5 shadow-sm transition hover:border-[var(--color-primary)]/30 hover:shadow-md"
       onClick={onClick}
     >
       {/* Caballo imagen + nombre */}
@@ -65,7 +65,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
             >
               {STATUS_LABELS[auction.status]}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#9d6c35]/8 text-[#9d6c35]">
+            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-clay-500/8 text-[var(--color-primary)]">
               {isRemate ? <Gavel className="h-3 w-3" /> : <Tag className="h-3 w-3" />}
               {isRemate ? 'Remate' : 'Venta directa'}
             </span>
@@ -81,7 +81,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
           <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
             {isRemate ? (auction.top_bid ? 'Puja actual' : 'Base') : 'Precio pedido'}
           </p>
-          <p className="text-xl font-bold text-[#9d6c35] tracking-tight">
+          <p className="text-xl font-bold text-[var(--color-primary)] tracking-tight">
             {price != null ? formatCurrency(price, auction.currency) : '–'}
           </p>
         </div>
@@ -129,10 +129,10 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
 }
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
+  'w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3.5 py-2.5 text-sm text-gray-900 transition focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/10';
 
 const selectClass =
-  'rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 transition focus:border-[#9d6c35] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/10';
+  'rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2.5 text-sm text-gray-900 transition focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/10';
 
 function CreateAuctionModal({
   onClose,
@@ -232,7 +232,7 @@ function CreateAuctionModal({
                   onClick={() => set('type', t)}
                   className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition ${
                     form.type === t
-                      ? 'border-[#9d6c35] bg-[#9d6c35] text-white'
+                      ? 'border-[var(--color-primary)] bg-clay-500 text-white'
                       : 'border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -322,11 +322,11 @@ function CreateAuctionModal({
           <div className="rounded-xl bg-gray-50 p-4 space-y-3">
             <p className="text-sm font-semibold text-gray-700">Documentación disponible</p>
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.has_health_cert} onChange={(e) => set('has_health_cert', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-[#9d6c35]" />
+              <input type="checkbox" checked={form.has_health_cert} onChange={(e) => set('has_health_cert', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-[var(--color-primary)]" />
               <span className="text-sm text-gray-700">Certificado sanitario SENASA vigente</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.has_ownership_docs} onChange={(e) => set('has_ownership_docs', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-[#9d6c35]" />
+              <input type="checkbox" checked={form.has_ownership_docs} onChange={(e) => set('has_ownership_docs', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-[var(--color-primary)]" />
               <span className="text-sm text-gray-700">Documentación de propiedad (Studbook / SRA)</span>
             </label>
           </div>
@@ -411,7 +411,7 @@ export default function RematesPage() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
-                  className="w-full rounded-lg border border-gray-200 bg-[var(--surface-card)] pl-9 pr-4 py-2.5 text-sm focus:border-[#9d6c35] focus:ring-2 focus:ring-[#9d6c35]/10 focus:outline-none"
+                  className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-card)] pl-9 pr-4 py-2.5 text-sm focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/10 focus:outline-none"
                   placeholder="Buscar por nombre o caballo…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

@@ -77,7 +77,7 @@ export function GlobalSearch() {
                 <button key={h.id} onClick={() => navigate(`/caballos/${h.id}`)}
                   className="flex w-full items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition text-left cursor-pointer border-b border-gray-50 last:border-0"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#9d6c35] text-xs font-bold text-white">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-clay-500 text-xs font-bold text-white">
                     {h.name[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">

@@ -133,9 +133,9 @@ export default function RegistroPage() {
                 onClick={() => setRole(r.name)}
                 className="rounded-xl border py-2.5 text-sm font-medium transition cursor-pointer"
                 style={{
-                  backgroundColor: role === r.name ? '#9d6c35' : 'var(--surface-card)',
+                  backgroundColor: role === r.name ? 'var(--color-clay-500)' : 'var(--surface-card)',
                   color: role === r.name ? '#ffffff' : 'var(--foreground)',
-                  borderColor: role === r.name ? '#9d6c35' : '#d1d5db',
+                  borderColor: role === r.name ? 'var(--color-primary)' : 'var(--surface-card-border)',
                 }}
               >
                 {roleLabels[r.name] || r.name}

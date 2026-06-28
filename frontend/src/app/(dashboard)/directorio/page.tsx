@@ -183,14 +183,14 @@ export default function DirectorioPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Buscar por nombre..."
-          className="w-full rounded-xl border border-gray-200 bg-[var(--surface-card)] py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-[#9d6c35] focus:outline-none focus:ring-2 focus:ring-[#9d6c35]/8"
+          className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] py-2.5 pl-9 pr-4 text-sm text-gray-700 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/8"
         />
       </div>
 
       {/* Lista */}
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: '#9d6c35' }} />
+          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: 'var(--color-primary)' }} />
         </div>
       ) : !items?.length ? (
         <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
@@ -207,7 +207,7 @@ export default function DirectorioPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white text-lg font-bold"
-                    style={{ backgroundColor: '#9d6c35' }}
+                    style={{ backgroundColor: 'var(--color-clay-500)' }}
                   >
                     {item.name[0].toUpperCase()}
                   </div>
@@ -235,7 +235,7 @@ export default function DirectorioPage() {
                     ) : (
                       <button
                         onClick={() => setRequesting(item)}
-                        className="rounded-lg bg-[#9d6c35] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#20160e] transition cursor-pointer"
+                        className="rounded-lg bg-clay-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-clay-700 transition cursor-pointer"
                       >
                         Solicitar alojamiento
                       </button>
