@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ChevronDown, Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
 
-const roleLabels: Record<string, string> = {
-  propietario: 'Propietario',
-  establecimiento: 'Establecimiento',
-  veterinario: 'Veterinario',
-  admin: 'Administrador',
+const roleInfo: Record<string, { label: string; desc: string }> = {
+  propietario:     { label: 'Propietario',     desc: 'Seguí el historial, eventos y documentos de tus caballos.' },
+  establecimiento: { label: 'Establecimiento', desc: 'Gestioná caballos, eventos, contratos y tu equipo.' },
+  veterinario:     { label: 'Veterinario',     desc: 'Atendé a tus pacientes con su historial clínico.' },
+  admin:           { label: 'Administrador',   desc: 'Acceso completo a la plataforma.' },
 };
 
 interface RoleOption {
@@ -25,6 +26,7 @@ export default function RegistroPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState('');
   const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [roleOpen, setRoleOpen] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -123,25 +125,41 @@ export default function RegistroPage() {
           </div>
         </div>
 
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-500 mb-1.5">Tipo de cuenta</label>
-          <div className="grid grid-cols-2 gap-2">
-            {roles.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRole(r.name)}
-                className="rounded-xl border py-2.5 text-sm font-medium transition cursor-pointer"
-                style={{
-                  backgroundColor: role === r.name ? 'var(--color-clay-500)' : 'var(--surface-card)',
-                  color: role === r.name ? '#ffffff' : 'var(--foreground)',
-                  borderColor: role === r.name ? 'var(--color-primary)' : 'var(--surface-card-border)',
-                }}
-              >
-                {roleLabels[r.name] || r.name}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => setRoleOpen((o) => !o)}
+            className="flex w-full items-center justify-between rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--color-primary)] cursor-pointer"
+          >
+            <span>{roleInfo[role]?.label ?? 'Elegí una opción'}</span>
+            <ChevronDown className={`h-4 w-4 text-[var(--color-bark-400)] transition-transform ${roleOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {roleOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setRoleOpen(false)} />
+              <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] shadow-[var(--shadow-lg)]">
+                {roles.map((r) => {
+                  const info = roleInfo[r.name];
+                  const active = role === r.name;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => { setRole(r.name); setRoleOpen(false); }}
+                      className="flex w-full items-start gap-2 px-4 py-3 text-left transition hover:bg-[var(--sidebar-hover-bg)] cursor-pointer"
+                    >
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-[var(--foreground)]">{info?.label ?? r.name}</div>
+                        {info?.desc && <div className="mt-0.5 text-xs leading-snug text-[var(--color-bark-400)]">{info.desc}</div>}
+                      </div>
+                      {active && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-primary)]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         <button

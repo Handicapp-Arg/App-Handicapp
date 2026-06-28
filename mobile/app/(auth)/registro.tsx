@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal,
 } from 'react-native';
+import { ChevronDown, Check } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
@@ -11,10 +12,10 @@ import { HorseshoeH } from '../../components/icons/equine';
 import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
 import api from '../../lib/api';
 
-const ROLE_LABELS: Record<string, string> = {
-  propietario: 'Propietario',
-  establecimiento: 'Establecimiento',
-  veterinario: 'Veterinario',
+const ROLE_INFO: Record<string, { label: string; desc: string }> = {
+  propietario:     { label: 'Propietario',     desc: 'Seguí el historial, eventos y documentos de tus caballos.' },
+  establecimiento: { label: 'Establecimiento', desc: 'Gestioná caballos, eventos, contratos y tu equipo.' },
+  veterinario:     { label: 'Veterinario',     desc: 'Atendé a tus pacientes con su historial clínico.' },
 };
 
 export default function RegistroScreen() {
@@ -26,6 +27,7 @@ export default function RegistroScreen() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('propietario');
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
+  const [roleModal, setRoleModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -97,20 +99,10 @@ export default function RegistroScreen() {
 
           <View style={s.field}>
             <Text style={s.label}>Tipo de cuenta</Text>
-            <View style={s.roleGrid}>
-              {roles.map((r) => (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[s.roleBtn, role === r.name && s.roleBtnActive]}
-                  onPress={() => setRole(r.name)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[s.roleBtnText, role === r.name && s.roleBtnTextActive]}>
-                    {ROLE_LABELS[r.name] ?? r.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TouchableOpacity style={s.selectField} onPress={() => setRoleModal(true)} activeOpacity={0.8}>
+              <Text style={s.selectValue}>{ROLE_INFO[role]?.label ?? 'Elegí una opción'}</Text>
+              <ChevronDown size={18} color={c.textFaint} strokeWidth={2} />
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -136,6 +128,33 @@ export default function RegistroScreen() {
         </View>
 
       </ScrollView>
+
+      <Modal visible={roleModal} transparent animationType="fade" onRequestClose={() => setRoleModal(false)}>
+        <TouchableOpacity style={s.roleOverlay} activeOpacity={1} onPress={() => setRoleModal(false)}>
+          <View style={s.roleSheet}>
+            <View style={s.roleGrabber} />
+            <Text style={s.roleSheetTitle}>Tipo de cuenta</Text>
+            {roles.map((r) => {
+              const info = ROLE_INFO[r.name];
+              const active = role === r.name;
+              return (
+                <TouchableOpacity
+                  key={r.id}
+                  style={[s.roleOption, active && s.roleOptionActive]}
+                  onPress={() => { setRole(r.name); setRoleModal(false); }}
+                  activeOpacity={0.85}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.roleOptionLabel}>{info?.label ?? r.name}</Text>
+                    {info?.desc ? <Text style={s.roleOptionDesc}>{info.desc}</Text> : null}
+                  </View>
+                  {active && <Check size={18} color={c.brand} strokeWidth={2.5} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -167,15 +186,26 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12,
     fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
   },
-  roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  roleBtn: {
-    flex: 1, minWidth: '30%',
+  selectField: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     borderWidth: 1, borderColor: c.borderStrong, borderRadius: 12,
-    paddingVertical: 10, alignItems: 'center', backgroundColor: c.surface,
+    paddingHorizontal: 14, paddingVertical: 13, backgroundColor: c.surfaceAlt,
   },
-  roleBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
-  roleBtnText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
-  roleBtnTextActive: { color: colors.white },
+  selectValue: { fontSize: 14, fontWeight: '600', color: c.text },
+  roleOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  roleSheet: {
+    backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 16, paddingBottom: 30, gap: 8, borderTopWidth: 1, borderColor: c.border,
+  },
+  roleGrabber: { width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong, alignSelf: 'center', marginBottom: 6 },
+  roleSheetTitle: { fontSize: 16, fontWeight: '800', color: c.text, marginBottom: 4, paddingHorizontal: 4 },
+  roleOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14,
+    borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface,
+  },
+  roleOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
+  roleOptionLabel: { fontSize: 15, fontWeight: '700', color: c.text },
+  roleOptionDesc: { fontSize: 12.5, color: c.textMuted, marginTop: 2, lineHeight: 17 },
   btn: {
     backgroundColor: c.brand, borderRadius: 14,
     paddingVertical: 14, alignItems: 'center', marginTop: 4,
