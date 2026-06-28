@@ -89,6 +89,7 @@ export class AuthController {
       plan: user.plan ?? 'free',
       plan_expires_at: user.plan_expires_at,
       avatar_url: user.avatar_url ?? null,
+      avatar_color: user.avatar_color ?? null,
       cover_url: user.cover_url ?? null,
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };

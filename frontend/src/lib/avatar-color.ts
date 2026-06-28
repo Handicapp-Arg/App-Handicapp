@@ -1,30 +1,33 @@
 /**
- * Color de avatar (iniciales) — determinístico por usuario.
+ * Color de avatar (iniciales) — elegible por el usuario, con fallback automático.
  *
- * Cada persona recibe un color consistente derivado de su nombre/id, de una
- * paleta ACOTADA y CÁLIDA (tonos tierra/equinos, coherentes con la identidad).
- * Sin selector: cero fricción, todos se distinguen, nada de arcoíris.
+ * Prioridad de color: color ELEGIDO por el usuario (`avatar_color`) → si no eligió,
+ * color determinístico por nombre (hash). Y en los componentes: foto → este color.
  *
- * Mismo algoritmo y paleta que el móvil (`mobile/lib/avatar-color.ts`) → el
- * mismo usuario tiene el MISMO color en web y en la app.
+ * Paleta ACOTADA y CÁLIDA (tonos tierra/equinos, coherentes con la identidad).
+ * Cada tono tiene un `id` ESTABLE (se guarda en el back, no el índice) para poder
+ * reordenar la paleta sin romper las elecciones existentes.
  *
- * Prioridad de render en los componentes: foto → (color elegido, futuro) → hash.
- * El cuero de marca NO se usa acá: se reserva para la UI (botones, acentos).
+ * Mismo algoritmo, paleta e ids que el móvil (`mobile/lib/avatar-color.ts`) y que
+ * el back (`AVATAR_COLOR_IDS` en update-profile.dto) → el mismo usuario tiene el
+ * MISMO color en web y en la app. El cuero de marca NO se usa acá (se reserva
+ * para la UI: botones, acentos).
  */
 
-/** Paleta tierra/equina — pares [from, to] para el gradiente del avatar. */
-export const AVATAR_PALETTE: ReadonlyArray<readonly [string, string]> = [
-  ['#bd8a4d', '#7f5628'], // cuero
-  ['#c2683f', '#9a4a2a'], // terracota
-  ['#c4922a', '#9a7320'], // ocre
-  ['#7d8242', '#566030'], // oliva
-  ['#a8503a', '#7d3a2a'], // herrumbre
-  ['#8a7d6b', '#5a5044'], // piedra
-  ['#8a4250', '#65303a'], // vino
-  ['#5f7355', '#45543e'], // musgo
+export const AVATAR_PALETTE = [
+  { id: 'cuero',     from: '#bd8a4d', to: '#7f5628' },
+  { id: 'terracota', from: '#c2683f', to: '#9a4a2a' },
+  { id: 'ocre',      from: '#c4922a', to: '#9a7320' },
+  { id: 'oliva',     from: '#7d8242', to: '#566030' },
+  { id: 'herrumbre', from: '#a8503a', to: '#7d3a2a' },
+  { id: 'piedra',    from: '#8a7d6b', to: '#5a5044' },
+  { id: 'vino',      from: '#8a4250', to: '#65303a' },
+  { id: 'musgo',     from: '#5f7355', to: '#45543e' },
 ] as const;
 
-/** Hash estable (FNV-like) de un string → entero sin signo. */
+export type AvatarColorId = (typeof AVATAR_PALETTE)[number]['id'];
+
+/** Hash estable de un string → entero sin signo. */
 function hashSeed(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -33,16 +36,27 @@ function hashSeed(seed: string): number {
   return h;
 }
 
-/** Devuelve los dos tonos del avatar para un seed (nombre o id). */
-export function avatarColors(seed: string | null | undefined): { from: string; to: string } {
+/**
+ * Devuelve los dos tonos del avatar.
+ * @param seed    nombre (o id) del usuario, para el color automático
+ * @param colorId tono elegido por el usuario (si lo eligió); tiene prioridad
+ */
+export function avatarColors(
+  seed: string | null | undefined,
+  colorId?: string | null,
+): { from: string; to: string } {
+  const chosen = colorId ? AVATAR_PALETTE.find((p) => p.id === colorId) : undefined;
   const s = (seed ?? '').trim() || '?';
-  const [from, to] = AVATAR_PALETTE[hashSeed(s) % AVATAR_PALETTE.length];
-  return { from, to };
+  const tone = chosen ?? AVATAR_PALETTE[hashSeed(s) % AVATAR_PALETTE.length];
+  return { from: tone.from, to: tone.to };
 }
 
 /** Gradiente CSS listo para `style={{ backgroundImage }}`. */
-export function avatarGradient(seed: string | null | undefined): string {
-  const { from, to } = avatarColors(seed);
+export function avatarGradient(
+  seed: string | null | undefined,
+  colorId?: string | null,
+): string {
+  const { from, to } = avatarColors(seed, colorId);
   return `linear-gradient(135deg, ${from}, ${to})`;
 }
 

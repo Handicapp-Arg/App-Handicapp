@@ -12,7 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: { name?: string; email?: string }) => Promise<void>;
+  updateProfile: (data: { name?: string; email?: string; avatar_color?: string | null }) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user.permissions.includes(`${resource}:${action}`);
   }, [user]);
 
-  const updateProfile = async (data: { name?: string; email?: string }) => {
+  const updateProfile = async (data: { name?: string; email?: string; avatar_color?: string | null }) => {
     const { data: updated } = await api.patch('/auth/profile', data);
     setUser(updated);
   };

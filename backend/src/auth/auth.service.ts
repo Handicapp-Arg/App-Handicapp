@@ -174,10 +174,10 @@ export class AuthService {
     return this.userRepository.save(user);
   }
 
-  async getDirectorio(search?: string): Promise<{ id: string; name: string; horse_count: number }[]> {
+  async getDirectorio(search?: string): Promise<{ id: string; name: string; avatar_color: string | null; horse_count: number }[]> {
     const qb = this.userRepository
       .createQueryBuilder('u')
-      .select(['u.id', 'u.name'])
+      .select(['u.id', 'u.name', 'u.avatar_color'])
       .where('u.role = :role', { role: 'establecimiento' });
 
     if (search) {
@@ -197,6 +197,7 @@ export class AuthService {
     return users.map((u) => ({
       id: u.id,
       name: u.name,
+      avatar_color: u.avatar_color ?? null,
       horse_count: countMap.get(u.id) ?? 0,
     }));
   }

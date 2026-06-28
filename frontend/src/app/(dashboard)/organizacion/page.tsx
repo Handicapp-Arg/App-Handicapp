@@ -420,7 +420,7 @@ export default function OrganizacionPage() {
               <li key={member.id} className="flex items-center gap-3 px-5 py-3.5">
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                  style={{ backgroundImage: avatarGradient(member.user.name) }}
+                  style={{ backgroundImage: avatarGradient(member.user.name, member.user.avatar_color) }}
                 >
                   {initialsOf(member.user.name)}
                 </div>

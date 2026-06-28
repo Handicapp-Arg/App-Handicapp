@@ -1,5 +1,10 @@
-import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsEmail, IsIn, IsNotEmpty, IsOptional } from 'class-validator';
 import { IsStrongPassword } from './password.decorator';
+
+/** Ids de tono de la paleta de avatar (debe coincidir con avatar-color en web/móvil). */
+export const AVATAR_COLOR_IDS = [
+  'cuero', 'terracota', 'ocre', 'oliva', 'herrumbre', 'piedra', 'vino', 'musgo',
+] as const;
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -9,6 +14,11 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsNotEmpty()
   name?: string;
+
+  // null = volver a color automático; un id válido = color elegido.
+  @IsOptional()
+  @IsIn([...AVATAR_COLOR_IDS, null])
+  avatar_color?: string | null;
 }
 
 export class ChangePasswordDto {

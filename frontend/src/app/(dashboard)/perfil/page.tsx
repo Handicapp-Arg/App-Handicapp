@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { avatarGradient, initialsOf, AVATAR_PALETTE } from '@/lib/avatar-color';
 import { useFeed } from '@/hooks/use-feed';
 import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
@@ -141,6 +141,21 @@ export default function PerfilPage() {
   const coverInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<'avatar' | 'cover' | null>(null);
 
+  // Color de avatar elegido por el usuario (null = automático por nombre).
+  const [savingColor, setSavingColor] = useState<string | null>(null);
+  const handleColorSelect = async (colorId: string | null) => {
+    if ((user?.avatar_color ?? null) === colorId) return;
+    setSavingColor(colorId ?? 'auto');
+    try {
+      await api.patch('/auth/profile', { avatar_color: colorId });
+      await refreshUser();
+    } catch {
+      /* noop */
+    } finally {
+      setSavingColor(null);
+    }
+  };
+
   const handleImageUpload = async (kind: 'avatar' | 'cover', file?: File) => {
     if (!file) return;
     setUploading(kind);
@@ -220,7 +235,7 @@ export default function PerfilPage() {
             <div className="relative shrink-0">
               <div
                 className="h-20 w-20 overflow-hidden rounded-2xl ring-4 ring-white"
-                style={{ backgroundImage: avatarGradient(user?.name) }}
+                style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
               >
                 {user?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -299,6 +314,81 @@ export default function PerfilPage() {
                 {savingProfile ? <><Spinner size="sm" color="white" /> Guardando...</> : 'Guardar cambios'}
               </button>
             </form>
+          </SectionCard>
+
+          {/* Color de avatar */}
+          <SectionCard title="Color de avatar">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              {/* Preview */}
+              <div className="flex shrink-0 items-center gap-3">
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-extrabold text-white shadow-sm ring-1 ring-black/5"
+                  style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
+                >
+                  {initials}
+                </div>
+                <div className="sm:hidden">
+                  <p className="text-sm font-semibold text-gray-700">Tu avatar</p>
+                  <p className="text-xs text-gray-400">Elegí un tono o dejalo automático.</p>
+                </div>
+              </div>
+
+              {/* Swatches */}
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Automático */}
+                  <button
+                    type="button"
+                    onClick={() => handleColorSelect(null)}
+                    disabled={savingColor !== null}
+                    aria-label="Color automático"
+                    aria-pressed={!user?.avatar_color}
+                    title="Automático"
+                    className={`relative flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-400 transition hover:bg-gray-200 disabled:opacity-60 cursor-pointer ${
+                      !user?.avatar_color ? 'ring-2 ring-clay-500 ring-offset-2 ring-offset-[var(--surface-card)]' : ''
+                    }`}
+                  >
+                    {savingColor === 'auto' ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {AVATAR_PALETTE.map((p) => {
+                    const selected = user?.avatar_color === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleColorSelect(p.id)}
+                        disabled={savingColor !== null}
+                        aria-label={`Color ${p.id}`}
+                        aria-pressed={selected}
+                        title={p.id}
+                        className={`relative flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition hover:scale-105 disabled:opacity-60 cursor-pointer ${
+                          selected ? 'ring-2 ring-clay-500 ring-offset-2 ring-offset-[var(--surface-card)]' : ''
+                        }`}
+                        style={{ backgroundImage: `linear-gradient(135deg, ${p.from}, ${p.to})` }}
+                      >
+                        {savingColor === p.id ? (
+                          <Spinner size="sm" color="white" />
+                        ) : selected ? (
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                          </svg>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-3 text-xs text-gray-400">
+                  Se aplica a tus iniciales cuando no tenés foto. &quot;Automático&quot; usa un tono según tu nombre.
+                </p>
+              </div>
+            </div>
           </SectionCard>
 
           {/* Seguridad */}

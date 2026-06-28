@@ -254,7 +254,7 @@ export function Navbar() {
               >
                 <span
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white uppercase ring-1 ring-transparent"
-                  style={{ backgroundImage: avatarGradient(user?.name) }}
+                  style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
                 >
                   {initialsOf(user?.name)}
                 </span>

@@ -71,7 +71,7 @@ function BidRow({ bid, isSeller, onAccept }: { bid: AuctionBid; isSeller: boolea
       <div className="flex items-center gap-3">
         <div
           className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-          style={{ backgroundImage: avatarGradient(bid.bidder?.name) }}
+          style={{ backgroundImage: avatarGradient(bid.bidder?.name, bid.bidder?.avatar_color) }}
         >
           {initialsOf(bid.bidder?.name)}
         </div>
@@ -360,7 +360,7 @@ export default function AuctionDetailPage() {
               <div className="flex items-center gap-2.5">
                 <div
                   className="h-9 w-9 rounded-full flex items-center justify-center font-bold text-white text-sm"
-                  style={{ backgroundImage: avatarGradient(auction.seller?.name) }}
+                  style={{ backgroundImage: avatarGradient(auction.seller?.name, auction.seller?.avatar_color) }}
                 >
                   {initialsOf(auction.seller?.name)}
                 </div>

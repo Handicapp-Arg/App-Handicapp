@@ -77,7 +77,7 @@ export function Topbar() {
         >
           <span
             className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-white"
-            style={{ backgroundImage: avatarGradient(user?.name) }}
+            style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
           >
             {initials}
           </span>

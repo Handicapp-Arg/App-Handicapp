@@ -259,7 +259,7 @@ export default function OrganizacionScreen() {
               const isOrgOwner = m.user_id === org.owner_id;
               return (
                 <Animated.View key={m.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.memberCard}>
-                  <View style={[s.memberAvatar, { backgroundColor: avatarColor(m.user.name) }]}>
+                  <View style={[s.memberAvatar, { backgroundColor: avatarColor(m.user.name, m.user.avatar_color) }]}>
                     <Text style={s.memberAvatarText}>{initialsOf(m.user.name)}</Text>
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>

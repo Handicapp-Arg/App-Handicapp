@@ -1,27 +1,25 @@
 /**
- * Color de avatar (iniciales) — determinístico por usuario.
+ * Color de avatar (iniciales) — elegible por el usuario, con fallback automático.
+ * Gemelo de `frontend/src/lib/avatar-color.ts`: misma paleta, mismos ids y mismo
+ * hash → el mismo usuario tiene el MISMO color en web y en la app.
  *
- * Mismo algoritmo y paleta que la web (`frontend/src/lib/avatar-color.ts`) → el
- * mismo usuario tiene el MISMO color en web y en la app.
- *
- * React Native no soporta gradientes CSS por estilo, así que además del par
- * [from, to] exponemos `avatarColor`, un color SÓLIDO (el tono `to`, el más
- * oscuro, que contrasta con texto blanco).
+ * Prioridad: color ELEGIDO (`avatar_color`) → si no eligió, hash del nombre.
+ * Los ids son estables y coinciden con el back (AVATAR_COLOR_IDS).
  */
 
-/** Paleta tierra/equina — pares [from, to] para el gradiente del avatar. */
-export const AVATAR_PALETTE: ReadonlyArray<readonly [string, string]> = [
-  ['#bd8a4d', '#7f5628'], // cuero
-  ['#c2683f', '#9a4a2a'], // terracota
-  ['#c4922a', '#9a7320'], // ocre
-  ['#7d8242', '#566030'], // oliva
-  ['#a8503a', '#7d3a2a'], // herrumbre
-  ['#8a7d6b', '#5a5044'], // piedra
-  ['#8a4250', '#65303a'], // vino
-  ['#5f7355', '#45543e'], // musgo
+export const AVATAR_PALETTE = [
+  { id: 'cuero',     from: '#bd8a4d', to: '#7f5628' },
+  { id: 'terracota', from: '#c2683f', to: '#9a4a2a' },
+  { id: 'ocre',      from: '#c4922a', to: '#9a7320' },
+  { id: 'oliva',     from: '#7d8242', to: '#566030' },
+  { id: 'herrumbre', from: '#a8503a', to: '#7d3a2a' },
+  { id: 'piedra',    from: '#8a7d6b', to: '#5a5044' },
+  { id: 'vino',      from: '#8a4250', to: '#65303a' },
+  { id: 'musgo',     from: '#5f7355', to: '#45543e' },
 ] as const;
 
-/** Hash estable (FNV-like) de un string → entero sin signo. */
+export type AvatarColorId = (typeof AVATAR_PALETTE)[number]['id'];
+
 function hashSeed(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -30,16 +28,23 @@ function hashSeed(seed: string): number {
   return h;
 }
 
-/** Devuelve los dos tonos del avatar para un seed (nombre o id). */
-export function avatarColors(seed: string | null | undefined): { from: string; to: string } {
+/** Devuelve los dos tonos (degradé) para un usuario. `colorId` (elegido) tiene prioridad. */
+export function avatarColors(
+  seed: string | null | undefined,
+  colorId?: string | null,
+): { from: string; to: string } {
+  const chosen = colorId ? AVATAR_PALETTE.find((p) => p.id === colorId) : undefined;
   const s = (seed ?? '').trim() || '?';
-  const [from, to] = AVATAR_PALETTE[hashSeed(s) % AVATAR_PALETTE.length];
-  return { from, to };
+  const tone = chosen ?? AVATAR_PALETTE[hashSeed(s) % AVATAR_PALETTE.length];
+  return { from: tone.from, to: tone.to };
 }
 
-/** Color sólido representativo (tono oscuro `to`) para `backgroundColor`. */
-export function avatarColor(seed: string | null | undefined): string {
-  return avatarColors(seed).to;
+/** Color SÓLIDO (el tono oscuro `to`, contrasta con texto blanco) para `backgroundColor`. */
+export function avatarColor(
+  seed: string | null | undefined,
+  colorId?: string | null,
+): string {
+  return avatarColors(seed, colorId).to;
 }
 
 /** Iniciales (hasta 2) a partir de un nombre. */

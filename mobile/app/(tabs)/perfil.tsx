@@ -8,13 +8,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useMemo } from 'react';
 import {
-  User, ChevronRight, Lock, LogOut, Crown,
+  User, ChevronRight, Lock, LogOut, Crown, Check,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
-import { avatarColor, initialsOf } from '../../lib/avatar-color';
+import { avatarColor, initialsOf, AVATAR_PALETTE } from '../../lib/avatar-color';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
@@ -317,6 +317,78 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
   );
 }
 
+/* ─── Avatar Color Picker ─── */
+
+function AvatarColorSection({ user, c, s }: {
+  user: { name: string; avatar_color?: string | null };
+  c: ThemeColors; s: Styles;
+}) {
+  const { updateProfile } = useAuth();
+  const [saving, setSaving] = useState<string | null>(null);
+  const current = user.avatar_color ?? null;
+
+  const choose = async (id: string | null) => {
+    if (id === current || saving) return;
+    haptic.selection();
+    setSaving(id ?? 'auto');
+    try {
+      await updateProfile({ avatar_color: id });
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar el color. Intentá de nuevo.');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Color de avatar</Text>
+      <View style={s.colorCard}>
+        <View style={s.colorPreviewRow}>
+          <View style={[s.colorPreview, { backgroundColor: avatarColor(user.name, current) }]}>
+            <Text style={s.colorPreviewText}>{initialsOf(user.name)}</Text>
+          </View>
+          <Text style={s.colorHint}>Elegí el color con el que aparecés en la app. Así te ven los demás.</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.colorScroll}
+        >
+          <TouchableOpacity
+            onPress={() => choose(null)}
+            activeOpacity={0.8}
+            style={[s.colorDotWrap, current === null && s.colorDotWrapActive]}
+          >
+            <View style={[s.colorDot, s.colorDotAuto]}>
+              {saving === 'auto'
+                ? <ActivityIndicator size="small" color={c.textMuted} />
+                : <Text style={s.colorDotAutoText}>Auto</Text>}
+            </View>
+          </TouchableOpacity>
+          {AVATAR_PALETTE.map((p) => {
+            const active = current === p.id;
+            return (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => choose(p.id)}
+                activeOpacity={0.8}
+                style={[s.colorDotWrap, active && s.colorDotWrapActive]}
+              >
+                <View style={[s.colorDot, { backgroundColor: p.to }]}>
+                  {saving === p.id
+                    ? <ActivityIndicator size="small" color={colors.white} />
+                    : active ? <Check size={16} color={colors.white} strokeWidth={3} /> : null}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
@@ -363,7 +435,7 @@ export default function PerfilScreen() {
       >
         {/* Hero */}
         <View style={s.hero}>
-          <View style={[s.avatar, { backgroundColor: avatarColor(user.name) }]}>
+          <View style={[s.avatar, { backgroundColor: avatarColor(user.name, user.avatar_color) }]}>
             <Text style={s.avatarText}>{initials}</Text>
           </View>
           <Text style={s.userName}>{user.name}</Text>
@@ -456,6 +528,9 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Color de avatar */}
+          <AvatarColorSection user={user} c={c} s={s} />
 
           {/* Logout */}
           <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
@@ -646,6 +721,32 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   accountRowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   accountRowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   accountDivider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
+
+  colorCard: {
+    backgroundColor: c.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong,
+    padding: space[4], gap: space[4],
+  },
+  colorPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  colorPreview: {
+    width: 56, height: 56, borderRadius: 28,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  colorPreviewText: { fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white },
+  colorHint: { flex: 1, fontSize: text.xs, color: c.textFaint, lineHeight: 16 },
+  colorScroll: { gap: space[2] + 2, paddingVertical: space[1], paddingRight: space[2] },
+  colorDotWrap: {
+    width: 46, height: 46, borderRadius: 23,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: 'transparent',
+  },
+  colorDotWrapActive: { borderColor: c.brand },
+  colorDot: {
+    width: 36, height: 36, borderRadius: 18,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  colorDotAuto: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  colorDotAutoText: { fontSize: 10, fontWeight: weight.bold, color: c.textMuted },
 
   modalOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,

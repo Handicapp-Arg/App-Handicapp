@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role: string;
   permissions: string[];
+  avatar_color?: string | null;
   created_at: string;
 }
 
@@ -282,7 +283,7 @@ export type PostType = 'general' | 'horse_update' | 'announcement';
 export interface FeedPost {
   id: string;
   author_id: string;
-  author?: Pick<User, 'id' | 'name' | 'email' | 'role'>;
+  author?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatar_color'>;
   horse_id: string | null;
   horse?: { id: string; name: string; breed?: string } | null;
   content: string;
@@ -302,7 +303,7 @@ export interface FeedComment {
   id: string;
   post_id: string;
   user_id: string;
-  user?: Pick<User, 'id' | 'name' | 'email' | 'role'>;
+  user?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatar_color'>;
   content: string;
   created_at: string;
 }

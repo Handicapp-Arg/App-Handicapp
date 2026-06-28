@@ -33,9 +33,9 @@ import { PostSkeleton } from '../../components/Skeleton';
 import { InlineSearch } from '../../components/InlineSearch';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
 
-function Avatar({ name, size = 38, s }: { name: string; size?: number; s: Styles }) {
+function Avatar({ name, colorId, size = 38, s }: { name: string; colorId?: string | null; size?: number; s: Styles }) {
   return (
-    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(name) }]}>
+    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(name, colorId) }]}>
       <Text style={[s.avatarText, { fontSize: size * 0.35 }]}>{initialsOf(name)}</Text>
     </View>
   );
@@ -88,7 +88,7 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
           )}
           {(comments as FeedComment[]).map((cm) => (
             <View key={cm.id} style={s.commentRow}>
-              <Avatar name={cm.user?.name ?? 'U'} size={30} s={s} />
+              <Avatar name={cm.user?.name ?? 'U'} colorId={cm.user?.avatar_color} size={30} s={s} />
               <View style={s.commentBubble}>
                 <Text style={s.commentAuthor}>{cm.user?.name}</Text>
                 <Text style={s.commentText}>{cm.content}</Text>
@@ -167,7 +167,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
     ]}>
       {/* Header */}
       <View style={s.cardHeader}>
-        <Avatar name={post.author?.name ?? 'U'} s={s} />
+        <Avatar name={post.author?.name ?? 'U'} colorId={post.author?.avatar_color} s={s} />
         <View style={s.authorInfo}>
           <View style={s.authorRow}>
             <Text style={s.authorName}>{post.author?.name ?? 'Usuario'}</Text>
@@ -298,7 +298,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
 }
 
 // ─── Composer ────────────────────────────────────────────────────────────────
-function Composer({ user, c, s }: { user: { name: string; role: string }; c: ThemeColors; s: Styles }) {
+function Composer({ user, c, s }: { user: { name: string; role: string; avatar_color?: string | null }; c: ThemeColors; s: Styles }) {
   const createPost = useCreatePost();
   const { data: myHorses } = useHorses();
   const insets = useSafeAreaInsets();
@@ -370,7 +370,7 @@ function Composer({ user, c, s }: { user: { name: string; role: string }; c: The
   if (!open) {
     return (
       <TouchableOpacity style={s.composerClosed} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Avatar name={user.name} size={34} s={s} />
+        <Avatar name={user.name} colorId={user.avatar_color} size={34} s={s} />
         <Text style={s.composerPlaceholder}>¿Qué querés compartir?</Text>
         <Images size={20} color={c.textFaint} strokeWidth={2} />
       </TouchableOpacity>
@@ -416,7 +416,7 @@ function Composer({ user, c, s }: { user: { name: string; role: string }; c: The
             )}
 
             <View style={s.composerRow}>
-              <Avatar name={user.name} s={s} />
+              <Avatar name={user.name} colorId={user.avatar_color} s={s} />
               <TextInput
                 style={s.composerInput}
                 placeholder="¿Qué querés compartir?"

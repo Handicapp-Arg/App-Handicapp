@@ -25,6 +25,7 @@ export interface OrganizationMember {
     id: string;
     name: string;
     email: string;
+    avatar_color?: string | null;
   };
 }
 

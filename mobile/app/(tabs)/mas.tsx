@@ -202,7 +202,7 @@ export default function MasScreen() {
         onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
         activeOpacity={0.7}
       >
-        <View style={[s.profileAvatar, { backgroundColor: avatarColor(user?.name) }]}>
+        <View style={[s.profileAvatar, { backgroundColor: avatarColor(user?.name, user?.avatar_color) }]}>
           <Text style={s.profileAvatarText}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>

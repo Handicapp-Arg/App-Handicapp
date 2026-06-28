@@ -13,6 +13,7 @@ export interface User {
   created_at: string;
   plan?: string;
   avatar_url?: string | null;
+  avatar_color?: string | null;
   cover_url?: string | null;
 }
 
@@ -235,7 +236,7 @@ export interface AuctionBid {
   id: string;
   auction_id: string;
   bidder_id: string;
-  bidder?: Pick<User, 'id' | 'name' | 'email'>;
+  bidder?: Pick<User, 'id' | 'name' | 'email' | 'avatar_color'>;
   amount: number;
   currency: AuctionCurrency;
   status: BidStatus;
@@ -248,7 +249,7 @@ export interface Auction {
   horse_id: string;
   horse?: Horse;
   seller_id: string;
-  seller?: Pick<User, 'id' | 'name' | 'email'>;
+  seller?: Pick<User, 'id' | 'name' | 'email' | 'avatar_color'>;
   type: AuctionType;
   title: string;
   description: string | null;
@@ -296,7 +297,7 @@ export type PostType = 'general' | 'horse_update' | 'announcement';
 export interface FeedPost {
   id: string;
   author_id: string;
-  author?: Pick<User, 'id' | 'name' | 'email' | 'role'>;
+  author?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatar_color' | 'avatar_url'>;
   horse_id: string | null;
   horse?: { id: string; name: string } | null;
   content: string;
@@ -316,7 +317,7 @@ export interface FeedComment {
   id: string;
   post_id: string;
   user_id: string;
-  user?: Pick<User, 'id' | 'name' | 'email' | 'role'>;
+  user?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatar_color' | 'avatar_url'>;
   content: string;
   created_at: string;
 }

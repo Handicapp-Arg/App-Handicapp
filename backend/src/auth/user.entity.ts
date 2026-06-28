@@ -49,6 +49,11 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   avatar_public_id: string | null;
 
+  // Color de avatar elegido por el usuario (id de tono de la paleta de marca).
+  // null = automático (derivado del nombre). Ver avatar-color en web/móvil.
+  @Column({ type: 'varchar', length: 24, nullable: true })
+  avatar_color: string | null;
+
   @Column({ type: 'varchar', nullable: true })
   cover_url: string | null;
 

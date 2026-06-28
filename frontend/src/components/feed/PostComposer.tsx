@@ -13,11 +13,11 @@ const POST_TYPES = [
   { value: 'announcement', label: 'Anuncio', icon: Megaphone },
 ] as const;
 
-function ComposerAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
+function ComposerAvatar({ name, avatarUrl, colorId }: { name: string; avatarUrl?: string | null; colorId?: string | null }) {
   return (
     <div
       className="h-10 w-10 overflow-hidden rounded-full text-white font-bold flex items-center justify-center shrink-0 shadow-sm text-sm"
-      style={{ backgroundImage: avatarGradient(name) }}
+      style={{ backgroundImage: avatarGradient(name, colorId) }}
     >
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -88,7 +88,7 @@ export default function PostComposer({ onPosted }: Props) {
       expanded ? 'border-gray-300 shadow-md' : 'border-gray-200',
     )}>
       <div className="flex gap-3 p-4">
-        <ComposerAvatar name={user.name} avatarUrl={user.avatar_url} />
+        <ComposerAvatar name={user.name} avatarUrl={user.avatar_url} colorId={user.avatar_color} />
 
         <div className="flex-1 min-w-0">
           {!expanded ? (
