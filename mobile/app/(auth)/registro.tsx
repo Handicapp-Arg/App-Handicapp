@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
+import { HorseshoeH } from '../../components/icons/equine';
+import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
 import api from '../../lib/api';
-
-const LOGO = 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -54,14 +54,19 @@ export default function RegistroScreen() {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <AuthBackground c={c} />
+      <AuthThemeSwitch />
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
+        {/* Marca — isotipo + wordmark (igual que el login) */}
         <View style={s.header}>
-          <Image source={{ uri: LOGO }} style={s.logo} resizeMode="contain" />
+          <HorseshoeH size={64} color={c.brand} />
+          <Text style={s.wordmark}>HandicApp</Text>
         </View>
 
         <View style={s.card}>
-          <Text style={s.title}>Crear cuenta</Text>
+          <Text style={s.title}>Creá tu cuenta</Text>
+          <Text style={s.subtitle}>Empezá a gestionar tus caballos</Text>
 
           {error ? (
             <View style={s.errorBox}>
@@ -138,21 +143,23 @@ export default function RegistroScreen() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray900 },
+  root: { flex: 1, backgroundColor: c.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  header: { alignItems: 'center', marginBottom: 32 },
-  logo: { width: 190, height: 80 },
-  logoBox: {
-    width: 64, height: 64, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+
+  header: { alignItems: 'center', marginBottom: 26, gap: 10 },
+  wordmark: { fontSize: 30, fontWeight: '700', letterSpacing: -0.3, color: c.text, marginTop: 2 },
+
+  card: {
+    backgroundColor: c.surface, borderRadius: 24, padding: 22, gap: 14,
+    borderWidth: 1, borderColor: c.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 3,
   },
-  logoText: { fontSize: 28, fontWeight: '800', color: colors.white },
-  brand: { fontSize: 26, fontWeight: '800', color: colors.white },
-  card: { backgroundColor: c.surface, borderRadius: 24, padding: 24, gap: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: c.text },
-  errorBox: { backgroundColor: '#fef2f2', borderRadius: 10, padding: 12 },
-  errorText: { fontSize: 13, color: colors.red700 },
+  title: { fontSize: 19, fontWeight: '800', letterSpacing: -0.4, color: c.text },
+  subtitle: { fontSize: 13, color: c.textMuted, marginTop: -8 },
+
+  errorBox: { backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 10, padding: 12 },
+  errorText: { fontSize: 13, color: c.isDark ? '#fca5a5' : colors.red700 },
+
   field: { gap: 6 },
   label: { fontSize: 13, fontWeight: '600', color: c.textMuted },
   input: {

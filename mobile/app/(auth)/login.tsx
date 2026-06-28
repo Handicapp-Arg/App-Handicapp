@@ -4,13 +4,12 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
-import { Eye, EyeOff, Sun, Moon, Smartphone } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { Link } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
-import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
+import { useTheme, type ThemeColors } from '../../lib/theme';
+import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
 import { HorseshoeH } from '../../components/icons/equine';
 
 const DEV_USERS = [
@@ -20,58 +19,6 @@ const DEV_USERS = [
   { email: 'propietario2@handicapp.com',    password: 'handicapp2026', name: 'Maria Propietaria',     role: 'Propietario' },
   { email: 'veterinario@handicapp.com',     password: 'handicapp2026', name: 'Dr. Pablo Veterinario', role: 'Veterinario' },
 ];
-
-const THEME_OPTS: { value: ThemePreference; Icon: typeof Sun }[] = [
-  { value: 'light', Icon: Sun },
-  { value: 'dark', Icon: Moon },
-  { value: 'auto', Icon: Smartphone },
-];
-
-function ThemeSwitch({ c, s }: { c: ThemeColors; s: Styles }) {
-  const { preference, setPreference } = useTheme();
-  return (
-    <View style={s.themeSwitch}>
-      {THEME_OPTS.map(({ value, Icon }) => {
-        const active = preference === value;
-        return (
-          <TouchableOpacity
-            key={value}
-            style={[s.themeBtn, active && s.themeBtnActive]}
-            onPress={() => setPreference(value)}
-            activeOpacity={0.8}
-          >
-            <Icon size={15} color={active ? c.text : c.textFaint} strokeWidth={2} />
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-/** Fondo: doble glow de marca muy sutil (igual que el login web). */
-function BackgroundGlow({ c }: { c: ThemeColors }) {
-  return (
-    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Defs>
-        <RadialGradient id="glowTop" cx="50%" cy="18%" rx="62%" ry="46%">
-          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.14 : 0.20} />
-          <Stop offset="1" stopColor={c.brand} stopOpacity={0} />
-        </RadialGradient>
-        <RadialGradient id="glowBottom" cx="24%" cy="94%" rx="54%" ry="38%">
-          <Stop offset="0" stopColor="#d9a94e" stopOpacity={c.isDark ? 0.08 : 0.14} />
-          <Stop offset="1" stopColor="#d9a94e" stopOpacity={0} />
-        </RadialGradient>
-        <RadialGradient id="glowRight" cx="84%" cy="34%" rx="44%" ry="32%">
-          <Stop offset="0" stopColor={c.brand} stopOpacity={c.isDark ? 0.07 : 0.12} />
-          <Stop offset="1" stopColor={c.brand} stopOpacity={0} />
-        </RadialGradient>
-      </Defs>
-      <Rect width="100%" height="100%" fill="url(#glowTop)" />
-      <Rect width="100%" height="100%" fill="url(#glowBottom)" />
-      <Rect width="100%" height="100%" fill="url(#glowRight)" />
-    </Svg>
-  );
-}
 
 function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password: string) => void; c: ThemeColors; s: Styles }) {
   const [open, setOpen] = useState(false);
@@ -105,7 +52,6 @@ function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password:
 export default function LoginScreen() {
   const { login } = useAuth();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -128,13 +74,9 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <BackgroundGlow c={c} />
+      <AuthBackground c={c} />
+      <AuthThemeSwitch />
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-
-        {/* Control de tema */}
-        <View style={[s.themeRow, { top: insets.top + 8 }]}>
-          <ThemeSwitch c={c} s={s} />
-        </View>
 
         {/* Marca — isotipo + wordmark */}
         <Animated.View style={s.header} entering={FadeIn.duration(600)}>
@@ -232,15 +174,6 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-
-  themeRow: { position: 'absolute', top: 12, right: 16, flexDirection: 'row' },
-  themeSwitch: {
-    flexDirection: 'row', gap: 2, padding: 3,
-    backgroundColor: c.surfaceAlt, borderRadius: 999,
-    borderWidth: 1, borderColor: c.border,
-  },
-  themeBtn: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
-  themeBtnActive: { backgroundColor: c.surface },
 
   header: { alignItems: 'center', marginBottom: 26, gap: 10 },
   wordmark: { fontSize: 30, fontWeight: '700', letterSpacing: -0.3, color: c.text, marginTop: 2 },
