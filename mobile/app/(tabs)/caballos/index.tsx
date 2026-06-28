@@ -568,7 +568,7 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
           <Text style={s.modalTitle}>Nuevo caballo</Text>
           <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
         </View>
-        <ScrollView contentContainerStyle={s.modalBody}>
+        <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           {/* Foto */}
           <TouchableOpacity style={s.photoPickerBtn} onPress={handlePickPhoto} activeOpacity={0.8}>
@@ -881,7 +881,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   // Modal
   modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
+  modalCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: c.border },
   modalTitle: { fontSize: 17, fontWeight: '700', color: c.text },
   modalClose: { fontSize: 18, color: c.textFaint },
