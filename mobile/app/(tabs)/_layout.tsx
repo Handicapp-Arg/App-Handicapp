@@ -4,7 +4,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, ListPlus, QrCode } from 'lucide-react-native';
 import { useMemo, type ComponentType } from 'react';
-import { HorseHeadOutline, BrandIsotipo } from '../../components/icons/equine';
+import { HorseIcon, BrandIsotipo } from '../../components/icons/equine';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 
@@ -12,7 +12,7 @@ type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: num
 
 const TABS: Record<string, { Icon: IconType; label: string }> = {
   muro:             { Icon: BrandIsotipo, label: 'Muro' },
-  'caballos/index': { Icon: HorseHeadOutline, label: 'Caballos' },
+  'caballos/index': { Icon: HorseIcon, label: 'Caballos' },
   agenda:           { Icon: Calendar,     label: 'Agenda' },
   mas:              { Icon: ListPlus,     label: 'Más' },
 };
