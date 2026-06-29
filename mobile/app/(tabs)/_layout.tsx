@@ -2,7 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, LayoutGrid, QrCode } from 'lucide-react-native';
+import { Calendar, ListPlus, QrCode } from 'lucide-react-native';
 import { useMemo, type ComponentType } from 'react';
 import { HorseIcon, BrandIsotipo } from '../../components/icons/equine';
 import { haptic } from '../../lib/haptics';
@@ -14,7 +14,7 @@ const TABS: Record<string, { Icon: IconType; label: string }> = {
   muro:             { Icon: BrandIsotipo, label: 'Muro' },
   'caballos/index': { Icon: HorseIcon,    label: 'Caballos' },
   agenda:           { Icon: Calendar,     label: 'Agenda' },
-  mas:              { Icon: LayoutGrid,   label: 'Más' },
+  mas:              { Icon: ListPlus,     label: 'Más' },
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
