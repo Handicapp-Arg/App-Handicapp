@@ -7,16 +7,16 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 import { Check, Tag, Trophy, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
-import { HorseIcon } from '../../components/icons/equine';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { HorseIcon } from '../../../components/icons/equine';
+import { ScreenHeader } from '../../../components/ScreenHeader';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
-import { useHorses } from '../../hooks/use-horses';
-import { useCreateAuction } from '../../hooks/use-auctions';
-import { haptic } from '../../lib/haptics';
-import { colors } from '../../lib/colors';
-import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../styles/tokens';
-import type { Horse } from '../../../packages/shared/src';
+import { useHorses } from '../../../hooks/use-horses';
+import { useCreateAuction } from '../../../hooks/use-auctions';
+import { haptic } from '../../../lib/haptics';
+import { colors } from '../../../lib/colors';
+import { useTheme, type ThemeColors } from '../../../lib/theme';
+import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import type { Horse } from '../../../../packages/shared/src';
 
 type AuctionType = 'venta_directa' | 'remate';
 type Currency = 'ARS' | 'USD';
@@ -157,7 +157,7 @@ export default function CrearRemateScreen() {
     try {
       const auction = await createAuction.mutateAsync(payload);
       haptic.success();
-      router.replace(`/remates/${auction.id}` as never);
+      router.replace(`/(tabs)/remates/${auction.id}` as never);
     } catch {
       setError('No se pudo publicar. Verificá los datos e intentá de nuevo.');
     }

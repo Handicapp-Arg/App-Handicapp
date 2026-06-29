@@ -7,12 +7,12 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, XCircle, Info, Star } from 'lucide-react-native';
-import { ScreenHeader } from '../../components/ScreenHeader';
-import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../hooks/use-auctions';
-import { useAuth } from '../../lib/auth';
-import { colors } from '../../lib/colors';
-import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import { ScreenHeader } from '../../../components/ScreenHeader';
+import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../../hooks/use-auctions';
+import { useAuth } from '../../../lib/auth';
+import { colors } from '../../../lib/colors';
+import { useTheme, type ThemeColors } from '../../../lib/theme';
+import { space, text, radius, weight, shadow } from '../../../styles/tokens';
 
 function formatARS(n: number | null | undefined, cur: string) {
   if (n == null) return '–';

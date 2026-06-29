@@ -83,7 +83,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="caballos/[id]" options={{ href: null }} />
       <Tabs.Screen name="eventos"       options={{ href: null }} />
       <Tabs.Screen name="facturacion"   options={{ href: null }} />
-      <Tabs.Screen name="remates"       options={{ href: null }} />
+      <Tabs.Screen name="remates/index" options={{ href: null }} />
+      <Tabs.Screen name="remates/crear" options={{ href: null }} />
+      <Tabs.Screen name="remates/[id]"  options={{ href: null }} />
       <Tabs.Screen name="notificaciones" options={{ href: null }} />
       <Tabs.Screen name="directorio"     options={{ href: null }} />
       <Tabs.Screen name="contratos"      options={{ href: null }} />

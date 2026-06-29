@@ -7,15 +7,15 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, Plus, Trophy, Tag, XCircle, MapPin, Star, CheckCircle2 } from 'lucide-react-native';
-import { useAuctions } from '../../hooks/use-auctions';
-import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
-import { HorseCardSkeleton } from '../../components/Skeleton';
-import { EmptyState } from '../../components/EmptyState';
-import { haptic } from '../../lib/haptics';
-import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../styles/tokens';
-import { nav, Routes } from '../../lib/routes';
-import type { Auction } from '../../../packages/shared/src/types';
+import { useAuctions } from '../../../hooks/use-auctions';
+import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
+import { HorseCardSkeleton } from '../../../components/Skeleton';
+import { EmptyState } from '../../../components/EmptyState';
+import { haptic } from '../../../lib/haptics';
+import { useTheme, type ThemeColors } from '../../../lib/theme';
+import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { nav, Routes } from '../../../lib/routes';
+import type { Auction } from '../../../../packages/shared/src/types';
 
 function formatARS(n: number, cur: string) {
   return `${cur} ${new Intl.NumberFormat('es-AR').format(n)}`;
