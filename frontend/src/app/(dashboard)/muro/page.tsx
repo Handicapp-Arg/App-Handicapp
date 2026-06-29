@@ -12,6 +12,7 @@ import {
   ChevronRight, Trophy, BookOpen, GitBranch, Users, Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -37,12 +38,12 @@ function StatCard({ icon, label, value, color }: {
 
 // ─── Right sidebar ────────────────────────────────────────────────────────────
 function FeedSidebar({ user, stats, isAdmin }: {
-  user: { name: string; role: string; avatar_url?: string | null; cover_url?: string | null } | null;
+  user: { name: string; role: string; avatar_url?: string | null; cover_url?: string | null; avatar_color?: string | null } | null;
   stats?: { total: number; today: number; pinned: number; hidden: number } | null;
   isAdmin: boolean;
 }) {
   const { data: horses } = useHorses();
-  const initials = user?.name?.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() ?? '?';
+  const initials = initialsOf(user?.name);
   const role = user?.role ?? '';
 
   const quickLinks = [
@@ -68,7 +69,7 @@ function FeedSidebar({ user, stats, isAdmin }: {
     <div className="space-y-4">
       {/* Profile card — replica el diseño del perfil (cuero) */}
       <div className="overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-        <div className="relative h-16 bg-gradient-to-r from-clay-400 via-clay-500 to-clay-600">
+        <div className="relative h-16" style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}>
           {user?.cover_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -76,7 +77,7 @@ function FeedSidebar({ user, stats, isAdmin }: {
         </div>
         <div className="px-4 pb-4">
           <div className="relative z-10 -mt-8 mb-3">
-            <div className="h-16 w-16 overflow-hidden rounded-2xl bg-gradient-to-br from-clay-400 to-clay-600 ring-4 ring-white">
+            <div className="h-16 w-16 overflow-hidden rounded-2xl ring-4 ring-[var(--surface-card)]" style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}>
               {user?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
@@ -91,7 +92,7 @@ function FeedSidebar({ user, stats, isAdmin }: {
           </div>
           <Link
             href="/perfil"
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-clay-50 py-1.5 text-xs font-semibold text-clay-700 ring-1 ring-clay-100 transition hover:bg-clay-100"
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-clay-50 dark:bg-clay-500/10 py-1.5 text-xs font-semibold text-clay-700 dark:text-clay-300 ring-1 ring-clay-100 dark:ring-clay-500/20 transition hover:bg-clay-100 dark:hover:bg-clay-500/15"
           >
             Ver perfil
           </Link>
