@@ -33,11 +33,9 @@ const TYPE_META: Record<string, { icon: LucideIcon; chip: string }> = {
 
 function NotifItem({
   n,
-  onRead,
   onClick,
 }: {
   n: NotifData;
-  onRead: (id: string) => void;
   onClick: (n: NotifData) => void;
 }) {
   const meta = TYPE_META[n.type] ?? TYPE_META.default;
@@ -69,14 +67,6 @@ function NotifItem({
         </p>
         <p className="mt-1.5 text-xs text-gray-400">{timeStr}</p>
       </div>
-      {!n.read && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onRead(n.id); }}
-          className="shrink-0 self-center rounded-lg px-2.5 py-1 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-500/10 cursor-pointer"
-        >
-          Leída
-        </button>
-      )}
     </div>
   );
 }
@@ -107,7 +97,7 @@ export default function NotificacionesPage() {
           <button
             onClick={() => markAsRead.mutate(undefined)}
             disabled={markAsRead.isPending}
-            className="text-sm font-semibold text-blue-600 transition hover:text-blue-700 disabled:opacity-50 cursor-pointer"
+            className="text-sm font-semibold text-gray-500 transition hover:text-gray-700 disabled:opacity-50 cursor-pointer"
           >
             Marcar todas como leídas
           </button>
@@ -130,7 +120,7 @@ export default function NotificacionesPage() {
         <div className="space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Sin leer</p>
           {unread.map((n) => (
-            <NotifItem key={n.id} n={n} onRead={(id) => markAsRead.mutate(id)} onClick={handleOpen} />
+            <NotifItem key={n.id} n={n} onClick={handleOpen} />
           ))}
         </div>
       )}
@@ -139,7 +129,7 @@ export default function NotificacionesPage() {
         <div className="space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Anteriores</p>
           {read.slice(0, 20).map((n) => (
-            <NotifItem key={n.id} n={n} onRead={(id) => markAsRead.mutate(id)} onClick={handleOpen} />
+            <NotifItem key={n.id} n={n} onClick={handleOpen} />
           ))}
         </div>
       )}
