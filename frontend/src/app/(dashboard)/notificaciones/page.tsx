@@ -52,7 +52,7 @@ function NotifItem({
       className={`group flex cursor-pointer items-start gap-3.5 rounded-2xl p-4 transition-all duration-150 ${
         n.read
           ? 'bg-[var(--surface-card)] shadow-[var(--shadow-card)] hover:shadow-md'
-          : 'bg-clay-50 ring-1 ring-clay-100 hover:bg-clay-100/50'
+          : 'bg-blue-50 ring-1 ring-blue-100 hover:bg-blue-100/60 dark:bg-blue-500/10 dark:ring-blue-500/25'
       }`}
     >
       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.chip}`}>
@@ -63,7 +63,6 @@ function NotifItem({
           <p className={`text-sm font-semibold leading-tight ${n.read ? 'text-gray-600' : 'text-gray-900'}`}>
             {n.title}
           </p>
-          {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-clay-500" />}
         </div>
         <p className={`mt-0.5 text-sm leading-relaxed ${n.read ? 'text-gray-400' : 'text-gray-600'}`}>
           {n.message}
@@ -73,7 +72,7 @@ function NotifItem({
       {!n.read && (
         <button
           onClick={(e) => { e.stopPropagation(); onRead(n.id); }}
-          className="shrink-0 self-center rounded-lg px-2.5 py-1 text-[11px] font-semibold text-clay-600 transition hover:bg-clay-100 cursor-pointer"
+          className="shrink-0 self-center rounded-lg px-2.5 py-1 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-500/10 cursor-pointer"
         >
           Leída
         </button>
@@ -108,7 +107,7 @@ export default function NotificacionesPage() {
           <button
             onClick={() => markAsRead.mutate(undefined)}
             disabled={markAsRead.isPending}
-            className="text-sm font-semibold text-clay-600 transition hover:text-clay-700 disabled:opacity-50 cursor-pointer"
+            className="text-sm font-semibold text-blue-600 transition hover:text-blue-700 disabled:opacity-50 cursor-pointer"
           >
             Marcar todas como leídas
           </button>
