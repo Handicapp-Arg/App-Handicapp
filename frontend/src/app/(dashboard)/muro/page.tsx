@@ -133,12 +133,6 @@ function FeedSidebar({ user, stats, isAdmin }: {
           ))}
         </div>
       </div>
-
-      {/* HandicApp brand */}
-      <div className="rounded-2xl bg-gradient-to-br from-clay-500 to-clay-700 p-4 text-center space-y-1 shadow-[var(--shadow-card)]">
-        <p className="text-xs font-bold text-white/90">HandicApp</p>
-        <p className="text-[11px] text-white/55 leading-relaxed">La plataforma de gestión equina de Argentina</p>
-      </div>
     </div>
   );
 }
