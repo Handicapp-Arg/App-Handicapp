@@ -303,12 +303,12 @@ export default function HorseDetailScreen() {
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
-        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.85 });
+        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
         if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
-        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.85 });
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.85 });
         if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
       }
     };
