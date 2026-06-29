@@ -64,8 +64,8 @@ function TypeOption({ type, selected, onSelect, c, s }: {
 }) {
   const isSelected = type === selected;
   const config = type === 'venta_directa'
-    ? { Icon: Tag, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: '#0369a1' }
-    : { Icon: Trophy, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#9d6c35' };
+    ? { Icon: Tag, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: c.brand }
+    : { Icon: Trophy, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#d9a94e' };
 
   return (
     <TouchableOpacity
@@ -177,14 +177,12 @@ export default function CrearRemateScreen() {
   const myHorses = horses ?? [];
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={s.root}>
-        <ScreenHeader title="Publicar caballo" showBack />
-
-
+    <View style={s.root}>
+      <ScreenHeader title="Publicar caballo" showBack />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView
           style={s.scroll}
           contentContainerStyle={s.content}
@@ -424,8 +422,8 @@ export default function CrearRemateScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -565,7 +563,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4],
   },
-  checkRowActive: { borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  checkRowActive: { borderColor: c.isDark ? 'rgba(16,185,129,0.4)' : '#10b981', backgroundColor: c.isDark ? 'rgba(16,185,129,0.14)' : '#f0fdf4' },
   checkbox: {
     width: 24, height: 24, borderRadius: 6,
     borderWidth: 2, borderColor: c.borderStrong,
@@ -577,10 +575,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Error */
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: colors.red50, borderRadius: radius.lg,
-    padding: space[3], borderWidth: 1, borderColor: '#fca5a5',
+    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : colors.red50, borderRadius: radius.lg,
+    padding: space[3], borderWidth: 1, borderColor: c.isDark ? 'rgba(239,68,68,0.3)' : '#fca5a5',
   },
-  errorText: { fontSize: text.sm, color: colors.red500, flex: 1 },
+  errorText: { fontSize: text.sm, color: c.isDark ? '#fca5a5' : colors.red500, flex: 1 },
 
   /* Footer */
   footer: {
