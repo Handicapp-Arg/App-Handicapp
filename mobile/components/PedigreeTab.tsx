@@ -8,7 +8,7 @@ import {
   X, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus,
   Network, CheckCircle2, AlertTriangle, XCircle, Circle,
 } from 'lucide-react-native';
-import { HorseHeadLine } from './icons/equine';
+import { HorseHeadIcon } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import {
@@ -140,7 +140,7 @@ function PedigreeTree({ horseName, pedigree }: {
       <View style={n.gen}>
         <View style={[n.node, n.nodeHorse, { width: w1 }]}>
           <View style={n.horseIconWrap}>
-            <HorseHeadLine size={22} color={colors.white} />
+            <HorseHeadIcon size={22} color={colors.white} />
           </View>
           <Text style={n.horseName}>{horseName}</Text>
           <Text style={n.horseLabel}>CABALLO</Text>
