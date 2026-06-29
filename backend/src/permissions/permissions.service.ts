@@ -93,8 +93,12 @@ export class PermissionsService implements OnModuleInit {
         resource: 'events',
         action,
       })),
-      // Establecimiento: read horses + CRUD events propios
-      { role: 'establecimiento', resource: 'horses', action: 'read' },
+      // Establecimiento: CRUD horses + CRUD events (gestiona el haras)
+      ...['create', 'read', 'update', 'delete'].map((action) => ({
+        role: 'establecimiento',
+        resource: 'horses',
+        action,
+      })),
       ...['create', 'read', 'update', 'delete'].map((action) => ({
         role: 'establecimiento',
         resource: 'events',

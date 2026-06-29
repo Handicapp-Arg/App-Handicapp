@@ -528,18 +528,26 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es obligatorio'); return; }
     setError('');
-    const result = await createHorse.mutateAsync({
-      name: name.trim(),
-      birth_date: birthDate || undefined,
-      microchip: microchip || undefined,
-    });
-    if (photoUri) {
-      await uploadImage.mutateAsync({ id: result.horse.id, uri: photoUri });
-    }
-    if (result.record_matches.length > 0) {
-      setMatches({ records: result.record_matches, horseId: result.horse.id });
-    } else {
-      onClose();
+    try {
+      const result = await createHorse.mutateAsync({
+        name: name.trim(),
+        birth_date: birthDate || undefined,
+        microchip: microchip || undefined,
+      });
+      if (photoUri) {
+        try {
+          await uploadImage.mutateAsync({ id: result.horse.id, uri: photoUri });
+        } catch {
+          // El caballo ya se creó; si la foto falla, no bloqueamos el alta.
+        }
+      }
+      if (result.record_matches.length > 0) {
+        setMatches({ records: result.record_matches, horseId: result.horse.id });
+      } else {
+        onClose();
+      }
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? 'No se pudo crear el caballo. Intentá de nuevo.');
     }
   };
 
