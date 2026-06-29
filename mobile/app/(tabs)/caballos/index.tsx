@@ -527,6 +527,7 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
 
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es obligatorio'); return; }
+    if (microchip && microchip.length !== 15) { setError('El microchip debe tener 15 dígitos (o dejalo vacío).'); return; }
     setError('');
     try {
       const result = await createHorse.mutateAsync({
