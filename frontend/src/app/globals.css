@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Conecta el variant `dark:` de Tailwind con el toggle [data-theme="dark"]
+   del <html> (por defecto Tailwind v4 usa prefers-color-scheme del SO, que
+   ignora nuestro toggle de tema). Así `dark:` sigue el tema elegido en la app. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ───────────────────────────────────────────────────────────────
    Design tokens — Tailwind v4
    Exponer la paleta como utilidades (bg-navy-700, text-gold-600, etc.)
