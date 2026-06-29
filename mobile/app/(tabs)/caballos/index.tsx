@@ -547,8 +547,9 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
       } else {
         onClose();
       }
-    } catch (err: unknown) {
-      setError((err as Error)?.message ?? 'No se pudo crear el caballo. Intentá de nuevo.');
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'No se pudo crear el caballo. Intentá de nuevo.');
     }
   };
 
@@ -622,7 +623,6 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
             keyboardType="numeric"
           />
           {error ? <Text style={s.errorText}>{error}</Text> : null}
-          {(createHorse.isError || uploadImage.isError) ? <Text style={s.errorText}>No se pudo crear el caballo.</Text> : null}
         </ScrollView>
         <View style={s.modalFooter}>
           <TouchableOpacity style={s.cancelBtn} onPress={onClose}>
