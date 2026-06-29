@@ -48,3 +48,30 @@ export function HorseshoeH({ size = 24, color = '#000' }: Props) {
 export function HorseHeadIcon({ size = 24, color = '#000' }: Props) {
   return <FontAwesome5 name="horse-head" size={size} color={color} />;
 }
+
+/** Cabeza de caballo de perfil en CONTORNO (mirando a la izquierda) — line art. */
+export function HorseHeadOutline({ size = 24, color = '#000', strokeWidth = 1.7 }: Props) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {/* contorno: hocico izq → caña → frente → oreja → nuca → cuello → quijada */}
+      <Path d="M4.3 14.4
+        C3.7 13.6 3.9 12.4 4.8 11.9
+        L6.2 11.2
+        C6.4 9.4 7.4 7.9 9 7.3
+        L9.7 4.2
+        C9.9 3.4 10.9 3.3 11.3 4
+        L12.6 6.2
+        C15.5 6.6 17.7 9 18 12
+        C18.2 14.4 17.4 16.5 16.2 18.1
+        C15.6 19 15.3 19.9 15.3 21
+        L11.2 21
+        C11.2 18.4 10.8 16.7 9.7 15.3
+        C8 15 5.9 14.9 4.3 14.4 Z" />
+      {/* oreja interior */}
+      <Path d="M10.2 5.6 L11.4 6" />
+      {/* ojo */}
+      <Circle cx="12" cy="9.6" r="0.75" fill={color} stroke="none" />
+    </Svg>
+  );
+}
