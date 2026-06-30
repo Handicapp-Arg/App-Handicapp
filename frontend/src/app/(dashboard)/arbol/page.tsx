@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDebounce } from 'use-debounce';
 import {
   Search, ShieldCheck, Clock, Shield, ChevronLeft,
@@ -205,20 +205,36 @@ function PedigreeCard({
   );
 }
 
+// ─── Theme detection (web usa [data-theme="dark"]) ────────────────────────────
+function useDarkMode() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const read = () => setDark(document.documentElement.dataset.theme === 'dark');
+    read();
+    const obs = new MutationObserver(read);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
+
 // ─── SVG edges ───────────────────────────────────────────────────────────────
 function EdgeLayer({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; totalH: number }) {
+  const dark = useDarkMode();
+  // Gris medio visible en AMBOS temas para las líneas punteadas "sin datos"
+  const dashedStroke = '#9ca3af'; // gray-400
   return (
     <svg
       style={{ position: 'absolute', left: 0, top: 0, width: totalW, height: totalH, pointerEvents: 'none' }}
     >
       <defs>
         <linearGradient id="sire-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity={dark ? 0.85 : 0.5} />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity={dark ? 0.4 : 0.2} />
         </linearGradient>
         <linearGradient id="dam-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="#f43f5e" stopOpacity={dark ? 0.85 : 0.5} />
+          <stop offset="100%" stopColor="#f43f5e" stopOpacity={dark ? 0.4 : 0.2} />
         </linearGradient>
       </defs>
       {edges.map((e, i) => {
@@ -229,7 +245,7 @@ function EdgeLayer({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; t
             key={i}
             d={path}
             fill="none"
-            stroke={e.dashed ? '#d1d5db' : (e.isSire ? 'url(#sire-grad)' : 'url(#dam-grad)')}
+            stroke={e.dashed ? dashedStroke : (e.isSire ? 'url(#sire-grad)' : 'url(#dam-grad)')}
             strokeWidth={e.dashed ? '1' : '1.5'}
             strokeLinecap="round"
             strokeDasharray={e.dashed ? '4 3' : undefined}
@@ -406,7 +422,13 @@ export default function ArbolPage() {
   const [maxGen, setMaxGen]           = useState(4);
   const [zoom, setZoom]               = useState(1);
   const [history, setHistory]         = useState<{ id: string; name: string }[]>([]);
+  const [isDragging, setIsDragging]   = useState(false);
   const scrollRef                     = useRef<HTMLDivElement>(null);
+
+  // ── Pan (arrastrar) state ──
+  const isPanningRef = useRef(false);
+  const movedRef     = useRef(false); // ¿superó el umbral? → fue pan, no click
+  const panStart     = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
   const { data: tree, isLoading } = useHorseRecordTree(selectedId, maxGen);
 
@@ -417,6 +439,8 @@ export default function ArbolPage() {
   }, []);
 
   const handleNodeClick = useCallback((id: string) => {
+    // Si el usuario arrastró (pan), no navegamos — fue un drag, no un click.
+    if (movedRef.current) return;
     if (!tree) return;
     // Find node name in the current tree for breadcrumb
     function findName(n: HorseRecordNode | null): string | null {
@@ -440,6 +464,67 @@ export default function ArbolPage() {
 
   const adjustZoom = (delta: number) =>
     setZoom(z => Math.max(0.4, Math.min(1.5, +(z + delta).toFixed(1))));
+
+  // ── Pan: arrastrar el fondo del canvas para mover la vista ──
+  const endPan = useCallback(() => {
+    if (!isPanningRef.current) return;
+    isPanningRef.current = false;
+    setIsDragging(false);
+    window.removeEventListener('mousemove', onPanMove);
+    window.removeEventListener('mouseup', endPan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onPanMove = useCallback((e: MouseEvent) => {
+    const el = scrollRef.current;
+    if (!el || !isPanningRef.current) return;
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+    if (!movedRef.current && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+      movedRef.current = true;
+      setIsDragging(true);
+    }
+    // Invertido: arrastrar a la derecha mueve el contenido a la derecha.
+    el.scrollLeft = panStart.current.scrollLeft - dx;
+    el.scrollTop  = panStart.current.scrollTop  - dy;
+  }, []);
+
+  const onCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return; // solo botón izquierdo
+    const el = scrollRef.current;
+    if (!el) return;
+    isPanningRef.current = true;
+    movedRef.current = false; // reset por gesto nuevo → un click limpio navega
+    panStart.current = {
+      x: e.clientX, y: e.clientY,
+      scrollLeft: el.scrollLeft, scrollTop: el.scrollTop,
+    };
+    window.addEventListener('mousemove', onPanMove);
+    window.addEventListener('mouseup', endPan);
+  }, [onPanMove, endPan]);
+
+  // Limpieza + soltar el drag si la ventana pierde foco
+  useEffect(() => {
+    window.addEventListener('blur', endPan);
+    return () => {
+      window.removeEventListener('blur', endPan);
+      window.removeEventListener('mousemove', onPanMove);
+      window.removeEventListener('mouseup', endPan);
+    };
+  }, [onPanMove, endPan]);
+
+  // ── Zoom con la rueda del mouse (listener NO pasivo para poder preventDefault) ──
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const dir = e.deltaY < 0 ? 1 : -1; // arriba = acercar
+      setZoom(z => Math.max(0.4, Math.min(1.5, +(z + dir * 0.1).toFixed(1))));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-[var(--surface-page)] overflow-hidden">
@@ -491,7 +576,13 @@ export default function ArbolPage() {
       {/* ── Canvas area ── */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-auto"
+        onMouseDown={onCanvasMouseDown}
+        className={cn(
+          'flex-1 overflow-auto',
+          isDragging
+            ? 'cursor-grabbing select-none [&_*]:!cursor-grabbing'
+            : 'cursor-grab',
+        )}
         style={{ padding: 32 }}
       >
         {!selectedId && (
