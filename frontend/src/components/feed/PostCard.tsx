@@ -6,7 +6,7 @@ import { es } from 'date-fns/locale';
 import {
   Heart, MessageCircle, Trash2, Pin, EyeOff, Eye, MoreHorizontal, X,
 } from 'lucide-react';
-import { Horse } from '@phosphor-icons/react';
+import { HorseHead } from '@/components/icons/equine';
 import { cn } from '@/lib/utils';
 import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import type { FeedPost, FeedComment } from '@/types';
@@ -116,7 +116,7 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
           {!showAll && hiddenCount > 0 && (
             <button
               onClick={() => setShowAll(true)}
-              className="text-xs font-semibold text-gray-500 hover:text-clay-600 transition cursor-pointer"
+              className="text-xs font-semibold text-gray-500 hover:text-clay-600 dark:hover:text-clay-300 transition cursor-pointer"
             >
               Ver {hiddenCount} comentario{hiddenCount !== 1 ? 's' : ''} más
             </button>
@@ -208,12 +208,12 @@ export default function PostCard({ post }: Props) {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-sm text-gray-900 truncate">{authorName}</span>
                 {post.is_pinned && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 ring-1 ring-amber-100 font-medium flex items-center gap-1 leading-tight">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 ring-1 ring-amber-100 font-medium flex items-center gap-1 leading-tight">
                     <Pin className="h-3 w-3" /> Fijado
                   </span>
                 )}
                 {post.is_hidden && isAdmin && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-500 ring-1 ring-red-100 font-medium leading-tight">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 ring-1 ring-red-100 font-medium leading-tight">
                     Oculto
                   </span>
                 )}
@@ -222,7 +222,7 @@ export default function PostCard({ post }: Props) {
                 <span className="text-xs text-gray-400">{timeAgo}</span>
                 {post.horse && (
                   <span className="text-xs text-gray-400 flex items-center gap-0.5">
-                    · <Horse size={14} weight="regular" className="text-gray-300" /> <span className="text-gray-500 font-medium">{post.horse.name}</span>
+                    · <HorseHead size={12} className="text-gray-300" /> <span className="text-gray-500 font-medium">{post.horse.name}</span>
                   </span>
                 )}
               </div>
@@ -267,7 +267,7 @@ export default function PostCard({ post }: Props) {
                     {(isOwner || isAdmin) && (
                       <button
                         onClick={() => { if (confirm('¿Eliminar este post?')) deletePost.mutate(post.id); setMenuOpen(false); }}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                       >
                         <Trash2 className="h-4 w-4" />
                         Eliminar
@@ -310,7 +310,7 @@ export default function PostCard({ post }: Props) {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition',
               post.liked_by_me
-                ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                ? 'text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20'
                 : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
             )}
           >
@@ -323,7 +323,7 @@ export default function PostCard({ post }: Props) {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition',
               showComments
-                ? 'text-clay-600 bg-clay-50'
+                ? 'text-clay-600 bg-clay-50 dark:text-clay-300 dark:bg-clay-500/15'
                 : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
             )}
           >

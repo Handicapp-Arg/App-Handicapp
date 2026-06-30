@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Plus, Search, Filter, Gavel, Tag, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
+import { HorseHead } from '@/components/icons/equine';
 import type { Auction, AuctionType, AuctionCurrency } from '@/types';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,11 +27,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
-  active: 'bg-emerald-100 text-emerald-700',
-  paused: 'bg-amber-100 text-amber-700',
-  closed: 'bg-blue-100 text-blue-700',
-  sold: 'bg-purple-100 text-purple-700',
-  cancelled: 'bg-red-100 text-red-600',
+  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  closed: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  sold: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+  cancelled: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
 };
 
 function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => void }) {
@@ -55,7 +56,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
           />
         ) : (
           <div className="h-14 w-14 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-            <Gavel className="h-6 w-6 text-gray-400" />
+            <HorseHead size={26} className="text-gray-400" />
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -65,7 +66,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
             >
               {STATUS_LABELS[auction.status]}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-clay-500/8 text-[var(--color-primary)]">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${isRemate ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-clay-500/10 text-[var(--color-primary)]'}`}>
               {isRemate ? <Gavel className="h-3 w-3" /> : <Tag className="h-3 w-3" />}
               {isRemate ? 'Remate' : 'Venta directa'}
             </span>
@@ -332,9 +333,9 @@ function CreateAuctionModal({
           </div>
 
           {/* Aviso legal */}
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 flex gap-2.5">
-            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700">
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 flex gap-2.5 dark:bg-amber-500/10 dark:border-amber-500/20">
+            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5 dark:text-amber-400" />
+            <p className="text-xs text-amber-700 dark:text-amber-300">
               Al publicar esta subasta confirmás ser el propietario registrado del equino y que la información es veraz.
               Las pujas son vinculantes. HandicApp retiene un <strong>3%</strong> de comisión sobre el precio final.
             </p>

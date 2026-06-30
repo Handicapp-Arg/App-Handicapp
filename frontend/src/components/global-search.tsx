@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 
 interface SearchResult {
   horses: Array<{ id: string; name: string; breed: string | null; activity: string | null; image_url: string | null }>;
@@ -12,8 +13,8 @@ interface SearchResult {
 }
 
 const TYPE_BADGE: Record<string, string> = {
-  salud: 'bg-red-50 text-red-600', entrenamiento: 'bg-yellow-50 text-yellow-700',
-  gasto: 'bg-purple-50 text-purple-700', nota: 'bg-gray-100 text-gray-600',
+  salud: 'bg-red-50 dark:bg-red-500/10 text-red-600', entrenamiento: 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700',
+  gasto: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700', nota: 'bg-gray-100 text-gray-600',
 };
 
 export function GlobalSearch() {
@@ -77,8 +78,8 @@ export function GlobalSearch() {
                 <button key={h.id} onClick={() => navigate(`/caballos/${h.id}`)}
                   className="flex w-full items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition text-left cursor-pointer border-b border-gray-50 last:border-0"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-clay-500 text-xs font-bold text-white">
-                    {h.name[0]?.toUpperCase()}
+                  <div style={{ backgroundImage: avatarGradient(h.name) }} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white">
+                    {initialsOf(h.name)}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{h.name}</p>

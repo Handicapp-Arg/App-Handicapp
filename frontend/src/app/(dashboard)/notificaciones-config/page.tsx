@@ -113,7 +113,7 @@ export default function NotificacionesConfigPage() {
   const { data: eventTypes, isLoading: loadingTypes } = useEventTypes();
 
   if (user?.role !== 'admin') return (
-    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
       Solo el admin puede acceder a esta página
     </div>
   );

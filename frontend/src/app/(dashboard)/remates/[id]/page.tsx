@@ -18,15 +18,16 @@ import {
   ArrowLeft, Gavel, Tag, Clock, MapPin, CheckCircle,
   Eye, AlertCircle, User, Star, StarOff, Play, Pause, X,
 } from 'lucide-react';
+import { HorseHead } from '@/components/icons/equine';
 import type { AuctionBid } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
-  active: 'bg-emerald-100 text-emerald-700',
-  paused: 'bg-amber-100 text-amber-700',
-  closed: 'bg-blue-100 text-blue-700',
-  sold: 'bg-purple-100 text-purple-700',
-  cancelled: 'bg-red-100 text-red-600',
+  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  closed: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  sold: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+  cancelled: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
 };
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Borrador', active: 'Activo', paused: 'Pausado',
@@ -67,7 +68,7 @@ function BidRow({ bid, isSeller, onAccept }: { bid: AuctionBid; isSeller: boolea
   const statusLabel = bid.status === 'active' ? 'Activa' : bid.status === 'won' ? 'Ganadora' : bid.status === 'outbid' ? 'Superada' : 'Cancelada';
 
   return (
-    <div className={`flex items-center justify-between p-3 rounded-xl border ${bid.status === 'active' ? 'border-emerald-200 bg-emerald-50' : 'border-gray-100 bg-gray-50'}`}>
+    <div className={`flex items-center justify-between p-3 rounded-xl border ${bid.status === 'active' ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10' : 'border-gray-100 bg-gray-50'}`}>
       <div className="flex items-center gap-3">
         <div
           className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
@@ -151,7 +152,7 @@ export default function AuctionDetailPage() {
         >
           {STATUS_LABELS[auction.status]}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
+        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${isRemate ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-clay-500/10 text-[var(--color-primary)]'}`}>
           {isRemate ? <Gavel className="h-3 w-3" /> : <Tag className="h-3 w-3" />}
           {isRemate ? 'Remate' : 'Venta directa'}
         </span>
@@ -198,7 +199,7 @@ export default function AuctionDetailPage() {
                 <img src={auction.horse.image_url} alt={auction.horse.name} className="h-20 w-20 rounded-2xl object-cover border border-gray-100 shrink-0" />
               ) : (
                 <div className="h-20 w-20 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0">
-                  <Gavel className="h-8 w-8 text-gray-300" />
+                  <HorseHead size={36} className="text-gray-300" />
                 </div>
               )}
               <div>
@@ -229,7 +230,7 @@ export default function AuctionDetailPage() {
                   { ok: auction.has_health_cert, label: 'Certificado SENASA vigente' },
                   { ok: auction.has_ownership_docs, label: 'Docs de propiedad (Studbook/SRA)' },
                 ].map(({ ok, label }) => (
-                  <div key={label} className={`flex items-center gap-2 rounded-xl p-3 border ${ok ? 'border-emerald-200 bg-emerald-50' : 'border-gray-100 bg-gray-50'}`}>
+                  <div key={label} className={`flex items-center gap-2 rounded-xl p-3 border ${ok ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10' : 'border-gray-100 bg-gray-50'}`}>
                     {ok
                       ? <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
                       : <AlertCircle className="h-4 w-4 text-gray-300 shrink-0" />}
@@ -345,10 +346,10 @@ export default function AuctionDetailPage() {
               )}
 
               {auction.status === 'sold' && (
-                <div className="mt-4 rounded-xl bg-purple-50 border border-purple-200 p-3 text-center">
-                  <p className="text-sm font-semibold text-purple-700">Vendido</p>
+                <div className="mt-4 rounded-xl bg-purple-50 border border-purple-200 p-3 text-center dark:bg-purple-500/10 dark:border-purple-500/20">
+                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Vendido</p>
                   {auction.winning_price && (
-                    <p className="text-lg font-bold text-purple-900">{formatCurrency(auction.winning_price, auction.currency)}</p>
+                    <p className="text-lg font-bold text-purple-900 dark:text-purple-200">{formatCurrency(auction.winning_price, auction.currency)}</p>
                   )}
                 </div>
               )}
@@ -372,9 +373,9 @@ export default function AuctionDetailPage() {
             </div>
 
             {/* Aviso legal */}
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 flex gap-2.5">
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 flex gap-2.5 dark:bg-amber-500/10 dark:border-amber-500/20">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5 dark:text-amber-400" />
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 Las pujas son vinculantes. La transferencia legal del equino requiere documentación notarial.
                 HandicApp aplica <strong>3% de comisión</strong> sobre el precio final.
               </p>

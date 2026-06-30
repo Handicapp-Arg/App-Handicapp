@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import {
   Check, X, AlertTriangle, Info, Lightbulb, ChevronDown, ChevronRight, FileText,
 } from 'lucide-react';
-import { Horse } from '@phosphor-icons/react';
+import { HorseHead } from '@/components/icons/equine';
 import { usePedigree, usePedigreeTree, usePedigreeValidations, useUpsertPedigree, useValidatePedigree, useSearchHorsesForPedigree } from '@/hooks/use-pedigree';
 import PedigreeTree from './PedigreeTree';
 import type { Horse as HorseType, PedigreeStatus } from '@/types';
@@ -58,12 +58,12 @@ function HorseSearchInput({
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
       {open && value.length >= 2 && results.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-[var(--surface-card)] shadow-lg dark:bg-gray-900 dark:border-gray-700">
+        <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-[var(--surface-card)] shadow-lg">
           {results.map((h) => (
             <button
               key={h.id}
               type="button"
-              className="flex items-center justify-between w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+              className="flex items-center justify-between w-full px-3 py-2 text-sm text-left hover:bg-gray-50 transition cursor-pointer"
               onMouseDown={() => { onSelect(h.id, h.name); onChange(h.name); setOpen(false); }}
             >
               <span className="font-medium">{h.name}</span>
@@ -127,7 +127,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+            <fieldset className="border border-gray-200 rounded-lg p-4 space-y-3">
               <legend className="px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Padre</legend>
               <HorseSearchInput
                 label="Nombre del padre"
@@ -142,7 +142,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
               </div>
             </fieldset>
 
-            <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+            <fieldset className="border border-gray-200 rounded-lg p-4 space-y-3">
               <legend className="px-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Madre</legend>
               <HorseSearchInput
                 label="Nombre de la madre"
@@ -192,7 +192,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
 
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer dark:border-gray-700 dark:text-gray-300">
+              className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">
               Cancelar
             </button>
             <button type="button" onClick={() => handleSave(false)} disabled={isPending}
@@ -211,7 +211,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] dark:bg-gray-950 sm:hidden">
+      <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
         <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
           <p className="font-bold text-white">Pedigrí</p>
           <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
@@ -219,7 +219,7 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
         <div className="overflow-y-auto flex-1">{content}</div>
       </div>
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center bg-black/40">
-        <div className="w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] dark:bg-gray-950 shadow-2xl overflow-hidden">
+        <div className="w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between bg-clay-500 px-6 py-4">
             <p className="font-bold text-white">Pedigrí</p>
             <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
@@ -274,20 +274,20 @@ export default function PedigreeSection({ horse, canEdit }: { horse: HorseType; 
   if (isLoading) {
     return (
       <div className="mt-8">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Genealogía</h2>
-        <div className="h-24 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
+        <h2 className="text-base font-semibold text-gray-900 mb-3">Genealogía</h2>
+        <div className="h-24 rounded-xl bg-gray-100 animate-pulse" />
       </div>
     );
   }
 
   return (
     <section className="mt-8">
-      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Genealogía</h2>
+      <h2 className="text-base font-semibold text-gray-900 mb-3">Genealogía</h2>
 
       {!pedigree ? (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
-          <Horse size={36} weight="regular" className="mx-auto mb-3 text-gray-300" />
-          <p className="font-medium text-gray-700 dark:text-gray-300">Sin pedigrí registrado</p>
+        <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center">
+          <HorseHead size={36} className="mx-auto mb-3 text-gray-300" />
+          <p className="font-medium text-gray-700">Sin pedigrí registrado</p>
           <p className="text-sm text-gray-400 mt-1 mb-4">
             Agregá los datos del padre y madre para construir el árbol genealógico y validarlo contra registros oficiales.
           </p>
@@ -299,7 +299,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: HorseType; 
           )}
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 space-y-4">
+        <div className="rounded-xl border border-gray-200 bg-[var(--surface-card)] p-5 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.cls}`}>
@@ -330,7 +330,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: HorseType; 
               <div className="flex flex-wrap gap-2">
                 {pedigree.documents!.map((doc) => (
                   <a key={doc.id} href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition">
                     <FileText size={14} className="shrink-0 text-gray-400" /> {doc.file_name}
                   </a>
                 ))}
@@ -342,7 +342,7 @@ export default function PedigreeSection({ horse, canEdit }: { horse: HorseType; 
           {validations.length > 0 && (
             <div>
               <button onClick={() => setShowValidations((v) => !v)}
-                className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
+                className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition cursor-pointer">
                 {showValidations ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 Ver historial de validaciones ({validations.length})
               </button>

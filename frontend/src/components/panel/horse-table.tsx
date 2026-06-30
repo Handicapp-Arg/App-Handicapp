@@ -69,12 +69,12 @@ export function HorseTable({ horses }: HorseTableProps) {
                     <p className="font-medium text-gray-900">{h.name}</p>
                     <div className="mt-1 flex flex-wrap gap-1.5">
                       {h.owner?.name && (
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
                           {h.owner.name}
                         </span>
                       )}
                       {h.establishment?.name && (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">
                           {h.establishment.name}
                         </span>
                       )}

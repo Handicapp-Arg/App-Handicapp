@@ -181,7 +181,7 @@ export default function AgendaPage() {
                       <div className="flex items-center gap-1 shrink-0">
                         {!appt.completed && (
                           <button onClick={() => complete.mutate(appt.id)}
-                            className="rounded-md p-1 text-gray-300 hover:bg-emerald-50 hover:text-emerald-500 transition cursor-pointer"
+                            className="rounded-md p-1 text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-500 transition cursor-pointer"
                             title="Marcar como completado"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -190,7 +190,7 @@ export default function AgendaPage() {
                           </button>
                         )}
                         <button onClick={() => setDeletingId(appt.id)}
-                          className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                          className="rounded-md p-1 text-gray-300 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-400 transition cursor-pointer"
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -200,7 +200,7 @@ export default function AgendaPage() {
                     </div>
                     <p className="mt-1 text-sm font-medium text-gray-800">{appt.title}</p>
                     {appt.notes && <p className="mt-0.5 text-xs text-gray-500">{appt.notes}</p>}
-                    {appt.completed && <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><Check size={14} /> Completado</p>}
+                    {appt.completed && <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><Check size={14} /> Completado</p>}
                   </div>
                 );
               })}

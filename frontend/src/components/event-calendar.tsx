@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import type { Event } from '@/types';
+import { HorseHead } from '@/components/icons/equine';
 
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -11,9 +12,9 @@ const MONTHS = [
 ];
 
 const typeConfig: Record<string, { label: string; color: string; dot: string }> = {
-  salud: { label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500' },
-  entrenamiento: { label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200', dot: 'bg-yellow-500' },
-  gasto: { label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+  salud: { label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30', dot: 'bg-red-500' },
+  entrenamiento: { label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30', dot: 'bg-yellow-500' },
+  gasto: { label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30', dot: 'bg-purple-500' },
   nota: { label: 'Nota', color: 'bg-gray-50 text-gray-700 border-gray-200', dot: 'bg-gray-400' },
 };
 
@@ -155,13 +156,13 @@ export default function EventCalendar({ events }: EventCalendarProps) {
                   setSelectedEvent(null);
                 }}
                 className={`relative min-h-[72px] border-b border-r border-gray-50 p-1.5 text-left transition hover:bg-gray-50 ${
-                  isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-200' : ''
+                  isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/15 dark:ring-blue-500/30' : ''
                 }`}
               >
                 <span
                   className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
                     todayClass
-                      ? 'bg-black text-white'
+                      ? 'bg-black text-white dark:bg-clay-500'
                       : 'text-gray-700'
                   }`}
                 >
@@ -229,9 +230,7 @@ export default function EventCalendar({ events }: EventCalendarProps) {
 
               {selectedEvent.horse && (
                 <div className="flex items-center gap-2">
-                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
-                  </svg>
+                  <HorseHead size={16} className="text-gray-400" />
                   <span className="text-sm font-medium text-gray-700">{selectedEvent.horse.name}</span>
                 </div>
               )}

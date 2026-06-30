@@ -269,12 +269,12 @@ export default function FacturacionPage() {
                   {isEst && bill.status === 'borrador' && (
                     <>
                       <button onClick={() => sendBill.mutate(bill.id)}
-                        className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition cursor-pointer"
+                        className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition cursor-pointer dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
                       >
                         Enviar al propietario
                       </button>
                       <button onClick={() => setDeletingId(bill.id)}
-                        className="rounded-lg border border-red-100 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition cursor-pointer"
+                        className="rounded-lg border border-red-100 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition cursor-pointer dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-500/10"
                       >
                         Eliminar
                       </button>
@@ -283,12 +283,12 @@ export default function FacturacionPage() {
                   {isProp && bill.status === 'enviada' && (
                     <>
                       <button onClick={() => approveBill.mutate(bill.id)}
-                        className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                        className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
                       >
                         Aprobar
                       </button>
                       <button onClick={() => setDisputingId(bill.id)}
-                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
                       >
                         Disputar
                       </button>

@@ -21,7 +21,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import {
   Check, AlertTriangle, Zap, Info, ArrowUpRight, Star, Syringe, Clock,
 } from 'lucide-react';
-import { Horse } from '@phosphor-icons/react';
+import { HorseHead } from '@/components/icons/equine';
 import type { Auction } from '@/types';
 
 /* ─── tipos ─── */
@@ -45,9 +45,9 @@ const roleForTab: Record<Tab, string | undefined> = {
 };
 
 const typeBadge: Record<string, string> = {
-  salud:          'bg-red-50 text-red-700',
-  entrenamiento:  'bg-yellow-50 text-yellow-700',
-  gasto:          'bg-purple-50 text-purple-700',
+  salud:          'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+  entrenamiento:  'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
+  gasto:          'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
   nota:           'bg-gray-100 text-gray-700',
 };
 
@@ -69,36 +69,36 @@ function AdminMetrics() {
       label: 'MRR',
       value: sa ? formatARS(sa.mrr_ars) : '—',
       sub: sa ? `ARR ${formatARS(sa.arr_ars)}` : undefined,
-      accent: 'text-emerald-700',
-      bg: 'bg-emerald-50 border-emerald-100',
+      accent: 'text-emerald-700 dark:text-emerald-400',
+      bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20',
     },
     {
       label: 'Propietarios',
       value: basic?.propietarios ?? '—',
       sub: undefined,
-      accent: 'text-blue-700',
-      bg: 'bg-blue-50 border-blue-100',
+      accent: 'text-blue-700 dark:text-blue-400',
+      bg: 'bg-blue-50 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20',
     },
     {
       label: 'Establecimientos',
       value: basic?.establecimientos ?? '—',
       sub: sa ? `${sa.total_organizations} orgs` : undefined,
-      accent: 'text-indigo-700',
-      bg: 'bg-indigo-50 border-indigo-100',
+      accent: 'text-indigo-700 dark:text-indigo-400',
+      bg: 'bg-indigo-50 border-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/20',
     },
     {
       label: 'Caballos',
       value: basic?.caballos ?? '—',
       sub: sa ? `~${sa.avg_horses_per_org} por org` : undefined,
-      accent: 'text-amber-700',
-      bg: 'bg-amber-50 border-amber-100',
+      accent: 'text-amber-700 dark:text-amber-400',
+      bg: 'bg-amber-50 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20',
     },
     {
       label: 'Pro',
       value: sa ? `${sa.by_plan?.pro ?? 0}` : '—',
       sub: sa ? `${sa.by_plan?.basic ?? 0} Basic · ${sa.by_plan?.free ?? 0} Free` : undefined,
-      accent: 'text-purple-700',
-      bg: 'bg-purple-50 border-purple-100',
+      accent: 'text-purple-700 dark:text-purple-400',
+      bg: 'bg-purple-50 border-purple-100 dark:bg-purple-500/10 dark:border-purple-500/20',
     },
     {
       label: 'Nuevas orgs (30d)',
@@ -258,12 +258,12 @@ const AUCTION_STATUS_LABELS: Record<string, string> = {
 };
 
 const AUCTION_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-emerald-50 text-emerald-700',
+  active: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
   draft: 'bg-gray-100 text-gray-500',
-  paused: 'bg-amber-50 text-amber-700',
-  closed: 'bg-blue-50 text-blue-700',
-  sold: 'bg-purple-50 text-purple-700',
-  cancelled: 'bg-red-50 text-red-600',
+  paused: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  closed: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  sold: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+  cancelled: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400',
 };
 
 function RematesAdminTab() {
@@ -281,7 +281,7 @@ function RematesAdminTab() {
   if (!all.length) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center">
-        <Horse size={32} weight="regular" className="mx-auto mb-2 text-gray-300" />
+        <HorseHead size={32} className="mx-auto mb-2 text-gray-300" />
         <p className="font-medium text-gray-700">Sin remates registrados</p>
       </div>
     );
@@ -315,7 +315,7 @@ function RematesAdminTab() {
                   <button
                     onClick={() => pause.mutate(a.id)}
                     disabled={pause.isPending}
-                    className="rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition cursor-pointer disabled:opacity-50"
+                    className="rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition cursor-pointer disabled:opacity-50 dark:border-amber-500/30 dark:text-amber-400 dark:hover:bg-amber-500/10"
                   >
                     Pausar
                   </button>
@@ -323,7 +323,7 @@ function RematesAdminTab() {
                 {!['sold', 'cancelled', 'closed'].includes(a.status) && (
                   <button
                     onClick={() => setConfirmCancel(a)}
-                    className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer"
+                    className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
                   >
                     Cancelar
                   </button>
@@ -378,9 +378,9 @@ const FRAUD_SIGNAL_LABELS: Record<string, string> = {
 
 const RISK_CONFIG = {
   none:   { label: 'Sin riesgo',   cls: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400'  },
-  low:    { label: 'Riesgo bajo',  cls: 'bg-blue-50 text-blue-700',    dot: 'bg-blue-400'  },
-  medium: { label: 'Riesgo medio', cls: 'bg-amber-50 text-amber-700',  dot: 'bg-amber-500' },
-  high:   { label: 'Riesgo alto',  cls: 'bg-red-50 text-red-700',      dot: 'bg-red-500'   },
+  low:    { label: 'Riesgo bajo',  cls: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',    dot: 'bg-blue-400'  },
+  medium: { label: 'Riesgo medio', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',  dot: 'bg-amber-500' },
+  high:   { label: 'Riesgo alto',  cls: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400',      dot: 'bg-red-500'   },
 };
 
 const APPROVAL_REASON_LABELS: Record<string, string> = {
@@ -448,7 +448,7 @@ function FraudesTab() {
                       {risk.label}
                     </span>
                     {claim.needs_audit && (
-                      <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 font-medium">
+                      <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 font-medium dark:bg-purple-500/15 dark:text-purple-400">
                         Auditoría pendiente
                       </span>
                     )}
@@ -478,7 +478,7 @@ function FraudesTab() {
                   {(claim.status === 'auto_approved' || claim.status === 'approved') && (
                     <button
                       onClick={() => { setRevokeTarget({ id: claim.id, name: claim.horse_record?.name ?? '' }); setRevokeReason(''); }}
-                      className="text-xs font-medium text-red-600 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition cursor-pointer"
+                      className="text-xs font-medium text-red-600 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition cursor-pointer dark:text-red-400 dark:border-red-500/30 dark:hover:bg-red-500/10"
                     >
                       Revocar
                     </button>
@@ -487,7 +487,7 @@ function FraudesTab() {
                     <button
                       onClick={() => approve.mutate(claim.id)}
                       disabled={approve.isPending}
-                      className="text-xs font-medium text-green-700 hover:text-green-800 px-2 py-1 rounded border border-green-200 hover:bg-green-50 transition cursor-pointer disabled:opacity-50"
+                      className="text-xs font-medium text-green-700 hover:text-green-800 px-2 py-1 rounded border border-green-200 hover:bg-green-50 transition cursor-pointer disabled:opacity-50 dark:text-green-400 dark:border-green-500/30 dark:hover:bg-green-500/10"
                     >
                       Aprobar
                     </button>
@@ -500,7 +500,7 @@ function FraudesTab() {
                   {signals.map((s) => (
                     <span key={s.key} title={s.detail}
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium cursor-help ${
-                        s.weight >= 3 ? 'bg-red-50 text-red-700' : s.weight === 2 ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                        s.weight >= 3 ? 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400' : s.weight === 2 ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' : 'bg-gray-100 text-gray-600'
                       }`}>
                       {s.weight >= 3 ? <AlertTriangle size={12} /> : s.weight === 2 ? <Zap size={12} /> : <Info size={12} />}
                       {FRAUD_SIGNAL_LABELS[s.key] ?? s.key}
@@ -634,7 +634,7 @@ function PlansAdminTable({
                 <span className="text-sm text-gray-600 truncate pr-2">{u.email}</span>
                 <span className="text-xs text-gray-500">{ROLE_LABELS[u.role] ?? u.role}</span>
                 <div>
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' : 'bg-gray-100 text-gray-500'}`}>
                     {isPro ? <><Star size={12} className="fill-current" /> Pro</> : 'Gratis'}
                   </span>
                   {isPro && expiresStr && <p className="text-[10px] text-gray-400 mt-0.5">vence {expiresStr}</p>}
@@ -678,7 +678,7 @@ function PlansAdminTable({
                     <p className="text-xs text-gray-500">{u.email}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{ROLE_LABELS[u.role]} · {u.horse_count} caballos</p>
                   </div>
-                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isPro ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' : 'bg-gray-100 text-gray-500'}`}>
                     {isPro ? <><Star size={12} className="fill-current" /> Pro</> : 'Gratis'}
                   </span>
                 </div>
@@ -737,7 +737,7 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
         </div>
         <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Gasto en {monthName}</p>
-          <p className="mt-1 text-2xl font-bold text-purple-700">${data.monthly_spend.toLocaleString('es-AR')}</p>
+          <p className="mt-1 text-2xl font-bold text-purple-700 dark:text-purple-400">${data.monthly_spend.toLocaleString('es-AR')}</p>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm col-span-2 sm:col-span-1">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Eventos recientes</p>
@@ -760,7 +760,7 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
                   {h.image_url
                     ? <img src={h.image_url} alt={h.name} className="h-full w-full object-cover" />
                     : <div className="flex h-full items-center justify-center text-gray-300">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <HorseHead size={18} />
                       </div>
                   }
                 </div>
@@ -816,19 +816,19 @@ function BoardingRequestsPanel() {
   if (!pending.length) return null;
 
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-amber-100">
-        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden dark:border-amber-500/25 dark:bg-amber-500/10">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-amber-100 dark:border-amber-500/15">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
           </svg>
         </span>
-        <h2 className="text-sm font-semibold text-amber-900">
+        <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
           Solicitudes de alojamiento
-          <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-800">{pending.length}</span>
+          <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-500/25 dark:text-amber-200">{pending.length}</span>
         </h2>
       </div>
-      <div className="divide-y divide-amber-100">
+      <div className="divide-y divide-amber-100 dark:divide-amber-500/15">
         {pending.map((req) => (
           <div key={req.id} className="flex items-center gap-4 px-5 py-4">
             <div className="min-w-0 flex-1">
@@ -844,7 +844,7 @@ function BoardingRequestsPanel() {
               <button
                 onClick={() => reject.mutate(req.id)}
                 disabled={reject.isPending || accept.isPending}
-                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
               >
                 Rechazar
               </button>
@@ -897,7 +897,7 @@ function EstablecimientoDashboardView({ data }: { data: EstablecimientoDashboard
                   {h.image_url
                     ? <img src={h.image_url} alt={h.name} className="h-full w-full object-cover" />
                     : <div className="flex h-full items-center justify-center text-gray-300">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <HorseHead size={18} />
                       </div>
                   }
                 </div>
@@ -968,41 +968,41 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
         </div>
         <div className="rounded-2xl border border-red-50 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">Eventos salud</p>
-          <p className="mt-1 text-3xl font-bold text-red-700">{data.total_salud_events}</p>
+          <p className="mt-1 text-3xl font-bold text-red-700 dark:text-red-400">{data.total_salud_events}</p>
         </div>
-        <div className={`rounded-2xl border p-4 shadow-sm ${data.upcoming_medical.length > 0 ? 'border-amber-100 bg-amber-50' : 'border-gray-100 bg-[var(--surface-card)]'}`}>
+        <div className={`rounded-2xl border p-4 shadow-sm ${data.upcoming_medical.length > 0 ? 'border-amber-100 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10' : 'border-gray-100 bg-[var(--surface-card)]'}`}>
           <p className={`text-[10px] font-semibold uppercase tracking-wide ${data.upcoming_medical.length > 0 ? 'text-amber-500' : 'text-gray-400'}`}>Vencen pronto</p>
-          <p className={`mt-1 text-3xl font-bold ${data.upcoming_medical.length > 0 ? 'text-amber-700' : 'text-gray-900'}`}>{data.upcoming_medical.length}</p>
+          <p className={`mt-1 text-3xl font-bold ${data.upcoming_medical.length > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-gray-900'}`}>{data.upcoming_medical.length}</p>
         </div>
       </div>
 
       {data.upcoming_medical.length > 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-amber-100">
-            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden dark:border-amber-500/25 dark:bg-amber-500/10">
+          <div className="px-5 py-3.5 border-b border-amber-100 dark:border-amber-500/15">
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-amber-800 dark:text-amber-200">
               <Clock size={16} /> Próximos vencimientos (30 días)
             </h2>
           </div>
-          <div className="divide-y divide-amber-100">
+          <div className="divide-y divide-amber-100 dark:divide-amber-500/15">
             {data.upcoming_medical.map((m) => {
               const dueDate = new Date(m.next_due + 'T12:00:00');
               const daysUntil = Math.round((dueDate.getTime() - new Date().setHours(0,0,0,0)) / 86_400_000);
               const horse = data.horses.find((h) => h.id === m.horse_id);
               return (
                 <Link key={m.id} href={`/caballos/${m.horse_id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-amber-100/50 transition"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-amber-100/50 transition dark:hover:bg-amber-500/10"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] font-semibold text-amber-700 bg-white/70 rounded-full px-2 py-0.5">
                         {MED_LABEL[m.type] ?? m.type}
                       </span>
-                      <span className="text-sm font-medium text-amber-900">{m.name}</span>
+                      <span className="text-sm font-medium text-amber-900 dark:text-amber-200">{m.name}</span>
                     </div>
                     {horse && <p className="text-xs text-amber-600 mt-0.5">{horse.name}</p>}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-amber-700">
+                    <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
                       {daysUntil === 0 ? 'Hoy' : daysUntil === 1 ? 'Mañana' : `en ${daysUntil}d`}
                     </p>
                     <p className="text-[10px] text-amber-500">
@@ -1056,7 +1056,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
           <div className="divide-y divide-gray-50">
             {data.recent_health_events.map((ev) => (
               <div key={ev.id} className="flex items-start gap-3 px-5 py-3">
-                <span className="mt-0.5 shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">Salud</span>
+                <span className="mt-0.5 shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-400">Salud</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-gray-700 line-clamp-1">{ev.description}</p>
                   {(ev as any).horse && <p className="text-xs text-gray-400">{(ev as any).horse.name}</p>}

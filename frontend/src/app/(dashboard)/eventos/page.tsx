@@ -19,16 +19,16 @@ import type { Event } from '@/types';
 
 
 const typeOptions = [
-  { value: 'salud', label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200' },
-  { value: 'entrenamiento', label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  { value: 'gasto', label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  { value: 'salud', label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30' },
+  { value: 'entrenamiento', label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30' },
+  { value: 'gasto', label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30' },
   { value: 'nota', label: 'Nota', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 ];
 
 const typeBadge: Record<string, string> = {
-  salud: 'bg-red-50 text-red-700',
-  entrenamiento: 'bg-yellow-50 text-yellow-700',
-  gasto: 'bg-purple-50 text-purple-700',
+  salud: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  entrenamiento: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
+  gasto: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
   nota: 'bg-gray-100 text-gray-700',
 };
 
@@ -668,7 +668,7 @@ export default function EventosPage() {
                         {can('events', 'delete') && (
                           <button
                             onClick={() => setDeletingEventId(event.id)}
-                            className="rounded-md p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
+                            className="rounded-md p-1 text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition cursor-pointer"
                             title="Eliminar"
                           >
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -681,7 +681,7 @@ export default function EventosPage() {
                   </div>
                 </div>
                 {event.amount != null && (
-                  <p className="text-sm font-semibold text-purple-700 mb-1">
+                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">
                     {event.currency === 'USD' ? 'USD ' : '$'}{Number(event.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </p>
                 )}

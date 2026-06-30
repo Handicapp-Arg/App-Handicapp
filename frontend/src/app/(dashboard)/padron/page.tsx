@@ -234,7 +234,7 @@ function RecordDetail({
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <ShieldCheck className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-semibold text-green-800">Propietario verificado</span>
+                  <span className="text-sm font-semibold text-green-800 dark:text-green-300">Propietario verificado</span>
                 </div>
                 <div className="text-sm text-green-700">{record.verified_owner.name}</div>
                 {record.verified_at && (
@@ -357,7 +357,7 @@ function ClaimForm({ record, onClose }: { record: HorseRecord; onClose: () => vo
 
   if (existingClaim) return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
-      <p className="font-medium text-amber-800">Ya tenés un claim {existingClaim.status === 'pending' ? 'pendiente' : existingClaim.status}</p>
+      <p className="font-medium text-amber-800 dark:text-amber-300">Ya tenés un claim {existingClaim.status === 'pending' ? 'pendiente' : existingClaim.status}</p>
       <p className="text-amber-600 mt-0.5 text-xs">Score: {existingClaim.match_score ?? 0}/100</p>
     </div>
   );
@@ -365,7 +365,7 @@ function ClaimForm({ record, onClose }: { record: HorseRecord; onClose: () => vo
   if (done) return (
     <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-center">
       <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-      <p className="font-semibold text-green-800">Claim enviado</p>
+      <p className="font-semibold text-green-800 dark:text-green-300">Claim enviado</p>
       <p className="text-green-600 text-xs mt-0.5">El equipo de HandicApp verificará tu documentación.</p>
       <button onClick={onClose} className="mt-3 text-xs underline text-green-700">Cerrar</button>
     </div>

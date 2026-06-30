@@ -26,6 +26,7 @@ import ImagePicker from '@/components/image-picker';
 import ConfirmDialog from '@/components/confirm-dialog';
 import { Plus, Search as SearchIcon, Filter as FilterIcon, X } from 'lucide-react';
 import { HorseIllustration } from '@/components/illustrations';
+import { avatarGradient } from '@/lib/avatar-color';
 import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
@@ -589,7 +590,7 @@ export default function CaballosPage() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+      <div className="rounded-xl border border-red-100 bg-red-50 dark:bg-red-500/10 p-4 text-sm text-red-600">
         Error al cargar los caballos. Intentá recargar la página.
       </div>
     );
@@ -774,7 +775,7 @@ export default function CaballosPage() {
                 )}
                 <ImagePicker files={imageFiles} onChange={setImageFiles} single label="Foto del caballo" />
                 {createError && (
-                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-500/10 px-3 py-2.5 text-sm text-red-700">
                     <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                     </svg>
@@ -877,7 +878,7 @@ export default function CaballosPage() {
                   </div>
 
                   {createError && (
-                    <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                    <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-500/10 px-3 py-2.5 text-sm text-red-700">
                       <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                       </svg>
@@ -980,8 +981,8 @@ export default function CaballosPage() {
                     className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-clay-100 to-clay-200">
-                    <span className="text-5xl font-bold text-clay-400/70">{horse.name.charAt(0).toUpperCase()}</span>
+                  <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundImage: avatarGradient(horse.name) }}>
+                    <span className="text-5xl font-bold text-white/80">{horse.name.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
 
@@ -1011,7 +1012,7 @@ export default function CaballosPage() {
                       : (horse.owner?.id === user?.id && (!horse.co_owners || horse.co_owners.length === 0)) ? 100 : null;
                     if (myPct == null) return null;
                     return (
-                      <span className="shrink-0 rounded-full bg-clay-50 px-2 py-0.5 text-[10px] font-semibold text-clay-700 ring-1 ring-clay-200">
+                      <span className="shrink-0 rounded-full bg-clay-50 dark:bg-clay-500/15 px-2 py-0.5 text-[10px] font-semibold text-clay-700 dark:text-clay-300 ring-1 ring-clay-200 dark:ring-clay-500/25">
                         {myPct}%
                       </span>
                     );
@@ -1044,7 +1045,7 @@ export default function CaballosPage() {
                   className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-clay-500 to-clay-600">
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundImage: avatarGradient(horse.name) }}>
                   <span className="text-5xl font-bold text-white/10 select-none">{horse.name[0]?.toUpperCase()}</span>
                 </div>
               )}

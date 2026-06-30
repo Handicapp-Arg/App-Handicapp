@@ -28,8 +28,8 @@ function NodeCard({ node, showValidation }: { node: PedigreeNode; showValidation
 
   if (!node.in_system) {
     return (
-      <div className={`${baseCard} border-dashed border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600`}>
-        <p className="font-medium text-gray-600 dark:text-gray-300 truncate">{node.name}</p>
+      <div className={`${baseCard} border-dashed border-gray-300 bg-gray-50`}>
+        <p className="font-medium text-gray-600 truncate">{node.name}</p>
         {node.registration_number && (
           <p className="text-[11px] text-gray-400 truncate">#{node.registration_number}</p>
         )}
@@ -38,9 +38,9 @@ function NodeCard({ node, showValidation }: { node: PedigreeNode; showValidation
   }
 
   const card = (
-    <div className={`${baseCard} border-gray-200 bg-[var(--surface-card)] dark:bg-gray-900 dark:border-gray-700 shadow-sm`}>
+    <div className={`${baseCard} border-gray-200 bg-[var(--surface-card)] shadow-sm`}>
       <div className="flex items-center justify-between gap-1">
-        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{node.name}</p>
+        <p className="font-semibold text-gray-900 truncate">{node.name}</p>
         {showValidation && cfg.icon && (
           <span className={`text-xs flex-shrink-0 ${cfg.cls}`} title={cfg.label}>{cfg.icon}</span>
         )}
@@ -68,13 +68,13 @@ function HorizontalTree({ node, depth, showValidation, currentDepth = 0 }: {
       <NodeCard node={node} showValidation={showValidation} />
       {hasChildren && (
         <div className="flex items-center">
-          <div className="w-6 h-px bg-gray-300 dark:bg-gray-600" />
+          <div className="w-6 h-px bg-gray-300" />
           <div className="flex flex-col gap-4">
             {[node.sire, node.dam].map((ancestor, i) => (
               ancestor ? (
                 <div key={i} className="flex items-center gap-0">
-                  <div className="w-px bg-gray-300 dark:bg-gray-600" style={{ height: i === 0 ? '50%' : '50%', alignSelf: i === 0 ? 'flex-end' : 'flex-start' }} />
-                  <div className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
+                  <div className="w-px bg-gray-300" style={{ height: i === 0 ? '50%' : '50%', alignSelf: i === 0 ? 'flex-end' : 'flex-start' }} />
+                  <div className="w-4 h-px bg-gray-300" />
                   <HorizontalTree
                     node={ancestor}
                     depth={depth}
@@ -126,15 +126,15 @@ export default function PedigreeTree({ node, depth = 2, onDepthChange, showValid
     return (
       <div className="space-y-1 text-sm">
         {node.sire && (
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-2 text-gray-600">
             <span className="text-gray-400 text-xs font-medium uppercase tracking-wide w-12">Padre</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">{node.sire.name}</span>
+            <span className="font-medium text-gray-900">{node.sire.name}</span>
           </div>
         )}
         {node.dam && (
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-2 text-gray-600">
             <span className="text-gray-400 text-xs font-medium uppercase tracking-wide w-12">Madre</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">{node.dam.name}</span>
+            <span className="font-medium text-gray-900">{node.dam.name}</span>
           </div>
         )}
         {!node.sire && !node.dam && (
@@ -154,7 +154,7 @@ export default function PedigreeTree({ node, depth = 2, onDepthChange, showValid
             className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
               selectedDepth === d
                 ? 'bg-clay-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             {d} gen
