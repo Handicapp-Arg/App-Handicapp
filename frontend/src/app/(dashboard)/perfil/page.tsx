@@ -215,7 +215,7 @@ export default function PerfilPage() {
       {/* Hero del perfil */}
       <div className="overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
         {/* Banner / portada */}
-        <div className="relative h-40 bg-gradient-to-r from-clay-400 via-clay-500 to-clay-600">
+        <div className="relative h-40" style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}>
           {user?.cover_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -234,7 +234,7 @@ export default function PerfilPage() {
             {/* Avatar editable */}
             <div className="relative shrink-0">
               <div
-                className="h-20 w-20 overflow-hidden rounded-2xl ring-4 ring-white"
+                className="h-20 w-20 overflow-hidden rounded-2xl ring-4 ring-[var(--surface-card)]"
                 style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
               >
                 {user?.avatar_url ? (
@@ -248,12 +248,12 @@ export default function PerfilPage() {
                 onClick={() => avatarInput.current?.click()}
                 disabled={uploading === 'avatar'}
                 aria-label="Cambiar foto"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-clay-600 text-white ring-2 ring-white transition hover:bg-clay-700 disabled:opacity-60 cursor-pointer"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-clay-600 text-white ring-2 ring-[var(--surface-card)] transition hover:bg-clay-700 disabled:opacity-60 cursor-pointer"
               >
                 {uploading === 'avatar' ? <Spinner size="sm" color="white" /> : <CameraIcon />}
               </button>
             </div>
-            <span className="mb-1 rounded-full bg-clay-50 px-3 py-1 text-xs font-bold text-clay-700 ring-1 ring-clay-100">
+            <span className="mb-1 rounded-full bg-clay-50 dark:bg-clay-500/15 px-3 py-1 text-xs font-bold text-clay-700 dark:text-clay-300 ring-1 ring-clay-100 dark:ring-clay-500/25">
               {roleLabel[user?.role || ''] || user?.role}
             </span>
           </div>
@@ -281,7 +281,7 @@ export default function PerfilPage() {
             key={key}
             onClick={() => setTab(key)}
             className={`relative -mb-px pb-3 text-sm font-semibold transition-colors cursor-pointer ${
-              tab === key ? 'text-clay-700' : 'text-gray-400 hover:text-gray-600'
+              tab === key ? 'text-clay-700 dark:text-clay-300' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             {label}
