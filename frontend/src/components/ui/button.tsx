@@ -20,11 +20,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary:
     'bg-clay-500 text-white shadow-sm hover:bg-clay-600 active:scale-[0.98] disabled:bg-clay-500/50',
   secondary:
-    'bg-[var(--surface-card)] text-clay-700 border border-clay-200 hover:bg-clay-50 hover:border-clay-300 active:scale-[0.98]',
+    'bg-[var(--surface-card)] text-clay-700 dark:text-clay-300 border border-clay-200 hover:bg-clay-50 hover:border-clay-300 active:scale-[0.98]',
   ghost:
-    'bg-transparent text-clay-700 hover:bg-clay-50 active:scale-[0.98]',
+    'bg-transparent text-clay-700 dark:text-clay-300 hover:bg-clay-50 active:scale-[0.98]',
   outline:
-    'bg-transparent text-clay-700 border border-clay-500 hover:bg-clay-50 active:scale-[0.98]',
+    'bg-transparent text-clay-700 dark:text-clay-300 border border-clay-500 hover:bg-clay-50 active:scale-[0.98]',
   danger:
     'bg-danger-500 text-white shadow-sm hover:bg-danger-700 active:scale-[0.98] disabled:bg-danger-500/50',
 };

@@ -48,7 +48,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
           </div>
           <p className="text-lg font-bold text-gray-900">Invitación inválida</p>
           <p className="mt-2 text-sm text-gray-500">El link que abriste no es válido, ya fue usado o expiró.</p>
-          <button onClick={() => router.replace('/')} className="mt-6 w-full rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white cursor-pointer">
+          <button onClick={() => router.replace('/')} className="mt-6 w-full rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-[var(--color-primary-hover)] transition">
             Ir al inicio
           </button>
         </div>

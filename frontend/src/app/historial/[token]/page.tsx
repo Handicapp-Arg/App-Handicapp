@@ -99,7 +99,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
               {weights.map((w) => (
                 <div key={w.id} className="flex items-center justify-between rounded-lg bg-orange-50 px-3 py-2">
                   <div>
-                    <span className="font-bold text-orange-900">{Number(w.weight_kg)} kg</span>
+                    <span className="font-bold text-orange-900 dark:text-orange-300">{Number(w.weight_kg)} kg</span>
                     {w.body_condition && <span className="ml-2 text-xs text-orange-600">CC: {w.body_condition}/9</span>}
                   </div>
                   <span className="text-xs text-orange-400">

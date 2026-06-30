@@ -74,7 +74,7 @@ function RequestModal({
       <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
         <div className="flex items-center justify-between bg-clay-500 px-6 py-4">
           <p className="font-bold text-white">Solicitar alojamiento</p>
-          <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">✕</button>
+          <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer transition">✕</button>
         </div>
         <div className="p-6 space-y-4">
           <p className="text-sm text-gray-500">
@@ -114,7 +114,7 @@ function RequestModal({
         </div>
 
         <div className="flex gap-2 border-t border-gray-100 p-4">
-          <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50">
+          <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition">
             Cancelar
           </button>
           <button
@@ -163,7 +163,7 @@ export default function DirectorioPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-amber-700 mb-2">Solicitudes pendientes</p>
           <div className="space-y-2">
             {myRequests.filter((r) => r.status === 'pending').map((r) => (
-              <div key={r.id} className="flex items-center gap-3 text-sm text-amber-800">
+              <div key={r.id} className="flex items-center gap-3 text-sm text-amber-800 dark:text-amber-300">
                 <span className="font-semibold">{r.horse?.name}</span>
                 <span className="text-amber-500">→</span>
                 <span>{r.establishment?.name}</span>
