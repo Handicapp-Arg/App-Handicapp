@@ -297,7 +297,7 @@ function RecordDetail({
           {!showClaim ? (
             <button
               onClick={() => setShowClaim(true)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition"
             >
               <Shield className="h-4 w-4" />
               Reclamar propiedad
@@ -417,7 +417,7 @@ function ClaimForm({ record, onClose }: { record: HorseRecord; onClose: () => vo
                 <button
                   onClick={handleUpload}
                   disabled={uploadDoc.isPending}
-                  className="px-3 py-1 bg-black text-white text-xs rounded-lg hover:bg-gray-800 transition disabled:opacity-40"
+                  className="px-3 py-1 bg-black text-white text-xs rounded-lg hover:bg-zinc-800 transition disabled:opacity-40"
                 >
                   {uploadDoc.isPending ? 'Subiendo…' : 'Subir'}
                 </button>
@@ -443,7 +443,7 @@ function ClaimForm({ record, onClose }: { record: HorseRecord; onClose: () => vo
       <button
         onClick={handleSubmit}
         disabled={submitClaim.isPending || (!regNum && !microchip && !birthDate && !uploadedDoc)}
-        className="w-full py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition disabled:opacity-40"
+        className="w-full py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition disabled:opacity-40"
       >
         {submitClaim.isPending ? 'Enviando…' : 'Enviar solicitud'}
       </button>
@@ -498,7 +498,7 @@ function JobProgressBar({ job }: { job: ImportJob }) {
     : null;
 
   return (
-    <div className="rounded-lg bg-gray-800 px-3 py-2 text-xs space-y-1.5">
+    <div className="rounded-lg bg-zinc-800 px-3 py-2 text-xs space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           {isRunning
@@ -540,7 +540,7 @@ function AdminBar() {
   const hasRunning = jobs.some(j => j.status === 'running');
 
   return (
-    <div className="bg-gray-900 text-white rounded-xl p-4 mb-4">
+    <div className="bg-zinc-900 text-white rounded-xl p-4 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4 text-gray-400" />

@@ -337,7 +337,7 @@ function EventCard({
       {event.photos && event.photos.length > 0 && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto">
           {event.photos.map((p) => p.file_type === 'video' ? (
-            <div key={p.id} className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-gray-900">
+            <div key={p.id} className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-zinc-900">
               <video src={p.url} className="h-full w-full object-cover opacity-70" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -1548,7 +1548,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       <div className="lg:hidden space-y-5">
 
         {/* Imagen panorámica top */}
-        <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-gray-900">
+        <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-zinc-900">
           {horse.image_url ? (
             <img
               src={cldTransform(horse.image_url, { width: 800, ar: '4:3' })}
@@ -1994,7 +1994,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     <div key={ev.id} className="rounded-xl border border-gray-100 overflow-hidden">
                       <div className={`grid ${ev.photos!.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-0.5`}>
                         {ev.photos!.slice(0, 4).map((p, i) => p.file_type === 'video' ? (
-                          <div key={p.id} className={`relative bg-gray-900 ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'} ${i === 3 && ev.photos!.length > 4 ? 'relative' : ''}`}>
+                          <div key={p.id} className={`relative bg-zinc-900 ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'} ${i === 3 && ev.photos!.length > 4 ? 'relative' : ''}`}>
                             <video src={p.url} className="h-full w-full object-cover opacity-70" />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80">
@@ -2580,7 +2580,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     <div key={ev.id} className="rounded-xl border border-gray-100 overflow-hidden">
                       <div className={`grid ${ev.photos!.length === 1 ? 'grid-cols-1' : ev.photos!.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-0.5`}>
                         {ev.photos!.slice(0, 6).map((p, i) => p.file_type === 'video' ? (
-                          <div key={p.id} className={`relative bg-gray-900 ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+                          <div key={p.id} className={`relative bg-zinc-900 ${ev.photos!.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
                             <video src={p.url} className="h-full w-full object-cover opacity-70" />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80">

@@ -27,7 +27,7 @@ function MediaGrid({ photos }: { photos: PublicPhoto[] }) {
   return (
     <div className={`grid ${cols} gap-0.5`}>
       {photos.slice(0, 6).map((p, i) => (
-        <div key={p.id} className={`relative bg-gray-900 ${photos.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
+        <div key={p.id} className={`relative bg-zinc-900 ${photos.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
           {p.file_type === 'video' ? (
             <>
               <video src={p.url} className="h-full w-full object-cover opacity-70" />

@@ -1035,7 +1035,7 @@ export default function CaballosPage() {
             <div
               key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
-              className="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-2xl bg-gray-900 shadow-md ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:ring-[#c4922a]/25"
+              className="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-2xl bg-zinc-900 shadow-md ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:ring-[#c4922a]/25"
             >
               {/* Imagen */}
               {horse.image_url ? (
