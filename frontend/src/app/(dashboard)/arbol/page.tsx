@@ -158,11 +158,11 @@ function PedigreeCard({
         style={{ left: placed.x, top: placed.y, width: NODE_W, height: NODE_H }}
         className="absolute flex flex-col justify-center px-4 rounded-xl bg-clay-500 text-white shadow-xl border border-clay-600"
       >
-        <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-blue-300 mb-0.5">
+        <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-white/80 mb-0.5">
           <HorseHead size={11} /> Sujeto
         </div>
         <div className="text-sm font-bold leading-tight truncate">{node.name}</div>
-        <div className="text-xs text-blue-200 mt-1">
+        <div className="text-xs text-white/70 mt-1">
           {[node.birth_year, node.country_code, node.sex ? { macho: '♂', hembra: '♀', castrado: '⚥' }[node.sex] : null]
             .filter(Boolean).join(' · ')}
         </div>
