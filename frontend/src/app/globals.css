@@ -5,6 +5,15 @@
    ignora nuestro toggle de tema). Así `dark:` sigue el tema elegido en la app. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Controles nativos (select abierto, checkbox, radio, range): acento cuero de
+   marca en vez del azul por defecto del navegador. */
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--color-primary);
+}
+
 /* ───────────────────────────────────────────────────────────────
    Design tokens — Tailwind v4
    Exponer la paleta como utilidades (bg-navy-700, text-gold-600, etc.)

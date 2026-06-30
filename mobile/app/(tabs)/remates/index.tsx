@@ -36,9 +36,9 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
         </View>
         <View style={[s.typeBadge, isRemate ? s.typeBadgeRemate : s.typeBadgeDirecto]}>
           {isRemate
-            ? <Trophy size={11} color="#9d6c35" strokeWidth={2} />
-            : <Tag size={11} color="#0369a1" strokeWidth={2} />}
-          <Text style={[s.typeBadgeText, { color: isRemate ? '#9d6c35' : '#0369a1' }]}>
+            ? <Trophy size={11} color="#b07d2b" strokeWidth={2} />
+            : <Tag size={11} color="#9d6c35" strokeWidth={2} />}
+          <Text style={[s.typeBadgeText, { color: isRemate ? '#b07d2b' : '#9d6c35' }]}>
             {isRemate ? 'Remate' : 'Directo'}
           </Text>
         </View>
@@ -253,8 +253,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[2], paddingVertical: 3,
     borderRadius: radius.full, borderWidth: 1,
   },
-  typeBadgeRemate: { backgroundColor: '#faf3e9', borderColor: '#f3e3cc' },
-  typeBadgeDirecto: { backgroundColor: '#e0f2fe', borderColor: '#bae6fd' },
+  typeBadgeRemate: { backgroundColor: c.isDark ? 'rgba(217,169,78,0.16)' : '#fbf2de', borderColor: c.isDark ? 'rgba(217,169,78,0.3)' : '#f0ddb0' },
+  typeBadgeDirecto: { backgroundColor: c.isDark ? 'rgba(157,108,53,0.18)' : '#faf3e9', borderColor: c.isDark ? 'rgba(157,108,53,0.32)' : '#f3e3cc' },
   typeBadgeText: { fontSize: 10, fontWeight: weight.semibold },
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
