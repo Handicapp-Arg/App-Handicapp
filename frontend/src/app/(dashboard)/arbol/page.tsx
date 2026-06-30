@@ -125,6 +125,27 @@ const OWN: Record<string, { border: string; bg: string; badge: React.ReactNode; 
   },
 };
 
+// ─── Sexo: indicador de color (no choca con las ramas azul/rosa de las líneas) ─
+const SEX_META: Record<string, { sym: string; color: string; label: string }> = {
+  macho:    { sym: '♂', color: '#0ea5e9', label: 'Macho' },
+  hembra:   { sym: '♀', color: '#ec4899', label: 'Hembra' },
+  castrado: { sym: '⚥', color: '#a78bfa', label: 'Castrado' },
+};
+
+function SexDot({ sex }: { sex?: string | null }) {
+  const m = sex ? SEX_META[sex] : null;
+  if (!m) return null;
+  return (
+    <span
+      className="absolute top-1.5 right-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold leading-none text-white shadow-sm"
+      style={{ backgroundColor: m.color }}
+      title={m.label}
+    >
+      {m.sym}
+    </span>
+  );
+}
+
 // ─── Single node card ────────────────────────────────────────────────────────
 function PedigreeCard({
   placed,
@@ -158,13 +179,13 @@ function PedigreeCard({
         style={{ left: placed.x, top: placed.y, width: NODE_W, height: NODE_H }}
         className="absolute flex flex-col justify-center px-4 rounded-xl bg-clay-500 text-white shadow-xl border border-clay-600"
       >
+        <SexDot sex={node.sex} />
         <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-white/80 mb-0.5">
           <HorseHead size={11} /> Sujeto
         </div>
-        <div className="text-sm font-bold leading-tight truncate">{node.name}</div>
+        <div className="text-sm font-bold leading-tight truncate pr-5">{node.name}</div>
         <div className="text-xs text-white/70 mt-1">
-          {[node.birth_year, node.country_code, node.sex ? { macho: '♂', hembra: '♀', castrado: '⚥' }[node.sex] : null]
-            .filter(Boolean).join(' · ')}
+          {[node.birth_year, node.country_code].filter(Boolean).join(' · ')}
         </div>
         {node.ownership_status === 'verified' && (
           <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-400">
@@ -188,12 +209,12 @@ function PedigreeCard({
           : 'opacity-50 cursor-default border-dashed',
       )}
     >
-      <div className="text-xs font-semibold leading-tight truncate text-gray-900">
+      <SexDot sex={node.sex} />
+      <div className="text-xs font-semibold leading-tight truncate text-gray-900 pr-4">
         {node.name || <span className="text-gray-400 italic text-[11px]">Sin datos</span>}
       </div>
       <div className="text-[10px] text-gray-400 mt-0.5">
-        {[node.birth_year, node.country_code, node.sex ? { macho: '♂', hembra: '♀', castrado: '⚥' }[node.sex] : null]
-          .filter(Boolean).join(' · ') || '—'}
+        {[node.birth_year, node.country_code].filter(Boolean).join(' · ') || '—'}
       </div>
       {own.badge && <div className="mt-1">{own.badge}</div>}
       {!own.badge && node.id && (
@@ -411,6 +432,14 @@ function Legend() {
       <div className="flex items-center gap-1.5">
         <Shield className="h-3 w-3 text-gray-300" />
         <span>Sin dueño</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold leading-none text-white" style={{ backgroundColor: '#0ea5e9' }}>♂</span>
+        <span>Macho</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold leading-none text-white" style={{ backgroundColor: '#ec4899' }}>♀</span>
+        <span>Hembra</span>
       </div>
     </div>
   );
