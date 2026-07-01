@@ -116,6 +116,15 @@ export class PlansService implements OnModuleInit {
     return this.planRepo.find({ order: { role_target: 'ASC', tier: 'ASC' } });
   }
 
+  // Edición por el super admin (no cambia role_target ni tier_key).
+  async updatePlan(id: string, dto: Partial<Plan>): Promise<Plan> {
+    const plan = await this.planRepo.findOne({ where: { id } });
+    if (!plan) throw new NotFoundException('Plan no encontrado');
+    const { role_target, tier_key, id: _ignore, ...editable } = dto as Plan;
+    Object.assign(plan, editable);
+    return this.planRepo.save(plan);
+  }
+
   // ─── Status (usado por el frontend) ───
 
   async getPlanStatus(user: User) {
