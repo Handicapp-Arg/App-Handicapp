@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
+import { getErrorMessage } from '@/lib/errors';
 
 export interface Contract {
   id: string;
@@ -27,35 +29,55 @@ export function useContracts() {
 
 export function useCreateContract() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (dto: { owner_id: string; horse_id?: string; title: string; body: string }) =>
       (await api.post('/contracts', dto)).data as Contract,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Contrato creado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useSignContract() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async ({ id, signed_name }: { id: string; signed_name: string }) =>
       (await api.post(`/contracts/${id}/sign`, { signed_name })).data as Contract,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Contrato firmado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useRejectContract() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) =>
       (await api.post(`/contracts/${id}/reject`, { reason })).data as Contract,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Contrato rechazado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useDeleteContract() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (id: string) => { await api.delete(`/contracts/${id}`); },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Contrato eliminado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }

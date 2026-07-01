@@ -21,6 +21,7 @@ import { NotificationsProvider } from '../lib/notifications';
 import { StatusBar } from 'expo-status-bar';
 import { AnimatedSplash } from '../components/AnimatedSplash';
 import { ThemeProvider, useTheme } from '../lib/theme';
+import { ToastProvider } from '../components/Toast';
 
 // Quita el contorno negro de foco de los inputs en la versión web (no afecta al celular real).
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -41,9 +42,11 @@ function InnerLayout() {
   const { user } = useAuth();
   const { c } = useTheme();
   return (
-    <NotificationsProvider userId={user?.id}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
-    </NotificationsProvider>
+    <ToastProvider>
+      <NotificationsProvider userId={user?.id}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+      </NotificationsProvider>
+    </ToastProvider>
   );
 }
 

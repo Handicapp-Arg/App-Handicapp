@@ -23,6 +23,7 @@ import { avatarColor, initialsOf } from '../../lib/avatar-color';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
+import { useToast } from '../../components/Toast';
 import {
   Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
   Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check,
@@ -305,6 +306,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
 // ─── Composer ────────────────────────────────────────────────────────────────
 function Composer({ user, c, s }: { user: { name: string; role: string; avatar_color?: string | null }; c: ThemeColors; s: Styles }) {
   const createPost = useCreatePost();
+  const toast = useToast();
   const { data: myHorses } = useHorses();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -324,7 +326,7 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
   const pickFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para adjuntar fotos y videos.');
+      toast.error('Necesitamos acceso a tu galería para adjuntar fotos y videos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -340,7 +342,7 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para sacar fotos y videos.');
+      toast.error('Necesitamos acceso a la cámara para sacar fotos y videos.');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -367,8 +369,9 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
       setSelectedHorseId(undefined);
       setType('general');
       setOpen(false);
+      toast.success('Publicado');
     } catch {
-      Alert.alert('Error', 'No se pudo publicar. Intentá de nuevo.');
+      toast.error('No se pudo publicar. Intentá de nuevo.');
     }
   };
 

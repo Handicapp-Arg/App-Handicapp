@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import type { FeedPost, FeedComment } from '@/types';
 import { useAuth } from '@/lib/auth-context';
+import { useConfirm } from '@/lib/confirm-context';
 import { VetVerifiedBadge, isVetVerified } from '@/components/ui/verified-badge';
 import {
   useToggleLike, useDeletePost, useTogglePin, useToggleHide,
@@ -176,6 +177,7 @@ interface Props { post: FeedPost; }
 
 export default function PostCard({ post }: Props) {
   const { user } = useAuth();
+  const confirm = useConfirm();
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
   const togglePin = useTogglePin();
@@ -269,7 +271,16 @@ export default function PostCard({ post }: Props) {
                     )}
                     {(isOwner || isAdmin) && (
                       <button
-                        onClick={() => { if (confirm('¿Eliminar este post?')) deletePost.mutate(post.id); setMenuOpen(false); }}
+                        onClick={async () => {
+                          setMenuOpen(false);
+                          const ok = await confirm({
+                            title: 'Eliminar post',
+                            message: 'Esta acción no se puede deshacer.',
+                            confirmLabel: 'Eliminar',
+                            danger: true,
+                          });
+                          if (ok) deletePost.mutate(post.id);
+                        }}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                       >
                         <Trash2 className="h-4 w-4" />

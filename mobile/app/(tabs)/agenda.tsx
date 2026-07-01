@@ -19,6 +19,7 @@ import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { useCommonStyles } from '../../styles/common';
+import { useToast } from '../../components/Toast';
 
 const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES);
 
@@ -94,6 +95,7 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
   const { typography, modal: modalStyle, button, input: inputStyle } = useCommonStyles();
   const { data: horses } = useHorses();
   const create = useCreateAppointment();
+  const toast = useToast();
   const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
   const [type, setType] = useState('veterinario');
   const [title, setTitle] = useState('');
@@ -111,6 +113,7 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
     const dt = new Date(date + 'T12:00:00');
     dt.setHours(timeDate.getHours(), timeDate.getMinutes());
     await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString(), notes: notes || undefined });
+    toast.success('Turno agendado');
     onClose();
   };
 

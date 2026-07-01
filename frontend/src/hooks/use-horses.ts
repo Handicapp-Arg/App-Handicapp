@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Horse, HorseOwnership, HorseRecord } from '@/types';
+import { useToast } from '@/lib/toast-context';
+import { getErrorMessage } from '@/lib/errors';
 
 export interface CreateHorseResult {
   horse: Horse;
@@ -40,6 +42,7 @@ export function useHorse(id: string) {
 
 export function useCreateHorse() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async (dto: {
@@ -58,12 +61,15 @@ export function useCreateHorse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      toast.success('Caballo agregado');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useUpdateHorse() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -83,7 +89,9 @@ export function useUpdateHorse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      toast.success('Caballo guardado');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -266,6 +274,7 @@ export function useHorseOwnership(horseId: string | null) {
 
 export function useUpdateOwnership() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -285,12 +294,15 @@ export function useUpdateOwnership() {
       queryClient.invalidateQueries({
         queryKey: ['horses', horseId, 'ownership'],
       });
+      toast.success('Titularidad actualizada');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useDeleteHorse() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -298,7 +310,9 @@ export function useDeleteHorse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      toast.success('Caballo eliminado');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -332,12 +346,17 @@ export function useWeightRecords(horseId: string) {
 
 export function useAddWeightRecord(horseId: string) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (dto: { weight_kg: string; body_condition?: number; date: string; notes?: string }) => {
       const { data } = await api.post(`/horses/${horseId}/weight`, dto);
       return data as WeightRecord;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'weight'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'weight'] });
+      toast.success('Peso registrado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -364,6 +383,7 @@ export function useHorseDocuments(horseId: string) {
 
 export function useUploadDocument(horseId: string) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async ({ file, name }: { file: File; name: string }) => {
       const formData = new FormData();
@@ -376,7 +396,9 @@ export function useUploadDocument(horseId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'documents'] });
+      toast.success('Documento subido');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -394,6 +416,7 @@ export function useDeleteDocument(horseId: string) {
 
 export function useTransferHorse() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async ({ id, new_owner_id }: { id: string; new_owner_id: string }) => {
@@ -402,7 +425,9 @@ export function useTransferHorse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      toast.success('Caballo transferido');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 

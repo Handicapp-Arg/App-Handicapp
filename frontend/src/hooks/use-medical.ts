@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
+import { getErrorMessage } from '@/lib/errors';
 
 export interface MedicalRecord {
   id: string;
@@ -39,22 +41,32 @@ export function useMedicalRecords(horseId: string) {
 
 export function useAddMedicalRecord(horseId: string) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (dto: CreateMedicalRecordDto) => {
       const { data } = await api.post(`/horses/${horseId}/medical`, dto);
       return data as MedicalRecord;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['medical', horseId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['medical', horseId] });
+      toast.success('Registro sanitario agregado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useDeleteMedicalRecord(horseId: string) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/horses/${horseId}/medical/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['medical', horseId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['medical', horseId] });
+      toast.success('Registro eliminado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 

@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Event } from '@/types';
+import { useToast } from '@/lib/toast-context';
+import { getErrorMessage } from '@/lib/errors';
 
 interface EventFilters {
   type?: string;
@@ -39,6 +41,7 @@ export function useEventsByHorse(horseId: string) {
 
 export function useCreateBulkEvent() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async (payload: {
@@ -51,14 +54,17 @@ export function useCreateBulkEvent() {
       const { data } = await api.post('/events/bulk', payload);
       return data as Event[];
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success(`${data.length} eventos creados`);
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useCreateEvent(horseId: string) {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async (payload: {
@@ -97,12 +103,15 @@ export function useCreateEvent(horseId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success('Evento creado');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useUpdateEvent() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -123,12 +132,15 @@ export function useUpdateEvent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success('Evento actualizado');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -136,7 +148,9 @@ export function useDeleteEvent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success('Evento eliminado');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -177,6 +191,7 @@ export function useUpsertTrainingMetrics(eventId: string) {
 
 export function useShareEvent() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (eventId: string) => {
       const { data } = await api.post(`/events/${eventId}/share`);
@@ -185,6 +200,8 @@ export function useShareEvent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      toast.success('Compartido en el muro');
     },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }

@@ -19,6 +19,7 @@ import { TrainingMetricsPanel } from '@/components/training-metrics-panel';
 import PedigreeSection from '@/components/pedigree/PedigreeSection';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
 import ConfirmDialog from '@/components/confirm-dialog';
 import ImagePicker from '@/components/image-picker';
 import { cldTransform } from '@/lib/cloudinary';
@@ -1287,6 +1288,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const router = useRouter();
   const { user, can } = useAuth();
+  const toast = useToast();
 
   const { data: horse, isLoading, error } = useHorse(id);
   const { data: ownership } = useHorseOwnership(id);
@@ -1380,9 +1382,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       const { data } = await api.post(`/horses/${id}/share`);
       const link = `${window.location.origin}/historial/${data.token}`;
       await navigator.clipboard.writeText(link);
-      alert(`Enlace copiado al portapapeles!\nVálido 72 horas.\n\n${link}`);
+      toast.success('Enlace copiado al portapapeles', { title: 'Válido 72 horas' });
     } catch {
-      alert('No se pudo generar el enlace.');
+      toast.error('No se pudo generar el enlace.');
     }
   };
 
@@ -3055,7 +3057,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     onClick={() => {
                       const url = `${window.location.origin}/caballo/${horse.public_token}`;
                       navigator.clipboard.writeText(url);
-                      alert('Enlace copiado!');
+                      toast.success('Enlace copiado');
                     }}
                     className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
                   >

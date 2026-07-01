@@ -23,6 +23,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
 import { EmptyState } from '../../../components/EmptyState';
+import { useToast } from '../../../components/Toast';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
@@ -120,6 +121,7 @@ function QuickGastoModal({
 }) {
   const createEvent = useCreateEvent();
   const qc = useQueryClient();
+  const toast = useToast();
   const today = new Date().toISOString().split('T')[0];
   const [selectedHorse, setSelectedHorse] = useState<Horse | null>(
     initialHorse ?? (horses.length === 1 ? horses[0] : null),
@@ -147,6 +149,7 @@ function QuickGastoModal({
       });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       haptic.success();
+      toast.success('Gasto registrado');
       onClose();
     } catch {
       setError('No se pudo registrar. Intentá de nuevo.');
@@ -284,6 +287,7 @@ function RecordMatchModal({
 }) {
   const submitClaim = useSubmitClaim();
   const uploadDoc = useUploadClaimDocument();
+  const toast = useToast();
   const [step, setStep] = useState<'list' | 'form' | 'done'>('list');
   const [selectedRecord, setSelectedRecord] = useState<HorseRecord | null>(null);
   const [docUri, setDocUri] = useState<string | null>(null);
@@ -293,12 +297,12 @@ function RecordMatchModal({
   const pickDoc = async (source: 'camera' | 'gallery') => {
     if (source === 'camera') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+      if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
       const result = await ImagePicker.launchCameraAsync({ quality: 0.9, allowsEditing: false });
       if (!result.canceled) setDocUri(result.assets[0].uri);
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
+      if (status !== 'granted') { toast.error('Necesitamos acceso a la galería.'); return; }
       const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.9, allowsEditing: false });
       if (!result.canceled) setDocUri(result.assets[0].uri);
     }
@@ -489,6 +493,7 @@ function RecordMatchModal({
 function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
   const createHorse = useCreateHorse();
   const uploadImage = useUploadHorseImage();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [microchip, setMicrochip] = useState('');
@@ -499,12 +504,12 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
   const pickPhoto = async (source: 'camera' | 'gallery') => {
     if (source === 'camera') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+      if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
       const result = await ImagePicker.launchCameraAsync({ quality: 0.85, allowsEditing: true });
       if (!result.canceled) setPhotoUri(result.assets[0].uri);
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
+      if (status !== 'granted') { toast.error('Necesitamos acceso a la galería.'); return; }
       const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.85, allowsEditing: true });
       if (!result.canceled) setPhotoUri(result.assets[0].uri);
     }
@@ -542,6 +547,7 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
           // El caballo ya se creó; si la foto falla, no bloqueamos el alta.
         }
       }
+      toast.success('Caballo guardado');
       if (result.record_matches.length > 0) {
         setMatches({ records: result.record_matches, horseId: result.horse.id });
       } else {

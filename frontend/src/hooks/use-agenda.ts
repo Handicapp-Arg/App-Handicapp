@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
+import { getErrorMessage } from '@/lib/errors';
 
 export interface ServiceAppointment {
   id: string;
@@ -45,30 +47,45 @@ export function useAgendaByHorse(horseId: string) {
 
 export function useCreateAppointment() {
   const qc = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (dto: { horse_id: string; type: string; title: string; scheduled_at: string; notes?: string }) => {
       const { data } = await api.post('/agenda', dto);
       return data as ServiceAppointment;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda'] });
+      toast.success('Turno agendado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useCompleteAppointment() {
   const qc = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const { data } = await api.patch(`/agenda/${id}/complete`);
       return data as ServiceAppointment;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda'] });
+      toast.success('Turno completado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useDeleteAppointment() {
   const qc = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (id: string) => { await api.delete(`/agenda/${id}`); },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda'] });
+      toast.success('Turno eliminado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }

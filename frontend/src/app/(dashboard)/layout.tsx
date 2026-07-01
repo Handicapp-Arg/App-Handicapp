@@ -7,6 +7,8 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { ProtectedRoute } from '@/lib/protected-route';
 import { OnboardingWizard } from '@/components/onboarding-wizard';
 import { ShortcutsCheatsheet } from '@/components/ui/shortcuts-cheatsheet';
+import { ToastProvider } from '@/lib/toast-context';
+import { ConfirmProvider } from '@/lib/confirm-context';
 
 export default function DashboardLayout({
   children,
@@ -15,8 +17,10 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      <OnboardingWizard />
-      <ShortcutsCheatsheet />
+      <ToastProvider>
+        <ConfirmProvider>
+          <OnboardingWizard />
+          <ShortcutsCheatsheet />
       <div className="flex min-h-screen md:flex-row flex-col" style={{ backgroundColor: 'var(--surface-page)' }}>
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -28,6 +32,8 @@ export default function DashboardLayout({
         </div>
         <BottomNav />
       </div>
+        </ConfirmProvider>
+      </ToastProvider>
     </ProtectedRoute>
   );
 }

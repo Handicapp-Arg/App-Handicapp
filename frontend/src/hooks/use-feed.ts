@@ -3,6 +3,8 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { FeedPost, FeedComment } from '@/types';
+import { useToast } from '@/lib/toast-context';
+import { getErrorMessage } from '@/lib/errors';
 
 interface FeedPage {
   data: FeedPost[];
@@ -43,6 +45,7 @@ export function useFeedPost(id: string) {
 
 export function useCreatePost() {
   const qc = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: async (payload: {
       content: string;
@@ -62,15 +65,24 @@ export function useCreatePost() {
       });
       return data as FeedPost;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['feed'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['feed'] });
+      toast.success('Publicado en el muro');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 
 export function useDeletePost() {
   const qc = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/feed/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['feed'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['feed'] });
+      toast.success('Post eliminado');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
 

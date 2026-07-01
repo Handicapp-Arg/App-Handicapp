@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal,
   TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
-  Image, Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +23,7 @@ import { colors, eventTypeColors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { useCommonStyles } from '../../styles/common';
+import { useToast } from '../../components/Toast';
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'tarea', 'carrera', 'gasto', 'nota'] as const;
 
@@ -57,6 +58,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
   const typeOpts = visibleTypeOptions(user?.role);
   const { data: horses } = useHorses();
   const createEvent = useCreateEvent();
+  const toast = useToast();
   const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
   const [type, setType] = useState<string>(() => defaultTypeForRole(user?.role));
   const [description, setDescription] = useState('');
@@ -69,7 +71,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
 
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
+    if (status !== 'granted') { toast.error('Necesitamos acceso a tu galería.'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'], allowsMultipleSelection: true, quality: 0.8, selectionLimit: 5,
     });
@@ -89,6 +91,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
       currency: type === 'gasto' ? currency : undefined,
       photoUris: photoUris.length > 0 ? photoUris : undefined,
     });
+    toast.success('Evento creado');
     onClose();
   };
 

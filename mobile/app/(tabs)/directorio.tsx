@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
-  RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
+  RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { useBoardingRequests, useCreateBoardingRequest } from '../../hooks/use-b
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
+import { useToast } from '../../components/Toast';
 import { ListRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
@@ -51,6 +52,7 @@ function RequestModal({
   const { data: horses } = useHorses();
   const { data: requests } = useBoardingRequests();
   const create = useCreateBoardingRequest();
+  const toast = useToast();
   const [horseId, setHorseId] = useState('');
   const [message, setMessage] = useState('');
 
@@ -67,11 +69,8 @@ function RequestModal({
       message: message.trim() || undefined,
     });
     haptic.success();
-    Alert.alert(
-      '¡Solicitud enviada!',
-      `${establishment.name} recibirá una notificación y podrá aceptar o rechazar tu solicitud.`,
-      [{ text: 'Entendido', onPress: onClose }]
-    );
+    toast.success(`Solicitud enviada a ${establishment.name}`);
+    onClose();
   };
 
   return (

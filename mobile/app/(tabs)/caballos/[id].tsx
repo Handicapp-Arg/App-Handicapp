@@ -38,6 +38,7 @@ import { Routes, nav } from '../../../lib/routes';
 import { DatePicker } from '../../../components/DatePicker';
 import { Spinner } from '../../../components/Spinner';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
+import { useToast } from '../../../components/Toast';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight } from '../../../styles/tokens';
@@ -74,6 +75,7 @@ const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string }>
 /* ─── EditHorseModal ─── */
 function EditHorseModal({ horse, onClose, c, s }: { horse: Horse; onClose: () => void; c: ThemeColors; s: Styles }) {
   const updateHorse = useUpdateHorse();
+  const toast = useToast();
   const [name, setName] = useState(horse.name);
   const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
   const [microchip, setMicrochip] = useState(horse.microchip ?? '');
@@ -83,6 +85,7 @@ function EditHorseModal({ horse, onClose, c, s }: { horse: Horse; onClose: () =>
     if (!name.trim()) { setError('El nombre es obligatorio'); return; }
     setError('');
     await updateHorse.mutateAsync({ id: horse.id, name: name.trim(), birth_date: birthDate || null, microchip: microchip || null });
+    toast.success('Cambios guardados');
     onClose();
   };
 
@@ -216,6 +219,7 @@ export default function HorseDetailScreen() {
   const insets = useSafeAreaInsets();
   const { can, user } = useAuth();
   const { c } = useTheme();
+  const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
 
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
@@ -313,6 +317,7 @@ export default function HorseDetailScreen() {
         horse_id: id,
       });
       haptic.success();
+      toast.success('Evento agregado');
       setShowAddEvent(false);
       setNewEventDesc('');
       setNewEventType('nota');
@@ -326,14 +331,14 @@ export default function HorseDetailScreen() {
     const doUpload = async (source: 'camera' | 'gallery') => {
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la cámara.'); return; }
+        if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
         const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
-        if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+        if (!result.canceled && result.assets[0]) { await uploadImage.mutateAsync({ id, uri: result.assets[0].uri }); toast.success('Foto actualizada'); }
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Permiso necesario', 'Necesitamos acceso a la galería.'); return; }
+        if (status !== 'granted') { toast.error('Necesitamos acceso a la galería.'); return; }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.85 });
-        if (!result.canceled && result.assets[0]) await uploadImage.mutateAsync({ id, uri: result.assets[0].uri });
+        if (!result.canceled && result.assets[0]) { await uploadImage.mutateAsync({ id, uri: result.assets[0].uri }); toast.success('Foto actualizada'); }
       }
     };
 
@@ -356,12 +361,12 @@ export default function HorseDetailScreen() {
     const pick = async (choice: number) => {
       if (choice === 0) {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.'); return; }
+        if (status !== 'granted') { toast.error('Necesitamos acceso a tu galería.'); return; }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
         if (!result.canceled && result.assets[0]) {
           const name = docName.trim() || 'Documento';
           await uploadDoc.mutateAsync({ uri: result.assets[0].uri, name });
-          setShowUploadDoc(false); setDocName(''); haptic.success();
+          setShowUploadDoc(false); setDocName(''); haptic.success(); toast.success('Documento subido');
         }
       } else if (choice === 1) {
         const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
@@ -369,7 +374,7 @@ export default function HorseDetailScreen() {
           const asset = result.assets[0];
           const name = docName.trim() || asset.name || 'Documento';
           await uploadDoc.mutateAsync({ uri: asset.uri, name });
-          setShowUploadDoc(false); setDocName(''); haptic.success();
+          setShowUploadDoc(false); setDocName(''); haptic.success(); toast.success('Documento subido');
         }
       }
     };
@@ -410,6 +415,7 @@ export default function HorseDetailScreen() {
         onPress: async () => {
           await transferHorse.mutateAsync({ id, new_owner_id: transferOwnerId });
           haptic.success();
+          toast.success('Caballo transferido');
           setShowTransfer(false);
           setTransferOwnerId('');
         },
@@ -944,7 +950,7 @@ export default function HorseDetailScreen() {
                 disabled={certLoading || !canCertify}
                 onPress={() => {
                   if (!canCertify) {
-                    Alert.alert('Certificado no disponible', 'Requiere plan Pro + matrícula aprobada.');
+                    toast.error('Certificado no disponible. Requiere plan Pro + matrícula aprobada.');
                     return;
                   }
                   haptic.light();
@@ -1012,11 +1018,12 @@ export default function HorseDetailScreen() {
               activeOpacity={0.85}
               onPress={async () => {
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                if (status !== 'granted') { Alert.alert('Permiso', 'Necesitamos acceso a la cámara.'); return; }
+                if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
                 const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
                 if (!result.canceled && result.assets[0]) {
                   await uploadActivityPhoto.mutateAsync({ uri: result.assets[0].uri, activity_type: activityType === 'all' ? 'otro' : activityType });
                   haptic.success();
+                  toast.success('Foto agregada');
                 }
               }}
             >
@@ -1148,7 +1155,7 @@ export default function HorseDetailScreen() {
               <TouchableOpacity
                 style={[s.btn, s.btnPrimary, { flex: 1 }, (!newWeight || addWeight.isPending) && { opacity: 0.6 }]}
                 disabled={!newWeight || addWeight.isPending}
-                onPress={async () => { await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate }); setNewWeight(''); setShowAddWeight(false); haptic.success(); }}
+                onPress={async () => { await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate }); setNewWeight(''); setShowAddWeight(false); haptic.success(); toast.success('Peso registrado'); }}
               >
                 {addWeight.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
               </TouchableOpacity>
@@ -1194,7 +1201,7 @@ export default function HorseDetailScreen() {
               <TouchableOpacity
                 style={[s.btn, s.btnPrimary, { flex: 1 }, (!medicalForm.name.trim() || addMedical.isPending) && { opacity: 0.5 }]}
                 disabled={!medicalForm.name.trim() || addMedical.isPending}
-                onPress={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); haptic.success(); }}
+                onPress={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); haptic.success(); toast.success('Registro médico agregado'); }}
                 activeOpacity={0.85}
               >
                 {addMedical.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
@@ -1251,6 +1258,7 @@ export default function HorseDetailScreen() {
                 onPress={async () => {
                   await assignVet.mutateAsync(selectedVetId);
                   haptic.success();
+                  toast.success('Veterinario asignado');
                   setShowAssignVet(false);
                   setSelectedVetId('');
                 }}
@@ -1308,6 +1316,7 @@ export default function HorseDetailScreen() {
                 onPress={async () => {
                   await assignMember.mutateAsync(selectedMemberId);
                   haptic.success();
+                  toast.success('Miembro asignado');
                   setShowAssignTeam(false);
                   setSelectedMemberId('');
                 }}

@@ -23,6 +23,7 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
 import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge';
+import { useToast } from '../../components/Toast';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -248,6 +249,7 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
 
 function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
   const { changePassword } = useAuth();
+  const toast = useToast();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -262,7 +264,7 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
     setSaving(true);
     try {
       await changePassword(current, newPass);
-      Alert.alert('Contraseña actualizada', 'Tu contraseña fue cambiada correctamente.');
+      toast.success('Contraseña actualizada');
       setCurrent(''); setNewPass(''); setConfirm('');
       onClose();
     } catch {
@@ -329,6 +331,7 @@ function AvatarColorSection({ user, c, s }: {
   c: ThemeColors; s: Styles;
 }) {
   const { updateProfile } = useAuth();
+  const toast = useToast();
   const [saving, setSaving] = useState<string | null>(null);
   const current = user.avatar_color ?? null;
 
@@ -338,8 +341,9 @@ function AvatarColorSection({ user, c, s }: {
     setSaving(id ?? 'auto');
     try {
       await updateProfile({ avatar_color: id });
+      toast.success('Color actualizado');
     } catch {
-      Alert.alert('Error', 'No se pudo guardar el color. Intentá de nuevo.');
+      toast.error('No se pudo guardar el color. Intentá de nuevo.');
     } finally {
       setSaving(null);
     }
@@ -401,6 +405,7 @@ function ContactSection({ user, c, s }: {
   c: ThemeColors; s: Styles;
 }) {
   const { updateProfile } = useAuth();
+  const toast = useToast();
   const [phone, setPhone] = useState(user.phone ?? '');
   const [optIn, setOptIn] = useState(!!user.whatsapp_opt_in);
   const [savingPhone, setSavingPhone] = useState(false);
@@ -411,8 +416,9 @@ function ContactSection({ user, c, s }: {
     setSavingPhone(true);
     try {
       await updateProfile({ phone: phone.trim() || null });
+      toast.success('Teléfono guardado');
     } catch {
-      Alert.alert('Error', 'No se pudo guardar el teléfono. Intentá de nuevo.');
+      toast.error('No se pudo guardar el teléfono. Intentá de nuevo.');
     } finally {
       setSavingPhone(false);
     }
@@ -426,7 +432,7 @@ function ContactSection({ user, c, s }: {
       await updateProfile({ whatsapp_opt_in: next });
     } catch {
       setOptIn(!next); // revertir en caso de error
-      Alert.alert('Error', 'No se pudo actualizar la preferencia. Intentá de nuevo.');
+      toast.error('No se pudo actualizar la preferencia. Intentá de nuevo.');
     } finally {
       setTogglingOptIn(false);
     }
@@ -499,6 +505,7 @@ function VetLicenseSection({ user, c, s }: {
   c: ThemeColors; s: Styles;
 }) {
   const { refreshUser } = useAuth();
+  const toast = useToast();
   const [number, setNumber] = useState(user.vet_license_number ?? '');
   const [province, setProvince] = useState(user.vet_province ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -510,7 +517,7 @@ function VetLicenseSection({ user, c, s }: {
   const pickPhoto = async () => {
     const { status: perm } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para adjuntar la foto de la matrícula.');
+      toast.error('Necesitamos acceso a tu galería para adjuntar la foto de la matrícula.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
@@ -519,7 +526,7 @@ function VetLicenseSection({ user, c, s }: {
 
   const handleSubmit = async () => {
     if (!number.trim() || !province.trim()) {
-      Alert.alert('Datos incompletos', 'Ingresá el número de matrícula y la provincia.');
+      toast.error('Ingresá el número de matrícula y la provincia.');
       return;
     }
     haptic.medium();
@@ -534,9 +541,9 @@ function VetLicenseSection({ user, c, s }: {
       await api.post('/auth/vet-license', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       await refreshUser();
       setPhotoUri(null);
-      Alert.alert('Matrícula enviada', 'Un administrador va a validar tu matrícula.');
+      toast.success('Matrícula enviada. Un administrador va a validarla.');
     } catch {
-      Alert.alert('Error', 'No se pudo enviar la matrícula. Intentá de nuevo.');
+      toast.error('No se pudo enviar la matrícula. Intentá de nuevo.');
     } finally {
       setSaving(false);
     }
