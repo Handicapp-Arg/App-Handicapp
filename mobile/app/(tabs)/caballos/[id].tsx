@@ -45,6 +45,10 @@ import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
 
+// Base URL para el enlace público del caballo (QR). Configurable via EXPO_PUBLIC_APP_URL
+// (ej. IP LAN http://192.168.x.x:3005) para que el QR sea accesible desde otros dispositivos.
+const PUBLIC_BASE = process.env.EXPO_PUBLIC_APP_URL ?? 'https://app.handicapp.com';
+
 type Tab = 'info' | 'historial' | 'medico' | 'fotos' | 'pedigree' | 'finanzas';
 
 type TabIcon = LucideIcon;
@@ -1121,12 +1125,12 @@ export default function HorseDetailScreen() {
             <View style={s.qrWrap}>
               <View style={s.qrInner}>
                 {horse.public_token && (
-                  <QRCode value={`https://app.handicapp.com/caballo/${horse.public_token}`} size={200} color="#111827" backgroundColor="#ffffff" />
+                  <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={200} color="#111827" backgroundColor="#ffffff" />
                 )}
               </View>
             </View>
             <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
-            <TouchableOpacity style={s.qrLinkBtn} onPress={() => Alert.alert('Enlace', `https://app.handicapp.com/caballo/${horse.public_token}`, [{ text: 'OK' }])} activeOpacity={0.85}>
+            <TouchableOpacity style={s.qrLinkBtn} onPress={() => Alert.alert('Enlace', `${PUBLIC_BASE}/caballo/${horse.public_token}`, [{ text: 'OK' }])} activeOpacity={0.85}>
               <Link2 size={15} color={c.brand} strokeWidth={2.2} />
               <Text style={s.qrLinkBtnText}>Ver enlace</Text>
             </TouchableOpacity>

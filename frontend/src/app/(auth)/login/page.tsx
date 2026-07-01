@@ -21,9 +21,13 @@ function EyeIcon({ open }: { open: boolean }) {
 // Solo en desarrollo: en producción el bundler elimina este array (no expone credenciales).
 const testUsers = process.env.NODE_ENV === 'production' ? [] : [
   { email: 'admin@handicapp.com',          password: 'handicapp2026', label: 'Admin' },
-  { email: 'propietario@handicapp.com',    password: 'handicapp2026', label: 'Propietario' },
   { email: 'establecimiento@handicapp.com', password: 'handicapp2026', label: 'Establecimiento' },
+  { email: 'propietario@handicapp.com',    password: 'handicapp2026', label: 'Propietario' },
+  { email: 'propietario2@handicapp.com',   password: 'handicapp2026', label: 'Propietario 2' },
   { email: 'veterinario@handicapp.com',    password: 'handicapp2026', label: 'Veterinario' },
+  { email: 'encargado@handicapp.com',      password: 'handicapp2026', label: 'Encargado' },
+  { email: 'jinete@handicapp.com',         password: 'handicapp2026', label: 'Jinete' },
+  { email: 'peon@handicapp.com',           password: 'handicapp2026', label: 'Peón' },
 ];
 
 function LoginForm() {

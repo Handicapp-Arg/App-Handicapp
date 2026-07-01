@@ -33,6 +33,11 @@ import type { Event } from '@/types';
 
 /* ─── Constants ─── */
 
+// Base URL usada para los enlaces públicos (QR, compartir).
+// Configurable via NEXT_PUBLIC_PUBLIC_BASE_URL (ej. IP LAN http://192.168.x.x:3005)
+// para que el QR sea accesible desde otros dispositivos. Sin la env usa el origin actual.
+const PUBLIC_BASE = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+
 const typeBadge: Record<string, { label: string; cls: string }> = {
   salud:         { label: 'Salud',         cls: 'bg-red-50 text-red-700' },
   entrenamiento: { label: 'Entrenamiento', cls: 'bg-yellow-50 text-yellow-700' },
@@ -1382,7 +1387,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const handleShare = async () => {
     try {
       const { data } = await api.post(`/horses/${id}/share`);
-      const link = `${window.location.origin}/historial/${data.token}`;
+      const link = `${PUBLIC_BASE}/historial/${data.token}`;
       await navigator.clipboard.writeText(link);
       toast.success('Enlace copiado al portapapeles', { title: 'Válido 72 horas' });
     } catch {
@@ -3062,7 +3067,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <div className="p-6 flex flex-col items-center gap-4">
                 <div className="rounded-2xl bg-white p-3 shadow-inner border border-gray-100">
                   <QRCode
-                    value={`${window.location.origin}/caballo/${horse.public_token}`}
+                    value={`${PUBLIC_BASE}/caballo/${horse.public_token}`}
                     size={200}
                     fgColor="#9d6c35"
                     bgColor="#ffffff"
@@ -3075,7 +3080,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="w-full space-y-2">
                   <button
                     onClick={() => {
-                      const url = `${window.location.origin}/caballo/${horse.public_token}`;
+                      const url = `${PUBLIC_BASE}/caballo/${horse.public_token}`;
                       navigator.clipboard.writeText(url);
                       toast.success('Enlace copiado');
                     }}
@@ -3111,7 +3116,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
               <div id="qr-modal" className="hidden">
-                <QRCode value={`${window.location.origin}/caballo/${horse.public_token}`} size={400} fgColor="#9d6c35" bgColor="#ffffff" />
+                <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={400} fgColor="#9d6c35" bgColor="#ffffff" />
               </div>
             </div>
           </div>

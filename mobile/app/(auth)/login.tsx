@@ -18,6 +18,9 @@ const DEV_USERS = [
   { email: 'propietario@handicapp.com',     password: 'handicapp2026', name: 'Juan Propietario',      role: 'Propietario' },
   { email: 'propietario2@handicapp.com',    password: 'handicapp2026', name: 'Maria Propietaria',     role: 'Propietario' },
   { email: 'veterinario@handicapp.com',     password: 'handicapp2026', name: 'Dr. Pablo Veterinario', role: 'Veterinario' },
+  { email: 'encargado@handicapp.com',       password: 'handicapp2026', name: 'Carlos Encargado',      role: 'Encargado' },
+  { email: 'jinete@handicapp.com',          password: 'handicapp2026', name: 'Diego Jinete',          role: 'Jinete' },
+  { email: 'peon@handicapp.com',            password: 'handicapp2026', name: 'Ramón Peón',            role: 'Peón' },
 ];
 
 function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password: string) => void; c: ThemeColors; s: Styles }) {
