@@ -48,6 +48,21 @@ export class MedicalController {
     res.end(Buffer.from(pdf));
   }
 
+  @Get('health-certificate')
+  async downloadHealthCertificate(
+    @Param('horseId') horseId: string,
+    @GetUser() user: User,
+    @Res() res: Response,
+  ) {
+    const { pdf, filename } = await this.medicalService.generateHealthCertificatePdf(horseId, user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdf.length,
+    });
+    res.end(Buffer.from(pdf));
+  }
+
   @Delete(':recordId')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(

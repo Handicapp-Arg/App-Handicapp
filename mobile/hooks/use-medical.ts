@@ -115,3 +115,32 @@ export function useDownloadMedicalPdf(horseId: string, horseName: string) {
 
   return { download, loading };
 }
+
+export function useDownloadHealthCertificate(horseId: string, horseName: string) {
+  const [loading, setLoading] = useState(false);
+
+  const download = async () => {
+    setLoading(true);
+    try {
+      const baseUrl = (api.defaults.baseURL ?? '').replace(/\/$/, '');
+      const token = await getToken();
+      const url = `${baseUrl}/horses/${horseId}/medical/health-certificate`;
+      const safeName = horseName.replace(/[^a-zA-Z0-9]/g, '_');
+      const localUri = `${FileSystem.cacheDirectory}certificado-sanitario-${safeName}.pdf`;
+
+      const result = await FileSystem.downloadAsync(url, localUri, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (result.status === 200) {
+        await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+      } else {
+        throw new Error(`Certificate download failed with status ${result.status}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { download, loading };
+}

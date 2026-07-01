@@ -9,7 +9,8 @@ import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent, useSh
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
-import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, useDownloadHealthCertificate, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
+import { usePlanStatus } from '@/hooks/use-plan';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '@/hooks/use-event-comments';
 import { useCreateBoardingRequest, useBoardingRequests } from '@/hooks/use-boarding-requests';
 import { useQuery } from '@tanstack/react-query';
@@ -792,6 +793,13 @@ interface MedicalSectionProps {
 
 function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, onCertify, isPending, horseId, horseName }: MedicalSectionProps) {
   const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(horseId, horseName);
+  const { download: downloadCert, loading: certLoading } = useDownloadHealthCertificate(horseId, horseName);
+  const { user } = useAuth();
+  const { data: planStatus } = usePlanStatus();
+  // Gating (doble condición): vet con matrícula aprobada + feature del plan.
+  const isApprovedVet = user?.role === 'veterinario' && user?.vet_license_status === 'approved';
+  const hasLibretaFeature = planStatus?.features?.includes('libreta_digital') ?? false;
+  const canCertify = isApprovedVet && hasLibretaFeature;
   const inputCls = 'w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none';
   return (
     <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm lg:rounded-2xl lg:border-gray-200">
@@ -810,6 +818,19 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
           </h2>
         </div>
         <div className="flex items-center gap-2">
+          {isApprovedVet && (
+            <button
+              onClick={downloadCert}
+              disabled={certLoading || !canCertify}
+              title={canCertify ? 'Emitir certificado oficial de libreta sanitaria' : 'Requiere plan Pro + matrícula aprobada'}
+              className="flex items-center gap-1 rounded-lg bg-[var(--color-primary)] px-2.5 py-1.5 text-[10px] font-semibold text-white hover:opacity-90 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.745 3.745 0 0 1 3.296-1.043A3.745 3.745 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 0 1 3.296 1.043 3.745 3.745 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+              </svg>
+              {certLoading ? 'Emitiendo...' : 'Emitir certificado'}
+            </button>
+          )}
           {records.length > 0 && (
             <button
               onClick={downloadPdf}

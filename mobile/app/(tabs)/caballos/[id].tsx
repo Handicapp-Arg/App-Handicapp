@@ -24,7 +24,8 @@ import QRCode from 'react-native-qrcode-svg';
 import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseAssignees, useHorseOrgMembers, useAssignMember, useRemoveMember, useTransferHorse, usePropietarios, useHorseMovements, useUploadDocument, useDeleteDocument } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
-import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, SANITARY_DISEASES, healthStatusFromNextDue, type HealthStatus, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, useDownloadHealthCertificate, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, SANITARY_DISEASES, healthStatusFromNextDue, type HealthStatus, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
+import { usePlanStatus } from '../../../hooks/use-plan';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { useEventsByHorse, useCreateEvent } from '../../../hooks/use-events';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
@@ -230,6 +231,11 @@ export default function HorseDetailScreen() {
   const addMedical = useAddMedicalRecord(id);
   const deleteMedical = useDeleteMedicalRecord(id);
   const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(id, horse?.name ?? '');
+  const { download: downloadCert, loading: certLoading } = useDownloadHealthCertificate(id, horse?.name ?? '');
+  const { data: planStatus } = usePlanStatus();
+  // Gating (doble condición): vet con matrícula aprobada + feature del plan.
+  const isApprovedVet = user?.role === 'veterinario' && user?.vet_license_status === 'approved';
+  const canCertify = isApprovedVet && (planStatus?.features?.includes('libreta_digital') ?? false);
 
   // Vets
   const { data: horseVets } = useHorseVets(id);
@@ -918,6 +924,24 @@ export default function HorseDetailScreen() {
                 </View>
               );
             })}
+            {isApprovedVet && (
+              <TouchableOpacity
+                style={[s.certifyBtn, !canCertify && { opacity: 0.4 }]}
+                disabled={certLoading || !canCertify}
+                onPress={() => {
+                  if (!canCertify) {
+                    Alert.alert('Certificado no disponible', 'Requiere plan Pro + matrícula aprobada.');
+                    return;
+                  }
+                  haptic.light();
+                  downloadCert();
+                }}
+                activeOpacity={0.85}
+              >
+                <ShieldCheck size={15} color="#fff" strokeWidth={2.2} />
+                <Text style={s.certifyBtnText}>{certLoading ? 'Emitiendo...' : 'Emitir certificado'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {!medicalRecords?.length ? (
@@ -1696,6 +1720,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   healthBadgeText: { fontSize: 9, fontWeight: '700' },
   healthCertifyBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.brand, paddingHorizontal: 10, paddingVertical: 5 },
   healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
+  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: 10, marginTop: 2 },
+  certifyBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   medCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },

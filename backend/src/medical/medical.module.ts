@@ -5,9 +5,10 @@ import { MedicalService } from './medical.service';
 import { MedicalRecord } from './medical-record.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
+import { PlansModule } from '../plans/plans.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MedicalRecord, Horse, HorseUser])],
+  imports: [TypeOrmModule.forFeature([MedicalRecord, Horse, HorseUser]), PlansModule],
   controllers: [MedicalController],
   providers: [MedicalService],
 })

@@ -79,3 +79,25 @@ export function useDownloadMedicalPdf(horseId: string, horseName: string) {
 
   return { download, loading };
 }
+
+export function useDownloadHealthCertificate(horseId: string, horseName: string) {
+  const [loading, setLoading] = useState(false);
+
+  const download = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/horses/${horseId}/medical/health-certificate`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      const safeName = horseName.replace(/[^a-zA-Z0-9]/g, '_');
+      a.href = url;
+      a.download = `certificado-sanitario-${safeName}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { download, loading };
+}
