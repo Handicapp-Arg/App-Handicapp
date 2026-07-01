@@ -65,6 +65,22 @@ export function useUpdatePlan() {
   });
 }
 
+export interface SubscribeResult {
+  init_point: string;
+  preapproval_id: string;
+}
+
+/**
+ * Inicia una suscripción de MercadoPago para el plan indicado.
+ * En onSuccess NO invalidamos nada: el caller redirige el navegador a `init_point`.
+ */
+export function useSubscribe() {
+  return useMutation<SubscribeResult, unknown, { plan_id: string }>({
+    mutationFn: async ({ plan_id }) =>
+      (await api.post('/payments/subscribe', { plan_id })).data,
+  });
+}
+
 export function useActivatePro() {
   const queryClient = useQueryClient();
   return useMutation({

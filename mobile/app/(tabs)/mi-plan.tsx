@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, ActivityIndicator, Pressable, Linking } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Check, Sparkles } from 'lucide-react-native';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -9,8 +9,16 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes } from '../../lib/routes';
 import {
-  usePlanStatus, usePlanCatalog, type Plan, type PlanRoleTarget,
+  usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget,
 } from '../../hooks/use-plan';
+
+/** Extrae un mensaje de error legible de una respuesta de axios. */
+function errMessage(err: unknown, fallback: string): string {
+  const m = err && typeof err === 'object' && 'response' in err
+    ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+    : null;
+  return m || fallback;
+}
 
 const FEATURE_LABELS: Record<string, string> = {
   whatsapp: 'WhatsApp',
@@ -40,6 +48,22 @@ function FeatureChip({ label, c, s }: { label: string; c: ThemeColors; s: Styles
 }
 
 function PlanCard({ plan, current, c, s }: { plan: Plan; current: boolean; c: ThemeColors; s: Styles }) {
+  const subscribe = useSubscribe();
+  const [error, setError] = useState('');
+  // Solo se puede pagar un plan que no es el actual y que tiene precio.
+  const canSubscribe = !current && plan.price_ars > 0;
+
+  const handleSubscribe = async () => {
+    setError('');
+    try {
+      const data = await subscribe.mutateAsync({ plan_id: plan.id });
+      // Abre MercadoPago para autorizar el cobro.
+      await Linking.openURL(data.init_point);
+    } catch (err: unknown) {
+      setError(errMessage(err, 'No se pudo iniciar el pago. MercadoPago no está configurado.'));
+    }
+  };
+
   return (
     <View style={[s.planCard, current && s.planCardCurrent]}>
       {current && (
@@ -57,6 +81,25 @@ function PlanCard({ plan, current, c, s }: { plan: Plan; current: boolean; c: Th
       {plan.features.length > 0 && (
         <View style={s.chipRow}>
           {plan.features.map((f) => <FeatureChip key={f} label={featureLabel(f)} c={c} s={s} />)}
+        </View>
+      )}
+      {canSubscribe && (
+        <View style={{ gap: space[2], marginTop: space[1] }}>
+          <Pressable
+            onPress={handleSubscribe}
+            disabled={subscribe.isPending}
+            style={({ pressed }) => [s.subBtn, (pressed || subscribe.isPending) && { opacity: 0.6 }]}
+          >
+            {subscribe.isPending ? (
+              <>
+                <ActivityIndicator size="small" color={colors.white} />
+                <Text style={s.subBtnText}>Redirigiendo…</Text>
+              </>
+            ) : (
+              <Text style={s.subBtnText}>Suscribirme</Text>
+            )}
+          </Pressable>
+          {error ? <Text style={s.subError}>{error}</Text> : null}
         </View>
       )}
     </View>
@@ -161,13 +204,7 @@ export default function MiPlanScreen() {
               ))}
             </View>
 
-            {/* CTA informativo (pago = fase futura) */}
-            <View style={s.ctaBox}>
-              <View style={s.ctaBtn}>
-                <Text style={s.ctaBtnText}>Actualizar plan</Text>
-              </View>
-              <Text style={s.ctaHint}>Pronto vas a poder actualizar tu plan desde acá.</Text>
-            </View>
+            <Text style={s.payHint}>El pago se procesa de forma segura con MercadoPago.</Text>
           </>
         )}
       </ScrollView>
@@ -247,17 +284,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   planPrice: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
   planLimit: { fontSize: text.sm, color: c.textMuted },
 
-  /* CTA */
-  ctaBox: {
-    marginTop: space[5], alignItems: 'center', gap: space[2],
-    borderWidth: 1, borderColor: c.border, borderStyle: 'dashed',
-    borderRadius: radius.lg, backgroundColor: c.surfaceAlt, padding: space[4],
-  },
-  ctaBtn: {
-    backgroundColor: c.surfaceAlt, borderRadius: radius.md,
-    borderWidth: 1, borderColor: c.borderStrong,
+  /* Suscripción */
+  subBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
+    backgroundColor: c.brand, borderRadius: radius.md,
     paddingHorizontal: space[5], paddingVertical: space[2] + 2,
   },
-  ctaBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
-  ctaHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center' },
+  subBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  subError: { fontSize: text.xs, fontWeight: weight.medium, color: '#ef4444' },
+
+  payHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[4] },
 });

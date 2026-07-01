@@ -7,7 +7,7 @@ import { useFeed } from '@/hooks/use-feed';
 import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
 import { Spinner } from '@/components/ui/skeleton';
-import { usePlanStatus, usePlanCatalog, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
+import { usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -90,8 +90,32 @@ function FeatureChip({ label, active = true }: { label: string; active?: boolean
   );
 }
 
+/** Extrae un mensaje de error legible de una respuesta de axios. */
+function errMessage(err: unknown, fallback: string): string {
+  const m = err && typeof err === 'object' && 'response' in err
+    ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+    : null;
+  return m || fallback;
+}
+
 /** Tarjeta de un plan del catálogo. */
 function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
+  const subscribe = useSubscribe();
+  const [error, setError] = useState('');
+  // Solo se puede pagar un plan que no es el actual y que tiene precio.
+  const canSubscribe = !current && plan.price_ars > 0;
+
+  const handleSubscribe = async () => {
+    setError('');
+    try {
+      const data = await subscribe.mutateAsync({ plan_id: plan.id });
+      // Redirige el navegador a MercadoPago para autorizar el cobro.
+      window.location.href = data.init_point;
+    } catch (err: unknown) {
+      setError(errMessage(err, 'No se pudo iniciar el pago. MercadoPago no está configurado.'));
+    }
+  };
+
   return (
     <div
       className={`relative flex flex-col rounded-2xl border p-5 transition ${
@@ -117,6 +141,18 @@ function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
           {plan.features.map((f) => (
             <FeatureChip key={f} label={featureLabel(f)} />
           ))}
+        </div>
+      )}
+      {canSubscribe && (
+        <div className="mt-4 space-y-2">
+          <button
+            onClick={handleSubscribe}
+            disabled={subscribe.isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-clay-600 active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {subscribe.isPending ? <><Spinner size="sm" color="white" /> Redirigiendo…</> : 'Suscribirme'}
+          </button>
+          {error && <p className="text-xs font-medium text-red-500">{error}</p>}
         </div>
       )}
     </div>
@@ -216,15 +252,9 @@ function MiPlan({ role }: { role?: string }) {
                 <PlanCard key={p.id} plan={p} current={status?.plan === p.tier_key} />
               ))}
             </div>
-            <div className="mt-5 flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4 text-center dark:bg-gray-500/5">
-              <button
-                disabled
-                className="cursor-not-allowed rounded-xl bg-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-              >
-                Actualizar plan
-              </button>
-              <p className="text-xs text-gray-400">Pronto vas a poder actualizar tu plan desde acá.</p>
-            </div>
+            <p className="mt-4 text-center text-xs text-gray-400">
+              El pago se procesa de forma segura con MercadoPago.
+            </p>
           </>
         )}
       </SectionCard>

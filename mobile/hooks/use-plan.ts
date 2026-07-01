@@ -54,6 +54,22 @@ export function usePlanCatalog() {
   });
 }
 
+export interface SubscribeResult {
+  init_point: string;
+  preapproval_id: string;
+}
+
+/**
+ * Inicia una suscripción de MercadoPago para el plan indicado.
+ * En onSuccess NO invalidamos nada: el caller abre `init_point` con Linking.
+ */
+export function useSubscribe() {
+  return useMutation<SubscribeResult, unknown, { plan_id: string }>({
+    mutationFn: async ({ plan_id }) =>
+      (await api.post('/payments/subscribe', { plan_id })).data,
+  });
+}
+
 export function useAdminPlanUsers(enabled = true) {
   return useQuery<AdminPlanUser[]>({
     queryKey: ['admin-plan-users'],
