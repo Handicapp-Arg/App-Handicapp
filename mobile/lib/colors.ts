@@ -39,4 +39,5 @@ export const eventTypeColors: Record<string, { bg: string; text: string; label: 
   gasto:         { bg: '#faf3e9',       text: colors.brand,     label: 'Gasto' },
   nota:          { bg: colors.gray100,  text: colors.gray700,   label: 'Nota' },
   carrera:       { bg: '#fef3c7',       text: '#92400e',        label: 'Carrera' },
+  tarea:         { bg: '#f0fdfa',       text: '#0f766e',        label: 'Tarea' },
 };

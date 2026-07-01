@@ -10,6 +10,7 @@ export const EVENT_TYPES: EventTypeMeta[] = [
   { value: EventType.ENTRENAMIENTO, label: 'Entrenamiento' },
   { value: EventType.GASTO, label: 'Gasto' },
   { value: EventType.NOTA, label: 'Nota' },
+  { value: EventType.TAREA, label: 'Tarea' },
 ];
 
 export const EVENT_TYPE_LABEL_MAP: Record<string, string> = Object.fromEntries(

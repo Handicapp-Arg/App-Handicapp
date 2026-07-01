@@ -20,6 +20,7 @@ export enum EventType {
   GASTO = 'gasto',
   NOTA = 'nota',
   CARRERA = 'carrera',
+  TAREA = 'tarea',
 }
 
 export enum ExpenseCategory {
@@ -37,7 +38,9 @@ export class Event {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: EventType })
+  // Guardado como varchar (no enum de Postgres) para poder agregar tipos nuevos
+  // sin depender de ALTER TYPE. La validación de valores vive en el DTO (EventType).
+  @Column({ type: 'varchar' })
   type: EventType;
 
   @Column('text')

@@ -191,6 +191,7 @@ export interface Pedigree {
 export enum EventType {
   SALUD = 'salud',
   ENTRENAMIENTO = 'entrenamiento',
+  TAREA = 'tarea',
   GASTO = 'gasto',
   NOTA = 'nota',
 }

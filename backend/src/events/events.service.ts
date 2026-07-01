@@ -2,11 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Event } from './event.entity';
+import { Event, EventType } from './event.entity';
 import { EventPhoto } from './event-photo.entity';
 import { EventComment } from './event-comment.entity';
 import { FeedPost } from '../feed/feed-post.entity';
@@ -43,11 +44,28 @@ export class EventsService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  // Gating por rol: jinete solo registra entrenamientos, peón solo tareas.
+  // Otros roles: sin restricción de tipo.
+  private assertTypeAllowedForRole(type: EventType, user: User): void {
+    if (user.role === 'jinete' && type !== EventType.ENTRENAMIENTO) {
+      throw new BadRequestException(
+        'El rol jinete solo puede registrar eventos de tipo entrenamiento',
+      );
+    }
+    if (user.role === 'peon' && type !== EventType.TAREA) {
+      throw new BadRequestException(
+        'El rol peón solo puede registrar eventos de tipo tarea',
+      );
+    }
+  }
+
   async create(
     dto: CreateEventDto,
     user: User,
     files?: Express.Multer.File[],
   ): Promise<Event> {
+    this.assertTypeAllowedForRole(dto.type, user);
+
     const horse = await this.horseRepository.findOne({
       where: { id: dto.horse_id },
     });
@@ -147,6 +165,8 @@ export class EventsService {
   }
 
   async createBulk(dto: CreateBulkEventDto, user: User): Promise<Event[]> {
+    this.assertTypeAllowedForRole(dto.type, user);
+
     const horses = await this.horseRepository.find({
       where: { id: In(dto.horse_ids) },
     });

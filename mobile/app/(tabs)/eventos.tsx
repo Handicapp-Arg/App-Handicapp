@@ -24,7 +24,20 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { useCommonStyles } from '../../styles/common';
 
-const TYPE_OPTIONS = ['salud', 'entrenamiento', 'carrera', 'gasto', 'nota'] as const;
+const TYPE_OPTIONS = ['salud', 'entrenamiento', 'tarea', 'carrera', 'gasto', 'nota'] as const;
+
+// Gating por rol en la UI: jinete solo "entrenamiento", peón solo "tarea".
+function visibleTypeOptions(role?: string): readonly string[] {
+  if (role === 'jinete') return ['entrenamiento'];
+  if (role === 'peon') return ['tarea'];
+  return TYPE_OPTIONS;
+}
+
+function defaultTypeForRole(role?: string): string {
+  if (role === 'jinete') return 'entrenamiento';
+  if (role === 'peon') return 'tarea';
+  return 'salud';
+}
 
 const EXPENSE_CATEGORIES_MOBILE = [
   { value: 'alimentacion',  label: 'Alimento',     Icon: Wheat,    color: '#16a34a' },
@@ -40,10 +53,12 @@ const EXPENSE_CATEGORIES_MOBILE = [
 
 function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
   const { typography, modal: modalStyle, input: inputStyle, button } = useCommonStyles();
+  const { user } = useAuth();
+  const typeOpts = visibleTypeOptions(user?.role);
   const { data: horses } = useHorses();
   const createEvent = useCreateEvent();
   const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
-  const [type, setType] = useState<string>('salud');
+  const [type, setType] = useState<string>(() => defaultTypeForRole(user?.role));
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState('');
@@ -109,7 +124,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
           <View style={{ gap: space[2] }}>
             <Text style={typography.label}>Tipo</Text>
             <View style={s.typeGrid}>
-              {TYPE_OPTIONS.map((t) => {
+              {typeOpts.map((t) => {
                 const ec = eventTypeColors[t];
                 const active = type === t;
                 return (
@@ -240,7 +255,8 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
 /* ─── Pantalla principal ─── */
 
 export default function EventosScreen() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const filterTypeOptions = visibleTypeOptions(user?.role);
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const { layout, typography } = useCommonStyles();
@@ -276,7 +292,7 @@ export default function EventosScreen() {
         contentContainerStyle={s.filterRow}
         style={{ maxHeight: 48 }}
       >
-        {(['', ...TYPE_OPTIONS] as string[]).map((t) => (
+        {(['', ...filterTypeOptions] as string[]).map((t) => (
           <TouchableOpacity
             key={t}
             style={[s.filterChip, filterType === t && s.filterChipActive]}

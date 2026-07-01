@@ -21,6 +21,7 @@ import type { Event } from '@/types';
 const typeOptions = [
   { value: 'salud', label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30' },
   { value: 'entrenamiento', label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30' },
+  { value: 'tarea', label: 'Tarea', color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30' },
   { value: 'gasto', label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30' },
   { value: 'nota', label: 'Nota', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 ];
@@ -28,9 +29,23 @@ const typeOptions = [
 const typeBadge: Record<string, string> = {
   salud: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300',
   entrenamiento: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
+  tarea: 'bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
   gasto: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
   nota: 'bg-gray-100 text-gray-700',
 };
+
+// Gating por rol en la UI: jinete solo ve "entrenamiento", peón solo "tarea".
+function visibleTypeOptions(role?: string) {
+  if (role === 'jinete') return typeOptions.filter((t) => t.value === 'entrenamiento');
+  if (role === 'peon') return typeOptions.filter((t) => t.value === 'tarea');
+  return typeOptions;
+}
+
+function defaultTypeForRole(role?: string) {
+  if (role === 'jinete') return 'entrenamiento';
+  if (role === 'peon') return 'tarea';
+  return 'salud';
+}
 
 type ViewMode = 'calendar' | 'list';
 
@@ -183,6 +198,8 @@ function HorseSelector({
 }
 
 function EditEventModal({ event, onClose }: { event: Event; onClose: () => void }) {
+  const { user } = useAuth();
+  const options = visibleTypeOptions(user?.role);
   const updateEvent = useUpdateEvent();
   const [type, setType] = useState(event.type as string);
   const [description, setDescription] = useState(event.description);
@@ -208,7 +225,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Tipo</label>
         <div className="grid grid-cols-2 gap-2">
-          {typeOptions.map((t) => (
+          {options.map((t) => (
             <button key={t.value} type="button" onClick={() => setType(t.value)}
               className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
                 type === t.value ? t.color + ' font-semibold' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -298,10 +315,12 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
 }
 
 function CreateEventModal({ horses, onClose }: { horses: { id: string; name: string }[]; onClose: () => void }) {
+  const { user } = useAuth();
+  const options = visibleTypeOptions(user?.role);
   const [selectedIds, setSelectedIds] = useState<string[]>(
     horses.length === 1 ? [horses[0].id] : [],
   );
-  const [type, setType] = useState('salud');
+  const [type, setType] = useState(() => defaultTypeForRole(user?.role));
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState('');
@@ -347,7 +366,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Tipo</label>
         <div className="grid grid-cols-2 gap-2">
-          {typeOptions.map((t) => (
+          {options.map((t) => (
             <button
               key={t.value}
               type="button"
@@ -474,7 +493,8 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
 }
 
 export default function EventosPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const filterTypeOptions = visibleTypeOptions(user?.role);
   const { data: horses, isLoading: loadingHorses } = useHorses();
   const [view, setView] = useState<ViewMode>('list');
   const [filterHorseId, setFilterHorseId] = useState('');
@@ -569,7 +589,7 @@ export default function EventosPage() {
           className="rounded-lg border border-gray-200 bg-[var(--surface-card)] px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none"
         >
           <option value="">Todos los tipos</option>
-          {typeOptions.map((t) => (
+          {filterTypeOptions.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
