@@ -99,8 +99,9 @@ export class OrganizationsController {
 export class InvitationsController {
   constructor(private readonly service: OrganizationsService) {}
 
+  // Público (sin guard): permite ver la invitación para poder registrarse desde el link
+  // sin tener cuenta todavía. Aceptar sí requiere estar autenticado (POST :token/accept).
   @Get(':token')
-  @UseGuards(AuthGuard('jwt'))
   async getByToken(@Param('token') token: string) {
     const { invitation, organization, inviter } = await this.service.getInvitationByToken(token);
     return {

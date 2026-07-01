@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ChevronDown, Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useInvitationByToken, ROLE_LABELS } from '@/hooks/use-organizations';
 import api from '@/lib/api';
 
 const roleInfo: Record<string, { label: string; desc: string }> = {
@@ -18,8 +20,14 @@ interface RoleOption {
   name: string;
 }
 
-export default function RegistroPage() {
+function RegistroForm() {
   const { register } = useAuth();
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get('invitation') || '';
+
+  // Cuando hay token, mostramos la info de la invitación y ocultamos el selector de rol.
+  const { data: invitation } = useInvitationByToken(invitationToken || null);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,20 +39,29 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Con invitación no hace falta elegir rol (lo define la invitación).
+    if (invitationToken) return;
     api.get('/roles').then(({ data }) => {
       setRoles(data);
       if (data.length > 0) setRole(data[0].name);
     });
-  }, []);
+  }, [invitationToken]);
+
+  // Prefijar el email de la invitación (debe coincidir en el backend).
+  useEffect(() => {
+    if (invitation?.email) setEmail(invitation.email);
+  }, [invitation?.email]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await register(email, password, name, role);
+      // Con invitación el backend ignora el rol enviado y usa el de la invitación,
+      // pero el DTO exige un rol no vacío.
+      await register(email, password, name, invitationToken ? 'propietario' : role, invitationToken || undefined);
     } catch {
-      setError('Error al registrar. El email puede estar en uso.');
+      setError('Error al registrar. El email puede estar en uso o no coincidir con la invitación.');
     } finally {
       setLoading(false);
     }
@@ -56,8 +73,17 @@ export default function RegistroPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
-        <p className="mt-1 text-sm text-gray-400">Completá tus datos para registrarte</p>
+        <p className="mt-1 text-sm text-gray-400">
+          {invitation ? 'Registrate para unirte a la organización' : 'Completá tus datos para registrarte'}
+        </p>
       </div>
+
+      {invitation && (
+        <div className="rounded-xl border border-clay-200 bg-clay-50 px-4 py-3 text-sm text-gray-700">
+          Te unís a <span className="font-semibold text-gray-900">{invitation.organization.name}</span> como{' '}
+          <span className="font-semibold text-[#c4922a]">{ROLE_LABELS[invitation.role_in_org]}</span>.
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -90,7 +116,8 @@ export default function RegistroPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className={inputClass}
+            readOnly={!!invitation}
+            className={inputClass + (invitation ? ' opacity-70 cursor-not-allowed' : '')}
           />
         </div>
 
@@ -125,46 +152,48 @@ export default function RegistroPage() {
           </div>
         </div>
 
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-500 mb-1.5">Tipo de cuenta</label>
-          <button
-            type="button"
-            onClick={() => setRoleOpen((o) => !o)}
-            className="flex w-full items-center justify-between rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--color-primary)] cursor-pointer"
-          >
-            <span>{roleInfo[role]?.label ?? 'Elegí una opción'}</span>
-            <ChevronDown className={`h-4 w-4 text-[var(--color-bark-400)] transition-transform ${roleOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {roleOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setRoleOpen(false)} />
-              <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] shadow-[var(--shadow-lg)]">
-                {roles.map((r) => {
-                  const info = roleInfo[r.name];
-                  const active = role === r.name;
-                  return (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => { setRole(r.name); setRoleOpen(false); }}
-                      className="flex w-full items-start gap-2 px-4 py-3 text-left transition hover:bg-[var(--sidebar-hover-bg)] cursor-pointer"
-                    >
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-[var(--foreground)]">{info?.label ?? r.name}</div>
-                        {info?.desc && <div className="mt-0.5 text-xs leading-snug text-[var(--color-bark-400)]">{info.desc}</div>}
-                      </div>
-                      {active && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-primary)]" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+        {!invitationToken && (
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-500 mb-1.5">Tipo de cuenta</label>
+            <button
+              type="button"
+              onClick={() => setRoleOpen((o) => !o)}
+              className="flex w-full items-center justify-between rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--color-primary)] cursor-pointer"
+            >
+              <span>{roleInfo[role]?.label ?? 'Elegí una opción'}</span>
+              <ChevronDown className={`h-4 w-4 text-[var(--color-bark-400)] transition-transform ${roleOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {roleOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setRoleOpen(false)} />
+                <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] shadow-[var(--shadow-lg)]">
+                  {roles.map((r) => {
+                    const info = roleInfo[r.name];
+                    const active = role === r.name;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => { setRole(r.name); setRoleOpen(false); }}
+                        className="flex w-full items-start gap-2 px-4 py-3 text-left transition hover:bg-[var(--sidebar-hover-bg)] cursor-pointer"
+                      >
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-[var(--foreground)]">{info?.label ?? r.name}</div>
+                          {info?.desc && <div className="mt-0.5 text-xs leading-snug text-[var(--color-bark-400)]">{info.desc}</div>}
+                        </div>
+                        {active && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-primary)]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <button
           type="submit"
-          disabled={loading || !role}
+          disabled={loading || (!invitationToken && !role)}
           className="w-full rounded-xl py-3 text-sm font-semibold text-white bg-clay-500 hover:bg-clay-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {loading ? (
@@ -175,16 +204,27 @@ export default function RegistroPage() {
               </svg>
               Creando cuenta...
             </span>
-          ) : 'Crear cuenta'}
+          ) : invitation ? 'Crear cuenta y unirme' : 'Crear cuenta'}
         </button>
       </form>
 
       <p className="text-center text-sm text-gray-400">
         ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="font-semibold text-clay-500 hover:text-clay-600 transition">
+        <Link
+          href={invitationToken ? `/login?returnTo=${encodeURIComponent(`/invitacion/${invitationToken}`)}` : '/login'}
+          className="font-semibold text-clay-500 hover:text-clay-600 transition"
+        >
           Iniciá sesión
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function RegistroPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegistroForm />
+    </Suspense>
   );
 }

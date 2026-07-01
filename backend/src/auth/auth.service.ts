@@ -20,6 +20,22 @@ import { RolesService } from '../roles/roles.service';
 import { EmailService } from '../email/email.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { RefreshToken } from './refresh-token.entity';
+import { OrganizationInvitation } from '../organizations/organization-invitation.entity';
+import { OrganizationMember, OrgMemberRole } from '../organizations/organization-member.entity';
+
+/**
+ * Mapea el rol dentro de la organización (role_in_org de la invitación) al
+ * rol de plataforma (user.role). Todos los destinos existen en la tabla de roles.
+ */
+const ORG_ROLE_TO_USER_ROLE: Record<OrgMemberRole, string> = {
+  jinete: 'jinete',
+  peon: 'peon',
+  encargado: 'encargado',
+  vet: 'veterinario',
+  owner_role: 'propietario',
+  staff: 'establecimiento',
+  admin: 'establecimiento',
+};
 
 @Injectable()
 export class AuthService {
@@ -28,6 +44,10 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(OrganizationInvitation)
+    private readonly invitationRepository: Repository<OrganizationInvitation>,
+    @InjectRepository(OrganizationMember)
+    private readonly memberRepository: Repository<OrganizationMember>,
     private readonly jwtService: JwtService,
     private readonly rolesService: RolesService,
     private readonly emailService: EmailService,
@@ -74,13 +94,40 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
-    const roleExists = await this.rolesService.exists(dto.role);
+    const { invitation_token, ...data } = dto;
+
+    // Si viene un token de invitación, la validamos y el rol de plataforma se
+    // deriva del role_in_org de la invitación (ignorando el rol del DTO).
+    let invitation: OrganizationInvitation | null = null;
+    let resolvedRole = data.role;
+
+    if (invitation_token) {
+      invitation = await this.invitationRepository.findOne({
+        where: { token: invitation_token },
+      });
+      if (!invitation) {
+        throw new BadRequestException('La invitación no es válida');
+      }
+      if (invitation.status !== 'pending') {
+        throw new BadRequestException('La invitación ya no está disponible');
+      }
+      if (invitation.expires_at < new Date()) {
+        await this.invitationRepository.update(invitation.id, { status: 'expired' });
+        throw new BadRequestException('La invitación expiró');
+      }
+      if (invitation.email.toLowerCase() !== data.email.toLowerCase()) {
+        throw new BadRequestException('El email no coincide con el de la invitación');
+      }
+      resolvedRole = ORG_ROLE_TO_USER_ROLE[invitation.role_in_org] ?? data.role;
+    }
+
+    const roleExists = await this.rolesService.exists(resolvedRole);
     if (!roleExists) {
-      throw new BadRequestException(`El rol "${dto.role}" no existe`);
+      throw new BadRequestException(`El rol "${resolvedRole}" no existe`);
     }
 
     const exists = await this.userRepository.findOne({
-      where: { email: dto.email },
+      where: { email: data.email },
     });
 
     if (exists) {
@@ -88,14 +135,38 @@ export class AuthService {
     }
 
     const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(dto.password, salt);
+    const hashedPassword = await bcrypt.hash(data.password, salt);
 
     const user = this.userRepository.create({
-      ...dto,
+      ...data,
+      role: resolvedRole,
       password: hashedPassword,
     });
 
     const savedUser = await this.userRepository.save(user);
+
+    // Si se registró aceptando una invitación: sumarlo como miembro de la
+    // organización con el role_in_org y marcar la invitación como aceptada.
+    if (invitation) {
+      const existingMember = await this.memberRepository.findOne({
+        where: { organization_id: invitation.organization_id, user_id: savedUser.id },
+      });
+      if (!existingMember) {
+        await this.memberRepository.save(
+          this.memberRepository.create({
+            organization_id: invitation.organization_id,
+            user_id: savedUser.id,
+            role_in_org: invitation.role_in_org,
+          }),
+        );
+      }
+      await this.invitationRepository.update(invitation.id, {
+        status: 'accepted',
+        accepted_at: new Date(),
+      });
+      // No creamos organización propia: el usuario se suma a la que lo invitó.
+      return this.generateTokens(savedUser);
+    }
 
     // Si es un establecimiento, crear automáticamente su organización
     if (savedUser.role === 'establecimiento') {

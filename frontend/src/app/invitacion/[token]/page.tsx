@@ -1,7 +1,8 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useInvitationByToken, useAcceptInvitation, ROLE_LABELS } from '@/hooks/use-organizations';
 import { useAuth } from '@/lib/auth-context';
 
@@ -9,25 +10,11 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   const { token } = use(params);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { data: invitation, isLoading, error } = useInvitationByToken(user ? token : null);
+  // El endpoint es público: mostramos la info aunque no haya sesión iniciada.
+  const { data: invitation, isLoading, error } = useInvitationByToken(token);
   const accept = useAcceptInvitation();
 
-  // Si no está logueado, redirigir a login con returnTo
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace(`/login?returnTo=${encodeURIComponent(`/invitacion/${token}`)}`);
-    }
-  }, [user, authLoading, token, router]);
-
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)]">
-        <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: 'var(--color-primary)' }} />
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)]">
         <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: 'var(--color-primary)' }} />
@@ -51,6 +38,49 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
           <button onClick={() => router.replace('/')} className="mt-6 w-full rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-[var(--color-primary-hover)] transition">
             Ir al inicio
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  const roleLabel = ROLE_LABELS[invitation.role_in_org];
+
+  // ─── Sin sesión: ofrecer crear cuenta (o iniciar sesión) para unirse ───
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-page)] p-4">
+        <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
+          <div className="bg-clay-500 px-6 py-8 text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png"
+              alt="HandicApp"
+              className="h-8 w-auto mx-auto mb-4"
+            />
+            <p className="text-xs text-white/40 uppercase tracking-wide font-medium">Invitación a unirte</p>
+            <p className="mt-2 text-2xl font-bold text-white tracking-[-0.02em]">{invitation.organization.name}</p>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              <span className="font-semibold text-gray-900">{invitation.inviter.name}</span> te invita a unirte a <span className="font-semibold text-gray-900">{invitation.organization.name}</span> como{' '}
+              <span className="font-semibold text-[#c4922a]">{roleLabel}</span>.
+            </p>
+            <div className="rounded-xl bg-gray-50 p-3.5 text-xs text-gray-500 leading-relaxed">
+              Creá tu cuenta con el email <span className="font-semibold text-gray-700">{invitation.email}</span> y vas a sumarte automáticamente a la organización con tu rol asignado.
+            </div>
+            <Link
+              href={`/registro?invitation=${encodeURIComponent(token)}`}
+              className="block w-full rounded-xl bg-clay-500 py-3 text-center text-sm font-semibold text-white cursor-pointer hover:bg-[var(--color-primary-hover)] transition"
+            >
+              Crear cuenta y unirme
+            </Link>
+            <Link
+              href={`/login?returnTo=${encodeURIComponent(`/invitacion/${token}`)}`}
+              className="block w-full rounded-xl border border-gray-200 py-3 text-center text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition"
+            >
+              Ya tengo cuenta
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -101,7 +131,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
         <div className="p-6 space-y-4">
           <p className="text-sm text-gray-600 leading-relaxed">
             <span className="font-semibold text-gray-900">{invitation.inviter.name}</span> te invita a unirte a <span className="font-semibold text-gray-900">{invitation.organization.name}</span> como{' '}
-            <span className="font-semibold text-[#c4922a]">{ROLE_LABELS[invitation.role_in_org]}</span>.
+            <span className="font-semibold text-[#c4922a]">{roleLabel}</span>.
           </p>
           <div className="rounded-xl bg-gray-50 p-3.5 text-xs text-gray-500 leading-relaxed">
             Al aceptar, vas a poder colaborar con la organización dentro de HandicApp según tu rol asignado. Podés salir de la organización en cualquier momento.

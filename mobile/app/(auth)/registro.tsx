@@ -4,12 +4,13 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal,
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { HorseshoeH } from '../../components/icons/equine';
 import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
+import { useInvitationByToken, ROLE_LABELS } from '../../hooks/use-organizations';
 import api from '../../lib/api';
 
 const ROLE_INFO: Record<string, { label: string; desc: string }> = {
@@ -22,6 +23,9 @@ export default function RegistroScreen() {
   const { register } = useAuth();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
+  const { invitation: invitationToken } = useLocalSearchParams<{ invitation?: string }>();
+  // Con invitación el rol lo define el link; ocultamos el selector.
+  const { data: invitation } = useInvitationByToken(invitationToken || null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,12 +36,18 @@ export default function RegistroScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (invitationToken) return;
     api.get('/roles').then(({ data }) => {
       const visible = data.filter((r: { name: string }) => r.name !== 'admin');
       setRoles(visible);
       if (visible.length > 0) setRole(visible[0].name);
     }).catch(() => {});
-  }, []);
+  }, [invitationToken]);
+
+  // Prefijar el email de la invitación (debe coincidir en el backend).
+  useEffect(() => {
+    if (invitation?.email) setEmail(invitation.email);
+  }, [invitation?.email]);
 
   const handleRegister = async () => {
     if (!name || !email || !password || !role) { setError('Completá todos los campos'); return; }
@@ -46,9 +56,10 @@ export default function RegistroScreen() {
     setError('');
     setLoading(true);
     try {
-      await register(email.trim().toLowerCase(), password, name.trim(), role);
+      // Con invitación el backend deriva el rol de la invitación; role va como fallback.
+      await register(email.trim().toLowerCase(), password, name.trim(), role, invitationToken || undefined);
     } catch {
-      setError('No se pudo crear la cuenta. El email puede estar en uso.');
+      setError('No se pudo crear la cuenta. El email puede estar en uso o no coincidir con la invitación.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +79,18 @@ export default function RegistroScreen() {
 
         <View style={s.card}>
           <Text style={s.title}>Creá tu cuenta</Text>
-          <Text style={s.subtitle}>Empezá a gestionar tus caballos</Text>
+          <Text style={s.subtitle}>
+            {invitation ? 'Registrate para unirte a la organización' : 'Empezá a gestionar tus caballos'}
+          </Text>
+
+          {invitation ? (
+            <View style={s.inviteBox}>
+              <Text style={s.inviteText}>
+                Te unís a <Text style={{ fontWeight: '700', color: c.text }}>{invitation.organization.name}</Text> como{' '}
+                <Text style={{ fontWeight: '700', color: '#c4922a' }}>{ROLE_LABELS[invitation.role_in_org]}</Text>.
+              </Text>
+            </View>
+          ) : null}
 
           {error ? (
             <View style={s.errorBox}>
@@ -84,26 +106,29 @@ export default function RegistroScreen() {
             <View key={field.label} style={s.field}>
               <Text style={s.label}>{field.label}</Text>
               <TextInput
-                style={s.input}
+                style={[s.input, invitation && field.type === 'email-address' && s.inputDisabled]}
                 value={field.value}
                 onChangeText={field.setter}
                 placeholder={field.placeholder}
                 placeholderTextColor={c.textFaint}
                 keyboardType={field.type}
                 secureTextEntry={field.secure}
+                editable={!(invitation && field.type === 'email-address')}
                 autoCapitalize={field.type === 'email-address' ? 'none' : 'words'}
                 autoComplete={field.type === 'email-address' ? 'email' : field.secure ? 'new-password' : 'name'}
               />
             </View>
           ))}
 
-          <View style={s.field}>
-            <Text style={s.label}>Tipo de cuenta</Text>
-            <TouchableOpacity style={s.selectField} onPress={() => setRoleModal(true)} activeOpacity={0.8}>
-              <Text style={s.selectValue}>{ROLE_INFO[role]?.label ?? 'Elegí una opción'}</Text>
-              <ChevronDown size={18} color={c.textFaint} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
+          {!invitationToken && (
+            <View style={s.field}>
+              <Text style={s.label}>Tipo de cuenta</Text>
+              <TouchableOpacity style={s.selectField} onPress={() => setRoleModal(true)} activeOpacity={0.8}>
+                <Text style={s.selectValue}>{ROLE_INFO[role]?.label ?? 'Elegí una opción'}</Text>
+                <ChevronDown size={18} color={c.textFaint} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[s.btn, loading && s.btnDisabled]}
@@ -113,7 +138,7 @@ export default function RegistroScreen() {
           >
             {loading
               ? <ActivityIndicator color={colors.white} />
-              : <Text style={s.btnText}>Crear cuenta</Text>
+              : <Text style={s.btnText}>{invitation ? 'Crear cuenta y unirme' : 'Crear cuenta'}</Text>
             }
           </TouchableOpacity>
 
@@ -178,6 +203,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   errorBox: { backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 10, padding: 12 },
   errorText: { fontSize: 13, color: c.isDark ? '#fca5a5' : colors.red700 },
+
+  inviteBox: { backgroundColor: c.brandSoft, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: c.brand },
+  inviteText: { fontSize: 13, color: c.textMuted, lineHeight: 18 },
+  inputDisabled: { opacity: 0.6 },
 
   field: { gap: 6 },
   label: { fontSize: 13, fontWeight: '600', color: c.textMuted },

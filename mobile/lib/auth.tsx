@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   can: (resource: string, action: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role: string) => Promise<void>;
+  register: (email: string, password: string, name: string, role: string, invitationToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { name?: string; email?: string; avatar_color?: string | null }) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -55,7 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === '(auth)';
-    if (!user && !inAuth) router.replace('/(auth)/login');
+    // La pantalla de invitación es accesible sin sesión (para poder registrarse desde el link).
+    const inInvite = segments[0] === 'invitacion';
+    if (!user && !inAuth && !inInvite) router.replace('/(auth)/login');
     if (user && inAuth) router.replace('/(tabs)');
   }, [user, loading, segments]);
 
@@ -65,8 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchUser();
   };
 
-  const register = async (email: string, password: string, name: string, role: string) => {
-    const { data } = await api.post('/auth/register', { email, password, name, role });
+  const register = async (email: string, password: string, name: string, role: string, invitationToken?: string) => {
+    const { data } = await api.post('/auth/register', {
+      email, password, name, role,
+      ...(invitationToken ? { invitation_token: invitationToken } : {}),
+    });
     await saveToken(data.accessToken, data.refreshToken);
     await fetchUser();
   };

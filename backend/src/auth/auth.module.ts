@@ -7,13 +7,15 @@ import { AuthService } from './auth.service';
 import { DevSeedService } from './dev-seed.service';
 import { User } from './user.entity';
 import { RefreshToken } from './refresh-token.entity';
+import { OrganizationInvitation } from '../organizations/organization-invitation.entity';
+import { OrganizationMember } from '../organizations/organization-member.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { EmailModule } from '../email/email.module';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, RefreshToken]),
+    TypeOrmModule.forFeature([User, RefreshToken, OrganizationInvitation, OrganizationMember]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => {

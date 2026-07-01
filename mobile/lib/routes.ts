@@ -12,6 +12,7 @@ export const Routes = {
   tabsAgenda:          '/(tabs)/agenda',
   tabsFacturacion:     '/(tabs)/facturacion',
   authLogin:           '/(auth)/login',
+  authRegistro:        '/(auth)/registro',
   buscar:              '/buscar',
   organizacion:        '/organizacion',
   directorio:          '/directorio',

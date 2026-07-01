@@ -22,6 +22,7 @@ interface AuthContextType {
     password: string,
     name: string,
     role: string,
+    invitationToken?: string,
   ) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -68,17 +69,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     name: string,
     role: string,
+    invitationToken?: string,
   ) => {
     const { data } = await api.post('/auth/register', {
       email,
       password,
       name,
       role,
+      ...(invitationToken ? { invitation_token: invitationToken } : {}),
     });
     localStorage.setItem('token', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     await fetchUser();
-    router.push('/caballos');
+    router.push(invitationToken ? '/organizacion' : '/caballos');
   };
 
   const can = useCallback(

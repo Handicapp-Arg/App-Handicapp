@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image as RNImage,
 } from 'react-native';
@@ -18,18 +18,13 @@ export default function InvitationScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { data: invitation, isLoading, error } = useInvitationByToken(user ? token : null);
+  // El endpoint es público: mostramos la info aunque no haya sesión iniciada.
+  const { data: invitation, isLoading, error } = useInvitationByToken(token);
   const accept = useAcceptInvitation();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      nav.replace(router, Routes.authLogin);
-    }
-  }, [user, authLoading]);
-
-  if (authLoading || !user || isLoading) {
+  if (authLoading || isLoading) {
     return (
       <View style={[s.root, s.center]}>
         <ActivityIndicator color={c.brand} />
@@ -48,6 +43,49 @@ export default function InvitationScreen() {
         <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 16 }]} onPress={() => nav.replace(router, Routes.tabsHome)}>
           <Text style={s.btnPrimaryText}>Ir al inicio</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ─── Sin sesión: ofrecer crear cuenta (o iniciar sesión) para unirse ───
+  if (!user) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <View style={s.heroBlock}>
+          <RNImage
+            source={{ uri: 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png' }}
+            style={s.logo}
+            resizeMode="contain"
+          />
+          <Text style={s.heroLabel}>Invitación</Text>
+          <Text style={s.heroOrgName}>{invitation.organization.name}</Text>
+        </View>
+
+        <View style={s.body}>
+          <Text style={s.copy}>
+            <Text style={{ fontWeight: weight.bold }}>{invitation.inviter.name}</Text> te invita a unirte a{' '}
+            <Text style={{ fontWeight: weight.bold }}>{invitation.organization.name}</Text> como{' '}
+            <Text style={{ fontWeight: weight.bold, color: '#c4922a' }}>{ROLE_LABELS[invitation.role_in_org]}</Text>.
+          </Text>
+
+          <View style={s.note}>
+            <Text style={s.noteText}>
+              Creá tu cuenta con el email {invitation.email} y vas a sumarte automáticamente a la organización con tu rol asignado.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary]}
+            onPress={() => { haptic.light(); nav.push(router, `${Routes.authRegistro}?invitation=${encodeURIComponent(token)}`); }}
+            activeOpacity={0.85}
+          >
+            <Text style={s.btnPrimaryText}>Crear cuenta y unirme</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => nav.replace(router, Routes.authLogin)}>
+            <Text style={s.btnSecondaryText}>Ya tengo cuenta</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
