@@ -35,6 +35,8 @@ import { AuctionWatch } from '../auctions/auction-watch.entity';
 import { FeedPost } from '../feed/feed-post.entity';
 import { FeedLike } from '../feed/feed-like.entity';
 import { FeedComment } from '../feed/feed-comment.entity';
+import { Plan } from '../plans/plan.entity';
+import { Subscription } from '../payments/subscription.entity';
 
 export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -43,7 +45,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'handicapp',
-  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, HorseMovement, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, EventComment, Contract, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem, BoardingRequest, Organization, OrganizationMember, OrganizationInvitation, Pedigree, PedigreeValidation, PedigreeDocument, HorseRecord, HorseOwnershipClaim, Auction, AuctionBid, AuctionWatch, FeedPost, FeedLike, FeedComment],
+  entities: [User, RefreshToken, Horse, HorseUser, HorseDocument, HorseMovement, WeightRecord, ServiceAppointment, DailyRoutine, ActivityPhoto, Bill, TrainingMetrics, EventComment, Contract, ShareToken, MedicalRecord, Event, EventPhoto, Permission, Role, Notification, NotificationSetting, CatalogItem, BoardingRequest, Organization, OrganizationMember, OrganizationInvitation, Pedigree, PedigreeValidation, PedigreeDocument, HorseRecord, HorseOwnershipClaim, Auction, AuctionBid, AuctionWatch, FeedPost, FeedLike, FeedComment, Plan, Subscription],
   synchronize: true,
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,
