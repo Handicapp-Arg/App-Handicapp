@@ -5,9 +5,11 @@ import {
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Check, Sparkles, Zap, Crown, Gem, Lock, Users, ArrowRight, X,
+  Check, Rocket, Zap, Crown, Building2, Lock, Users, ArrowRight, X,
+  BarChart3, ClipboardPlus, Sprout,
 } from 'lucide-react-native';
 import { HorseIcon } from '../../components/icons/equine';
+import { WhatsappLogo } from '../../components/icons/WhatsappLogo';
 import { PaymentMethods } from '../../components/PaymentMethods';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useAuth } from '../../lib/auth';
@@ -95,14 +97,14 @@ function tierMetaOf(kind: TierKind, c: ThemeColors): TierMeta {
       };
     case 'enterprise':
       return {
-        Icon: Gem, accent: '#cbd5e1', soft: 'rgba(255,255,255,0.10)',
+        Icon: Building2, accent: '#cbd5e1', soft: 'rgba(255,255,255,0.10)',
         onDark: true, gradient: ['#1e293b', '#0f172a'] as const,
         featured: false, badge: null,
       };
     case 'free':
     default:
       return {
-        Icon: Sparkles, accent: c.textMuted, soft: c.surfaceAlt,
+        Icon: Rocket, accent: c.textMuted, soft: c.surfaceAlt,
         onDark: false, gradient: null, featured: false, badge: null,
       };
   }
@@ -110,24 +112,54 @@ function tierMetaOf(kind: TierKind, c: ThemeColors): TierMeta {
 
 /* ─── Piezas reutilizables ─── */
 
-function FeatureChip({ label, c, s }: { label: string; c: ThemeColors; s: Styles }) {
+/**
+ * Glyph con SIGNIFICADO por feature (lucide), en el color de acento del tier.
+ * WhatsApp NO pasa por acá: usa su logo real (verde) — se resuelve aparte.
+ */
+function FeatureGlyph({
+  featureKey, accent, size = 11,
+}: { featureKey?: string; accent: string; size?: number }) {
+  switch (featureKey) {
+    case 'reportes':
+      return <BarChart3 size={size + 1} color={accent} strokeWidth={2.6} />;
+    case 'libreta_digital':
+      return <ClipboardPlus size={size + 1} color={accent} strokeWidth={2.4} />;
+    case 'reproductivo':
+      return <Sprout size={size + 1} color={accent} strokeWidth={2.4} />;
+    default:
+      return <Check size={size} color={accent} strokeWidth={3.4} />;
+  }
+}
+
+function FeatureChip({
+  label, featureKey, c, s,
+}: { label: string; featureKey?: string; c: ThemeColors; s: Styles }) {
   return (
     <View style={s.chip}>
-      <Check size={12} color={c.brand} strokeWidth={3} />
+      {featureKey === 'whatsapp'
+        ? <WhatsappLogo size={14} />
+        : <FeatureGlyph featureKey={featureKey} accent={c.brand} size={12} />}
       <Text style={s.chipText}>{label}</Text>
     </View>
   );
 }
 
-/** Fila de feature con check del color del tier (soporta fondo oscuro). */
+/** Fila de feature con ícono con significado del color del tier (soporta fondo oscuro). */
 function FeatureRow({
-  label, accent, soft, textColor, s,
-}: { label: string; accent: string; soft: string; textColor: string; s: Styles }) {
+  label, featureKey, accent, soft, textColor, s,
+}: {
+  label: string; featureKey?: string; accent: string; soft: string;
+  textColor: string; s: Styles;
+}) {
   return (
     <View style={s.featRow}>
-      <View style={[s.featCheck, { backgroundColor: soft }]}>
-        <Check size={11} color={accent} strokeWidth={3.4} />
-      </View>
+      {featureKey === 'whatsapp' ? (
+        <WhatsappLogo size={18} />
+      ) : (
+        <View style={[s.featCheck, { backgroundColor: soft }]}>
+          <FeatureGlyph featureKey={featureKey} accent={accent} />
+        </View>
+      )}
       <Text style={[s.featRowText, { color: textColor }]}>{label}</Text>
     </View>
   );
@@ -228,7 +260,7 @@ function PlanCardInner({
         <View style={[s.featList, { borderTopColor: divider }]}>
           {plan.features.map((f) => (
             <FeatureRow
-              key={f} label={featureLabel(f)}
+              key={f} label={featureLabel(f)} featureKey={f}
               accent={accent} soft={soft} textColor={featTextColor} s={s}
             />
           ))}
@@ -317,12 +349,12 @@ function CheckoutSheet({
   const m = tierMetaOf(kind, c);
   const Icon = m.Icon;
 
-  // Bullets de "qué incluye" (2-3): caballos, equipo, features.
-  const bullets: string[] = [
-    plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`,
+  // Bullets de "qué incluye" (2-3): caballos, equipo, features (con su clave para el ícono).
+  const bullets: { label: string; key?: string }[] = [
+    { label: plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos` },
   ];
-  if (plan.staff_limit != null && plan.staff_limit > 0) bullets.push(`Hasta ${plan.staff_limit} en el equipo`);
-  plan.features.slice(0, 2).forEach((f) => bullets.push(featureLabel(f)));
+  if (plan.staff_limit != null && plan.staff_limit > 0) bullets.push({ label: `Hasta ${plan.staff_limit} en el equipo` });
+  plan.features.slice(0, 2).forEach((f) => bullets.push({ label: featureLabel(f), key: f }));
 
   const handlePay = async () => {
     setError('');
@@ -373,7 +405,7 @@ function CheckoutSheet({
             <View style={{ gap: space[2] + 2 }}>
               {bullets.slice(0, 3).map((b) => (
                 <FeatureRow
-                  key={b} label={b}
+                  key={b.label} label={b.label} featureKey={b.key}
                   accent={m.accent} soft={m.soft} textColor={c.textMuted} s={s}
                 />
               ))}
@@ -507,7 +539,7 @@ export default function MiPlanScreen() {
             <Text style={s.featTitle}>Funciones incluidas</Text>
             {status.features.length > 0 ? (
               <View style={s.chipRow}>
-                {status.features.map((f) => <FeatureChip key={f} label={featureLabel(f)} c={c} s={s} />)}
+                {status.features.map((f) => <FeatureChip key={f} label={featureLabel(f)} featureKey={f} c={c} s={s} />)}
               </View>
             ) : (
               <Text style={s.emptyText}>Tu plan actual no incluye funciones adicionales.</Text>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, type ComponentType } from 'react';
-import { Sparkles, Zap, Crown, Building2, Lock, ShieldCheck, Check } from 'lucide-react';
+import { Rocket, Zap, Crown, Building2, Lock, ShieldCheck, Check, BarChart3, ClipboardPlus, Sprout } from 'lucide-react';
+import { WhatsApp } from '@/components/icons/whatsapp';
 import { useAuth } from '@/lib/auth-context';
 import { avatarGradient, initialsOf, AVATAR_PALETTE } from '@/lib/avatar-color';
 import { useFeed } from '@/hooks/use-feed';
@@ -29,6 +30,14 @@ const FEATURE_LABELS: Record<string, string> = {
   reproductivo: 'Módulo reproductivo',
 };
 const featureLabel = (key: string) => FEATURE_LABELS[key] ?? key;
+
+/** Cada feature con SU ícono intencional (no un check genérico para todas).
+ *  `whatsapp` se maneja aparte porque usa el logo de marca a color. */
+const FEATURE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  reportes: BarChart3,
+  libreta_digital: ClipboardPlus,
+  reproductivo: Sprout,
+};
 
 /** Rol del usuario → role_target del catálogo de planes. */
 function roleTargetFor(role?: string): PlanRoleTarget {
@@ -69,7 +78,7 @@ const TIER_STYLES: Record<TierId, TierStyle> = {
     id: 'free',
     label: 'Free',
     tagline: 'Para empezar',
-    Icon: Sparkles,
+    Icon: Rocket,
     accent: '#64748b',
     tint: 'rgba(100,116,139,0.14)',
     ring: 'rgba(100,116,139,0.35)',
@@ -158,8 +167,9 @@ function MisPublicaciones({ userId }: { userId: string }) {
   return <div className="space-y-4">{posts.map((p) => <PostCard key={p.id} post={p} />)}</div>;
 }
 
-/** Chip de feature (para plan actual y tarjetas del catálogo). */
-function FeatureChip({ label, active = true }: { label: string; active?: boolean }) {
+/** Chip de feature (para plan actual y tarjetas del catálogo).
+ *  `whatsapp` muestra el logo real de la marca en vez del check genérico. */
+function FeatureChip({ label, featureKey, active = true }: { label: string; featureKey?: string; active?: boolean }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -168,9 +178,13 @@ function FeatureChip({ label, active = true }: { label: string; active?: boolean
           : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'
       }`}
     >
-      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-      </svg>
+      {featureKey === 'whatsapp' ? (
+        <WhatsApp size={13} />
+      ) : (
+        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
+      )}
       {label}
     </span>
   );
@@ -184,15 +198,26 @@ function errMessage(err: unknown, fallback: string): string {
   return m || fallback;
 }
 
-/** Fila de feature con check en el color del tier (listado estilo pricing). */
-function FeatureRow({ label, accent }: { label: string; accent?: string }) {
+/** Fila de feature (listado estilo pricing). Cada feature muestra SU ícono
+ *  con significado, en el color del tier; `whatsapp` usa el logo de marca. */
+function FeatureRow({ label, accent, featureKey }: { label: string; accent?: string; featureKey?: string }) {
+  if (featureKey === 'whatsapp') {
+    return (
+      <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+        <WhatsApp size={18} className="shrink-0" />
+        {label}
+      </li>
+    );
+  }
+  const Icon = (featureKey && FEATURE_ICONS[featureKey]) || Check;
+  const isCheck = Icon === Check;
   return (
     <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
       <span
-        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
         style={accent ? { background: 'color-mix(in srgb, ' + accent + ' 18%, transparent)', color: accent } : undefined}
       >
-        <Check className="h-2.5 w-2.5" strokeWidth={3.4} />
+        <Icon className="h-3 w-3" strokeWidth={isCheck ? 3.4 : 2.2} />
       </span>
       {label}
     </li>
@@ -319,7 +344,7 @@ function PlanCard({
       {plan.features.length > 0 && (
         <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5 dark:border-gray-700/60">
           {plan.features.map((f) => (
-            <FeatureRow key={f} label={featureLabel(f)} accent={t.accent} />
+            <FeatureRow key={f} label={featureLabel(f)} accent={t.accent} featureKey={f} />
           ))}
         </ul>
       )}
@@ -407,7 +432,7 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
               <FeatureRow accent={t.accent} label={`Hasta ${plan.staff_limit} en el equipo`} />
             )}
             {plan.features.slice(0, 2).map((f) => (
-              <FeatureRow key={f} accent={t.accent} label={featureLabel(f)} />
+              <FeatureRow key={f} accent={t.accent} label={featureLabel(f)} featureKey={f} />
             ))}
           </ul>
 
@@ -526,7 +551,7 @@ function MiPlan({ role }: { role?: string }) {
               {status.features.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {status.features.map((f) => (
-                    <FeatureChip key={f} label={featureLabel(f)} />
+                    <FeatureChip key={f} label={featureLabel(f)} featureKey={f} />
                   ))}
                 </div>
               ) : (
@@ -855,10 +880,8 @@ function ContactSection() {
         <div className="border-t border-gray-100 pt-5 dark:border-gray-700/60">
           <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
             <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.8 14.16c-.25.7-1.44 1.33-1.98 1.38-.53.05-1.02.24-3.44-.72-2.9-1.14-4.76-4.1-4.9-4.29-.14-.19-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.27-.29.58-.36.78-.36l.56.01c.18.01.42-.07.66.5.25.6.84 2.07.91 2.22.07.15.12.32.02.51-.1.19-.15.31-.29.48-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.25 1.63 2.02 1.12.99 2.07 1.3 2.36 1.45.29.15.46.12.63-.07.17-.19.73-.85.92-1.14.19-.29.39-.24.66-.14.27.1 1.71.81 2 .96.29.15.49.22.56.34.07.12.07.7-.18 1.4Z" />
-                </svg>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15">
+                <WhatsApp size={20} />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Recibir recordatorios por WhatsApp</p>

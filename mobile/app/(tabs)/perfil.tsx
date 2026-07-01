@@ -9,10 +9,11 @@ import { useRouter } from 'expo-router';
 import { useState, useMemo } from 'react';
 import {
   User, ChevronRight, Lock, LogOut, Crown, Check, ShieldCheck, Camera,
-  Phone, MessageCircle,
+  Phone,
   type LucideIcon,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { WhatsappLogo } from '../../components/icons/WhatsappLogo';
 import { useAuth } from '../../lib/auth';
 import api from '../../lib/api';
 import { haptic } from '../../lib/haptics';
@@ -462,8 +463,8 @@ function ContactSection({ user, c, s }: {
         </TouchableOpacity>
 
         <View style={s.whatsappRow}>
-          <View style={s.whatsappIcon}>
-            <MessageCircle size={17} color="#16a34a" strokeWidth={2.2} />
+          <View style={[s.whatsappIcon, { backgroundColor: 'transparent' }]}>
+            <WhatsappLogo size={30} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.accountRowLabel}>Recordatorios por WhatsApp</Text>
