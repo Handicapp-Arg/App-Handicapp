@@ -8,6 +8,8 @@ export type MovementType =
   | 'establishment_out'
   | 'vet_assigned'
   | 'vet_removed'
+  | 'member_assigned'
+  | 'member_removed'
   | 'created';
 
 @Entity('horse_movements')

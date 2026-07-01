@@ -17,6 +17,7 @@ import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { AssignVetDto } from './dto/assign-vet.dto';
+import { AssignMemberDto } from './dto/assign-member.dto';
 import { HorseDocument } from './horse-document.entity';
 import { WeightRecord } from './weight-record.entity';
 import { ShareToken } from './share-token.entity';
@@ -273,6 +274,15 @@ export class HorsesService implements OnModuleInit {
       where: { user_id: user.id },
     });
     const assignedIds = assignments.map((a) => a.horse_id);
+
+    // Roles operativos (jinete/peon): SOLO ven los caballos que les asignaron
+    // explícitamente (sus filas en horse_users). No ven el resto de la org.
+    if (user.role === 'jinete' || user.role === 'peon') {
+      if (!assignedIds.length) return [];
+      const qb = applySearch(buildQb('h'), 'h').andWhere('h.id IN (:...ids)', { ids: assignedIds });
+      const horses = await qb.getMany();
+      return horses.map((h) => this.attachCoOwners(h));
+    }
 
     if (orgIds.length) {
       const qb = applySearch(buildQb('h'), 'h');
@@ -885,6 +895,113 @@ export class HorsesService implements OnModuleInit {
     await this.logMovement(horseId, 'vet_removed', 'Veterinario desasignado del caballo', user.id);
   }
 
+  // ── Asignación genérica de personas (equipo operativo) ───
+
+  /**
+   * Puede gestionar asignaciones: admin del sistema, propietario del caballo,
+   * o miembro admin/staff/encargado de la organización del caballo.
+   */
+  private async assertCanManageAssignees(horse: Horse, user: User): Promise<void> {
+    if (user.role === 'admin') return;
+    if (horse.owner_id === user.id) return;
+
+    if (horse.organization_id) {
+      const rows: { role_in_org: string }[] = await this.horseRepository.query(
+        `SELECT role_in_org FROM organization_members WHERE organization_id = $1 AND user_id = $2 LIMIT 1`,
+        [horse.organization_id, user.id],
+      );
+      const roleInOrg = rows[0]?.role_in_org;
+      if (roleInOrg === 'admin' || roleInOrg === 'staff' || roleInOrg === 'encargado') return;
+    }
+
+    throw new ForbiddenException('No tenés permiso para asignar personas a este caballo');
+  }
+
+  /** Lista las personas asignadas (equipo operativo) al caballo. */
+  async getAssignees(horseId: string, user: User): Promise<HorseUser[]> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    return this.horseUserRepository.find({
+      where: { horse_id: horseId, role: 'assignee' },
+      relations: ['user'],
+    });
+  }
+
+  /**
+   * Lista los miembros de la organización del caballo que pueden asignarse
+   * como equipo operativo (jinete / peón / encargado).
+   */
+  async getOrgMembers(
+    horseId: string,
+    user: User,
+  ): Promise<{ user_id: string; name: string; email: string; role_in_org: string }[]> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertCanManageAssignees(horse, user);
+
+    if (!horse.organization_id) return [];
+
+    return this.horseRepository.query(
+      `SELECT om.user_id, u.name, u.email, om.role_in_org
+         FROM organization_members om
+         JOIN users u ON u.id = om.user_id
+        WHERE om.organization_id = $1
+          AND om.role_in_org IN ('jinete', 'peon', 'encargado')
+        ORDER BY u.name ASC`,
+      [horse.organization_id],
+    );
+  }
+
+  /** Asigna un miembro de la org al caballo (role 'assignee' por defecto). */
+  async assignMember(horseId: string, dto: AssignMemberDto, user: User): Promise<HorseUser> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertCanManageAssignees(horse, user);
+
+    const role = (dto.role as HorseUser['role']) || 'assignee';
+
+    const existing = await this.horseUserRepository.findOne({
+      where: { horse_id: horseId, user_id: dto.user_id },
+    });
+    if (existing) {
+      if (existing.role === 'owner' || existing.role === 'prev_owner') {
+        throw new BadRequestException('Esta persona ya es propietaria del caballo');
+      }
+      if (existing.role === role) {
+        throw new BadRequestException('La persona ya está asignada a este caballo');
+      }
+      existing.role = role;
+      return this.horseUserRepository.save(existing);
+    }
+
+    const entry = this.horseUserRepository.create({
+      horse_id: horseId,
+      user_id: dto.user_id,
+      role,
+      percentage: null,
+    });
+    const saved = await this.horseUserRepository.save(entry);
+    await this.logMovement(horseId, 'member_assigned', 'Miembro del equipo asignado al caballo', user.id);
+    return saved;
+  }
+
+  /** Desasigna un miembro del equipo del caballo. */
+  async removeMember(horseId: string, memberUserId: string, user: User): Promise<void> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertCanManageAssignees(horse, user);
+
+    const entry = await this.horseUserRepository.findOne({
+      where: { horse_id: horseId, user_id: memberUserId, role: 'assignee' },
+    });
+    if (!entry) throw new NotFoundException('Persona no asignada a este caballo');
+
+    await this.horseUserRepository.remove(entry);
+    await this.logMovement(horseId, 'member_removed', 'Miembro del equipo desasignado del caballo', user.id);
+  }
+
   // ── Private helpers ───────────────────────────────────────
 
   /**
@@ -966,6 +1083,12 @@ export class HorsesService implements OnModuleInit {
       );
       if (orgMember.length > 0) {
         const role = orgMember[0].role_in_org;
+        // Roles operativos (jinete/peon): NO acceden por ser miembros de la org.
+        // Solo tienen acceso si el caballo está en sus horse_users (chequeado arriba,
+        // vía `entry`). Si llegaron acá, no están asignados → denegar.
+        if (user.role === 'jinete' || user.role === 'peon') {
+          throw new ForbiddenException('No tenés acceso a este caballo');
+        }
         // Bloquear admin/staff si la org está suspendida (no pueden escribir).
         // Propietarios y vets siguen viendo aunque esté suspendida.
         if (role === 'admin' || role === 'staff') {

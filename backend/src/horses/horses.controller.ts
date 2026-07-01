@@ -29,6 +29,7 @@ import { UpdateOwnershipDto } from './dto/update-ownership.dto';
 import { HorsesQueryDto } from './dto/horses-query.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { AssignVetDto } from './dto/assign-vet.dto';
+import { AssignMemberDto } from './dto/assign-member.dto';
 import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../auth/user.entity';
@@ -175,6 +176,41 @@ export class HorsesController {
     @GetUser() user: User,
   ) {
     return this.horsesService.removeVet(id, vetUserId, user);
+  }
+
+  // ── Asignación de equipo (miembros de la organización) ──
+
+  @Get(':id/assignees')
+  @RequirePermission('horses', 'read')
+  getAssignees(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getAssignees(id, user);
+  }
+
+  @Get(':id/org-members')
+  @RequirePermission('horses', 'read')
+  getOrgMembers(@Param('id') id: string, @GetUser() user: User) {
+    return this.horsesService.getOrgMembers(id, user);
+  }
+
+  @Post(':id/assignees')
+  @RequirePermission('horses', 'update')
+  assignMember(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: AssignMemberDto,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.assignMember(id, dto, user);
+  }
+
+  @Delete(':id/assignees/:userId')
+  @RequirePermission('horses', 'update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeMember(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @GetUser() user: User,
+  ) {
+    return this.horsesService.removeMember(id, userId, user);
   }
 
   @Get(':id/ownership')

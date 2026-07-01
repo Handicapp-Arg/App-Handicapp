@@ -204,6 +204,55 @@ export function useRemoveVet(horseId: string) {
   });
 }
 
+/* ─── Equipo asignado (jinete / peón / encargado) ─── */
+
+export function useHorseAssignees(horseId: string) {
+  return useQuery<{ id: string; user_id: string; role: string; user: { id: string; name: string; email: string } }[]>({
+    queryKey: ['horses', horseId, 'assignees'],
+    queryFn: async () => {
+      const { data } = await api.get(`/horses/${horseId}/assignees`);
+      return data;
+    },
+    enabled: !!horseId,
+  });
+}
+
+export function useHorseOrgMembers(horseId: string, enabled = true) {
+  return useQuery<{ user_id: string; name: string; email: string; role_in_org: string }[]>({
+    queryKey: ['horses', horseId, 'org-members'],
+    queryFn: async () => {
+      const { data } = await api.get(`/horses/${horseId}/org-members`);
+      return data;
+    },
+    enabled: !!horseId && enabled,
+  });
+}
+
+export function useAssignMember(horseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (user_id: string) => {
+      const { data } = await api.post(`/horses/${horseId}/assignees`, { user_id });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'assignees'] });
+    },
+  });
+}
+
+export function useRemoveMember(horseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (memberUserId: string) => {
+      await api.delete(`/horses/${horseId}/assignees/${memberUserId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId, 'assignees'] });
+    },
+  });
+}
+
 export function useHorseOwnership(horseId: string | null) {
   return useQuery<HorseOwnership[]>({
     queryKey: ['horses', horseId, 'ownership'],

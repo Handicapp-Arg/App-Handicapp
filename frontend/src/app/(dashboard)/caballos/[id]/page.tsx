@@ -4,7 +4,7 @@ import { use, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord, useHorseMovements, type HorseMovement } from '@/hooks/use-horses';
+import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseAssignees, useHorseOrgMembers, useAssignMember, useRemoveMember, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord, useHorseMovements, type HorseMovement } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent, useShareEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
 import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
@@ -33,6 +33,12 @@ const typeBadge: Record<string, { label: string; cls: string }> = {
   entrenamiento: { label: 'Entrenamiento', cls: 'bg-yellow-50 text-yellow-700' },
   gasto:         { label: 'Gasto',         cls: 'bg-purple-50 text-purple-700' },
   nota:          { label: 'Nota',          cls: 'bg-gray-100 text-gray-700' },
+};
+
+const orgRoleLabel: Record<string, string> = {
+  jinete: 'Jinete',
+  peon: 'Peón',
+  encargado: 'Encargado',
 };
 
 const typeOptions = [
@@ -1152,6 +1158,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: veterinarios } = useVeterinarios();
   const assignVet = useAssignVet(id);
   const removeVet = useRemoveVet(id);
+  const { data: assignees } = useHorseAssignees(id);
+  const assignMember = useAssignMember(id);
+  const removeMember = useRemoveMember(id);
   const { data: documents } = useHorseDocuments(id);
   const uploadDoc = useUploadDocument(id);
   const deleteDoc = useDeleteDocument(id);
@@ -1183,6 +1192,8 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const [transferError, setTransferError] = useState('');
   const [showAssignVet, setShowAssignVet] = useState(false);
   const [selectedVetId, setSelectedVetId] = useState('');
+  const [showAssignTeam, setShowAssignTeam] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
   const docInputRef = useRef<HTMLInputElement>(null);
   const activityPhotoInputRef = useRef<HTMLInputElement>(null);
   const [activityPhotoType, setActivityPhotoType] = useState('otro');
@@ -1201,6 +1212,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   });
 
   const canEdit = can('horses', 'update');
+  const { data: orgMembers } = useHorseOrgMembers(id, canEdit);
 
   const ROUTINE_ITEMS = [
     { key: 'morning_feed',   label: 'Comida mañana' },
@@ -1489,6 +1501,73 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         document.body,
       )}
 
+      {/* Modal asignar equipo */}
+      {showAssignTeam && createPortal(
+        <>
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={() => setShowAssignTeam(false)} />
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between bg-clay-600 px-5 py-4">
+                <p className="font-bold text-white">Asignar equipo</p>
+                <button onClick={() => setShowAssignTeam(false)} className="text-white/70 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-gray-600">
+                  Seleccioná el miembro del equipo que podrá ver y trabajar sobre <strong>{horse?.name}</strong>. Jinetes y peones solo ven los caballos que les asignes.
+                </p>
+                {!orgMembers?.length ? (
+                  <p className="text-sm text-gray-400 text-center py-4">
+                    No hay miembros (jinete / peón / encargado) en la organización de este caballo.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                  >
+                    <option value="">Seleccionar persona...</option>
+                    {orgMembers
+                      .filter((m) => !assignees?.some((a) => a.user_id === m.user_id))
+                      .map((m) => (
+                        <option key={m.user_id} value={m.user_id}>
+                          {m.name} · {orgRoleLabel[m.role_in_org] ?? m.role_in_org}
+                        </option>
+                      ))
+                    }
+                  </select>
+                )}
+                {assignMember.isError && (
+                  <p className="text-xs text-red-500">No se pudo asignar la persona.</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignTeam(false)}
+                    className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!selectedMemberId) return;
+                      await assignMember.mutateAsync(selectedMemberId);
+                      setShowAssignTeam(false);
+                      setSelectedMemberId('');
+                    }}
+                    disabled={!selectedMemberId || assignMember.isPending}
+                    className="flex-1 rounded-lg bg-clay-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-700 transition"
+                  >
+                    {assignMember.isPending ? 'Asignando...' : 'Confirmar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body,
+      )}
+
       {/* Modal transferir propiedad */}
       {showTransfer && createPortal(
         <>
@@ -1712,6 +1791,61 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                       </svg>
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Equipo asignado (mobile) */}
+        {(canEdit || (assignees && assignees.length > 0)) && (
+          <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-50 text-clay-600">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                  </svg>
+                </span>
+                <h2 className="text-base font-bold text-gray-900">Equipo</h2>
+                {assignees && assignees.length > 0 && (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{assignees.length}</span>
+                )}
+              </div>
+              {canEdit && (
+                <button
+                  onClick={() => { setSelectedMemberId(''); setShowAssignTeam(true); }}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Asignar
+                </button>
+              )}
+            </div>
+            {!assignees?.length ? (
+              <p className="text-xs text-gray-400">Sin personas asignadas. Jinetes y peones solo ven los caballos que les asignes.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {assignees.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">{m.user?.name}</p>
+                      <p className="text-xs text-gray-400">{m.user?.email}</p>
+                    </div>
+                    {canEdit && (
+                      <button
+                        onClick={() => removeMember.mutate(m.user_id)}
+                        className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                        title="Quitar del equipo"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2299,6 +2433,51 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                         </svg>
                       </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── Equipo asignado (desktop) ─── */}
+          {(canEdit || (assignees && assignees.length > 0)) && (
+            <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
+              <div className="mb-2.5 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-900">Equipo</h2>
+                {canEdit && (
+                  <button
+                    onClick={() => { setSelectedMemberId(''); setShowAssignTeam(true); }}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[10px] font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Asignar
+                  </button>
+                )}
+              </div>
+              {!assignees?.length ? (
+                <p className="text-xs text-gray-400">Sin personas asignadas. Jinetes y peones solo ven los caballos que les asignes.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {assignees.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                      <div>
+                        <p className="text-sm text-gray-700">{m.user?.name}</p>
+                        <p className="text-xs text-gray-400">{m.user?.email}</p>
+                      </div>
+                      {canEdit && (
+                        <button
+                          onClick={() => removeMember.mutate(m.user_id)}
+                          className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                          title="Quitar"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -180,6 +180,40 @@ export function useRemoveVet(horseId: string) {
   });
 }
 
+/* ─── Equipo asignado (jinete / peón / encargado) ─── */
+
+export function useHorseAssignees(horseId: string) {
+  return useQuery<{ id: string; user_id: string; role: string; user: { id: string; name: string; email: string } }[]>({
+    queryKey: ['horses', horseId, 'assignees'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/assignees`)).data,
+    enabled: !!horseId,
+  });
+}
+
+export function useHorseOrgMembers(horseId: string, enabled = true) {
+  return useQuery<{ user_id: string; name: string; email: string; role_in_org: string }[]>({
+    queryKey: ['horses', horseId, 'org-members'],
+    queryFn: async () => (await api.get(`/horses/${horseId}/org-members`)).data,
+    enabled: !!horseId && enabled,
+  });
+}
+
+export function useAssignMember(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (user_id: string) => api.post(`/horses/${horseId}/assignees`, { user_id }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'assignees'] }),
+  });
+}
+
+export function useRemoveMember(horseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (memberUserId: string) => api.delete(`/horses/${horseId}/assignees/${memberUserId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'assignees'] }),
+  });
+}
+
 /* ─── Transferencia ─── */
 
 export function usePropietarios() {

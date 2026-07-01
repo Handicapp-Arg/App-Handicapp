@@ -10,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   X, MessageCircle, ArrowUp, ChevronLeft, MoreHorizontal, QrCode, Link2,
-  ShieldCheck, Megaphone, ChevronRight, User, XCircle, FileText,
+  ShieldCheck, Megaphone, ChevronRight, User, Users, XCircle, FileText,
   Trash2, CheckCircle2, Camera, Pencil, Stethoscope, Network,
   Info, Clock, Images, Banknote,
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse,
@@ -21,7 +21,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 
-import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useTransferHorse, usePropietarios, useHorseMovements, useUploadDocument, useDeleteDocument } from '../../../hooks/use-horses';
+import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseAssignees, useHorseOrgMembers, useAssignMember, useRemoveMember, useTransferHorse, usePropietarios, useHorseMovements, useUploadDocument, useDeleteDocument } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
@@ -231,6 +231,13 @@ export default function HorseDetailScreen() {
   const assignVet = useAssignVet(id);
   const removeVet = useRemoveVet(id);
 
+  // Equipo (jinete / peón / encargado)
+  const canManageTeam = can('horses', 'update');
+  const { data: assignees } = useHorseAssignees(id);
+  const { data: orgMembers } = useHorseOrgMembers(id, canManageTeam);
+  const assignMember = useAssignMember(id);
+  const removeMember = useRemoveMember(id);
+
   // Transferencia
   const { data: propietarios } = usePropietarios();
   const transferHorse = useTransferHorse();
@@ -262,6 +269,10 @@ export default function HorseDetailScreen() {
   // Vet modal
   const [showAssignVet, setShowAssignVet] = useState(false);
   const [selectedVetId, setSelectedVetId] = useState('');
+
+  // Team modal
+  const [showAssignTeam, setShowAssignTeam] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
 
   // Transfer modal
   const [showTransfer, setShowTransfer] = useState(false);
@@ -366,6 +377,15 @@ export default function HorseDetailScreen() {
       { text: 'Quitar', style: 'destructive', onPress: () => { haptic.medium(); removeVet.mutate(vetUserId); } },
     ]);
   };
+
+  const handleRemoveMember = (memberUserId: string, memberName: string) => {
+    Alert.alert('Quitar del equipo', `¿Quitás a ${memberName} del acceso a ${horse?.name}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Quitar', style: 'destructive', onPress: () => { haptic.medium(); removeMember.mutate(memberUserId); } },
+    ]);
+  };
+
+  const orgRoleLabel: Record<string, string> = { jinete: 'Jinete', peon: 'Peón', encargado: 'Encargado' };
 
   const handleTransfer = () => {
     if (!transferOwnerId) return;
@@ -590,6 +610,45 @@ export default function HorseDetailScreen() {
                         </View>
                         {can('horses', 'update') && (
                           <TouchableOpacity onPress={() => handleRemoveVet(v.user_id, v.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <XCircle size={20} color={c.textFaint} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ─── Equipo asignado (jinete / peón / encargado) ─── */}
+          {(canManageTeam || (assignees && assignees.length > 0)) && (
+            <View style={s.section}>
+              <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+                <Text style={s.sectionTitle}>Equipo</Text>
+                {canManageTeam && (
+                  <TouchableOpacity onPress={() => { setSelectedMemberId(''); setShowAssignTeam(true); }} style={s.smallBtn}>
+                    <Text style={s.smallBtnText}>+ Asignar</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {!assignees?.length ? (
+                <Text style={s.emptyText}>Sin personas asignadas. Jinetes y peones solo ven los caballos que les asignes.</Text>
+              ) : (
+                <View style={s.docsCard}>
+                  {assignees.map((m, i) => (
+                    <View key={m.id}>
+                      {i > 0 && <View style={s.docDivider} />}
+                      <View style={s.docRow}>
+                        <View style={[s.docIcon, { backgroundColor: c.brandSoft }]}>
+                          <Users size={16} color={c.brand} strokeWidth={2} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.docName}>{m.user.name}</Text>
+                          <Text style={{ fontSize: 11, color: c.textFaint }}>{m.user.email}</Text>
+                        </View>
+                        {canManageTeam && (
+                          <TouchableOpacity onPress={() => handleRemoveMember(m.user_id, m.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                             <XCircle size={20} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
@@ -1112,6 +1171,63 @@ export default function HorseDetailScreen() {
                 activeOpacity={0.85}
               >
                 {assignVet.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ─── Modal asignar equipo ─── */}
+      <Modal visible={showAssignTeam} animationType="fade" transparent onRequestClose={() => setShowAssignTeam(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Asignar equipo</Text>
+              <TouchableOpacity onPress={() => setShowAssignTeam(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
+            </View>
+            <View style={s.modalBody}>
+              <Text style={{ fontSize: 12, color: c.textMuted, marginBottom: 12 }}>
+                Jinetes y peones solo ven los caballos que les asignes.
+              </Text>
+              <Text style={s.fieldLabel}>Persona</Text>
+              {!orgMembers?.length ? (
+                <Text style={s.emptyText}>No hay miembros (jinete / peón / encargado) en la organización de este caballo.</Text>
+              ) : (
+                <View style={{ gap: 6 }}>
+                  {orgMembers
+                    .filter((m) => !assignees?.some((a) => a.user_id === m.user_id))
+                    .map((m) => (
+                      <TouchableOpacity
+                        key={m.user_id}
+                        style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedMemberId === m.user_id && { backgroundColor: colors.brand, borderColor: colors.brand }]}
+                        onPress={() => setSelectedMemberId(m.user_id)}
+                        activeOpacity={0.75}
+                      >
+                        <Users size={16} color={selectedMemberId === m.user_id ? colors.white : c.brand} strokeWidth={2} />
+                        <Text style={[s.smallBtnText, selectedMemberId === m.user_id && { color: colors.white }]}>
+                          {m.name} · {orgRoleLabel[m.role_in_org] ?? m.role_in_org}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              )}
+            </View>
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignTeam(false)}>
+                <Text style={s.btnSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedMemberId || assignMember.isPending) && { opacity: 0.5 }]}
+                disabled={!selectedMemberId || assignMember.isPending}
+                onPress={async () => {
+                  await assignMember.mutateAsync(selectedMemberId);
+                  haptic.success();
+                  setShowAssignTeam(false);
+                  setSelectedMemberId('');
+                }}
+                activeOpacity={0.85}
+              >
+                {assignMember.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
               </TouchableOpacity>
             </View>
           </View>
