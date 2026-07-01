@@ -3,9 +3,12 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { MedicalRecord } from '../medical/medical-record.entity';
+import { User } from '../auth/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { EmailService } from '../email/email.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { PlansService } from '../plans/plans.service';
 import { NotificationType } from '../notifications/notification.entity';
 
 @Injectable()
@@ -15,9 +18,13 @@ export class MedicalRemindersService {
   constructor(
     @InjectRepository(MedicalRecord)
     private readonly medicalRepo: Repository<MedicalRecord>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly notificationsService: NotificationsService,
     private readonly gateway: NotificationsGateway,
     private readonly emailService: EmailService,
+    private readonly whatsappService: WhatsappService,
+    private readonly plansService: PlansService,
   ) {}
 
   // Corre todos los días a las 8:00 AM
@@ -35,9 +42,9 @@ export class MedicalRemindersService {
     const todayISO = today.toISOString().split('T')[0];
     const in7DaysISO = in7Days.toISOString().split('T')[0];
 
-    const records: Array<MedicalRecord & { owner_id: string; owner_email: string; owner_name: string; horse_name: string }> =
+    const records: Array<MedicalRecord & { owner_id: string; owner_email: string; owner_name: string; owner_phone: string | null; horse_name: string }> =
       await this.medicalRepo.query(
-        `SELECT mr.*, h.name AS horse_name, u.id AS owner_id, u.email AS owner_email, u.name AS owner_name
+        `SELECT mr.*, h.name AS horse_name, u.id AS owner_id, u.email AS owner_email, u.name AS owner_name, u.phone AS owner_phone
          FROM medical_records mr
          JOIN horses h ON h.id = mr.horse_id
          JOIN users u ON u.id = h.owner_id
@@ -85,6 +92,21 @@ export class MedicalRemindersService {
           dueDate: dueDateStr,
           daysUntilDue: daysUntil,
         }).catch(() => {});
+
+        // WhatsApp al owner (gateado por plan + opt-in). Nunca rompe el cron.
+        // TODO: gating por org (hoy se gatea por el user owner).
+        if (rec.owner_phone) {
+          const owner = await this.userRepository.findOne({ where: { id: rec.owner_id } });
+          if (
+            owner?.phone &&
+            owner.whatsapp_opt_in &&
+            (await this.plansService.hasFeature('whatsapp', { user: owner }))
+          ) {
+            await this.whatsappService
+              .sendMedicalReminder(owner.phone, rec.horse_name, `${rec.name} — ${dueDateStr}`)
+              .catch(() => {});
+          }
+        }
       }
     }
   }

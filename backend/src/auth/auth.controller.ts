@@ -95,6 +95,8 @@ export class AuthController {
       plan_expires_at: user.plan_expires_at,
       avatar_url: user.avatar_url ?? null,
       avatar_color: user.avatar_color ?? null,
+      phone: user.phone ?? null,
+      whatsapp_opt_in: user.whatsapp_opt_in ?? false,
       cover_url: user.cover_url ?? null,
       vet_license_number: user.vet_license_number ?? null,
       vet_province: user.vet_province ?? null,

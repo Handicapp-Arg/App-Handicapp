@@ -4,9 +4,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
+import { User } from '../auth/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { EmailService } from '../email/email.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { PlansService } from '../plans/plans.service';
 import { NotificationType } from '../notifications/notification.entity';
 
 const REMINDER_DAYS = parseInt(process.env.HEALTH_REMINDER_DAYS ?? '30', 10);
@@ -20,9 +23,13 @@ export class HealthRemindersService {
     private readonly horseRepository: Repository<Horse>,
     @InjectRepository(HorseUser)
     private readonly horseUserRepository: Repository<HorseUser>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly notificationsService: NotificationsService,
     private readonly gateway: NotificationsGateway,
     private readonly emailService: EmailService,
+    private readonly whatsappService: WhatsappService,
+    private readonly plansService: PlansService,
   ) {}
 
   // Todos los días a las 8:00 AM
@@ -90,8 +97,8 @@ export class HealthRemindersService {
       }
 
       // Email al owner
-      const ownerData: { email: string; name: string }[] = await this.horseRepository.query(
-        `SELECT email, name FROM users WHERE id = $1`,
+      const ownerData: { email: string; name: string; phone: string | null }[] = await this.horseRepository.query(
+        `SELECT email, name, phone FROM users WHERE id = $1`,
         [horse.owner_id],
       );
       if (ownerData[0]?.email) {
@@ -103,6 +110,19 @@ export class HealthRemindersService {
           eventType: 'Recordatorio de salud',
           description: message,
         }).catch(() => {});
+      }
+
+      // WhatsApp al owner (gateado por plan + opt-in). Nunca rompe el cron.
+      // TODO: gating por org (hoy se gatea por el user owner).
+      if (ownerData[0]?.phone) {
+        const owner = await this.userRepository.findOne({ where: { id: horse.owner_id } });
+        if (
+          owner?.phone &&
+          owner.whatsapp_opt_in &&
+          (await this.plansService.hasFeature('whatsapp', { user: owner }))
+        ) {
+          await this.whatsappService.sendHealthReminder(owner.phone, horse.name).catch(() => {});
+        }
       }
     }
   }

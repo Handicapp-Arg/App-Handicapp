@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform,
+  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
@@ -391,6 +391,89 @@ function AvatarColorSection({ user, c, s }: {
   );
 }
 
+/* ─── Contacto / WhatsApp ─── */
+
+function ContactSection({ user, c, s }: {
+  user: { phone?: string | null; whatsapp_opt_in?: boolean };
+  c: ThemeColors; s: Styles;
+}) {
+  const { updateProfile } = useAuth();
+  const [phone, setPhone] = useState(user.phone ?? '');
+  const [optIn, setOptIn] = useState(!!user.whatsapp_opt_in);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [togglingOptIn, setTogglingOptIn] = useState(false);
+
+  const handleSavePhone = async () => {
+    haptic.medium();
+    setSavingPhone(true);
+    try {
+      await updateProfile({ phone: phone.trim() || null });
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar el teléfono. Intentá de nuevo.');
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleToggle = async (next: boolean) => {
+    haptic.selection();
+    setOptIn(next);
+    setTogglingOptIn(true);
+    try {
+      await updateProfile({ whatsapp_opt_in: next });
+    } catch {
+      setOptIn(!next); // revertir en caso de error
+      Alert.alert('Error', 'No se pudo actualizar la preferencia. Intentá de nuevo.');
+    } finally {
+      setTogglingOptIn(false);
+    }
+  };
+
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Contacto / WhatsApp</Text>
+      <View style={s.vetCard}>
+        <View style={s.editField}>
+          <Text style={s.editLabel}>Teléfono</Text>
+          <TextInput
+            style={s.editInput}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="+54 9 11 ..."
+            placeholderTextColor={c.textFaint}
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+          />
+        </View>
+        <TouchableOpacity
+          style={[s.editSaveBtn, savingPhone && s.editSaveBtnDisabled]}
+          onPress={handleSavePhone}
+          disabled={savingPhone}
+          activeOpacity={0.85}
+        >
+          {savingPhone
+            ? <ActivityIndicator color={colors.white} size="small" />
+            : <Text style={s.editSaveBtnText}>Guardar teléfono</Text>}
+        </TouchableOpacity>
+
+        <View style={s.whatsappRow}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={s.accountRowLabel}>Recibir recordatorios por WhatsApp</Text>
+            <Text style={s.accountRowSub}>Disponible según tu plan.</Text>
+          </View>
+          <Switch
+            value={optIn}
+            onValueChange={handleToggle}
+            disabled={togglingOptIn}
+            trackColor={{ false: c.borderStrong, true: c.brand }}
+            thumbColor={colors.white}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
 /* ─── Matrícula profesional (solo veterinarios) ─── */
 
 const LICENSE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
@@ -645,6 +728,9 @@ export default function PerfilScreen() {
             </View>
           </View>
 
+          {/* Contacto / WhatsApp */}
+          <ContactSection user={user} c={c} s={s} />
+
           {/* Matrícula profesional (solo veterinarios) */}
           {user.role === 'veterinario' && <VetLicenseSection user={user} c={c} s={s} />}
 
@@ -882,6 +968,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingVertical: space[3], backgroundColor: c.surfaceAlt,
   },
   vetPhotoBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.text },
+
+  whatsappRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    borderTopWidth: 1, borderTopColor: c.border, paddingTop: space[3], marginTop: space[1],
+  },
 
   modalOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,

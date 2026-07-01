@@ -44,6 +44,12 @@ export class User {
   push_token: string | null;
 
   @Column({ type: 'varchar', nullable: true })
+  phone: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  whatsapp_opt_in: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
   avatar_url: string | null;
 
   @Column({ type: 'varchar', nullable: true })

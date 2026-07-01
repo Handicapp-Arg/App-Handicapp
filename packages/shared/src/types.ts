@@ -4,6 +4,8 @@ export interface User {
   name: string;
   role: string;
   permissions: string[];
+  phone?: string | null;
+  whatsapp_opt_in?: boolean;
   avatar_color?: string | null;
   vet_license_number?: string | null;
   vet_province?: string | null;

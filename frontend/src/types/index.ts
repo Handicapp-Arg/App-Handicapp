@@ -12,6 +12,8 @@ export interface User {
   permissions: string[];
   created_at: string;
   plan?: string;
+  phone?: string | null;
+  whatsapp_opt_in?: boolean;
   avatar_url?: string | null;
   avatar_color?: string | null;
   cover_url?: string | null;

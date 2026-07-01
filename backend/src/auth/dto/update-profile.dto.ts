@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { IsStrongPassword } from './password.decorator';
 
 /** Ids de tono de la paleta de avatar (debe coincidir con avatar-color en web/móvil). */
@@ -19,6 +19,14 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsIn([...AVATAR_COLOR_IDS, null])
   avatar_color?: string | null;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  whatsapp_opt_in?: boolean;
 }
 
 export class ChangePasswordDto {

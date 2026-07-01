@@ -425,6 +425,95 @@ function VetLicenseSection() {
   );
 }
 
+/* ─── Contacto / WhatsApp ─── */
+
+function ContactSection() {
+  const { user, refreshUser } = useAuth();
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [optIn, setOptIn] = useState(!!user?.whatsapp_opt_in);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [togglingOptIn, setTogglingOptIn] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(''); setError(''); setSavingPhone(true);
+    try {
+      await api.patch('/auth/profile', { phone: phone.trim() || null });
+      await refreshUser();
+      setMsg('Teléfono actualizado correctamente');
+    } catch (err: unknown) {
+      setError(errMessage(err, 'No se pudo actualizar el teléfono'));
+    } finally { setSavingPhone(false); }
+  };
+
+  const handleToggle = async () => {
+    const next = !optIn;
+    setOptIn(next);
+    setMsg(''); setError(''); setTogglingOptIn(true);
+    try {
+      await api.patch('/auth/profile', { whatsapp_opt_in: next });
+      await refreshUser();
+    } catch (err: unknown) {
+      setOptIn(!next); // revertir en caso de error
+      setError(errMessage(err, 'No se pudo actualizar la preferencia'));
+    } finally { setTogglingOptIn(false); }
+  };
+
+  return (
+    <SectionCard title="Contacto / WhatsApp">
+      <div className="space-y-5">
+        <form onSubmit={handlePhoneSubmit} className="space-y-4">
+          <Field label="Teléfono" hint="Formato internacional, con código de país.">
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={inputCls}
+              placeholder="+54 9 11 ..."
+            />
+          </Field>
+          {msg && <Alert type="success" message={msg} />}
+          {error && <Alert type="error" message={error} />}
+          <button
+            type="submit"
+            disabled={savingPhone}
+            className="flex items-center gap-2 rounded-xl bg-clay-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-clay-600 active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {savingPhone ? <><Spinner size="sm" color="white" /> Guardando...</> : 'Guardar teléfono'}
+          </button>
+        </form>
+
+        <div className="border-t border-gray-100 pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-700">Recibir recordatorios por WhatsApp</p>
+              <p className="mt-0.5 text-xs text-gray-400">Disponible según tu plan.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={optIn}
+              onClick={handleToggle}
+              disabled={togglingOptIn}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 cursor-pointer ${
+                optIn ? 'bg-clay-500' : 'bg-gray-200 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                  optIn ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 export default function PerfilPage() {
   const { user, refreshUser } = useAuth();
 
@@ -623,6 +712,9 @@ export default function PerfilPage() {
               </button>
             </form>
           </SectionCard>
+
+          {/* Contacto / WhatsApp */}
+          <ContactSection />
 
           {/* Matrícula profesional (solo veterinarios) */}
           {user?.role === 'veterinario' && <VetLicenseSection />}
