@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -197,13 +198,11 @@ export default function MuroPage() {
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-20 bg-[var(--surface-card)] rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mx-auto mb-4">
-                <Rss className="h-8 w-8 text-gray-300" />
-              </div>
-              <p className="font-semibold text-gray-600">Todavía no hay publicaciones</p>
-              <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">¡Sé el primero en compartir algo con la comunidad!</p>
-            </div>
+            <EmptyState
+              icon={Rss}
+              title="Todavía no hay publicaciones"
+              message="Compartí una novedad, un logro o una foto y empezá la conversación con la comunidad."
+            />
           ) : (
             <>
               <div className="space-y-4">

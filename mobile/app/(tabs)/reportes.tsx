@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { AxiosError } from 'axios';
 import { useRouter } from 'expo-router';
@@ -13,6 +13,8 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes } from '../../lib/routes';
 import { useReportSummary, type ReportSummary } from '../../hooks/use-reports';
+import { ReportSkeleton } from '../../components/Skeleton';
+import { EmptyState } from '../../components/EmptyState';
 
 const RED = '#dc2626';
 const AMBER = '#d97706';
@@ -262,11 +264,16 @@ export default function ReportesScreen() {
       <ScreenHeader title="Reportes" showBack backTo={Routes.mas} />
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
-          <View style={s.loadingBox}><ActivityIndicator color={c.brand} /></View>
+          <ReportSkeleton />
         ) : status === 403 ? (
           <NoPlanState c={c} s={s} />
         ) : error ? (
-          <Text style={s.emptyText}>No se pudo cargar el reporte.</Text>
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="No pudimos cargar tus reportes"
+            message="Revisá tu conexión e intentá de nuevo en un momento."
+            tint={colors.red500}
+          />
         ) : data ? (
           <>
             <View style={s.statRow}>
@@ -307,11 +314,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   content: { padding: space[4], paddingBottom: space[12], gap: space[4] },
 
-  loadingBox: {
-    height: 120, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.border,
-  },
   emptyText: { fontSize: text.sm, color: c.textFaint, paddingHorizontal: space[1] },
 
   /* Stats */

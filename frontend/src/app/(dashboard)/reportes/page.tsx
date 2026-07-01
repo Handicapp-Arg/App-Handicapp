@@ -6,7 +6,7 @@ import {
   BarChart3, HeartPulse, Wallet, CalendarClock, Stethoscope,
   AlertTriangle, Clock, CheckCircle2,
 } from 'lucide-react';
-import { PageHeader, Card, Spinner } from '@/components/ui';
+import { PageHeader, Card } from '@/components/ui';
 import { useReportSummary, type ReportSummary } from '@/hooks/use-reports';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -344,8 +344,30 @@ export default function ReportesPage() {
       <PageHeader title="Reportes" subtitle="Resumen de tus caballos, salud, gastos y agenda" />
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
+        <div className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Card key={i} className="flex items-center gap-4">
+                <div className="skeleton-shimmer h-11 w-11 shrink-0 rounded-xl" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="skeleton-shimmer h-3 w-20 rounded-md" />
+                  <div className="skeleton-shimmer h-6 w-16 rounded-md" />
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {[0, 1].map((i) => (
+              <Card key={i} className="space-y-4">
+                <div className="skeleton-shimmer h-4 w-32 rounded-md" />
+                <div className="skeleton-shimmer h-40 w-full rounded-xl" />
+              </Card>
+            ))}
+          </div>
+          <Card className="space-y-4">
+            <div className="skeleton-shimmer h-4 w-40 rounded-md" />
+            <div className="skeleton-shimmer h-32 w-full rounded-xl" />
+          </Card>
         </div>
       ) : status === 403 ? (
         <NoPlanState />

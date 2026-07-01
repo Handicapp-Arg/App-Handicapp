@@ -8,6 +8,8 @@ import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
 import AgendaCalendar, { appointmentDateKey } from '@/components/agenda-calendar';
 import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SkeletonRow } from '@/components/ui/skeleton';
 
 const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES).map(([value, meta]) => ({ value, ...meta }));
 
@@ -235,9 +237,7 @@ export default function AgendaPage() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[var(--color-primary)]" />
-        </div>
+        <div className="space-y-2">{[1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)}</div>
       ) : viewMode === 'calendar' ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
           <AgendaCalendar
@@ -284,16 +284,20 @@ export default function AgendaPage() {
           </div>
         </div>
       ) : !appointments?.length ? (
-        <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400">
-            {view === 'upcoming' ? 'No hay turnos próximos' : 'No hay turnos registrados'}
-          </p>
-          {horses && horses.length > 0 && (
-            <button onClick={() => setShowCreate(true)} className="mt-3 text-sm font-medium underline cursor-pointer" style={{ color: 'var(--color-primary)' }}>
-              Crear el primero
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon={CalendarDays}
+          title={view === 'upcoming' ? 'No tenés turnos próximos' : 'Todavía no registraste turnos'}
+          message={
+            view === 'upcoming'
+              ? 'Programá vacunaciones, visitas del veterinario o herrajes y los vas a ver acá.'
+              : 'Cuando cargues turnos en la agenda, van a aparecer en esta lista.'
+          }
+          action={
+            horses && horses.length > 0
+              ? { label: 'Crear turno', onClick: () => setShowCreate(true) }
+              : undefined
+          }
+        />
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([day, items]) => (

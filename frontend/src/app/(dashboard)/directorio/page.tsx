@@ -7,7 +7,10 @@ import { useHorses } from '@/hooks/use-horses';
 import { useAuth } from '@/lib/auth-context';
 import { useCreateBoardingRequest, useBoardingRequests } from '@/hooks/use-boarding-requests';
 import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SkeletonRow } from '@/components/ui/skeleton';
 import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { Building2, Search as SearchIcon } from 'lucide-react';
 
 interface DirectorioItem {
   id: string;
@@ -190,15 +193,17 @@ export default function DirectorioPage() {
 
       {/* Lista */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-200" style={{ borderTopColor: 'var(--color-primary)' }} />
-        </div>
+        <div className="grid gap-4 sm:grid-cols-2">{[1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}</div>
       ) : !items?.length ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400">
-            {search ? 'Sin resultados para esa búsqueda' : 'No hay establecimientos registrados todavía.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={search ? SearchIcon : Building2}
+          title={search ? 'No encontramos establecimientos' : 'Todavía no hay establecimientos'}
+          message={
+            search
+              ? 'Probá con otro nombre o limpiá la búsqueda para ver el directorio completo.'
+              : 'Cuando se registren establecimientos, vas a poder encontrarlos y contactarlos desde acá.'
+          }
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {items.map((item) => {

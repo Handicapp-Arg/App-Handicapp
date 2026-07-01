@@ -48,10 +48,10 @@ export function QueryState<T>({
     );
   }
   if (query.data === undefined) {
-    return <>{emptyState ?? <EmptyState title="Sin datos" />}</>;
+    return <>{emptyState ?? <EmptyState title="Todavía no hay nada por acá" message="Cuando se cargue información, la vas a ver en esta pantalla." />}</>;
   }
   if (isEmpty?.(query.data)) {
-    return <>{emptyState ?? <EmptyState title="Sin datos" />}</>;
+    return <>{emptyState ?? <EmptyState title="Todavía no hay nada por acá" message="Cuando se cargue información, la vas a ver en esta pantalla." />}</>;
   }
   return <>{children(query.data)}</>;
 }

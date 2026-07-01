@@ -56,14 +56,18 @@ export function EmptyState({
     >
       <div
         className={cn(
-          'mb-4 flex items-center justify-center text-[var(--color-bark-400)]',
-          illustration ? 'h-32 w-32' : 'h-14 w-14 rounded-2xl bg-gray-100',
+          'mb-4 flex items-center justify-center',
+          illustration
+            ? 'h-32 w-32 text-[var(--color-bark-400)]'
+            : 'h-14 w-14 rounded-2xl bg-[var(--color-clay-50)] text-[var(--color-primary)]',
         )}
       >
         {renderIcon(icon, illustration)}
       </div>
-      <p className="text-sm font-semibold text-gray-900">{title}</p>
-      {message && <p className="mt-1.5 max-w-sm text-sm text-slate-500">{message}</p>}
+      <p className="font-display text-base font-semibold text-[var(--foreground)]">{title}</p>
+      {message && (
+        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-[var(--color-slate-500)]">{message}</p>
+      )}
       {(action || secondary) && (
         <div className="mt-5 flex items-center gap-2">
           {action && <Button onClick={action.onClick}>{action.label}</Button>}

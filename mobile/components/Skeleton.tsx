@@ -105,6 +105,39 @@ export function ListRowSkeleton() {
   );
 }
 
+/** Skeleton para la pantalla de reportes (stats + cards) */
+export function ReportSkeleton() {
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+  return (
+    <View style={{ gap: 16 }}>
+      <View style={s.statsRow}>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={s.reportStat}>
+            <Skeleton width={22} height={22} borderRadius={radius.sm} />
+            <Skeleton height={9} width="60%" style={{ marginTop: 8 }} />
+            <Skeleton height={18} width="80%" style={{ marginTop: 6 }} />
+          </View>
+        ))}
+      </View>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={s.reportCard}>
+          <View style={s.postHead}>
+            <Skeleton width={18} height={18} borderRadius={radius.sm} />
+            <Skeleton height={14} width={140} />
+          </View>
+          <Skeleton height={8} width="100%" borderRadius={radius.full} style={{ marginTop: 16 }} />
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+            <Skeleton height={58} style={{ flex: 1 }} borderRadius={radius.md} />
+            <Skeleton height={58} style={{ flex: 1 }} borderRadius={radius.md} />
+            <Skeleton height={58} style={{ flex: 1 }} borderRadius={radius.md} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /** Skeleton para una publicación del muro */
 export function PostSkeleton() {
   const { c } = useTheme();
@@ -135,4 +168,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   postHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsRow: { flexDirection: 'row', gap: 12 },
   homePad: { padding: 16, gap: 0 },
+  reportStat: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.border, padding: 12 },
+  reportCard: { backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.border, padding: 16 },
 });

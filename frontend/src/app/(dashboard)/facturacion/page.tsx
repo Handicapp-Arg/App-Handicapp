@@ -5,8 +5,11 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/auth-context';
 import { useBills, useCreateBill, useSendBill, useApproveBill, useDisputeBill, useDeleteBill, STATUS_META, monthLabel } from '@/hooks/use-billing';
 import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SkeletonRow } from '@/components/ui/skeleton';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { Receipt } from 'lucide-react';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i] }));
 
@@ -197,15 +200,18 @@ export default function FacturacionPage() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-gray-100 border-t-[var(--color-primary)]" />
-        </div>
+        <div className="space-y-3">{[1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}</div>
       ) : !bills?.length ? (
-        <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400">
-            {isEst ? 'No hay facturas creadas todavía.' : 'No recibiste facturas todavía.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title={isEst ? 'Todavía no creaste facturas' : 'Todavía no recibiste facturas'}
+          message={
+            isEst
+              ? 'Generá la primera factura para empezar a llevar el control de cobros de tus pensionados.'
+              : 'Cuando el establecimiento te envíe una factura, la vas a ver acá.'
+          }
+          action={isEst ? { label: 'Nueva factura', onClick: () => setShowCreate(true) } : undefined}
+        />
       ) : (
         <div className="space-y-3">
           {bills.map((bill) => {

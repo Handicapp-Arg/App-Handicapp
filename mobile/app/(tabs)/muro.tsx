@@ -603,9 +603,11 @@ export default function MuroTab() {
           }
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <Newspaper size={52} color={c.textFaint} strokeWidth={2} />
+              <View style={s.emptyIcon}>
+                <Newspaper size={32} color={c.textFaint} strokeWidth={2} />
+              </View>
               <Text style={s.emptyTitle}>Todavía no hay publicaciones</Text>
-              <Text style={s.emptySub}>¡Sé el primero en compartir algo!</Text>
+              <Text style={s.emptySub}>¡Sé el primero en compartir algo con tu comunidad!</Text>
             </View>
           }
         />
@@ -755,6 +757,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   // Empty
   emptyBox: { alignItems: 'center', paddingTop: 60, paddingHorizontal: space[6], gap: space[3] },
+  emptyIcon: { width: 84, height: 84, borderRadius: radius.full, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: space[1] },
   emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
   emptySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },
 });

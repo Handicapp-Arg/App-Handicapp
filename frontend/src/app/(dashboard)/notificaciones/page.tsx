@@ -7,8 +7,8 @@ import {
   ArrowUp, Bell, type LucideIcon,
 } from 'lucide-react';
 import { useNotifications, useMarkAsRead } from '@/hooks/use-notifications';
-import { PageLoader } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ListSkeleton } from '@/components/ui/page-skeletons';
 
 type NotifData = { id: string; title: string; message: string; read: boolean; type: string; created_at: string; event_id: string | null };
 
@@ -85,7 +85,13 @@ export default function NotificacionesPage() {
     else router.push('/eventos');
   };
 
-  if (isLoading) return <PageLoader />;
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <ListSkeleton rows={5} />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
