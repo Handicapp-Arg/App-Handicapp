@@ -25,20 +25,20 @@ export const INDIVIDUAL_PLAN_LIMITS = {
 const PLAN_SEED: Array<Partial<Plan>> = [
   // Propietario (3)
   { role_target: 'propietario', tier_key: 'free',    name: 'Gratis',   tier: 0, price_ars: 0,      horse_limit: 3,    staff_limit: null, features: [] },
-  { role_target: 'propietario', tier_key: 'pro',     name: 'Pro',      tier: 1, price_ars: 0,      horse_limit: 15,   staff_limit: null, features: ['whatsapp'] },
-  { role_target: 'propietario', tier_key: 'premium', name: 'Premium',  tier: 2, price_ars: 0,      horse_limit: null, staff_limit: null, features: ['whatsapp', 'reportes'] },
+  { role_target: 'propietario', tier_key: 'pro',     name: 'Pro',      tier: 1, price_ars: 9900,   horse_limit: 15,   staff_limit: null, features: ['whatsapp'] },
+  { role_target: 'propietario', tier_key: 'premium', name: 'Premium',  tier: 2, price_ars: 19900,  horse_limit: null, staff_limit: null, features: ['whatsapp', 'reportes'] },
   // Veterinario (2)
   { role_target: 'veterinario', tier_key: 'free',    name: 'Gratis',   tier: 0, price_ars: 0,      horse_limit: 10,   staff_limit: null, features: [] },
-  { role_target: 'veterinario', tier_key: 'pro',     name: 'Pro',      tier: 1, price_ars: 0,      horse_limit: null, staff_limit: null, features: ['whatsapp', 'libreta_digital'] },
+  { role_target: 'veterinario', tier_key: 'pro',     name: 'Pro',      tier: 1, price_ars: 14900,  horse_limit: null, staff_limit: null, features: ['whatsapp', 'libreta_digital'] },
   // Establecimiento (4)
   { role_target: 'establecimiento', tier_key: 'free',       name: 'Gratis',       tier: 0, price_ars: 0,      horse_limit: 3,    staff_limit: 2,    features: [] },
   { role_target: 'establecimiento', tier_key: 'basic',      name: 'Stable Basic', tier: 1, price_ars: 25000,  horse_limit: 25,   staff_limit: 5,    features: [] },
   { role_target: 'establecimiento', tier_key: 'pro',        name: 'Stable Pro',   tier: 2, price_ars: 60000,  horse_limit: 80,   staff_limit: 15,   features: ['whatsapp'] },
   { role_target: 'establecimiento', tier_key: 'enterprise', name: 'Enterprise',   tier: 3, price_ars: 150000, horse_limit: null, staff_limit: null, features: ['whatsapp', 'reportes'] },
   // Haras (3) — el módulo reproductivo es Fase 4
-  { role_target: 'haras', tier_key: 'basic',      name: 'Haras Basic',      tier: 1, price_ars: 0, horse_limit: 40,   staff_limit: 8,    features: ['reproductivo'] },
-  { role_target: 'haras', tier_key: 'pro',        name: 'Haras Pro',        tier: 2, price_ars: 0, horse_limit: 120,  staff_limit: 20,   features: ['reproductivo', 'whatsapp'] },
-  { role_target: 'haras', tier_key: 'enterprise', name: 'Haras Enterprise', tier: 3, price_ars: 0, horse_limit: null, staff_limit: null, features: ['reproductivo', 'whatsapp', 'reportes'] },
+  { role_target: 'haras', tier_key: 'basic',      name: 'Haras Basic',      tier: 1, price_ars: 45000,  horse_limit: 40,   staff_limit: 8,    features: ['reproductivo'] },
+  { role_target: 'haras', tier_key: 'pro',        name: 'Haras Pro',        tier: 2, price_ars: 95000,  horse_limit: 120,  staff_limit: 20,   features: ['reproductivo', 'whatsapp'] },
+  { role_target: 'haras', tier_key: 'enterprise', name: 'Haras Enterprise', tier: 3, price_ars: 190000, horse_limit: null, staff_limit: null, features: ['reproductivo', 'whatsapp', 'reportes'] },
 ];
 
 @Injectable()
