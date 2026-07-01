@@ -8,6 +8,7 @@ import { OrganizationMember } from '../organizations/organization-member.entity'
 import { User } from '../auth/user.entity';
 import { Horse } from '../horses/horse.entity';
 import { PLAN_LIMITS } from '../plans/plans.service';
+import { SenasaService } from '../senasa/senasa.service';
 
 const PLAN_PRICES_ARS: Record<OrganizationPlan, number> = {
   free:       0,
@@ -27,6 +28,7 @@ export class SuperAdminService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Horse)
     private readonly horseRepo: Repository<Horse>,
+    private readonly senasaService: SenasaService,
   ) {}
 
   private assertSuperAdmin(user: User): void {
@@ -207,6 +209,20 @@ export class SuperAdminService {
       vet_province: u.vet_province,
       vet_license_url: u.vet_license_url,
     }));
+  }
+
+  /** Cruce asistido contra el registro público de SENASA (orientativo). */
+  async senasaCheck(user: User, userId: string) {
+    this.assertSuperAdmin(user);
+    const target = await this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'name', 'vet_province'],
+    });
+    if (!target) throw new NotFoundException('Usuario no encontrado');
+    return this.senasaService.checkVeterinarian({
+      name: target.name,
+      province: target.vet_province,
+    });
   }
 
   async setLicenseStatus(user: User, userId: string, status: 'approved' | 'rejected') {

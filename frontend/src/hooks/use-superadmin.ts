@@ -109,6 +109,40 @@ export function useVetLicenses() {
   });
 }
 
+// ─── Cruce asistido contra SENASA ───
+
+export interface SenasaMatch {
+  name: string;
+  cuit?: string;
+  province?: string;
+  email?: string;
+}
+
+export type SenasaCheckResult =
+  | {
+      available: true;
+      found: boolean;
+      matches: SenasaMatch[];
+      truncated: boolean;
+      query: string;
+      source_url: string;
+    }
+  | { available: false; manual_url: string; hint: string; query: string };
+
+/**
+ * Consulta on-demand (enabled=false) el registro público de SENASA para un vet.
+ * Es orientativo: nunca rompe el panel. Disparar con `refetch()`.
+ */
+export function useSenasaCheck(userId: string | null) {
+  return useQuery<SenasaCheckResult>({
+    queryKey: ['superadmin', 'senasa-check', userId],
+    queryFn: async () => (await api.get(`/superadmin/licenses/${userId}/senasa-check`)).data,
+    enabled: false,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 export function useSetLicenseStatus() {
   const qc = useQueryClient();
   return useMutation({

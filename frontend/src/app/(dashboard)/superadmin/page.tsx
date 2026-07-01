@@ -1,13 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Building2, ChevronLeft, ChevronRight, ExternalLink, Lock, Plus, Search, ShieldCheck,
+  AlertTriangle, Building2, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink,
+  Lock, Plus, Search, ShieldCheck, ShieldQuestion, XCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
   useSuperAdminMetrics, useSuperAdminOrgs, useCreateOrgManually,
   useSetOrgPlan, useSetOrgStatus, useDeleteOrg, useVetLicenses, useSetLicenseStatus,
+  useSenasaCheck,
   type SuperAdminOrg, type VetLicense,
 } from '@/hooks/use-superadmin';
 import { PLAN_LABELS, type OrgPlan } from '@/hooks/use-organizations';
@@ -321,9 +323,110 @@ function TableFooter({
 const SENASA_URL =
   'https://aps2.senasa.gov.ar/registros/faces/publico/personas/tc_veterinariospublico.jsp';
 
+// ─────────────────────────── SENASA check modal ───────────────────────────
+function SenasaCheckModal({ vet, open, onClose }: { vet: VetLicense | null; open: boolean; onClose: () => void }) {
+  const { data, isFetching, isError, refetch } = useSenasaCheck(vet?.id ?? null);
+
+  // Dispara la consulta cada vez que se abre el modal para un vet.
+  useEffect(() => {
+    if (open && vet) refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, vet?.id]);
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Cruce con SENASA"
+      description={vet ? `${vet.name}${vet.vet_province ? ` · ${vet.vet_province}` : ''}` : undefined}
+      size="md"
+      footer={
+        <>
+          <a
+            href={SENASA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-700 hover:underline"
+          >
+            Abrir buscador SENASA <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          </a>
+          <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+          Resultado <strong>orientativo</strong>: consulta el registro público de acreditados de SENASA por apellido y
+          provincia. La decisión final de aprobar o rechazar es siempre tuya.
+        </p>
+
+        {(isFetching || (!data && !isError)) && (
+          <div className="flex items-center gap-2 py-4 text-sm text-slate-500">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-navy-700" aria-hidden />
+            Consultando SENASA…
+          </div>
+        )}
+
+        {!isFetching && (isError || (data && data.available === false)) && (
+          <div className="flex items-start gap-3 rounded-xl border border-warning-500/30 bg-warning-50 p-4 dark:bg-warning-500/10">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-700" aria-hidden />
+            <div className="text-sm">
+              <p className="font-semibold text-warning-700">No se pudo consultar automáticamente</p>
+              <p className="mt-1 text-warning-700/80">
+                {data && data.available === false ? data.hint : 'SENASA no respondió.'} Verificá manualmente con el
+                buscador oficial.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isFetching && data && data.available === true && data.found && (
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 rounded-xl border border-success-500/30 bg-success-50 p-4 dark:bg-success-500/10">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-700" aria-hidden />
+              <div className="text-sm">
+                <p className="font-semibold text-success-700">Figura acreditado en SENASA</p>
+                <p className="mt-1 text-success-700/80">
+                  {data.matches.length} coincidencia{data.matches.length === 1 ? '' : 's'} para
+                  “{data.query}”{data.truncated ? ' (mostrando las primeras 10)' : ''}. Confirmá que corresponde al
+                  veterinario.
+                </p>
+              </div>
+            </div>
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+              {data.matches.map((m, i) => (
+                <li key={`${m.cuit ?? m.name}-${i}`} className="px-4 py-2.5">
+                  <p className="text-sm font-semibold text-gray-900">{m.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {[m.cuit, m.province].filter(Boolean).join(' · ') || '—'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {!isFetching && data && data.available === true && !data.found && (
+          <div className="flex items-start gap-3 rounded-xl border border-danger-500/30 bg-danger-50 p-4 dark:bg-danger-500/10">
+            <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger-700" aria-hidden />
+            <div className="text-sm">
+              <p className="font-semibold text-danger-700">No figura acreditado</p>
+              <p className="mt-1 text-danger-700/80">
+                No encontramos coincidencias para “{data.query}” en SENASA. Puede deberse a diferencias de nombre o
+                provincia; verificá manualmente antes de rechazar.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function VetLicensesSection() {
   const { data: licenses, isLoading } = useVetLicenses();
   const setStatus = useSetLicenseStatus();
+  const [senasaVet, setSenasaVet] = useState<VetLicense | null>(null);
 
   const columns: ColumnDef<VetLicense>[] = [
     {
@@ -374,6 +477,14 @@ function VetLicensesSection() {
         <div className="flex justify-end gap-1.5">
           <Button
             size="sm"
+            variant="ghost"
+            onClick={() => setSenasaVet(l)}
+            iconLeft={<ShieldQuestion className="h-4 w-4" aria-hidden />}
+          >
+            SENASA
+          </Button>
+          <Button
+            size="sm"
             variant="secondary"
             loading={setStatus.isPending}
             onClick={() => setStatus.mutate({ userId: l.id, status: 'approved' })}
@@ -421,6 +532,7 @@ function VetLicensesSection() {
           </div>
         }
       />
+      <SenasaCheckModal vet={senasaVet} open={!!senasaVet} onClose={() => setSenasaVet(null)} />
     </div>
   );
 }

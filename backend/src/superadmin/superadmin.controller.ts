@@ -97,6 +97,11 @@ export class SuperAdminController {
     return this.service.listPendingLicenses(user);
   }
 
+  @Get('licenses/:userId/senasa-check')
+  senasaCheck(@GetUser() user: User, @Param('userId') userId: string) {
+    return this.service.senasaCheck(user, userId);
+  }
+
   @Patch('licenses/:userId')
   setLicenseStatus(
     @GetUser() user: User,
