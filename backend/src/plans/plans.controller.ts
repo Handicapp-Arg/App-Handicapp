@@ -17,6 +17,12 @@ export class PlansController {
     return this.plansService.getPlanStatus(user);
   }
 
+  // Catálogo de planes (todos los roles) — la UI filtra por el rol del usuario.
+  @Get('catalog')
+  catalog() {
+    return this.plansService.listPlans();
+  }
+
   @Post('activate-pro')
   activatePro(
     @GetUser() user: User,
