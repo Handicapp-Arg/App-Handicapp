@@ -44,6 +44,27 @@ export function usePlanCatalog() {
   });
 }
 
+export interface UpdatePlanBody {
+  name?: string;
+  price_ars?: number;
+  horse_limit?: number | null;
+  staff_limit?: number | null;
+  features?: string[];
+  active?: boolean;
+}
+
+export function useUpdatePlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: UpdatePlanBody & { id: string }) =>
+      (await api.patch('/plans/catalog/' + id, body)).data as Plan,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plan-catalog'] });
+      queryClient.invalidateQueries({ queryKey: ['plan-status'] });
+    },
+  });
+}
+
 export function useActivatePro() {
   const queryClient = useQueryClient();
   return useMutation({

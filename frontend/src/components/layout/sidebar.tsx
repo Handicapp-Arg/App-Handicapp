@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Newspaper, ScrollText, Network, CalendarClock, Gavel,
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
-  PanelLeftClose, PanelLeftOpen,
+  CreditCard, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { HorseshoeH, HorseHead } from '@/components/icons/equine';
@@ -88,6 +88,7 @@ export function Sidebar() {
     solicitudes:    <Inbox className={ic} strokeWidth={1.8} />,
     catalogo:       <Library className={ic} strokeWidth={1.8} />,
     permisos:       <ShieldCheck className={ic} strokeWidth={1.8} />,
+    planes:         <CreditCard className={ic} strokeWidth={1.8} />,
     superadmin:     <ShieldCheck className={ic} strokeWidth={1.8} />,
     remates:        <Gavel className={ic} strokeWidth={1.8} />,
     muro:           <Newspaper className={ic} strokeWidth={1.8} />,
@@ -120,6 +121,7 @@ export function Sidebar() {
           label: 'Configuración',
           items: [
             { href: '/superadmin', label: 'Organizaciones', icon: icons.organizacion },
+            { href: '/superadmin/planes', label: 'Planes', icon: icons.planes },
             { href: '/permisos', label: 'Permisos', icon: icons.permisos },
           ],
         },
@@ -148,6 +150,13 @@ export function Sidebar() {
           ].filter(Boolean) as NavItem[],
         },
       ].filter((s) => s.items.length > 0);
+
+  // Ítem activo = el href MÁS específico (más largo) que matchea el pathname, para
+  // que una subruta (ej. /superadmin/planes) no marque también a su padre (/superadmin).
+  const activeHref = sections
+    .flatMap((s) => s.items.map((i) => i.href))
+    .filter((h) => pathname === h || (h !== '/' && pathname.startsWith(h + '/')))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <aside
@@ -178,7 +187,7 @@ export function Sidebar() {
                 <NavLink
                   key={item.href}
                   item={item}
-                  active={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                  active={item.href === activeHref}
                   collapsed={collapsed}
                 />
               ))}
