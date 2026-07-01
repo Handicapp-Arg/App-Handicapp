@@ -9,9 +9,11 @@ import { StudbookArScraper } from './scrapers/studbook-ar.scraper';
 import { PuppeteerScraperService } from './scrapers/puppeteer-scraper.service';
 
 const MIN_BIRTH_YEAR = 1900;
-const BATCH_SIZE = 10;
-const STUB_RESOLVE_BATCH = 20;
-const STUB_RESOLVE_MAX_ITERATIONS = 100;
+const BATCH_SIZE = 30;
+const STUB_RESOLVE_BATCH = 30;
+// Techo alto de seguridad; el corte real de cada corrida es por TIEMPO (ver
+// resolveAllPendingStubs) para poder drenar hasta vaciar la cola de stubs.
+const STUB_RESOLVE_MAX_ITERATIONS = 2000;
 
 // ─── Progreso de un job de import ────────────────────────────────────────────
 export interface ImportProgress {
@@ -32,6 +34,7 @@ export interface ImportProgress {
 @Injectable()
 export class HorseRecordsScrapingService {
   private readonly logger = new Logger(HorseRecordsScrapingService.name);
+  private drainingQueue = false; // evita solapar corridas del cron de la cola
   private readonly wikidata   = new WikidataScraper();
   private readonly studbookAr = new StudbookArScraper();
 
@@ -118,7 +121,13 @@ export class HorseRecordsScrapingService {
 
   // Resuelve stubs pendientes en cascada hasta que no queden más (o se alcance el límite de seguridad)
   private async resolveAllPendingStubs(progress: ImportProgress): Promise<void> {
+    const startedAt = Date.now();
+    const MAX_MS = 20 * 60 * 1000; // 20 min por corrida; el resto lo drena el cron continuo
     for (let i = 0; i < STUB_RESOLVE_MAX_ITERATIONS; i++) {
+      if (Date.now() - startedAt > MAX_MS) {
+        this.logger.warn('Stub resolution: corte por tiempo; quedan stubs pending para el cron');
+        break;
+      }
       const pending = await this.recordRepo.find({
         where: [
           { scrape_status: 'pending' },
@@ -446,19 +455,29 @@ export class HorseRecordsScrapingService {
   // Solo para foundation horses sembrados en el bootstrap
   @Cron('*/5 * * * *')
   async processPendingQueue(): Promise<void> {
-    const pending = await this.recordRepo.find({
-      where: [
-        { scrape_status: 'pending' },
-        { scrape_status: 'failed', scrape_attempts: LessThan(3) },
-      ],
-      order: { created_at: 'ASC' },
-      take: BATCH_SIZE,
-    });
+    if (this.drainingQueue) return; // no solapar con la corrida anterior
+    this.drainingQueue = true;
+    const startedAt = Date.now();
+    const MAX_MS = 4 * 60 * 1000; // drena en loop casi hasta el próximo tick, no un solo lote
+    try {
+      while (Date.now() - startedAt < MAX_MS) {
+        const pending = await this.recordRepo.find({
+          where: [
+            { scrape_status: 'pending' },
+            { scrape_status: 'failed', scrape_attempts: LessThan(3) },
+          ],
+          order: { created_at: 'ASC' },
+          take: BATCH_SIZE,
+        });
 
-    if (!pending.length) return;
+        if (!pending.length) break;
 
-    for (const record of pending) {
-      await this.scrapeIndividual(record);
+        for (const record of pending) {
+          await this.scrapeIndividual(record);
+        }
+      }
+    } finally {
+      this.drainingQueue = false;
     }
   }
 
@@ -477,11 +496,17 @@ export class HorseRecordsScrapingService {
         return;
       }
 
+      const attempts = record.scrape_attempts + 1;
+      // Si el fetch no trajo padres (y el registro tampoco los tenía), reintentar
+      // de forma acotada: así abuelos/bisabuelos que fallaron en el 1er intento se
+      // completan sin depender de re-mapear el sitio. Los foundation reales quedan
+      // 'done' tras agotar los reintentos.
+      const gotParents = !!(scraped.sire_name || scraped.dam_name || record.sire_id || record.dam_id);
       const updates: Partial<HorseRecord> = {
-        scrape_status: 'done',
+        scrape_status: (!gotParents && attempts < 3) ? 'pending' : 'done',
         last_scraped_at: new Date(),
         data_confidence: scraped.confidence,
-        scrape_attempts: record.scrape_attempts + 1,
+        scrape_attempts: attempts,
       };
       if (scraped.birth_year && !record.birth_year) updates.birth_year = scraped.birth_year;
       if (scraped.sex && !record.sex) updates.sex = scraped.sex;
