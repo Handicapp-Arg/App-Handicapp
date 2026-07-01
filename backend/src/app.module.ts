@@ -32,6 +32,7 @@ import { PedigreeModule } from './pedigree/pedigree.module';
 import { AuctionsModule } from './auctions/auctions.module';
 import { HorseRecordsModule } from './horse-records/horse-records.module';
 import { FeedModule } from './feed/feed.module';
+import { ReportsModule } from './reports/reports.module';
 import { HealthController } from './common/health.controller';
 
 @Module({
@@ -67,6 +68,7 @@ import { HealthController } from './common/health.controller';
     AuctionsModule,
     HorseRecordsModule,
     FeedModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

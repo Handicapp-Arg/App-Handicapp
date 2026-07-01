@@ -91,6 +91,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="contratos"      options={{ href: null }} />
       <Tabs.Screen name="arbol"          options={{ href: null }} />
       <Tabs.Screen name="mi-plan"        options={{ href: null }} />
+      <Tabs.Screen name="reportes"       options={{ href: null }} />
     </Tabs>
   );
 }

@@ -24,6 +24,7 @@ export const Routes = {
   muro:                '/(tabs)/muro',
   mas:                 '/(tabs)/mas',
   miPlan:              '/(tabs)/mi-plan',
+  reportes:            '/(tabs)/reportes',
   remates:             '/(tabs)/remates',
   remateCrear:         '/(tabs)/remates/crear',
   remate:              (id: string) => `/(tabs)/remates/${id}`,

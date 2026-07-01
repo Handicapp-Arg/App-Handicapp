@@ -6,9 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Trophy, GitBranch, BookOpen, FileText, Receipt,
   Mail, Building2, Settings, ShieldCheck, ChevronRight,
-  Map, CreditCard, type LucideIcon,
+  Map, CreditCard, BarChart3, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
+import { usePlanStatus } from '../../hooks/use-plan';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { avatarColor, initialsOf } from '../../lib/avatar-color';
@@ -99,6 +100,8 @@ export default function MasScreen() {
   const { user } = useAuth();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
+  const { data: planStatus } = usePlanStatus();
+  const hasReportes = planStatus?.features?.includes('reportes') ?? false;
 
   const role = user?.role ?? '';
   const isProp  = role === 'propietario';
@@ -169,6 +172,12 @@ export default function MasScreen() {
       label: 'Organización',
       desc: 'Miembros, plan e invitaciones',
       path: Routes.organizacion,
+    }] : []),
+    ...(hasReportes ? [{
+      icon: BarChart3,
+      label: 'Reportes',
+      desc: 'Resumen de caballos, salud y gastos',
+      path: Routes.reportes,
     }] : []),
   ];
 

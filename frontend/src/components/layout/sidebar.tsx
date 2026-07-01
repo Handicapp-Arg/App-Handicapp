@@ -6,9 +6,10 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Newspaper, ScrollText, Network, CalendarClock, Gavel,
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
-  CreditCard, PanelLeftClose, PanelLeftOpen,
+  CreditCard, BarChart3, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { usePlanStatus } from '@/hooks/use-plan';
 import { HorseshoeH, HorseHead } from '@/components/icons/equine';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
@@ -62,6 +63,7 @@ const ic = 'h-5 w-5';
 
 export function Sidebar() {
   const { user } = useAuth();
+  const { data: planStatus } = usePlanStatus();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -89,6 +91,7 @@ export function Sidebar() {
     catalogo:       <Library className={ic} strokeWidth={1.8} />,
     permisos:       <ShieldCheck className={ic} strokeWidth={1.8} />,
     planes:         <CreditCard className={ic} strokeWidth={1.8} />,
+    reportes:       <BarChart3 className={ic} strokeWidth={1.8} />,
     superadmin:     <ShieldCheck className={ic} strokeWidth={1.8} />,
     remates:        <Gavel className={ic} strokeWidth={1.8} />,
     muro:           <Newspaper className={ic} strokeWidth={1.8} />,
@@ -100,6 +103,7 @@ export function Sidebar() {
   const isAdmin = user?.role === 'admin';
   const isEst = user?.role === 'establecimiento';
   const isProp = user?.role === 'propietario';
+  const hasReportes = planStatus?.features?.includes('reportes') ?? false;
 
   const sections: NavSection[] = isAdmin
     ? [
@@ -147,6 +151,7 @@ export function Sidebar() {
             ...(isEst || isProp ? [{ href: '/facturacion', label: 'Facturación', icon: icons.facturacion }] : []),
             ...(isEst ? [{ href: '/solicitudes', label: 'Solicitudes', icon: icons.solicitudes }] : []),
             ...(isProp ? [{ href: '/directorio', label: 'Directorio', icon: icons.directorio }] : []),
+            ...(hasReportes ? [{ href: '/reportes', label: 'Reportes', icon: icons.reportes }] : []),
           ].filter(Boolean) as NavItem[],
         },
       ].filter((s) => s.items.length > 0);
