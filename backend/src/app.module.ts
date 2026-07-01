@@ -23,6 +23,7 @@ import { BillingModule } from './billing/billing.module';
 import { MedicalModule } from './medical/medical.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PlansModule } from './plans/plans.module';
+import { PaymentsModule } from './payments/payments.module';
 import { SearchModule } from './search/search.module';
 import { BoardingRequestsModule } from './boarding-requests/boarding-requests.module';
 import { OrganizationsModule } from './organizations/organizations.module';
@@ -57,6 +58,7 @@ import { HealthController } from './common/health.controller';
     MedicalModule,
     ContractsModule,
     PlansModule,
+    PaymentsModule,
     SearchModule,
     BoardingRequestsModule,
     OrganizationsModule,
