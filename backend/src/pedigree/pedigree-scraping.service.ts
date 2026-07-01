@@ -3,10 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Horse } from '../horses/horse.entity';
 import { Pedigree, PedigreeValidation, ValidationSource, ValidationStatus } from './entities/pedigree.entity';
-import { StudbookArScraper } from './scrapers/studbook-ar.scraper';
 import { SraScraper } from './scrapers/sra.scraper';
-import { PedigreeQueryScraper } from './scrapers/pedigreequery.scraper';
 import { fuzzyMatch, ScrapedPedigree } from './scrapers/base-scraper';
+import { HorseRecordsScrapingService } from '../horse-records/horse-records-scraping.service';
 
 const SCRAPER_SOURCE_MAP: Record<string, ValidationSource> = {
   studbook_ar: ValidationSource.STUDBOOK_AR,
@@ -14,17 +13,34 @@ const SCRAPER_SOURCE_MAP: Record<string, ValidationSource> = {
   pedigreequery: ValidationSource.PEDIGREEQUERY,
 };
 
+// Adapta el resultado del motor unificado (horse-records) al shape ScrapedPedigree
+function adaptRecord(r: {
+  sire_name: string | null;
+  dam_name: string | null;
+  registration_number: string | null;
+  confidence: 'high' | 'medium' | 'low';
+  source: string;
+}): ScrapedPedigree {
+  return {
+    sireName: r.sire_name ?? undefined,
+    damName: r.dam_name ?? undefined,
+    registrationNumber: r.registration_number ?? undefined,
+    confidence: r.confidence,
+    source: r.source,
+  };
+}
+
 @Injectable()
 export class PedigreeScrapingService {
-  private readonly studbook = new StudbookArScraper();
+  // SRA (Criollo/Cuarto de Milla/Polo) no existe en el motor horse-records → se conserva.
   private readonly sra = new SraScraper();
-  private readonly pedigreeQuery = new PedigreeQueryScraper();
 
   constructor(
     @InjectRepository(PedigreeValidation)
     private readonly validationRepo: Repository<PedigreeValidation>,
     @InjectRepository(Horse)
     private readonly horseRepo: Repository<Horse>,
+    private readonly horseRecords: HorseRecordsScrapingService,
   ) {}
 
   async validate(pedigree: Pedigree): Promise<{ validations: PedigreeValidation[]; scrapedParents: ScrapedPedigree | null }> {
@@ -33,28 +49,21 @@ export class PedigreeScrapingService {
       relations: ['breed'],
     });
 
-    const scrapers = this.selectScrapers(horse?.breed?.name ?? '');
     const query = horse?.name ?? '';
     if (!query) return { validations: [], scrapedParents: null };
 
-    const results = await Promise.allSettled(
-      scrapers.map((s) => s.scrape(query)),
-    );
+    // Cada "intento" produce una validación (una fila) por fuente aplicable.
+    const attempts = await this.collectScrapes(horse?.breed?.name ?? '', query);
 
     const validations: PedigreeValidation[] = [];
     let bestScrape: ScrapedPedigree | null = null;
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i];
-      const scraperName = scrapers[i]['sourceName'] as string;
-      const source = SCRAPER_SOURCE_MAP[scraperName] ?? ValidationSource.PEDIGREEQUERY;
-
-      if (result.status === 'rejected' || !result.value) {
+    for (const { source, scraped } of attempts) {
+      if (!scraped) {
         validations.push(await this.saveValidation(pedigree.id, source, ValidationStatus.FAILED, {}, null));
         continue;
       }
 
-      const scraped = result.value;
       const { status, validatedFields, discrepancies } = this.compareResults(pedigree, scraped);
       validations.push(await this.saveValidation(pedigree.id, source, status, validatedFields, discrepancies));
 
@@ -67,27 +76,51 @@ export class PedigreeScrapingService {
     return { validations, scrapedParents: bestScrape };
   }
 
+  // Reúne los resultados de las fuentes aplicables a la raza como
+  // { source, scraped }. Un scraped=null representa un intento fallido
+  // (se registra como validación FAILED, igual que antes).
+  private async collectScrapes(
+    breedName: string,
+    query: string,
+  ): Promise<Array<{ source: ValidationSource; scraped: ScrapedPedigree | null }>> {
+    const attempts: Array<{ source: ValidationSource; scraped: ScrapedPedigree | null }> = [];
+
+    // SRA: solo Criollo/Cuarto de Milla/Polo (scraper propio, no existe en horse-records).
+    if (this.usesSra(breedName)) {
+      const sra = await this.sra.scrape(query).catch(() => null);
+      attempts.push({ source: ValidationSource.SRA, scraped: sra });
+    }
+
+    // Motor unificado horse-records (studbook + pedigreequery + wikidata).
+    const record = await this.horseRecords.scrapeParents(query).catch(() => null);
+    if (record) {
+      attempts.push({
+        source: SCRAPER_SOURCE_MAP[record.source] ?? ValidationSource.PEDIGREEQUERY,
+        scraped: adaptRecord(record),
+      });
+    } else {
+      attempts.push({ source: ValidationSource.STUDBOOK_AR, scraped: null });
+    }
+
+    return attempts;
+  }
+
   async scrapeGrandparents(
     sireName: string | null,
     damName: string | null,
     breedName: string,
   ): Promise<{ paternalGrandsire: string | null; paternalGranddam: string | null; maternalGrandsire: string | null; maternalGranddam: string | null }> {
-    const scrapers = this.selectScrapers(breedName);
-    const primary = scrapers[0]; // el más relevante para esa raza
-
-    const [sireResult, damResult] = await Promise.allSettled([
-      sireName ? primary.scrape(sireName) : Promise.resolve(null),
-      damName  ? primary.scrape(damName)  : Promise.resolve(null),
+    void breedName; // el motor unificado cubre todas las razas; se mantiene la firma
+    const [sireData, damData] = await Promise.all([
+      sireName ? this.horseRecords.scrapeParents(sireName).catch(() => null) : Promise.resolve(null),
+      damName  ? this.horseRecords.scrapeParents(damName).catch(() => null)  : Promise.resolve(null),
     ]);
 
-    const sireData = sireResult.status === 'fulfilled' ? sireResult.value : null;
-    const damData  = damResult.status  === 'fulfilled' ? damResult.value  : null;
-
     return {
-      paternalGrandsire: sireData?.sireName ?? null,
-      paternalGranddam:  sireData?.damName  ?? null,
-      maternalGrandsire: damData?.sireName  ?? null,
-      maternalGranddam:  damData?.damName   ?? null,
+      paternalGrandsire: sireData?.sire_name ?? null,
+      paternalGranddam:  sireData?.dam_name  ?? null,
+      maternalGrandsire: damData?.sire_name  ?? null,
+      maternalGranddam:  damData?.dam_name   ?? null,
     };
   }
 
@@ -134,13 +167,9 @@ export class PedigreeScrapingService {
     );
   }
 
-  private selectScrapers(breedName: string) {
+  private usesSra(breedName: string): boolean {
     const lower = breedName.toLowerCase();
-    if (lower.includes('criollo') || lower.includes('cuarto') || lower.includes('polo')) {
-      return [this.sra, this.pedigreeQuery];
-    }
-    // PSI, Árabe y resto → studbook + pedigreequery
-    return [this.studbook, this.pedigreeQuery];
+    return lower.includes('criollo') || lower.includes('cuarto') || lower.includes('polo');
   }
 
   overallStatus(validations: PedigreeValidation[]): Horse['pedigree_status'] {

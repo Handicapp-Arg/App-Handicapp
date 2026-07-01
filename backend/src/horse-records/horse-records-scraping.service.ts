@@ -6,6 +6,7 @@ import { HorseRecord } from './horse-record.entity';
 import { fuzzyMatchNames, ScrapedHorseRecord } from './scrapers/base-record-scraper';
 import { WikidataScraper } from './scrapers/wikidata.scraper';
 import { StudbookArScraper } from './scrapers/studbook-ar.scraper';
+import { PedigreeQueryRecordScraper } from './scrapers/pedigreequery-record.scraper';
 import { PuppeteerScraperService } from './scrapers/puppeteer-scraper.service';
 
 const MIN_BIRTH_YEAR = 1900;
@@ -37,6 +38,7 @@ export class HorseRecordsScrapingService {
   private drainingQueue = false; // evita solapar corridas del cron de la cola
   private readonly wikidata   = new WikidataScraper();
   private readonly studbookAr = new StudbookArScraper();
+  private readonly pedigreeQuery = new PedigreeQueryRecordScraper();
 
   // Jobs activos/recientes (se limpia al reiniciar el proceso)
   private readonly jobs = new Map<string, ImportProgress>();
@@ -612,6 +614,54 @@ export class HorseRecordsScrapingService {
       .createQueryBuilder('r')
       .where('UPPER(r.name) = :name', { name: name.trim().toUpperCase() })
       .getOne();
+  }
+
+  // Versión liviana de fetchFromSources para el pipeline de validación de
+  // pedigrí. Usa SOLO fuentes rápidas (studbook AR + pedigreequery + wikidata),
+  // SIN puppeteer/allbreed, para no arrancar Chrome durante el bootstrap del
+  // pedigrí. Devuelve el mejor resultado combinado (padre/madre) o null.
+  async scrapeParents(name: string): Promise<{
+    sire_name: string | null;
+    dam_name: string | null;
+    registration_number: string | null;
+    confidence: 'high' | 'medium' | 'low';
+    source: string;
+  } | null> {
+    if (!name?.trim()) return null;
+
+    const studbook = await this.studbookAr.scrape(name).catch(() => null);
+    const pedigreequery = await this.pedigreeQuery.scrape(name).catch(() => null);
+    const wiki = await this.wikidata.scrapeByName(name).catch(() => null);
+
+    const sources: Array<{ src: string; rec: ScrapedHorseRecord }> = (
+      [
+        studbook ? { src: 'studbook_ar', rec: studbook } : null,
+        pedigreequery ? { src: 'pedigreequery', rec: pedigreequery } : null,
+        wiki ? { src: 'wikidata', rec: wiki } : null,
+      ].filter(Boolean) as Array<{ src: string; rec: ScrapedHorseRecord }>
+    );
+    if (!sources.length) return null;
+
+    // Base = primera fuente con padre/madre; rellenar campos faltantes del resto.
+    const withParents = sources.find((s) => s.rec.sire_name || s.rec.dam_name);
+    if (!withParents) return null;
+
+    let best: ScrapedHorseRecord = { ...withParents.rec };
+    const source = withParents.src;
+    for (const { rec } of sources) {
+      if (!best.sire_name && rec.sire_name) best = { ...best, sire_name: rec.sire_name };
+      if (!best.dam_name && rec.dam_name) best = { ...best, dam_name: rec.dam_name };
+      if (!best.registration_number && rec.registration_number)
+        best = { ...best, registration_number: rec.registration_number };
+    }
+
+    return {
+      sire_name: best.sire_name ?? null,
+      dam_name: best.dam_name ?? null,
+      registration_number: best.registration_number ?? null,
+      confidence: best.confidence,
+      source,
+    };
   }
 
   private async fetchFromSources(name: string): Promise<ScrapedHorseRecord | null> {
