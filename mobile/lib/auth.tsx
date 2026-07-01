@@ -14,6 +14,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (data: { name?: string; email?: string; avatar_color?: string | null }) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -90,6 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await api.post('/auth/change-password', { currentPassword, newPassword });
   };
 
+  const refreshUser = async () => {
+    const { data } = await api.get('/auth/me');
+    setUser(data);
+  };
+
   const logout = async () => {
     const rt = await SecureStore.getItemAsync('refreshToken');
     if (rt) api.post('/auth/logout', { refreshToken: rt }).catch(() => {});
@@ -99,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, can, login, register, logout, updateProfile, changePassword }}>
+    <AuthContext.Provider value={{ user, loading, can, login, register, logout, updateProfile, changePassword, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

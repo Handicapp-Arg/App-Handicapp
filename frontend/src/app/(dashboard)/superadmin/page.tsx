@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Building2, ChevronLeft, ChevronRight, Lock, Plus, Search,
+  Building2, ChevronLeft, ChevronRight, ExternalLink, Lock, Plus, Search, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
   useSuperAdminMetrics, useSuperAdminOrgs, useCreateOrgManually,
-  useSetOrgPlan, useSetOrgStatus, useDeleteOrg, type SuperAdminOrg,
+  useSetOrgPlan, useSetOrgStatus, useDeleteOrg, useVetLicenses, useSetLicenseStatus,
+  type SuperAdminOrg, type VetLicense,
 } from '@/hooks/use-superadmin';
 import { PLAN_LABELS, type OrgPlan } from '@/hooks/use-organizations';
 import {
@@ -316,6 +317,114 @@ function TableFooter({
   );
 }
 
+// ─────────────────────────── Matrículas pendientes ───────────────────────────
+const SENASA_URL =
+  'https://aps2.senasa.gov.ar/registros/faces/publico/personas/tc_veterinariospublico.jsp';
+
+function VetLicensesSection() {
+  const { data: licenses, isLoading } = useVetLicenses();
+  const setStatus = useSetLicenseStatus();
+
+  const columns: ColumnDef<VetLicense>[] = [
+    {
+      key: 'name',
+      header: 'Veterinario',
+      render: (l) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-gray-900">{l.name}</p>
+          <p className="truncate text-xs text-slate-400">{l.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'number',
+      header: 'Matrícula',
+      render: (l) => <span className="text-sm text-slate-700">{l.vet_license_number || '—'}</span>,
+    },
+    {
+      key: 'province',
+      header: 'Provincia',
+      hideBelow: 'sm',
+      render: (l) => <span className="text-sm text-slate-500">{l.vet_province || '—'}</span>,
+    },
+    {
+      key: 'photo',
+      header: 'Foto',
+      hideBelow: 'md',
+      render: (l) =>
+        l.vet_license_url ? (
+          <a
+            href={l.vet_license_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:underline"
+          >
+            Ver foto <ExternalLink className="h-3 w-3" aria-hidden />
+          </a>
+        ) : (
+          <span className="text-xs text-slate-400">Sin foto</span>
+        ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      className: 'w-[1%] whitespace-nowrap',
+      render: (l) => (
+        <div className="flex justify-end gap-1.5">
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={setStatus.isPending}
+            onClick={() => setStatus.mutate({ userId: l.id, status: 'approved' })}
+          >
+            Aprobar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            loading={setStatus.isPending}
+            onClick={() => setStatus.mutate({ userId: l.id, status: 'rejected' })}
+          >
+            Rechazar
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-navy-700" aria-hidden />
+          <h2 className="text-base font-bold text-gray-900">Matrículas pendientes</h2>
+        </div>
+        <a
+          href={SENASA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-navy-700/20 bg-navy-700/5 px-3 py-1.5 text-xs font-semibold text-navy-700 transition hover:bg-navy-700/10"
+        >
+          Verificar en SENASA <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        </a>
+      </div>
+      <DataTable<VetLicense>
+        columns={columns}
+        rows={licenses ?? []}
+        rowKey={(l) => l.id}
+        loading={isLoading}
+        emptyState={
+          <div className="flex flex-col items-center gap-2 py-4">
+            <ShieldCheck className="h-6 w-6 text-slate-300" aria-hidden />
+            <span className="text-sm font-medium text-slate-500">No hay matrículas pendientes de validación</span>
+          </div>
+        }
+      />
+    </div>
+  );
+}
+
 // ─────────────────────────── Page ───────────────────────────
 export default function SuperAdminPage() {
   const { user } = useAuth();
@@ -534,6 +643,9 @@ export default function SuperAdminPage() {
           />
         }
       />
+
+      {/* Matrículas de veterinarios pendientes */}
+      <VetLicensesSection />
 
       <CreateOrgModal open={showCreate} onClose={() => setShowCreate(false)} />
       <ChangePlanModal

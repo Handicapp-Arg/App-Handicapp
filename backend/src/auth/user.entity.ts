@@ -60,6 +60,23 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   cover_public_id: string | null;
 
+  // ─── Matrícula profesional del veterinario (validada por el superadmin) ───
+  @Column({ type: 'varchar', nullable: true })
+  vet_license_number: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  vet_province: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  vet_license_url: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  vet_license_public_id: string | null;
+
+  // none | pending | approved | rejected
+  @Column({ type: 'varchar', default: 'none' })
+  vet_license_status: string;
+
   @CreateDateColumn()
   created_at: Date;
 

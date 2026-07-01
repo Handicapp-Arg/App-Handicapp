@@ -44,6 +44,11 @@ class SetStatusDto {
   status: 'active' | 'suspended' | 'trial';
 }
 
+class SetLicenseStatusDto {
+  @IsIn(['approved', 'rejected'])
+  status: 'approved' | 'rejected';
+}
+
 @ApiTags('superadmin')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
@@ -85,5 +90,19 @@ export class SuperAdminController {
   @HttpCode(HttpStatus.NO_CONTENT)
   removeOrg(@GetUser() user: User, @Param('id') id: string) {
     return this.service.deleteOrganization(user, id);
+  }
+
+  @Get('licenses')
+  listLicenses(@GetUser() user: User) {
+    return this.service.listPendingLicenses(user);
+  }
+
+  @Patch('licenses/:userId')
+  setLicenseStatus(
+    @GetUser() user: User,
+    @Param('userId') userId: string,
+    @Body(ValidationPipe) dto: SetLicenseStatusDto,
+  ) {
+    return this.service.setLicenseStatus(user, userId, dto.status);
   }
 }

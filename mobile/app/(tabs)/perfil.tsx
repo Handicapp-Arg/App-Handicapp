@@ -8,10 +8,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useMemo } from 'react';
 import {
-  User, ChevronRight, Lock, LogOut, Crown, Check,
+  User, ChevronRight, Lock, LogOut, Crown, Check, ShieldCheck, Camera,
   type LucideIcon,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../lib/auth';
+import api from '../../lib/api';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { avatarColor, initialsOf, AVATAR_PALETTE } from '../../lib/avatar-color';
@@ -389,6 +391,120 @@ function AvatarColorSection({ user, c, s }: {
   );
 }
 
+/* ─── Matrícula profesional (solo veterinarios) ─── */
+
+const LICENSE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  none:     { label: 'Sin cargar', color: '#6b7280', bg: '#f3f4f6' },
+  pending:  { label: 'Pendiente',  color: colors.amber600, bg: colors.amber50 },
+  approved: { label: 'Aprobada',   color: '#15803d', bg: '#f0fdf4' },
+  rejected: { label: 'Rechazada',  color: colors.red700, bg: '#fef2f2' },
+};
+
+function VetLicenseSection({ user, c, s }: {
+  user: { vet_license_number?: string | null; vet_province?: string | null; vet_license_url?: string | null; vet_license_status?: string };
+  c: ThemeColors; s: Styles;
+}) {
+  const { refreshUser } = useAuth();
+  const [number, setNumber] = useState(user.vet_license_number ?? '');
+  const [province, setProvince] = useState(user.vet_province ?? '');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const status = user.vet_license_status ?? 'none';
+  const badge = LICENSE_STATUS[status] ?? LICENSE_STATUS.none;
+
+  const pickPhoto = async () => {
+    const { status: perm } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para adjuntar la foto de la matrícula.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  };
+
+  const handleSubmit = async () => {
+    if (!number.trim() || !province.trim()) {
+      Alert.alert('Datos incompletos', 'Ingresá el número de matrícula y la provincia.');
+      return;
+    }
+    haptic.medium();
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('number', number.trim());
+      formData.append('province', province.trim());
+      if (photoUri) {
+        formData.append('file', { uri: photoUri, name: 'matricula.jpg', type: 'image/jpeg' } as unknown as Blob);
+      }
+      await api.post('/auth/vet-license', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await refreshUser();
+      setPhotoUri(null);
+      Alert.alert('Matrícula enviada', 'Un administrador va a validar tu matrícula.');
+    } catch {
+      Alert.alert('Error', 'No se pudo enviar la matrícula. Intentá de nuevo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Matrícula profesional</Text>
+      <View style={s.vetCard}>
+        <View style={s.vetStatusRow}>
+          <ShieldCheck size={18} color={c.textMuted} strokeWidth={2} />
+          <Text style={s.vetStatusLabel}>Estado</Text>
+          <View style={[s.vetBadge, { backgroundColor: badge.bg }]}>
+            <Text style={[s.vetBadgeText, { color: badge.color }]}>{badge.label}</Text>
+          </View>
+        </View>
+
+        <View style={s.editField}>
+          <Text style={s.editLabel}>Número de matrícula</Text>
+          <TextInput
+            style={s.editInput}
+            value={number}
+            onChangeText={setNumber}
+            placeholder="Ej. 12345"
+            placeholderTextColor={c.textFaint}
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={s.editField}>
+          <Text style={s.editLabel}>Provincia</Text>
+          <TextInput
+            style={s.editInput}
+            value={province}
+            onChangeText={setProvince}
+            placeholder="Ej. Buenos Aires"
+            placeholderTextColor={c.textFaint}
+            autoCapitalize="words"
+          />
+        </View>
+
+        <TouchableOpacity style={s.vetPhotoBtn} onPress={pickPhoto} activeOpacity={0.8}>
+          <Camera size={16} color={c.text} strokeWidth={2} />
+          <Text style={s.vetPhotoBtnText}>
+            {photoUri ? 'Foto seleccionada' : user.vet_license_url ? 'Cambiar foto' : 'Subir foto de la matrícula'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[s.editSaveBtn, saving && s.editSaveBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={saving}
+          activeOpacity={0.85}
+        >
+          {saving
+            ? <ActivityIndicator color={colors.white} size="small" />
+            : <Text style={s.editSaveBtnText}>Enviar para validación</Text>}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
@@ -528,6 +644,9 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Matrícula profesional (solo veterinarios) */}
+          {user.role === 'veterinario' && <VetLicenseSection user={user} c={c} s={s} />}
 
           {/* Color de avatar */}
           <AvatarColorSection user={user} c={c} s={s} />
@@ -747,6 +866,22 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   colorDotAuto: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
   colorDotAutoText: { fontSize: 10, fontWeight: weight.bold, color: c.textMuted },
+
+  vetCard: {
+    backgroundColor: c.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: c.borderStrong,
+    padding: space[4], gap: space[3],
+  },
+  vetStatusRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  vetStatusLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, flex: 1 },
+  vetBadge: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
+  vetBadgeText: { fontSize: text.xs, fontWeight: weight.bold },
+  vetPhotoBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    paddingVertical: space[3], backgroundColor: c.surfaceAlt,
+  },
+  vetPhotoBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.text },
 
   modalOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,

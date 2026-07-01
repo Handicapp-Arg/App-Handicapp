@@ -191,6 +191,33 @@ export class SuperAdminService {
     return this.orgRepo.save(org);
   }
 
+  // ─── Matrículas de veterinarios pendientes de validación ───
+  async listPendingLicenses(user: User) {
+    this.assertSuperAdmin(user);
+    const users = await this.userRepo.find({
+      where: { vet_license_status: 'pending' },
+      select: ['id', 'name', 'email', 'vet_license_number', 'vet_province', 'vet_license_url'],
+      order: { name: 'ASC' },
+    });
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      vet_license_number: u.vet_license_number,
+      vet_province: u.vet_province,
+      vet_license_url: u.vet_license_url,
+    }));
+  }
+
+  async setLicenseStatus(user: User, userId: string, status: 'approved' | 'rejected') {
+    this.assertSuperAdmin(user);
+    const target = await this.userRepo.findOne({ where: { id: userId } });
+    if (!target) throw new NotFoundException('Usuario no encontrado');
+    target.vet_license_status = status;
+    await this.userRepo.save(target);
+    return { id: target.id, vet_license_status: target.vet_license_status };
+  }
+
   async deleteOrganization(user: User, orgId: string): Promise<void> {
     this.assertSuperAdmin(user);
     const org = await this.orgRepo.findOne({ where: { id: orgId } });

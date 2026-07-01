@@ -15,6 +15,10 @@ export interface User {
   avatar_url?: string | null;
   avatar_color?: string | null;
   cover_url?: string | null;
+  vet_license_number?: string | null;
+  vet_province?: string | null;
+  vet_license_url?: string | null;
+  vet_license_status?: string;
 }
 
 export interface CatalogItem {

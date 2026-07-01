@@ -80,6 +80,34 @@ export class AuthService {
     return { avatar_url: user.avatar_url, cover_url: user.cover_url };
   }
 
+  /** Sube la foto de matrícula del veterinario a Cloudinary, borra la anterior y persiste. */
+  async uploadVetLicense(user: User, file: Express.Multer.File): Promise<void> {
+    if (!file) throw new BadRequestException('No se recibió ninguna imagen');
+
+    const result = await this.cloudinaryService.upload(file, 'handicapp/licenses');
+
+    const prevId = user.vet_license_public_id;
+    if (prevId) {
+      await this.cloudinaryService.delete(prevId).catch(() => undefined);
+    }
+
+    user.vet_license_url = result.secure_url;
+    user.vet_license_public_id = result.public_id;
+    await this.userRepository.save(user);
+  }
+
+  /** Guarda número/provincia de la matrícula y la deja pendiente de validación. */
+  async submitVetLicense(
+    user: User,
+    data: { number?: string; province?: string },
+  ): Promise<User> {
+    if (data.number !== undefined) user.vet_license_number = data.number;
+    if (data.province !== undefined) user.vet_province = data.province;
+    user.vet_license_status = 'pending';
+    await this.userRepository.save(user);
+    return (await this.userRepository.findOne({ where: { id: user.id } })) ?? user;
+  }
+
   private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
     const accessToken = this.jwtService.sign({ sub: user.id, role: user.role });
 

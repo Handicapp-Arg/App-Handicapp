@@ -96,8 +96,33 @@ export class AuthController {
       avatar_url: user.avatar_url ?? null,
       avatar_color: user.avatar_color ?? null,
       cover_url: user.cover_url ?? null,
+      vet_license_number: user.vet_license_number ?? null,
+      vet_province: user.vet_province ?? null,
+      vet_license_url: user.vet_license_url ?? null,
+      vet_license_status: user.vet_license_status ?? 'none',
       permissions: perms.map((p) => `${p.resource}:${p.action}`),
     };
+  }
+
+  @Post('vet-license')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 8 * 1024 * 1024 } }))
+  async submitVetLicense(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { number?: string; province?: string },
+    @GetUser() user: User,
+  ) {
+    if (user.role !== 'veterinario') {
+      throw new ForbiddenException('Solo los veterinarios pueden cargar su matrícula');
+    }
+    if (file) {
+      await this.authService.uploadVetLicense(user, file);
+    }
+    const updated = await this.authService.submitVetLicense(user, {
+      number: body.number,
+      province: body.province,
+    });
+    return this.buildUserResponse(updated);
   }
 
   @Post('avatar')

@@ -91,6 +91,33 @@ export function useSetOrgStatus() {
   });
 }
 
+// ─── Matrículas de veterinarios ───
+
+export interface VetLicense {
+  id: string;
+  name: string;
+  email: string;
+  vet_license_number: string | null;
+  vet_province: string | null;
+  vet_license_url: string | null;
+}
+
+export function useVetLicenses() {
+  return useQuery<VetLicense[]>({
+    queryKey: ['superadmin', 'licenses'],
+    queryFn: async () => (await api.get('/superadmin/licenses')).data,
+  });
+}
+
+export function useSetLicenseStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: 'approved' | 'rejected' }) =>
+      (await api.patch(`/superadmin/licenses/${userId}`, { status })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['superadmin'] }),
+  });
+}
+
 /** Optimistic delete — la fila desaparece de la tabla mientras se confirma. */
 export function useDeleteOrg() {
   const qc = useQueryClient();

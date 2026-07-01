@@ -5,6 +5,10 @@ export interface User {
   role: string;
   permissions: string[];
   avatar_color?: string | null;
+  vet_license_number?: string | null;
+  vet_province?: string | null;
+  vet_license_url?: string | null;
+  vet_license_status?: string;
   created_at: string;
 }
 

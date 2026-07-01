@@ -300,6 +300,101 @@ function Alert({ type, message }: { type: AlertType; message: string }) {
   );
 }
 
+/* ─── Matrícula profesional (solo veterinarios) ─── */
+
+const LICENSE_BADGE: Record<string, { label: string; cls: string }> = {
+  none:     { label: 'Sin cargar', cls: 'bg-gray-100 text-gray-500 ring-gray-200' },
+  pending:  { label: 'Pendiente',  cls: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  approved: { label: 'Aprobada',   cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
+  rejected: { label: 'Rechazada',  cls: 'bg-red-50 text-red-600 ring-red-200' },
+};
+
+function VetLicenseSection() {
+  const { user, refreshUser } = useAuth();
+  const status = user?.vet_license_status ?? 'none';
+  const badge = LICENSE_BADGE[status] ?? LICENSE_BADGE.none;
+
+  const [number, setNumber] = useState(user?.vet_license_number || '');
+  const [province, setProvince] = useState(user?.vet_province || '');
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(''); setError('');
+    if (!number.trim() || !province.trim()) {
+      setError('Ingresá el número de matrícula y la provincia.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const form = new FormData();
+      form.append('number', number.trim());
+      form.append('province', province.trim());
+      if (file) form.append('file', file);
+      await api.post('/auth/vet-license', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await refreshUser();
+      setFile(null);
+      if (fileInput.current) fileInput.current.value = '';
+      setMsg('Matrícula enviada. Un administrador la va a validar.');
+    } catch (err: unknown) {
+      const m = err && typeof err === 'object' && 'response' in err
+        ? (err as { response: { data: { message: string } } }).response?.data?.message : null;
+      setError(m || 'No se pudo enviar la matrícula');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <SectionCard title="Matrícula profesional">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-semibold text-gray-700">Estado:</span>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${badge.cls}`}>
+            {badge.label}
+          </span>
+        </div>
+        {status === 'rejected' && (
+          <Alert type="error" message="Tu matrícula fue rechazada. Revisá los datos y volvé a enviarla." />
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Número de matrícula">
+            <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} className={inputCls} placeholder="Ej. 12345" />
+          </Field>
+          <Field label="Provincia">
+            <input type="text" value={province} onChange={(e) => setProvince(e.target.value)} className={inputCls} placeholder="Ej. Buenos Aires" />
+          </Field>
+          <Field label="Foto de la matrícula" hint="Subí una foto o escaneo del carnet (opcional si ya la cargaste).">
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-clay-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-clay-700 hover:file:bg-clay-100 sm:max-w-sm"
+            />
+          </Field>
+          {user?.vet_license_url && !file && (
+            <a href={user.vet_license_url} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-semibold text-clay-700 hover:underline">
+              Ver foto cargada
+            </a>
+          )}
+          {msg && <Alert type="success" message={msg} />}
+          {error && <Alert type="error" message={error} />}
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 rounded-xl bg-clay-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-clay-600 active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {saving ? <><Spinner size="sm" color="white" /> Enviando...</> : 'Enviar para validación'}
+          </button>
+        </form>
+      </div>
+    </SectionCard>
+  );
+}
+
 export default function PerfilPage() {
   const { user, refreshUser } = useAuth();
 
@@ -498,6 +593,9 @@ export default function PerfilPage() {
               </button>
             </form>
           </SectionCard>
+
+          {/* Matrícula profesional (solo veterinarios) */}
+          {user?.role === 'veterinario' && <VetLicenseSection />}
 
           {/* Color de avatar */}
           <SectionCard title="Color de avatar">
