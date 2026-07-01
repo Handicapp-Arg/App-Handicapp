@@ -31,6 +31,7 @@ import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { HorseIcon } from '../../components/icons/equine';
 import { PostSkeleton } from '../../components/Skeleton';
 import { InlineSearch } from '../../components/InlineSearch';
+import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
 
 function Avatar({ name, colorId, size = 38, s }: { name: string; colorId?: string | null; size?: number; s: Styles }) {
@@ -90,7 +91,10 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
             <View key={cm.id} style={s.commentRow}>
               <Avatar name={cm.user?.name ?? 'U'} colorId={cm.user?.avatar_color} size={30} s={s} />
               <View style={s.commentBubble}>
-                <Text style={s.commentAuthor}>{cm.user?.name}</Text>
+                <View style={s.commentAuthorRow}>
+                  <Text style={s.commentAuthor}>{cm.user?.name}</Text>
+                  {isVetVerified(cm.user) && <VetVerifiedBadge />}
+                </View>
                 <Text style={s.commentText}>{cm.content}</Text>
               </View>
               {(cm.user_id === currentUserId || isAdmin) && (
@@ -171,6 +175,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
         <View style={s.authorInfo}>
           <View style={s.authorRow}>
             <Text style={s.authorName}>{post.author?.name ?? 'Usuario'}</Text>
+            {isVetVerified(post.author) && <VetVerifiedBadge />}
             {post.is_pinned && (
               <View style={s.pinnedBadge}>
                 <Pin size={10} color="#b45309" strokeWidth={2} />
@@ -740,7 +745,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   emptyComments: { textAlign: 'center', color: c.textFaint, fontSize: text.sm, paddingVertical: space[6] },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] },
   commentBubble: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: space[2] },
-  commentAuthor: { fontSize: 11, fontWeight: weight.bold, color: c.text, marginBottom: 2 },
+  commentAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 },
+  commentAuthor: { fontSize: 11, fontWeight: weight.bold, color: c.text },
   commentText: { fontSize: text.sm, color: c.text },
   commentDelete: { padding: space[1], marginTop: space[2] },
   commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: c.border, alignItems: 'flex-end' },

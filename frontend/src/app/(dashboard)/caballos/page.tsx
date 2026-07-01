@@ -28,6 +28,7 @@ import { Plus, Search as SearchIcon, Filter as FilterIcon, X } from 'lucide-reac
 import { HorseIllustration } from '@/components/illustrations';
 import { avatarGradient } from '@/lib/avatar-color';
 import { SkeletonCard, PageLoader } from '@/components/ui/skeleton';
+import { HorseVerifiedBadge } from '@/components/ui/verified-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import type { Horse, HorseOwnership } from '@/types';
@@ -988,10 +989,12 @@ export default function CaballosPage() {
 
                 {/* Verificado */}
                 {horse.horse_record_id && (
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-lg bg-emerald-500/95 px-2 py-1 text-[10px] font-bold text-white shadow backdrop-blur-sm">
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3"><path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
-                    Verificado
-                  </div>
+                  <HorseVerifiedBadge
+                    variant="solid"
+                    size="sm"
+                    label="Verificado"
+                    className="absolute top-2.5 left-2.5"
+                  />
                 )}
                 {/* Actividad */}
                 {horse.activity && (
@@ -1055,11 +1058,16 @@ export default function CaballosPage() {
 
               {/* Badges superiores */}
               <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3.5">
-                {horse.breed ? (
-                  <span className="rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md">
-                    {horse.breed.name}
-                  </span>
-                ) : <span />}
+                <div className="flex flex-wrap items-start gap-1.5">
+                  {horse.horse_record_id && (
+                    <HorseVerifiedBadge variant="solid" size="sm" label="Verificado" />
+                  )}
+                  {horse.breed && (
+                    <span className="rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md">
+                      {horse.breed.name}
+                    </span>
+                  )}
+                </div>
                 {horse.activity && (
                   <span className="rounded-full bg-[#c4922a]/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-100 shadow-sm ring-1 ring-[#c4922a]/35 backdrop-blur-md">
                     {horse.activity.name}

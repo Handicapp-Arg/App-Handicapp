@@ -304,7 +304,7 @@ export type PostType = 'general' | 'horse_update' | 'announcement';
 export interface FeedPost {
   id: string;
   author_id: string;
-  author?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatar_color' | 'avatar_url'>;
+  author?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'vet_license_status' | 'avatar_color' | 'avatar_url'>;
   horse_id: string | null;
   horse?: { id: string; name: string } | null;
   content: string;
@@ -324,7 +324,7 @@ export interface FeedComment {
   id: string;
   post_id: string;
   user_id: string;
-  user?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatar_color' | 'avatar_url'>;
+  user?: Pick<User, 'id' | 'name' | 'email' | 'role' | 'vet_license_status' | 'avatar_color' | 'avatar_url'>;
   content: string;
   created_at: string;
 }

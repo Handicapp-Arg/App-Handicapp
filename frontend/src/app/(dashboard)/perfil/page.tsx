@@ -10,6 +10,7 @@ import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
 import { Spinner } from '@/components/ui/skeleton';
 import { Modal } from '@/components/ui/modal';
+import { VetVerifiedBadge, isVetVerified } from '@/components/ui/verified-badge';
 import { PaymentMethods } from '@/components/ui/payment-methods';
 import { usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
 
@@ -1049,7 +1050,10 @@ export default function PerfilPage() {
               {roleLabel[user?.role || ''] || user?.role}
             </span>
           </div>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-900">{user?.name}</h1>
+          <h1 className="mt-3 flex items-center gap-1.5 text-2xl font-extrabold tracking-tight text-gray-900">
+            {user?.name}
+            {isVetVerified(user) && <VetVerifiedBadge size="md" />}
+          </h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-gray-500">
             <span className="inline-flex items-center gap-1.5">
               <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>

@@ -22,6 +22,7 @@ import { avatarColor, initialsOf, AVATAR_PALETTE } from '../../lib/avatar-color'
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
+import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -665,7 +666,10 @@ export default function PerfilScreen() {
           <View style={[s.avatar, { backgroundColor: avatarColor(user.name, user.avatar_color) }]}>
             <Text style={s.avatarText}>{initials}</Text>
           </View>
-          <Text style={s.userName}>{user.name}</Text>
+          <View style={s.userNameRow}>
+            <Text style={s.userName}>{user.name}</Text>
+            {isVetVerified(user) && <VetVerifiedBadge size="md" />}
+          </View>
           <Text style={s.userEmail}>{user.email}</Text>
           <View style={s.roleBadge}>
             <Text style={s.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
@@ -826,6 +830,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   avatarText: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.white },
+  userNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   userName: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.white },
   userEmail: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)' },
   roleBadge: {

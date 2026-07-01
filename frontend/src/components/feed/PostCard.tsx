@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import type { FeedPost, FeedComment } from '@/types';
 import { useAuth } from '@/lib/auth-context';
+import { VetVerifiedBadge, isVetVerified } from '@/components/ui/verified-badge';
 import {
   useToggleLike, useDeletePost, useTogglePin, useToggleHide,
   useFeedComments, useAddComment, useDeleteComment,
@@ -127,6 +128,7 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
               <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
                 <div className="flex items-baseline gap-1.5 mb-0.5">
                   <span className="text-xs font-semibold text-gray-900">{c.user?.name}</span>
+                  {isVetVerified(c.user) && <VetVerifiedBadge size="sm" className="h-3.5 w-3.5" />}
                   <span className="text-[10px] text-gray-400">{formatDistanceToNow(new Date(c.created_at), { addSuffix: false, locale: es })}</span>
                 </div>
                 <p className="text-sm text-gray-700 leading-snug">{c.content}</p>
@@ -207,6 +209,7 @@ export default function PostCard({ post }: Props) {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-sm text-gray-900 truncate">{authorName}</span>
+                {isVetVerified(post.author) && <VetVerifiedBadge size="sm" />}
                 {post.is_pinned && (
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 ring-1 ring-amber-100 font-medium flex items-center gap-1 leading-tight">
                     <Pin className="h-3 w-3" /> Fijado

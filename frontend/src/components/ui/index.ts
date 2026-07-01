@@ -14,3 +14,4 @@ export { SkeletonCard, SkeletonRow, SkeletonText, SkeletonStat, Spinner, PageLoa
 export { OrganizacionSkeleton, SuperadminSkeleton, ListSkeleton } from './page-skeletons';
 export { ThemeToggle } from './theme-toggle';
 export { ShortcutsCheatsheet } from './shortcuts-cheatsheet';
+export { VetVerifiedBadge, HorseVerifiedBadge, isVetVerified } from './verified-badge';

@@ -25,6 +25,7 @@ import { cldTransform } from '@/lib/cloudinary';
 import { calcAge, formatDate as fmtDate } from '@/lib/utils';
 import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList, ShieldCheck, AlertTriangle, XCircle, Lock, CalendarClock } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
+import { HorseVerifiedBadge } from '@/components/ui/verified-badge';
 import type { Event } from '@/types';
 
 /* ─── Constants ─── */
@@ -1787,10 +1788,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">{horse.name}</h1>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {horse.horse_record_id && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3"><path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
-                Verificado en padrón
-              </span>
+              <HorseVerifiedBadge variant="soft" size="md" className="rounded-full" />
             )}
             {horse.breed && (
               <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-100">
