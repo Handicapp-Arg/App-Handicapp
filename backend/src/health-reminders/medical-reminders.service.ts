@@ -42,9 +42,9 @@ export class MedicalRemindersService {
     const todayISO = today.toISOString().split('T')[0];
     const in7DaysISO = in7Days.toISOString().split('T')[0];
 
-    const records: Array<MedicalRecord & { owner_id: string; owner_email: string; owner_name: string; owner_phone: string | null; horse_name: string }> =
+    const records: Array<MedicalRecord & { owner_id: string; owner_email: string; owner_name: string; owner_phone: string | null; horse_name: string; organization_id: string | null }> =
       await this.medicalRepo.query(
-        `SELECT mr.*, h.name AS horse_name, u.id AS owner_id, u.email AS owner_email, u.name AS owner_name, u.phone AS owner_phone
+        `SELECT mr.*, h.name AS horse_name, h.organization_id AS organization_id, u.id AS owner_id, u.email AS owner_email, u.name AS owner_name, u.phone AS owner_phone
          FROM medical_records mr
          JOIN horses h ON h.id = mr.horse_id
          JOIN users u ON u.id = h.owner_id
@@ -94,13 +94,16 @@ export class MedicalRemindersService {
         }).catch(() => {});
 
         // WhatsApp al owner (gateado por plan + opt-in). Nunca rompe el cron.
-        // TODO: gating por org (hoy se gatea por el user owner).
+        // El destinatario sigue siendo el owner; el plan se resuelve por org si el caballo pertenece a una.
         if (rec.owner_phone) {
           const owner = await this.userRepository.findOne({ where: { id: rec.owner_id } });
+          const allowed = rec.organization_id
+            ? await this.plansService.hasFeature('whatsapp', { orgId: rec.organization_id })
+            : await this.plansService.hasFeature('whatsapp', { user: owner ?? undefined });
           if (
             owner?.phone &&
             owner.whatsapp_opt_in &&
-            (await this.plansService.hasFeature('whatsapp', { user: owner }))
+            allowed
           ) {
             await this.whatsappService
               .sendMedicalReminder(owner.phone, rec.horse_name, `${rec.name} — ${dueDateStr}`)

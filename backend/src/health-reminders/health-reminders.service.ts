@@ -43,14 +43,14 @@ export class HealthRemindersService {
 
     // Caballos cuyo último evento de salud fue hace más de REMINDER_DAYS días
     // o que nunca tuvieron uno
-    const horses: { id: string; name: string; owner_id: string; last_salud: string | null }[] =
+    const horses: { id: string; name: string; owner_id: string; organization_id: string | null; last_salud: string | null }[] =
       await this.horseRepository.query(
-        `SELECT h.id, h.name, h.owner_id,
+        `SELECT h.id, h.name, h.owner_id, h.organization_id,
                 MAX(e.date) FILTER (WHERE e.type = 'salud' AND e.deleted_at IS NULL) AS last_salud
          FROM horses h
          LEFT JOIN events e ON e.horse_id = h.id
          WHERE h.deleted_at IS NULL
-         GROUP BY h.id, h.name, h.owner_id
+         GROUP BY h.id, h.name, h.owner_id, h.organization_id
          HAVING MAX(e.date) FILTER (WHERE e.type = 'salud' AND e.deleted_at IS NULL) < $1
              OR MAX(e.date) FILTER (WHERE e.type = 'salud' AND e.deleted_at IS NULL) IS NULL`,
         [cutoffISO],
@@ -113,13 +113,16 @@ export class HealthRemindersService {
       }
 
       // WhatsApp al owner (gateado por plan + opt-in). Nunca rompe el cron.
-      // TODO: gating por org (hoy se gatea por el user owner).
+      // El destinatario sigue siendo el owner; el plan se resuelve por org si el caballo pertenece a una.
       if (ownerData[0]?.phone) {
         const owner = await this.userRepository.findOne({ where: { id: horse.owner_id } });
+        const allowed = horse.organization_id
+          ? await this.plansService.hasFeature('whatsapp', { orgId: horse.organization_id })
+          : await this.plansService.hasFeature('whatsapp', { user: owner ?? undefined });
         if (
           owner?.phone &&
           owner.whatsapp_opt_in &&
-          (await this.plansService.hasFeature('whatsapp', { user: owner }))
+          allowed
         ) {
           await this.whatsappService.sendHealthReminder(owner.phone, horse.name).catch(() => {});
         }
