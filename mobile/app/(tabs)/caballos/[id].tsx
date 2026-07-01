@@ -16,6 +16,7 @@ import {
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse,
   Wheat, Syringe, Hammer, Wrench, Truck, Package,
   MoreVertical, Download,
+  AlertTriangle, Lock, CalendarClock,
   type LucideIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,10 +55,10 @@ const TABS: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: 'finanzas',  label: 'Finanzas',  icon: Banknote },
 ];
 
-const HEALTH_STATUS_META: Record<HealthStatus, { dot: string; bg: string; text: string; label: string }> = {
-  verde:    { dot: '#22c55e', bg: '#f0fdf4', text: '#15803d', label: 'Vigente' },
-  amarillo: { dot: '#f59e0b', bg: '#fffbeb', text: '#b45309', label: 'Por vencer' },
-  rojo:     { dot: '#ef4444', bg: '#fef2f2', text: '#b91c1c', label: 'Vencido' },
+const HEALTH_STATUS_META: Record<HealthStatus, { dot: string; bg: string; text: string; label: string; Icon: LucideIcon }> = {
+  verde:    { dot: '#22c55e', bg: '#f0fdf4', text: '#15803d', label: 'Vigente',    Icon: ShieldCheck },
+  amarillo: { dot: '#f59e0b', bg: '#fffbeb', text: '#b45309', label: 'Por vencer', Icon: AlertTriangle },
+  rojo:     { dot: '#ef4444', bg: '#fef2f2', text: '#b91c1c', label: 'Vencido',    Icon: XCircle },
 };
 
 const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string }> = {
@@ -890,26 +891,39 @@ export default function HorseDetailScreen() {
 
           {/* Libreta sanitaria */}
           <View style={s.healthBook}>
-            <Text style={s.healthBookTitle}>Libreta sanitaria</Text>
+            <View style={s.healthBookHeader}>
+              <View style={s.healthBookIcon}>
+                <ShieldCheck size={13} color={c.brand} strokeWidth={2.4} />
+              </View>
+              <Text style={s.healthBookTitle}>Libreta sanitaria</Text>
+            </View>
             {SANITARY_DISEASES.map((d) => {
               const last = medicalRecords?.filter((r) => r.type === 'sanidad').find((r) => d.match.test(r.name)) ?? null;
               const nextDue = last?.next_due ?? null;
               const status = healthStatusFromNextDue(nextDue);
               const meta = HEALTH_STATUS_META[status];
+              const StatusIcon = meta.Icon;
               return (
                 <View key={d.key} style={s.healthRow}>
-                  <View style={[s.healthDot, { backgroundColor: meta.dot }]} />
+                  <View style={[s.healthAccent, { backgroundColor: meta.dot }]} />
+                  <View style={[s.healthIconWrap, { backgroundColor: meta.bg }]}>
+                    <StatusIcon size={16} color={meta.text} strokeWidth={2.2} />
+                  </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.healthName} numberOfLines={1}>{d.name}</Text>
-                    <Text style={s.healthDue}>
-                      {nextDue
-                        ? status === 'rojo'
-                          ? `Vencido el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                          : `Vence el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                        : 'Sin registro'}
-                    </Text>
+                    <View style={s.healthDueRow}>
+                      <CalendarClock size={10} color={c.textFaint} strokeWidth={2} />
+                      <Text style={s.healthDue} numberOfLines={1}>
+                        {nextDue
+                          ? status === 'rojo'
+                            ? `Venció el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                            : `Vence el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                          : 'Sin registro'}
+                      </Text>
+                    </View>
                   </View>
                   <View style={[s.healthBadge, { backgroundColor: meta.bg }]}>
+                    <View style={[s.healthBadgeDot, { backgroundColor: meta.dot }]} />
                     <Text style={[s.healthBadgeText, { color: meta.text }]}>{meta.label}</Text>
                   </View>
                   {can('horses', 'update') && (
@@ -926,7 +940,7 @@ export default function HorseDetailScreen() {
             })}
             {isApprovedVet && (
               <TouchableOpacity
-                style={[s.certifyBtn, !canCertify && { opacity: 0.4 }]}
+                style={[s.certifyBtn, !canCertify && s.certifyBtnLocked]}
                 disabled={certLoading || !canCertify}
                 onPress={() => {
                   if (!canCertify) {
@@ -938,8 +952,12 @@ export default function HorseDetailScreen() {
                 }}
                 activeOpacity={0.85}
               >
-                <ShieldCheck size={15} color="#fff" strokeWidth={2.2} />
-                <Text style={s.certifyBtnText}>{certLoading ? 'Emitiendo...' : 'Emitir certificado'}</Text>
+                {canCertify
+                  ? <ShieldCheck size={15} color="#fff" strokeWidth={2.2} />
+                  : <Lock size={14} color={c.textMuted} strokeWidth={2.2} />}
+                <Text style={[s.certifyBtnText, !canCertify && { color: c.textMuted }]}>
+                  {certLoading ? 'Emitiendo...' : 'Emitir certificado'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1711,16 +1729,22 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Médico */
   healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 12, gap: 8 },
-  healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingHorizontal: 10, paddingVertical: 8 },
-  healthDot: { width: 10, height: 10, borderRadius: 999 },
+  healthBookHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
+  healthBookIcon: { width: 22, height: 22, borderRadius: 7, backgroundColor: c.brandSoft, justifyContent: 'center', alignItems: 'center' },
+  healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingLeft: 12, paddingRight: 10, paddingVertical: 8, overflow: 'hidden' },
+  healthAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
+  healthIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   healthName: { fontSize: 13, fontWeight: '600', color: c.text },
-  healthDue: { fontSize: 10, color: c.textFaint, marginTop: 1 },
-  healthBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  healthDueRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
+  healthDue: { fontSize: 10, color: c.textFaint, flexShrink: 1 },
+  healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  healthBadgeDot: { width: 5, height: 5, borderRadius: 999 },
   healthBadgeText: { fontSize: 9, fontWeight: '700' },
   healthCertifyBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.brand, paddingHorizontal: 10, paddingVertical: 5 },
   healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
-  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: 10, marginTop: 2 },
+  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: 11, marginTop: 2 },
+  certifyBtnLocked: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
   certifyBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   medCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },

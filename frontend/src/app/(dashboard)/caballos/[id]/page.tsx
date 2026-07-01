@@ -23,7 +23,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import ImagePicker from '@/components/image-picker';
 import { cldTransform } from '@/lib/cloudinary';
 import { calcAge, formatDate as fmtDate } from '@/lib/utils';
-import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList } from 'lucide-react';
+import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList, ShieldCheck, AlertTriangle, XCircle, Lock, CalendarClock } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
 import type { Event } from '@/types';
 
@@ -716,10 +716,27 @@ function healthStatusFromNextDue(nextDue: string | null | undefined): HealthStat
   return 'verde';
 }
 
-const HEALTH_STATUS_STYLE: Record<HealthStatus, { dot: string; badge: string; label: string }> = {
-  verde:    { dot: 'bg-green-500',  badge: 'bg-green-50 text-green-700',   label: 'Vigente' },
-  amarillo: { dot: 'bg-amber-500',  badge: 'bg-amber-50 text-amber-700',   label: 'Por vencer' },
-  rojo:     { dot: 'bg-red-500',    badge: 'bg-red-50 text-red-700',       label: 'Vencido' },
+const HEALTH_STATUS_STYLE: Record<HealthStatus, {
+  accent: string; iconWrap: string; badge: string; label: string; Icon: typeof ShieldCheck;
+}> = {
+  verde: {
+    accent: 'bg-emerald-500',
+    iconWrap: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+    badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+    label: 'Vigente', Icon: ShieldCheck,
+  },
+  amarillo: {
+    accent: 'bg-amber-500',
+    iconWrap: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+    badge: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+    label: 'Por vencer', Icon: AlertTriangle,
+  },
+  rojo: {
+    accent: 'bg-red-500',
+    iconWrap: 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
+    badge: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400',
+    label: 'Vencido', Icon: XCircle,
+  },
 };
 
 function HealthBook({ records, canEdit, onCertify }: {
@@ -734,31 +751,45 @@ function HealthBook({ records, canEdit, onCertify }: {
     return { ...d, last, nextDue, status: healthStatusFromNextDue(nextDue) };
   });
 
+  const fmt = (iso: string) =>
+    new Date(iso + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+
   return (
-    <div className="mb-4 rounded-2xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] p-3">
-      <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-gray-500">
-        Libreta sanitaria
-      </h3>
-      <div className="space-y-1.5">
+    <div className="mb-4 overflow-hidden rounded-2xl border border-[var(--surface-card-border)] bg-[var(--surface-page)]">
+      <div className="flex items-center gap-2 border-b border-[var(--surface-card-border)] px-3.5 py-2.5">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
+          <ShieldCheck className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Libreta sanitaria</h3>
+      </div>
+      <div className="space-y-2 p-3">
         {rows.map((row) => {
           const st = HEALTH_STATUS_STYLE[row.status];
+          const StatusIcon = st.Icon;
           return (
-            <div key={row.key} className="flex items-center justify-between gap-2 rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] px-3 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} />
+            <div key={row.key} className="relative flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] py-2 pl-4 pr-2.5">
+              <span className={`absolute inset-y-0 left-0 w-1.5 ${st.accent}`} aria-hidden />
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${st.iconWrap}`}>
+                  <StatusIcon className="h-[18px] w-[18px]" />
+                </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{row.name}</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-gray-400">
+                    <CalendarClock className="h-3 w-3 shrink-0" />
                     {row.nextDue
                       ? row.status === 'rojo'
-                        ? `Vencido el ${new Date(row.nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                        : `Vence el ${new Date(row.nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                        ? `Venció el ${fmt(row.nextDue)}`
+                        : `Vence el ${fmt(row.nextDue)}`
                       : 'Sin registro'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${st.badge}`}>{st.label}</span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${st.badge}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${st.accent}`} />
+                  {st.label}
+                </span>
                 {canEdit && (
                   <button onClick={() => onCertify(row.name)}
                     className="rounded-lg border border-[var(--color-primary)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-primary)] hover:bg-clay-500 hover:text-white transition cursor-pointer"
@@ -822,12 +853,16 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
             <button
               onClick={downloadCert}
               disabled={certLoading || !canCertify}
-              title={canCertify ? 'Emitir certificado oficial de libreta sanitaria' : 'Requiere plan Pro + matrícula aprobada'}
-              className="flex items-center gap-1 rounded-lg bg-[var(--color-primary)] px-2.5 py-1.5 text-[10px] font-semibold text-white hover:opacity-90 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+              title={canCertify ? 'Emitir certificado oficial de libreta sanitaria' : 'Requiere plan con libreta digital + matrícula aprobada'}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition cursor-pointer disabled:cursor-not-allowed ${
+                canCertify
+                  ? 'bg-[var(--color-primary)] text-white shadow-sm hover:opacity-90 disabled:opacity-60'
+                  : 'border border-[var(--surface-card-border)] bg-[var(--surface-page)] text-gray-400'
+              }`}
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.745 3.745 0 0 1 3.296-1.043A3.745 3.745 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 0 1 3.296 1.043 3.745 3.745 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
-              </svg>
+              {!canCertify
+                ? <Lock className="h-3 w-3" />
+                : <ShieldCheck className="h-3.5 w-3.5" />}
               {certLoading ? 'Emitiendo...' : 'Emitir certificado'}
             </button>
           )}

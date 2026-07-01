@@ -38,11 +38,39 @@ function roleTargetFor(role?: string): PlanRoleTarget {
 const fmtPrice = (ars: number) =>
   ars > 0 ? `$${ars.toLocaleString('es-AR')}/mes` : 'Gratis';
 
+/** Nombre visual del tier (badge) derivado del número de tier del plan. */
+const TIER_LABELS = ['Free', 'Pro', 'Premium', 'Enterprise'];
+const tierName = (tier: number) => TIER_LABELS[tier] ?? `Nivel ${tier + 1}`;
+
 function FeatureChip({ label, c, s }: { label: string; c: ThemeColors; s: Styles }) {
   return (
     <View style={s.chip}>
       <Check size={12} color={c.brand} strokeWidth={3} />
       <Text style={s.chipText}>{label}</Text>
+    </View>
+  );
+}
+
+/** Fila de feature con check (listado estilo pricing). */
+function FeatureRow({ label, c, s }: { label: string; c: ThemeColors; s: Styles }) {
+  return (
+    <View style={s.featRow}>
+      <View style={s.featCheck}>
+        <Check size={11} color={c.brand} strokeWidth={3.4} />
+      </View>
+      <Text style={s.featRowText}>{label}</Text>
+    </View>
+  );
+}
+
+/** Badge de tier (Free / Pro / Premium…). */
+function TierBadge({ tier, s }: { tier: number; s: Styles }) {
+  const isFree = tier <= 0;
+  return (
+    <View style={[s.tierBadge, isFree ? s.tierBadgeFree : s.tierBadgePaid]}>
+      <Text style={[s.tierBadgeText, isFree ? s.tierBadgeTextFree : s.tierBadgeTextPaid]}>
+        {tierName(tier).toUpperCase()}
+      </Text>
     </View>
   );
 }
@@ -71,19 +99,43 @@ function PlanCard({ plan, current, c, s }: { plan: Plan; current: boolean; c: Th
           <Text style={s.currentBadgeText}>TU PLAN</Text>
         </View>
       )}
-      <View style={s.planCardTop}>
-        <Text style={s.planName}>{plan.name}</Text>
-        <Text style={s.planPrice}>{fmtPrice(plan.price_ars)}</Text>
+
+      <TierBadge tier={plan.tier} s={s} />
+      <Text style={s.planName}>{plan.name}</Text>
+
+      {/* Precio prominente */}
+      <View style={s.priceRow}>
+        {plan.price_ars > 0 ? (
+          <>
+            <Text style={s.priceBig}>${plan.price_ars.toLocaleString('es-AR')}</Text>
+            <Text style={s.priceUnit}>/mes</Text>
+          </>
+        ) : (
+          <Text style={s.priceBig}>Gratis</Text>
+        )}
       </View>
-      <Text style={s.planLimit}>
-        {plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`}
-      </Text>
-      {plan.features.length > 0 && (
-        <View style={s.chipRow}>
-          {plan.features.map((f) => <FeatureChip key={f} label={featureLabel(f)} c={c} s={s} />)}
+
+      {/* Límites + features como checklist */}
+      <View style={s.featList}>
+        <FeatureRow
+          label={plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`}
+          c={c} s={s}
+        />
+        {plan.staff_limit != null && (
+          <FeatureRow
+            label={plan.staff_limit === 0 ? 'Sin personal' : `Hasta ${plan.staff_limit} en el equipo`}
+            c={c} s={s}
+          />
+        )}
+        {plan.features.map((f) => <FeatureRow key={f} label={featureLabel(f)} c={c} s={s} />)}
+      </View>
+
+      {/* CTA */}
+      {current ? (
+        <View style={s.currentPill}>
+          <Text style={s.currentPillText}>Plan actual</Text>
         </View>
-      )}
-      {canSubscribe && (
+      ) : canSubscribe ? (
         <View style={{ gap: space[2], marginTop: space[1] }}>
           <Pressable
             onPress={handleSubscribe}
@@ -100,6 +152,10 @@ function PlanCard({ plan, current, c, s }: { plan: Plan; current: boolean; c: Th
             )}
           </Pressable>
           {error ? <Text style={s.subError}>{error}</Text> : null}
+        </View>
+      ) : (
+        <View style={s.currentPill}>
+          <Text style={s.currentPillText}>Incluido</Text>
         </View>
       )}
     </View>
@@ -118,6 +174,9 @@ export default function MiPlanScreen() {
   const myPlans = (catalog ?? [])
     .filter((p) => p.role_target === roleTarget)
     .sort((a, b) => a.tier - b.tier);
+
+  // Tier del plan actual (para el badge), derivado del catálogo.
+  const currentTier = myPlans.find((p) => p.tier_key === status?.plan)?.tier;
 
   const usagePct = status && status.horse_limit
     ? Math.min(1, status.horse_count / status.horse_limit)
@@ -143,7 +202,10 @@ export default function MiPlanScreen() {
                 <Sparkles size={20} color={colors.white} strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.currentPlanName}>{status.label}</Text>
+                <View style={s.currentNameRow}>
+                  <Text style={s.currentPlanName}>{status.label}</Text>
+                  {currentTier != null && <TierBadge tier={currentTier} s={s} />}
+                </View>
                 <Text style={s.currentPlanSub}>
                   {status.price_ars > 0 ? fmtPrice(status.price_ars) : 'Plan gratuito'}
                   {expires ? ` · vence el ${expires}` : ''}
@@ -242,6 +304,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
   },
+  currentNameRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' },
   currentPlanName: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
   currentPlanSub: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
 
@@ -272,17 +335,49 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.border,
     padding: space[4], gap: space[2], ...shadow.sm,
   },
-  planCardCurrent: { borderColor: c.brand, borderWidth: 1.5 },
+  planCardCurrent: { borderColor: c.brand, borderWidth: 1.5, backgroundColor: c.brandSoft },
   currentBadge: {
-    position: 'absolute', top: -9, left: space[4],
-    backgroundColor: c.brand, borderRadius: radius.full,
+    position: 'absolute', top: -9, right: space[4],
+    backgroundColor: colors.brand600, borderRadius: radius.full,
     paddingHorizontal: space[2] + 2, paddingVertical: 2,
   },
   currentBadgeText: { fontSize: 9, fontWeight: weight.bold, color: colors.white, letterSpacing: 0.5 },
-  planCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  planName: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text },
-  planPrice: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
-  planLimit: { fontSize: text.sm, color: c.textMuted },
+  planName: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text, marginTop: space[1] },
+
+  /* Tier badge */
+  tierBadge: {
+    alignSelf: 'flex-start', borderRadius: radius.full,
+    paddingHorizontal: space[2] + 2, paddingVertical: 3, borderWidth: 1,
+  },
+  tierBadgeFree: { backgroundColor: c.surfaceAlt, borderColor: c.borderStrong },
+  tierBadgePaid: { backgroundColor: c.brandSoft, borderColor: c.brand },
+  tierBadgeText: { fontSize: 10, fontWeight: weight.bold, letterSpacing: 0.5 },
+  tierBadgeTextFree: { color: c.textMuted },
+  tierBadgeTextPaid: { color: c.brand },
+
+  /* Precio */
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[1], marginTop: space[1] },
+  priceBig: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
+  priceUnit: { fontSize: text.sm, fontWeight: weight.medium, color: c.textFaint },
+
+  /* Checklist de features */
+  featList: {
+    gap: space[2] + 2, marginTop: space[3], paddingTop: space[3],
+    borderTopWidth: 1, borderTopColor: c.border,
+  },
+  featRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] + 2 },
+  featCheck: {
+    width: 18, height: 18, borderRadius: radius.full,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: c.brandSoft,
+  },
+  featRowText: { flex: 1, fontSize: text.sm, color: c.textMuted },
+
+  /* Pill de estado (plan actual / incluido) */
+  currentPill: {
+    marginTop: space[4], borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt, paddingVertical: space[2] + 2, alignItems: 'center',
+  },
+  currentPillText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
 
   /* Suscripción */
   subBtn: {

@@ -5,6 +5,7 @@ import type { AxiosError } from 'axios';
 import { useRouter } from 'expo-router';
 import {
   BarChart3, HeartPulse, Wallet, CalendarClock, Stethoscope, TrendingUp,
+  AlertTriangle, Clock, CheckCircle2,
 } from 'lucide-react-native';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { colors } from '../../lib/colors';
@@ -12,6 +13,10 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes } from '../../lib/routes';
 import { useReportSummary, type ReportSummary } from '../../hooks/use-reports';
+
+const RED = '#dc2626';
+const AMBER = '#d97706';
+const GREEN = '#059669';
 
 const CATEGORY_LABELS: Record<string, string> = {
   alimentacion: 'Alimentación',
@@ -33,7 +38,7 @@ const APPOINTMENT_LABELS: Record<string, string> = {
   otro: 'Otro',
 };
 
-const fmtMoney = (n: number) => `$${n.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+const fmtMoney = (n: number) => `$ ${n.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 
 const fmtMonth = (ym: string) => {
   const [y, m] = ym.split('-');
@@ -57,7 +62,7 @@ function StatCard({ icon, label, value, hint, s }: {
     <View style={s.statCard}>
       <View style={s.statIcon}>{icon}</View>
       <Text style={s.statLabel}>{label}</Text>
-      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.statValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
       {hint ? <Text style={s.statHint}>{hint}</Text> : null}
     </View>
   );
@@ -65,28 +70,46 @@ function StatCard({ icon, label, value, hint, s }: {
 
 function HealthCard({ health, c, s }: { health: ReportSummary['health']; c: ThemeColors; s: Styles }) {
   const verde = Math.max(0, health.total - health.rojo - health.amarillo);
+  const attention = health.rojo + health.amarillo;
+  const total = Math.max(1, health.rojo + health.amarillo + verde);
+
+  const cells = [
+    { value: health.rojo, label: 'Vencidos', color: RED, bg: 'rgba(239,68,68,0.12)', Icon: AlertTriangle },
+    { value: health.amarillo, label: 'Por vencer', color: AMBER, bg: 'rgba(245,158,11,0.12)', Icon: Clock },
+    { value: verde, label: 'Al día', color: GREEN, bg: 'rgba(16,185,129,0.12)', Icon: CheckCircle2 },
+  ];
+
   return (
     <View style={s.card}>
       <View style={s.cardHead}>
         <HeartPulse size={18} color={c.brand} strokeWidth={2} />
         <Text style={s.cardTitle}>Salud sanitaria</Text>
       </View>
-      <View style={s.healthRow}>
-        <View style={[s.healthBox, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
-          <Text style={[s.healthNum, { color: '#dc2626' }]}>{health.rojo}</Text>
-          <Text style={[s.healthLbl, { color: '#dc2626' }]}>Vencidos</Text>
-        </View>
-        <View style={[s.healthBox, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
-          <Text style={[s.healthNum, { color: '#d97706' }]}>{health.amarillo}</Text>
-          <Text style={[s.healthLbl, { color: '#d97706' }]}>Por vencer</Text>
-        </View>
-        <View style={[s.healthBox, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
-          <Text style={[s.healthNum, { color: '#059669' }]}>{verde}</Text>
-          <Text style={[s.healthLbl, { color: '#059669' }]}>Al día</Text>
-        </View>
+
+      {/* Barra semáforo agregada */}
+      <View style={s.semaforoTrack}>
+        {health.rojo > 0 && <View style={{ flex: health.rojo, backgroundColor: RED }} />}
+        {health.amarillo > 0 && <View style={{ flex: health.amarillo, backgroundColor: AMBER }} />}
+        {verde > 0 && <View style={{ flex: verde, backgroundColor: GREEN }} />}
+        {total === 1 && health.rojo + health.amarillo + verde === 0 && (
+          <View style={{ flex: 1, backgroundColor: c.border }} />
+        )}
       </View>
+
+      <View style={s.healthRow}>
+        {cells.map((cell) => (
+          <View key={cell.label} style={[s.healthBox, { backgroundColor: cell.bg }]}>
+            <cell.Icon size={15} color={cell.color} strokeWidth={2.2} />
+            <Text style={[s.healthNum, { color: cell.color }]}>{cell.value}</Text>
+            <Text style={[s.healthLbl, { color: cell.color }]}>{cell.label}</Text>
+          </View>
+        ))}
+      </View>
+
       <Text style={s.cardHint}>
-        Caballos con alguna enfermedad oficial (AIE, Encefalomielitis, Influenza) en cada estado.
+        {attention > 0
+          ? `${attention} caballo${attention === 1 ? '' : 's'} necesitan atención sanitaria (AIE, Encefalomielitis, Influenza).`
+          : 'Todos los caballos están al día con las enfermedades oficiales.'}
       </Text>
     </View>
   );
@@ -95,6 +118,8 @@ function HealthCard({ health, c, s }: { health: ReportSummary['health']; c: Them
 function ExpensesCard({ expenses, c, s }: { expenses: ReportSummary['expenses']; c: ThemeColors; s: Styles }) {
   const max = Math.max(1, ...expenses.monthly.map((m) => m.total));
   const chrono = [...expenses.monthly].reverse();
+  const catMax = Math.max(1, ...expenses.by_category.map((cat) => cat.total));
+
   return (
     <View style={s.card}>
       <View style={s.cardHead}>
@@ -115,31 +140,46 @@ function ExpensesCard({ expenses, c, s }: { expenses: ReportSummary['expenses'];
 
       {chrono.length > 0 ? (
         <View style={s.chart}>
-          {chrono.map((m) => (
-            <View key={m.month} style={s.chartCol}>
-              <View style={s.chartBarTrack}>
-                <View
-                  style={[
-                    s.chartBar,
-                    { height: `${Math.round((m.total / max) * 100)}%` },
-                  ]}
-                />
+          {chrono.map((m, i) => {
+            const isCurrent = i === chrono.length - 1;
+            return (
+              <View key={m.month} style={s.chartCol}>
+                <View style={s.chartBarTrack}>
+                  <View
+                    style={[
+                      s.chartBar,
+                      {
+                        height: `${Math.round((m.total / max) * 100)}%`,
+                        backgroundColor: isCurrent ? c.brand : c.brandSoft,
+                        borderWidth: isCurrent ? 0 : StyleSheet.hairlineWidth,
+                        borderColor: c.brand,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[s.chartLbl, isCurrent && { color: c.brand, fontWeight: weight.bold }]}>
+                  {fmtMonth(m.month)}
+                </Text>
               </View>
-              <Text style={s.chartLbl}>{fmtMonth(m.month)}</Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
       ) : (
         <Text style={s.emptyText}>Sin gastos registrados en el período.</Text>
       )}
 
       {expenses.by_category.length > 0 && (
-        <View style={{ marginTop: space[3], gap: space[2] }}>
+        <View style={s.catSection}>
           <Text style={s.subLabel}>Por categoría</Text>
           {expenses.by_category.map((cat) => (
-            <View key={cat.category} style={s.catRow}>
-              <Text style={s.catName}>{CATEGORY_LABELS[cat.category] ?? cat.category}</Text>
-              <Text style={s.catTotal}>{fmtMoney(cat.total)}</Text>
+            <View key={cat.category} style={{ gap: 5 }}>
+              <View style={s.catRow}>
+                <Text style={s.catName}>{CATEGORY_LABELS[cat.category] ?? cat.category}</Text>
+                <Text style={s.catTotal}>{fmtMoney(cat.total)}</Text>
+              </View>
+              <View style={s.catTrack}>
+                <View style={[s.catFill, { width: `${Math.round((cat.total / catMax) * 100)}%`, backgroundColor: c.brandSoft }]} />
+              </View>
             </View>
           ))}
         </View>
@@ -161,7 +201,9 @@ function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming'];
 
       {upcoming.appointments.map((a) => (
         <View key={a.id} style={s.upRow}>
-          <CalendarClock size={16} color={c.brand} strokeWidth={2} />
+          <View style={[s.upIcon, { backgroundColor: c.brandSoft }]}>
+            <CalendarClock size={15} color={c.brand} strokeWidth={2} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={s.upTitle} numberOfLines={1}>{a.title}</Text>
             <Text style={s.upSub} numberOfLines={1}>
@@ -174,7 +216,9 @@ function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming'];
 
       {upcoming.medical.map((m) => (
         <View key={m.id} style={s.upRow}>
-          <Stethoscope size={16} color="#059669" strokeWidth={2} />
+          <View style={[s.upIcon, { backgroundColor: 'rgba(16,185,129,0.14)' }]}>
+            <Stethoscope size={15} color={GREEN} strokeWidth={2} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={s.upTitle} numberOfLines={1}>{m.name}</Text>
             <Text style={s.upSub} numberOfLines={1}>{m.horse_name}</Text>
@@ -288,14 +332,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[3] },
   cardTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text },
-  cardHint: { fontSize: text.xs, color: c.textFaint, marginTop: space[3] },
+  cardHint: { fontSize: text.xs, color: c.textFaint, marginTop: space[3], lineHeight: 16 },
   subLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   /* Health */
+  semaforoTrack: {
+    flexDirection: 'row', height: 8, borderRadius: radius.full,
+    overflow: 'hidden', backgroundColor: c.surfaceAlt, marginBottom: space[3],
+  },
   healthRow: { flexDirection: 'row', gap: space[2] },
-  healthBox: { flex: 1, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
+  healthBox: { flex: 1, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', gap: 2 },
   healthNum: { fontSize: text.xl, fontWeight: weight.extrabold },
-  healthLbl: { fontSize: text.xs, fontWeight: weight.semibold, marginTop: 2 },
+  healthLbl: { fontSize: text.xs, fontWeight: weight.semibold },
 
   /* Expenses */
   expenseTotals: { flexDirection: 'row', gap: space[3], marginBottom: space[4] },
@@ -303,15 +351,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   expenseBoxLbl: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
   expenseBoxVal: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text, marginTop: 2 },
 
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 96 },
-  chartCol: { flex: 1, alignItems: 'center', gap: 4, height: '100%' },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 104 },
+  chartCol: { flex: 1, alignItems: 'center', gap: 5, height: '100%' },
   chartBarTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
-  chartBar: { width: '100%', borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: c.brand, minHeight: 3 },
-  chartLbl: { fontSize: 9, color: c.textFaint },
+  chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
+  chartLbl: { fontSize: 9, color: c.textFaint, textTransform: 'capitalize' },
 
+  catSection: { marginTop: space[4], paddingTop: space[4], borderTopWidth: 1, borderTopColor: c.border, gap: space[3] },
   catRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catName: { fontSize: text.sm, color: c.textMuted },
   catTotal: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  catTrack: { height: 6, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
+  catFill: { height: '100%', borderRadius: radius.full },
 
   /* Upcoming */
   upRow: {
@@ -319,9 +370,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt, borderRadius: radius.md,
     padding: space[3], marginBottom: space[2],
   },
+  upIcon: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   upTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   upSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
-  upDate: { fontSize: text.xs, fontWeight: weight.medium, color: c.textMuted },
+  upDate: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
 
   /* No plan */
   noPlan: {

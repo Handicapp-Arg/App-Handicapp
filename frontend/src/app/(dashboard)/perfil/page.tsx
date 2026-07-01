@@ -38,6 +38,10 @@ function roleTargetFor(role?: string): PlanRoleTarget {
 const fmtPrice = (ars: number) =>
   ars > 0 ? `$${ars.toLocaleString('es-AR')}/mes` : 'Gratis';
 
+/** Nombre visual del tier (badge) derivado del número de tier del plan. */
+const TIER_LABELS = ['Free', 'Pro', 'Premium', 'Enterprise'];
+const tierName = (tier: number) => TIER_LABELS[tier] ?? `Nivel ${tier + 1}`;
+
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-[var(--surface-card)] p-6 shadow-[var(--shadow-card)]">
@@ -98,7 +102,37 @@ function errMessage(err: unknown, fallback: string): string {
   return m || fallback;
 }
 
-/** Tarjeta de un plan del catálogo. */
+/** Fila de feature con check (listado estilo pricing). */
+function FeatureRow({ label }: { label: string }) {
+  return (
+    <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-clay-100 text-clay-700 dark:bg-clay-500/20 dark:text-clay-300">
+        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
+      </span>
+      {label}
+    </li>
+  );
+}
+
+/** Badge de tier (Free / Pro / Premium…). */
+function TierBadge({ tier }: { tier: number }) {
+  const isFree = tier <= 0;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ${
+        isFree
+          ? 'bg-gray-50 text-gray-500 ring-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'
+          : 'bg-clay-50 text-clay-700 ring-clay-100 dark:bg-clay-500/15 dark:text-clay-300 dark:ring-clay-500/25'
+      }`}
+    >
+      {tierName(tier)}
+    </span>
+  );
+}
+
+/** Tarjeta de un plan del catálogo — estilo pricing SaaS. */
 function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
   const subscribe = useSubscribe();
   const [error, setError] = useState('');
@@ -118,43 +152,69 @@ function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-5 transition ${
+      className={`group relative flex flex-col rounded-2xl border p-6 transition-all duration-200 ${
         current
-          ? 'border-clay-300 bg-clay-50/50 ring-2 ring-clay-500/40 dark:border-clay-500/40 dark:bg-clay-500/10'
-          : 'border-gray-200 bg-[var(--surface-card)]'
+          ? 'border-clay-300 bg-clay-50/40 ring-2 ring-clay-500/30 dark:border-clay-500/40 dark:bg-clay-500/10'
+          : 'border-gray-200 bg-[var(--surface-card)] hover:-translate-y-0.5 hover:border-clay-200 hover:shadow-[var(--shadow-card)] dark:border-gray-700 dark:hover:border-clay-500/40'
       }`}
     >
       {current && (
-        <span className="absolute -top-2.5 left-5 rounded-full bg-clay-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+        <span className="absolute -top-2.5 right-5 rounded-full bg-clay-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
           Tu plan
         </span>
       )}
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-base font-extrabold text-gray-900">{plan.name}</h3>
-        <span className="text-sm font-bold text-clay-700 dark:text-clay-300">{fmtPrice(plan.price_ars)}</span>
+
+      <TierBadge tier={plan.tier} />
+      <h3 className="mt-3 font-display text-lg font-extrabold text-gray-900">{plan.name}</h3>
+
+      {/* Precio prominente */}
+      <div className="mt-2 flex items-baseline gap-1.5">
+        {plan.price_ars > 0 ? (
+          <>
+            <span className="text-3xl font-extrabold tracking-tight text-gray-900">
+              ${plan.price_ars.toLocaleString('es-AR')}
+            </span>
+            <span className="text-sm font-medium text-gray-400">/mes</span>
+          </>
+        ) : (
+          <span className="text-3xl font-extrabold tracking-tight text-gray-900">Gratis</span>
+        )}
       </div>
-      <p className="mt-1 text-sm text-gray-500">
-        {plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`}
-      </p>
-      {plan.features.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {plan.features.map((f) => (
-            <FeatureChip key={f} label={featureLabel(f)} />
-          ))}
-        </div>
-      )}
-      {canSubscribe && (
-        <div className="mt-4 space-y-2">
-          <button
-            onClick={handleSubscribe}
-            disabled={subscribe.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-clay-600 active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            {subscribe.isPending ? <><Spinner size="sm" color="white" /> Redirigiendo…</> : 'Suscribirme'}
-          </button>
-          {error && <p className="text-xs font-medium text-red-500">{error}</p>}
-        </div>
-      )}
+
+      {/* Límites + features como checklist */}
+      <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5 dark:border-gray-700/60">
+        <FeatureRow label={plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`} />
+        {plan.staff_limit != null && (
+          <FeatureRow label={plan.staff_limit === 0 ? 'Sin personal' : `Hasta ${plan.staff_limit} en el equipo`} />
+        )}
+        {plan.features.map((f) => (
+          <FeatureRow key={f} label={featureLabel(f)} />
+        ))}
+      </ul>
+
+      {/* CTA — anclado al fondo para tarjetas parejas */}
+      <div className="mt-6 space-y-2">
+        {current ? (
+          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400 dark:border-gray-700 dark:bg-gray-800/60">
+            Plan actual
+          </div>
+        ) : canSubscribe ? (
+          <>
+            <button
+              onClick={handleSubscribe}
+              disabled={subscribe.isPending}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-clay-600 hover:shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {subscribe.isPending ? <><Spinner size="sm" color="white" /> Redirigiendo…</> : 'Suscribirme'}
+            </button>
+            {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+          </>
+        ) : (
+          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400 dark:border-gray-700 dark:bg-gray-800/60">
+            Incluido
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -168,6 +228,9 @@ function MiPlan({ role }: { role?: string }) {
   const myPlans = (catalog ?? [])
     .filter((p) => p.role_target === roleTarget)
     .sort((a, b) => a.tier - b.tier);
+
+  // Tier del plan actual (para el badge), derivado del catálogo.
+  const currentTier = myPlans.find((p) => p.tier_key === status?.plan)?.tier;
 
   const usagePct = status && status.horse_limit
     ? Math.min(100, Math.round((status.horse_count / status.horse_limit) * 100))
@@ -187,12 +250,15 @@ function MiPlan({ role }: { role?: string }) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-clay-500/15 text-clay-600 dark:text-clay-300">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-clay-400 to-clay-600 text-white shadow-sm">
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.664 1.319a.75.75 0 0 1 .672 0 41.06 41.06 0 0 1 8.198 5.424.75.75 0 0 1-.254 1.285 31.372 31.372 0 0 0-7.86 3.83.75.75 0 0 1-.84 0 31.508 31.508 0 0 0-2.08-1.287V9.394a.75.75 0 0 0-.293-.593 41.103 41.103 0 0 0-1.668-1.288.75.75 0 0 1 .619-1.318 41.7 41.7 0 0 1 3.328 1.81Z" /></svg>
                 </span>
                 <div>
-                  <p className="text-lg font-extrabold text-gray-900">{status.label}</p>
-                  <p className="text-xs text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <p className="font-display text-lg font-extrabold text-gray-900">{status.label}</p>
+                    {currentTier != null && <TierBadge tier={currentTier} />}
+                  </div>
+                  <p className="mt-0.5 text-xs text-gray-400">
                     {status.price_ars > 0 ? fmtPrice(status.price_ars) : 'Plan gratuito'}
                     {expires && ` · vence el ${expires}`}
                   </p>
@@ -332,17 +398,38 @@ function Alert({ type, message }: { type: AlertType; message: string }) {
 
 /* ─── Matrícula profesional (solo veterinarios) ─── */
 
-const LICENSE_BADGE: Record<string, { label: string; cls: string }> = {
-  none:     { label: 'Sin cargar', cls: 'bg-gray-100 text-gray-500 ring-gray-200' },
-  pending:  { label: 'Pendiente',  cls: 'bg-amber-50 text-amber-700 ring-amber-200' },
-  approved: { label: 'Aprobada',   cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-  rejected: { label: 'Rechazada',  cls: 'bg-red-50 text-red-600 ring-red-200' },
+type LicenseDot = 'gray' | 'amber' | 'emerald' | 'red';
+const LICENSE_BADGE: Record<string, { label: string; cls: string; dot: LicenseDot }> = {
+  none:     { label: 'Sin cargar', dot: 'gray',    cls: 'bg-gray-100 text-gray-500 ring-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700' },
+  pending:  { label: 'Pendiente',  dot: 'amber',   cls: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/25' },
+  approved: { label: 'Aprobada',   dot: 'emerald', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/25' },
+  rejected: { label: 'Rechazada',  dot: 'red',     cls: 'bg-red-50 text-red-600 ring-red-200 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-500/25' },
 };
+
+const DOT_CLS: Record<LicenseDot, string> = {
+  gray: 'bg-gray-400', amber: 'bg-amber-500', emerald: 'bg-emerald-500', red: 'bg-red-500',
+};
+
+/** Badge de estado con punto de color + ícono de check para aprobada. */
+function LicenseBadge({ status }: { status: string }) {
+  const badge = LICENSE_BADGE[status] ?? LICENSE_BADGE.none;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ring-1 ${badge.cls}`}>
+      {status === 'approved' ? (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.6}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
+      ) : (
+        <span className={`h-1.5 w-1.5 rounded-full ${DOT_CLS[badge.dot]}`} />
+      )}
+      {badge.label}
+    </span>
+  );
+}
 
 function VetLicenseSection() {
   const { user, refreshUser } = useAuth();
   const status = user?.vet_license_status ?? 'none';
-  const badge = LICENSE_BADGE[status] ?? LICENSE_BADGE.none;
 
   const [number, setNumber] = useState(user?.vet_license_number || '');
   const [province, setProvince] = useState(user?.vet_province || '');
@@ -380,23 +467,49 @@ function VetLicenseSection() {
   return (
     <SectionCard title="Matrícula profesional">
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="font-semibold text-gray-700">Estado:</span>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${badge.cls}`}>
-            {badge.label}
-          </span>
+        {/* Cabecera de estado */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-gray-700/60 dark:bg-gray-800/40">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-clay-500/15 text-clay-600 dark:text-clay-300">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Estado de tu matrícula</p>
+              <p className="text-xs text-gray-400">Se valida manualmente por un administrador.</p>
+            </div>
+          </div>
+          <LicenseBadge status={status} />
         </div>
         {status === 'rejected' && (
           <Alert type="error" message="Tu matrícula fue rechazada. Revisá los datos y volvé a enviarla." />
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Número de matrícula">
-            <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} className={inputCls} placeholder="Ej. 12345" />
-          </Field>
-          <Field label="Provincia">
-            <input type="text" value={province} onChange={(e) => setProvince(e.target.value)} className={inputCls} placeholder="Ej. Buenos Aires" />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Número de matrícula">
+              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} className={inputCls + ' sm:max-w-none'} placeholder="Ej. 12345" />
+            </Field>
+            <Field label="Provincia">
+              <input type="text" value={province} onChange={(e) => setProvince(e.target.value)} className={inputCls + ' sm:max-w-none'} placeholder="Ej. Buenos Aires" />
+            </Field>
+          </div>
           <Field label="Foto de la matrícula" hint="Subí una foto o escaneo del carnet (opcional si ya la cargaste).">
+            {user?.vet_license_url && !file && (
+              <a
+                href={user.vet_license_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group mb-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-[var(--surface-card)] p-2 transition hover:border-clay-200 dark:border-gray-700 sm:max-w-sm"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={user.vet_license_url} alt="Matrícula cargada" className="h-14 w-14 shrink-0 rounded-lg object-cover ring-1 ring-black/5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Foto cargada</p>
+                  <p className="text-xs text-clay-700 group-hover:underline dark:text-clay-300">Ver en tamaño completo</p>
+                </div>
+              </a>
+            )}
             <input
               ref={fileInput}
               type="file"
@@ -405,11 +518,6 @@ function VetLicenseSection() {
               className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-clay-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-clay-700 hover:file:bg-clay-100 sm:max-w-sm"
             />
           </Field>
-          {user?.vet_license_url && !file && (
-            <a href={user.vet_license_url} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-semibold text-clay-700 hover:underline">
-              Ver foto cargada
-            </a>
-          )}
           {msg && <Alert type="success" message={msg} />}
           {error && <Alert type="error" message={error} />}
           <button
@@ -466,13 +574,20 @@ function ContactSection() {
       <div className="space-y-5">
         <form onSubmit={handlePhoneSubmit} className="space-y-4">
           <Field label="Teléfono" hint="Formato internacional, con código de país.">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={inputCls}
-              placeholder="+54 9 11 ..."
-            />
+            <div className="relative sm:max-w-sm">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                </svg>
+              </span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className={inputCls + ' w-full pl-10 sm:max-w-none'}
+                placeholder="+54 9 11 ..."
+              />
+            </div>
           </Field>
           {msg && <Alert type="success" message={msg} />}
           {error && <Alert type="error" message={error} />}
@@ -485,11 +600,18 @@ function ContactSection() {
           </button>
         </form>
 
-        <div className="border-t border-gray-100 pt-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-700">Recibir recordatorios por WhatsApp</p>
-              <p className="mt-0.5 text-xs text-gray-400">Disponible según tu plan.</p>
+        <div className="border-t border-gray-100 pt-5 dark:border-gray-700/60">
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.8 14.16c-.25.7-1.44 1.33-1.98 1.38-.53.05-1.02.24-3.44-.72-2.9-1.14-4.76-4.1-4.9-4.29-.14-.19-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.27-.29.58-.36.78-.36l.56.01c.18.01.42-.07.66.5.25.6.84 2.07.91 2.22.07.15.12.32.02.51-.1.19-.15.31-.29.48-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.25 1.63 2.02 1.12.99 2.07 1.3 2.36 1.45.29.15.46.12.63-.07.17-.19.73-.85.92-1.14.19-.29.39-.24.66-.14.27.1 1.71.81 2 .96.29.15.49.22.56.34.07.12.07.7-.18 1.4Z" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Recibir recordatorios por WhatsApp</p>
+                <p className="mt-0.5 text-xs text-gray-400">Disponible según tu plan.</p>
+              </div>
             </div>
             <button
               type="button"

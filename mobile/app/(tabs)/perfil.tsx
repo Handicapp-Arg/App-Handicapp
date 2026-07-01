@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Switch,
+  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Switch, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { useState, useMemo } from 'react';
 import {
   User, ChevronRight, Lock, LogOut, Crown, Check, ShieldCheck, Camera,
+  Phone, MessageCircle,
   type LucideIcon,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -435,15 +436,19 @@ function ContactSection({ user, c, s }: {
       <View style={s.vetCard}>
         <View style={s.editField}>
           <Text style={s.editLabel}>Teléfono</Text>
-          <TextInput
-            style={s.editInput}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="+54 9 11 ..."
-            placeholderTextColor={c.textFaint}
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-          />
+          <View style={s.inputWithIcon}>
+            <Phone size={17} color={c.textFaint} strokeWidth={2} />
+            <TextInput
+              style={s.inputWithIconField}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+54 9 11 ..."
+              placeholderTextColor={c.textFaint}
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+            />
+          </View>
+          <Text style={s.fieldHint}>Formato internacional, con código de país.</Text>
         </View>
         <TouchableOpacity
           style={[s.editSaveBtn, savingPhone && s.editSaveBtnDisabled]}
@@ -457,8 +462,11 @@ function ContactSection({ user, c, s }: {
         </TouchableOpacity>
 
         <View style={s.whatsappRow}>
+          <View style={s.whatsappIcon}>
+            <MessageCircle size={17} color="#16a34a" strokeWidth={2.2} />
+          </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={s.accountRowLabel}>Recibir recordatorios por WhatsApp</Text>
+            <Text style={s.accountRowLabel}>Recordatorios por WhatsApp</Text>
             <Text style={s.accountRowSub}>Disponible según tu plan.</Text>
           </View>
           <Switch
@@ -476,11 +484,12 @@ function ContactSection({ user, c, s }: {
 
 /* ─── Matrícula profesional (solo veterinarios) ─── */
 
-const LICENSE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  none:     { label: 'Sin cargar', color: '#6b7280', bg: '#f3f4f6' },
-  pending:  { label: 'Pendiente',  color: colors.amber600, bg: colors.amber50 },
-  approved: { label: 'Aprobada',   color: '#15803d', bg: '#f0fdf4' },
-  rejected: { label: 'Rechazada',  color: colors.red700, bg: '#fef2f2' },
+type LicenseMeta = { label: string; color: string; bgLight: string; bgDark: string };
+const LICENSE_STATUS: Record<string, LicenseMeta> = {
+  none:     { label: 'Sin cargar', color: '#9ca3af', bgLight: '#f3f4f6',     bgDark: 'rgba(156,163,175,0.16)' },
+  pending:  { label: 'Pendiente',  color: '#d97706', bgLight: '#fffbeb',     bgDark: 'rgba(217,119,6,0.20)' },
+  approved: { label: 'Aprobada',   color: '#16a34a', bgLight: '#f0fdf4',     bgDark: 'rgba(34,197,94,0.20)' },
+  rejected: { label: 'Rechazada',  color: '#ef4444', bgLight: '#fef2f2',     bgDark: 'rgba(239,68,68,0.20)' },
 };
 
 function VetLicenseSection({ user, c, s }: {
@@ -536,9 +545,17 @@ function VetLicenseSection({ user, c, s }: {
       <Text style={s.sectionTitle}>Matrícula profesional</Text>
       <View style={s.vetCard}>
         <View style={s.vetStatusRow}>
-          <ShieldCheck size={18} color={c.textMuted} strokeWidth={2} />
-          <Text style={s.vetStatusLabel}>Estado</Text>
-          <View style={[s.vetBadge, { backgroundColor: badge.bg }]}>
+          <View style={s.vetStatusIcon}>
+            <ShieldCheck size={17} color={c.brand} strokeWidth={2.1} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={s.vetStatusLabel}>Estado de tu matrícula</Text>
+            <Text style={s.vetStatusSub}>Se valida manualmente por un administrador.</Text>
+          </View>
+          <View style={[s.vetBadge, { backgroundColor: c.isDark ? badge.bgDark : badge.bgLight }]}>
+            {status === 'approved'
+              ? <Check size={12} color={badge.color} strokeWidth={3.2} />
+              : <View style={[s.vetBadgeDot, { backgroundColor: badge.color }]} />}
             <Text style={[s.vetBadgeText, { color: badge.color }]}>{badge.label}</Text>
           </View>
         </View>
@@ -566,10 +583,20 @@ function VetLicenseSection({ user, c, s }: {
           />
         </View>
 
+        {(photoUri || user.vet_license_url) && (
+          <View style={s.vetPreviewRow}>
+            <Image source={{ uri: photoUri ?? user.vet_license_url ?? undefined }} style={s.vetPreviewImg} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={s.accountRowLabel}>{photoUri ? 'Nueva foto seleccionada' : 'Foto cargada'}</Text>
+              <Text style={s.accountRowSub}>{photoUri ? 'Se enviará al validar.' : 'Ya guardada en tu perfil.'}</Text>
+            </View>
+          </View>
+        )}
+
         <TouchableOpacity style={s.vetPhotoBtn} onPress={pickPhoto} activeOpacity={0.8}>
           <Camera size={16} color={c.text} strokeWidth={2} />
           <Text style={s.vetPhotoBtnText}>
-            {photoUri ? 'Foto seleccionada' : user.vet_license_url ? 'Cambiar foto' : 'Subir foto de la matrícula'}
+            {photoUri ? 'Cambiar foto' : user.vet_license_url ? 'Cambiar foto' : 'Subir foto de la matrícula'}
           </Text>
         </TouchableOpacity>
 
@@ -958,10 +985,27 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], gap: space[3],
   },
-  vetStatusRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  vetStatusLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, flex: 1 },
-  vetBadge: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
+  vetStatusRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3],
+  },
+  vetStatusIcon: {
+    width: 36, height: 36, borderRadius: radius.md,
+    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
+  },
+  vetStatusLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  vetStatusSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  vetBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 1,
+  },
+  vetBadgeDot: { width: 6, height: 6, borderRadius: 3 },
   vetBadgeText: { fontSize: text.xs, fontWeight: weight.bold },
+  vetPreviewRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[2],
+  },
+  vetPreviewImg: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: c.border },
   vetPhotoBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
     borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
@@ -969,9 +1013,22 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   vetPhotoBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.text },
 
+  /* Input con ícono (teléfono) */
+  inputWithIcon: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2],
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.lg,
+    paddingHorizontal: 14, backgroundColor: c.surfaceAlt,
+  },
+  inputWithIconField: { flex: 1, paddingVertical: 12, fontSize: 14, color: c.text },
+  fieldHint: { fontSize: text.xs, color: c.textFaint },
+
   whatsappRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     borderTopWidth: 1, borderTopColor: c.border, paddingTop: space[3], marginTop: space[1],
+  },
+  whatsappIcon: {
+    width: 36, height: 36, borderRadius: radius.md,
+    backgroundColor: 'rgba(22,163,74,0.12)', alignItems: 'center', justifyContent: 'center',
   },
 
   modalOverlay: {

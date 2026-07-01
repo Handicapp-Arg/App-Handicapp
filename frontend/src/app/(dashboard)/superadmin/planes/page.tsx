@@ -31,6 +31,13 @@ const ROLE_TONE: Record<PlanRoleTarget, BadgeTone> = {
   haras:           'gold',
 };
 
+const ROLE_ACCENT: Record<PlanRoleTarget, string> = {
+  propietario:     'bg-blue-500',
+  veterinario:     'bg-emerald-500',
+  establecimiento: 'bg-navy-700',
+  haras:           'bg-gold-500',
+};
+
 const FEATURES: { key: PlanFeature; label: string }[] = [
   { key: 'whatsapp',       label: 'WhatsApp' },
   { key: 'libreta_digital', label: 'Libreta digital' },
@@ -253,7 +260,8 @@ function EditPlanModal({ plan, open, onClose }: { plan: Plan | null; open: boole
 // ─────────────────────────── Plan card ───────────────────────────
 function PlanCard({ plan, onEdit }: { plan: Plan; onEdit: () => void }) {
   return (
-    <Card className={cn('flex flex-col gap-3 p-4', !plan.active && 'opacity-60')}>
+    <Card className={cn('relative flex flex-col gap-3 overflow-hidden p-4 pl-5 transition hover:shadow-md', !plan.active && 'opacity-60')}>
+      <span className={cn('absolute inset-y-0 left-0 w-1.5', ROLE_ACCENT[plan.role_target])} aria-hidden />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
