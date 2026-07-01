@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, type ComponentType } from 'react';
+import { Sparkles, Zap, Crown, Building2, Lock, ShieldCheck, Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { avatarGradient, initialsOf, AVATAR_PALETTE } from '@/lib/avatar-color';
 import { useFeed } from '@/hooks/use-feed';
 import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
 import { Spinner } from '@/components/ui/skeleton';
+import { Modal } from '@/components/ui/modal';
+import { PaymentMethods } from '@/components/ui/payment-methods';
 import { usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
 
 const roleLabel: Record<string, string> = {
@@ -41,6 +44,85 @@ const fmtPrice = (ars: number) =>
 /** Nombre visual del tier (badge) derivado del número de tier del plan. */
 const TIER_LABELS = ['Free', 'Pro', 'Premium', 'Enterprise'];
 const tierName = (tier: number) => TIER_LABELS[tier] ?? `Nivel ${tier + 1}`;
+
+/* ─── Identidad visual por tier ───
+   Cada plan se reconoce de un vistazo: color, ícono, peso y personalidad
+   propios. Los tints son translúcidos (rgba / var) → dark-safe. */
+type TierId = 'free' | 'pro' | 'premium' | 'enterprise';
+
+interface TierStyle {
+  id: TierId;
+  label: string;
+  tagline: string;
+  Icon: ComponentType<{ className?: string }>;
+  accent: string; // color sólido del acento (íconos, checks, barra)
+  tint: string; // fondo translúcido del círculo del ícono
+  ring: string; // borde/anillo del tier
+  glow: string; // sombra de color en hover
+  bar: string; // franja superior de color
+  featured?: boolean; // Pro → card destacada + badge
+  badge?: string;
+}
+
+const TIER_STYLES: Record<TierId, TierStyle> = {
+  free: {
+    id: 'free',
+    label: 'Free',
+    tagline: 'Para empezar',
+    Icon: Sparkles,
+    accent: '#64748b',
+    tint: 'rgba(100,116,139,0.14)',
+    ring: 'rgba(100,116,139,0.35)',
+    glow: 'rgba(100,116,139,0.22)',
+    bar: 'linear-gradient(90deg, #94a3b8, #64748b)',
+  },
+  pro: {
+    id: 'pro',
+    label: 'Pro',
+    tagline: 'El favorito de los profesionales',
+    Icon: Zap,
+    accent: 'var(--color-primary)',
+    tint: 'rgba(157,108,53,0.16)',
+    ring: 'var(--color-primary)',
+    glow: 'rgba(157,108,53,0.38)',
+    bar: 'linear-gradient(90deg, #d2aa78, #9d6c35)',
+    featured: true,
+    badge: 'Más elegido',
+  },
+  premium: {
+    id: 'premium',
+    label: 'Premium',
+    tagline: 'Todo lo que necesitás',
+    Icon: Crown,
+    accent: '#8b5cf6',
+    tint: 'rgba(139,92,246,0.16)',
+    ring: 'rgba(139,92,246,0.5)',
+    glow: 'rgba(139,92,246,0.4)',
+    bar: 'linear-gradient(90deg, #a78bfa, #7c3aed)',
+  },
+  enterprise: {
+    id: 'enterprise',
+    label: 'Enterprise',
+    tagline: 'A la medida de tu operación',
+    Icon: Building2,
+    accent: '#475569',
+    tint: 'linear-gradient(135deg, #334155, #0f172a)',
+    ring: 'rgba(51,65,85,0.55)',
+    glow: 'rgba(30,41,59,0.45)',
+    bar: 'linear-gradient(90deg, #475569, #0f172a)',
+  },
+};
+
+/** Deriva el tier visual del plan (tier_key con fallback al número de tier). */
+function resolveTier(plan: Pick<Plan, 'tier_key' | 'tier'>): TierStyle {
+  const key = (plan.tier_key || '').toLowerCase();
+  if (/free|gratis|basic/.test(key)) return TIER_STYLES.free;
+  if (/enterprise|empresa|corp|haras/.test(key)) return TIER_STYLES.enterprise;
+  if (/premium|plus|full/.test(key)) return TIER_STYLES.premium;
+  if (/pro/.test(key)) return TIER_STYLES.pro;
+  const byNum: TierId[] = ['free', 'pro', 'premium', 'enterprise'];
+  return TIER_STYLES[byNum[plan.tier] ?? 'free'];
+}
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -102,17 +184,30 @@ function errMessage(err: unknown, fallback: string): string {
   return m || fallback;
 }
 
-/** Fila de feature con check (listado estilo pricing). */
-function FeatureRow({ label }: { label: string }) {
+/** Fila de feature con check en el color del tier (listado estilo pricing). */
+function FeatureRow({ label, accent }: { label: string; accent?: string }) {
   return (
     <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-clay-100 text-clay-700 dark:bg-clay-500/20 dark:text-clay-300">
-        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-        </svg>
+      <span
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+        style={accent ? { background: 'color-mix(in srgb, ' + accent + ' 18%, transparent)', color: accent } : undefined}
+      >
+        <Check className="h-2.5 w-2.5" strokeWidth={3.4} />
       </span>
       {label}
     </li>
+  );
+}
+
+/** Chip de límite (caballos / equipo) con el acento del tier. */
+function LimitChip({ label, accent }: { label: string; accent: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+      style={{ background: 'color-mix(in srgb, ' + accent + ' 14%, transparent)', color: accent }}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -132,83 +227,117 @@ function TierBadge({ tier }: { tier: number }) {
   );
 }
 
-/** Tarjeta de un plan del catálogo — estilo pricing SaaS. */
-function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
-  const subscribe = useSubscribe();
-  const [error, setError] = useState('');
+/** Tarjeta de un plan del catálogo — identidad visual propia por tier. */
+function PlanCard({
+  plan,
+  current,
+  onSubscribe,
+}: {
+  plan: Plan;
+  current: boolean;
+  onSubscribe: (plan: Plan) => void;
+}) {
+  const t = resolveTier(plan);
+  const { Icon } = t;
   // Solo se puede pagar un plan que no es el actual y que tiene precio.
   const canSubscribe = !current && plan.price_ars > 0;
 
-  const handleSubscribe = async () => {
-    setError('');
-    try {
-      const data = await subscribe.mutateAsync({ plan_id: plan.id });
-      // Redirige el navegador a MercadoPago para autorizar el cobro.
-      window.location.href = data.init_point;
-    } catch (err: unknown) {
-      setError(errMessage(err, 'No se pudo iniciar el pago. MercadoPago no está configurado.'));
-    }
-  };
-
   return (
     <div
-      className={`group relative flex flex-col rounded-2xl border p-6 transition-all duration-200 ${
-        current
-          ? 'border-clay-300 bg-clay-50/40 ring-2 ring-clay-500/30 dark:border-clay-500/40 dark:bg-clay-500/10'
-          : 'border-gray-200 bg-[var(--surface-card)] hover:-translate-y-0.5 hover:border-clay-200 hover:shadow-[var(--shadow-card)] dark:border-gray-700 dark:hover:border-clay-500/40'
-      }`}
+      style={
+        {
+          '--tier-ring': t.ring,
+          '--tier-glow': t.glow,
+        } as React.CSSProperties
+      }
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-[var(--surface-card)] p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_-16px_var(--tier-glow)] ${
+        t.featured
+          ? 'border-[color:var(--tier-ring)] shadow-[var(--shadow-lg)] lg:scale-[1.03]'
+          : 'border-gray-200 dark:border-gray-700'
+      } ${current ? 'ring-2 ring-[color:var(--tier-ring)] ring-offset-2 ring-offset-[var(--surface-card)]' : ''}`}
     >
-      {current && (
-        <span className="absolute -top-2.5 right-5 rounded-full bg-clay-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+      {/* Franja superior de color del tier */}
+      <span className="absolute inset-x-0 top-0 h-1.5" style={{ background: t.bar }} aria-hidden />
+
+      {/* Badge flotante: "Tu plan" (prioridad) o "Más elegido" (Pro) */}
+      {current ? (
+        <span className="absolute right-4 top-4 rounded-full bg-clay-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
           Tu plan
         </span>
+      ) : (
+        t.featured &&
+        t.badge && (
+          <span
+            className="absolute right-4 top-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm"
+            style={{ background: t.accent }}
+          >
+            {t.badge}
+          </span>
+        )
       )}
 
-      <TierBadge tier={plan.tier} />
-      <h3 className="mt-3 font-display text-lg font-extrabold text-gray-900">{plan.name}</h3>
+      {/* Ícono del tier en círculo con su color + nombre */}
+      <div className="mt-1.5 flex items-center gap-3">
+        <span
+          className="flex h-11 w-11 items-center justify-center rounded-2xl"
+          style={{ background: t.tint, color: t.id === 'enterprise' ? '#fff' : t.accent }}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="font-display text-lg font-extrabold leading-tight text-gray-900">{plan.name}</h3>
+          <p className="text-xs font-medium text-gray-400">{t.tagline}</p>
+        </div>
+      </div>
 
       {/* Precio prominente */}
-      <div className="mt-2 flex items-baseline gap-1.5">
+      <div className="mt-5 flex items-baseline gap-1.5">
         {plan.price_ars > 0 ? (
           <>
-            <span className="text-3xl font-extrabold tracking-tight text-gray-900">
-              ${plan.price_ars.toLocaleString('es-AR')}
+            <span className="text-[2rem] font-extrabold leading-none tracking-tight text-gray-900 tabular-nums">
+              $ {plan.price_ars.toLocaleString('es-AR')}
             </span>
             <span className="text-sm font-medium text-gray-400">/mes</span>
           </>
         ) : (
-          <span className="text-3xl font-extrabold tracking-tight text-gray-900">Gratis</span>
+          <span className="text-[2rem] font-extrabold leading-none tracking-tight text-gray-900">Gratis</span>
         )}
       </div>
 
-      {/* Límites + features como checklist */}
-      <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5 dark:border-gray-700/60">
-        <FeatureRow label={plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`} />
+      {/* Límites como chips */}
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        <LimitChip
+          accent={t.accent}
+          label={plan.horse_limit == null ? 'Caballos ilimitados' : `${plan.horse_limit} caballos`}
+        />
         {plan.staff_limit != null && (
-          <FeatureRow label={plan.staff_limit === 0 ? 'Sin personal' : `Hasta ${plan.staff_limit} en el equipo`} />
+          <LimitChip accent={t.accent} label={plan.staff_limit === 0 ? 'Sin equipo' : `${plan.staff_limit} en equipo`} />
         )}
-        {plan.features.map((f) => (
-          <FeatureRow key={f} label={featureLabel(f)} />
-        ))}
-      </ul>
+      </div>
+
+      {/* Features como checklist con el check del color del tier */}
+      {plan.features.length > 0 && (
+        <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5 dark:border-gray-700/60">
+          {plan.features.map((f) => (
+            <FeatureRow key={f} label={featureLabel(f)} accent={t.accent} />
+          ))}
+        </ul>
+      )}
 
       {/* CTA — anclado al fondo para tarjetas parejas */}
-      <div className="mt-6 space-y-2">
+      <div className="mt-6 flex flex-1 items-end">
         {current ? (
           <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400 dark:border-gray-700 dark:bg-gray-800/60">
             Plan actual
           </div>
         ) : canSubscribe ? (
-          <>
-            <button
-              onClick={handleSubscribe}
-              disabled={subscribe.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-clay-600 hover:shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
-            >
-              {subscribe.isPending ? <><Spinner size="sm" color="white" /> Redirigiendo…</> : 'Suscribirme'}
-            </button>
-            {error && <p className="text-xs font-medium text-red-500">{error}</p>}
-          </>
+          <button
+            onClick={() => onSubscribe(plan)}
+            style={{ background: t.accent }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer"
+          >
+            Suscribirme
+          </button>
         ) : (
           <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400 dark:border-gray-700 dark:bg-gray-800/60">
             Incluido
@@ -219,10 +348,115 @@ function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
   );
 }
 
+/* ─── Modal de checkout (resumen + medios de pago + pago seguro) ─── */
+function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => void }) {
+  const subscribe = useSubscribe();
+  const [error, setError] = useState('');
+
+  const handlePay = async () => {
+    if (!plan) return;
+    setError('');
+    try {
+      const data = await subscribe.mutateAsync({ plan_id: plan.id });
+      // Redirige el navegador a MercadoPago para autorizar el cobro.
+      window.location.href = data.init_point;
+    } catch (err: unknown) {
+      setError(errMessage(err, 'No se pudo iniciar el pago. MercadoPago no está configurado.'));
+    }
+  };
+
+  const t = plan ? resolveTier(plan) : null;
+
+  return (
+    <Modal open={!!plan} onClose={onClose} title="Confirmar suscripción" size="md">
+      {plan && t && (
+        <div className="space-y-5">
+          {/* Resumen del plan */}
+          <div
+            className="flex items-center gap-3 rounded-2xl border p-4"
+            style={{
+              background: 'color-mix(in srgb, ' + t.accent + ' 8%, transparent)',
+              borderColor: 'color-mix(in srgb, ' + t.accent + ' 30%, transparent)',
+            }}
+          >
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+              style={{ background: t.tint, color: t.id === 'enterprise' ? '#fff' : t.accent }}
+            >
+              <t.Icon className="h-6 w-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-base font-extrabold text-gray-900">{plan.name}</p>
+              <p className="text-xs font-medium text-gray-400">{t.tagline}</p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-extrabold leading-none tracking-tight text-gray-900 tabular-nums">
+                $ {plan.price_ars.toLocaleString('es-AR')}
+              </div>
+              <div className="text-xs font-medium text-gray-400">/mes</div>
+            </div>
+          </div>
+
+          {/* Qué incluye */}
+          <ul className="space-y-2">
+            <FeatureRow
+              accent={t.accent}
+              label={plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`}
+            />
+            {plan.staff_limit != null && plan.staff_limit > 0 && (
+              <FeatureRow accent={t.accent} label={`Hasta ${plan.staff_limit} en el equipo`} />
+            )}
+            {plan.features.slice(0, 2).map((f) => (
+              <FeatureRow key={f} accent={t.accent} label={featureLabel(f)} />
+            ))}
+          </ul>
+
+          {/* Medios de pago aceptados */}
+          <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-400">Medios de pago aceptados</p>
+            <PaymentMethods />
+          </div>
+
+          {/* Nota de seguridad */}
+          <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 px-3.5 py-3 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300">
+            <div className="mt-0.5 flex shrink-0 items-center gap-1">
+              <Lock className="h-4 w-4" />
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <p className="text-xs font-medium leading-relaxed">
+              Pago 100% seguro. Tus datos de tarjeta los procesa MercadoPago, no se guardan en HandicApp.
+            </p>
+          </div>
+
+          {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+
+          {/* CTA principal */}
+          <button
+            onClick={handlePay}
+            disabled={subscribe.isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-clay-600 hover:shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {subscribe.isPending ? (
+              <>
+                <Spinner size="sm" color="white" /> Redirigiendo…
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4" /> Ir al pago seguro
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 /** Vista "Mi Plan": plan actual + catálogo del rol + CTA informativo. */
 function MiPlan({ role }: { role?: string }) {
   const { data: status, isLoading: loadingStatus } = usePlanStatus();
   const { data: catalog, isLoading: loadingCatalog } = usePlanCatalog();
+  const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null);
 
   const roleTarget = roleTargetFor(role);
   const myPlans = (catalog ?? [])
@@ -313,17 +547,35 @@ function MiPlan({ role }: { role?: string }) {
           <p className="text-sm text-gray-400">No hay planes disponibles para tu rol por ahora.</p>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`grid gap-4 sm:grid-cols-2 ${
+                myPlans.length >= 3 ? 'xl:grid-cols-3' : ''
+              } ${myPlans.length >= 4 ? '2xl:grid-cols-4' : ''} items-stretch`}
+            >
               {myPlans.map((p) => (
-                <PlanCard key={p.id} plan={p} current={status?.plan === p.tier_key} />
+                <PlanCard
+                  key={p.id}
+                  plan={p}
+                  current={status?.plan === p.tier_key}
+                  onSubscribe={setCheckoutPlan}
+                />
               ))}
             </div>
-            <p className="mt-4 text-center text-xs text-gray-400">
-              El pago se procesa de forma segura con MercadoPago.
-            </p>
+
+            {/* Sello de confianza — medios de pago */}
+            <div className="mt-6 flex flex-col items-center gap-3 border-t border-gray-100 pt-5 dark:border-gray-700/60 sm:flex-row sm:justify-center">
+              <PaymentMethods />
+              <p className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                <Lock className="h-3.5 w-3.5" />
+                Pagá con tarjeta de crédito/débito vía MercadoPago
+              </p>
+            </div>
           </>
         )}
       </SectionCard>
+
+      {/* Checkout / confirmación de suscripción */}
+      <CheckoutModal plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} />
     </div>
   );
 }
