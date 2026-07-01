@@ -11,7 +11,7 @@ export interface OrgMember {
   user_id: string;
   role_in_org: OrgRole;
   joined_at: string;
-  user: { id: string; name: string; email: string; role: string; avatar_color?: string | null };
+  user: { id: string; name: string; email: string; role: string; avatar_color?: string | null; avatar_url?: string | null };
 }
 
 export interface OrgInvitation {

@@ -12,15 +12,10 @@ import {
   ChevronRight, Trophy, BookOpen, GitBranch, Users, Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { avatarGradient } from '@/lib/avatar-color';
 import { EmptyState } from '@/components/ui/empty-state';
-
-const ROLE_LABELS: Record<string, string> = {
-  propietario: 'Propietario',
-  establecimiento: 'Establecimiento',
-  veterinario: 'Veterinario',
-  admin: 'Administrador',
-};
+import { Avatar } from '@/components/ui/avatar';
+import { RoleBadge } from '@/components/ui/role-badge';
 
 // ─── Admin stat card ───────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, color }: {
@@ -44,7 +39,6 @@ function FeedSidebar({ user, stats, isAdmin }: {
   isAdmin: boolean;
 }) {
   const { data: horses } = useHorses();
-  const initials = initialsOf(user?.name);
   const role = user?.role ?? '';
 
   const quickLinks = [
@@ -78,18 +72,18 @@ function FeedSidebar({ user, stats, isAdmin }: {
         </div>
         <div className="px-4 pb-4">
           <div className="relative z-10 -mt-8 mb-3">
-            <div className="h-16 w-16 overflow-hidden rounded-2xl ring-4 ring-[var(--surface-card)]" style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}>
-              {user?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">{initials}</span>
-              )}
-            </div>
+            <Avatar
+              name={user?.name}
+              avatarUrl={user?.avatar_url}
+              avatarColor={user?.avatar_color}
+              size="xl"
+              shape="rounded"
+              ring
+            />
           </div>
           <div>
             <p className="text-sm font-semibold leading-tight text-gray-900">{user?.name}</p>
-            <p className="mt-0.5 text-xs text-gray-400">{ROLE_LABELS[role] ?? role}</p>
+            {role && <div className="mt-1.5"><RoleBadge role={role} size="sm" /></div>}
           </div>
           <Link
             href="/perfil"

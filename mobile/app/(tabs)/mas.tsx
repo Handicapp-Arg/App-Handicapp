@@ -12,7 +12,8 @@ import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
-import { avatarColor, initialsOf } from '../../lib/avatar-color';
+import { Avatar } from '../../components/Avatar';
+import { RoleBadge } from '../../components/RoleBadge';
 import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
@@ -107,13 +108,8 @@ export default function MasScreen() {
   const isProp  = role === 'propietario';
   const isEstab = role === 'establecimiento';
   const isAdmin = role === 'admin';
-  const ROLE_LABEL: Record<string, string> = {
-    propietario: 'Propietario', establecimiento: 'Establecimiento',
-    veterinario: 'Veterinario', admin: 'Administrador',
-  };
 
   const push = (path: string) => nav.push(router, path);
-  const roleLabel = ROLE_LABEL[role] ?? role;
 
   const principal: MenuItem[] = [
     {
@@ -203,8 +199,6 @@ export default function MasScreen() {
     }] : []),
   ];
 
-  const initials = initialsOf(user?.name);
-
   return (
     <ScrollView
       style={s.root}
@@ -217,12 +211,10 @@ export default function MasScreen() {
         onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
         activeOpacity={0.7}
       >
-        <View style={[s.profileAvatar, { backgroundColor: avatarColor(user?.name, user?.avatar_color) }]}>
-          <Text style={s.profileAvatarText}>{initials}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
+        <Avatar name={user?.name} avatarColor={user?.avatar_color} size={50} />
+        <View style={{ flex: 1, gap: 4 }}>
           <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Mi perfil'}</Text>
-          <Text style={s.profileRole}>{roleLabel}</Text>
+          {role ? <RoleBadge role={role} size="sm" /> : null}
         </View>
         <ChevronRight size={20} color={c.textFaint} strokeWidth={2} />
       </TouchableOpacity>

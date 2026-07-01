@@ -27,6 +27,8 @@ import { calcAge, formatDate as fmtDate } from '@/lib/utils';
 import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList, ShieldCheck, AlertTriangle, XCircle, Lock, CalendarClock } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
 import { HorseVerifiedBadge } from '@/components/ui/verified-badge';
+import { Avatar } from '@/components/ui/avatar';
+import { RoleBadge } from '@/components/ui/role-badge';
 import type { Event } from '@/types';
 
 /* ─── Constants ─── */
@@ -1916,9 +1918,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <div className="space-y-1.5">
                 {vets.map((v) => (
                   <div key={v.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">{v.user?.name}</p>
-                      <p className="text-xs text-gray-400">{v.user?.email}</p>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <Avatar name={v.user?.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-700">{v.user?.name}</p>
+                        <p className="truncate text-xs text-gray-400">{v.user?.email}</p>
+                      </div>
                     </div>
                     <button
                       onClick={() => removeVet.mutate(v.user_id)}
@@ -1968,22 +1973,28 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             ) : (
               <div className="space-y-1.5">
                 {assignees.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">{m.user?.name}</p>
-                      <p className="text-xs text-gray-400">{m.user?.email}</p>
+                  <div key={m.id} className="flex items-center justify-between gap-2 rounded-xl bg-gray-50 px-3.5 py-2.5">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <Avatar name={m.user?.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-700">{m.user?.name}</p>
+                        <p className="truncate text-xs text-gray-400">{m.user?.email}</p>
+                      </div>
                     </div>
-                    {canEdit && (
-                      <button
-                        onClick={() => removeMember.mutate(m.user_id)}
-                        className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
-                        title="Quitar del equipo"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {m.role && <RoleBadge role={m.role} size="sm" />}
+                      {canEdit && (
+                        <button
+                          onClick={() => removeMember.mutate(m.user_id)}
+                          className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                          title="Quitar del equipo"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2559,9 +2570,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="space-y-1.5">
                   {vets.map((v) => (
                     <div key={v.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
-                      <div>
-                        <p className="text-sm text-gray-700">{v.user?.name}</p>
-                        <p className="text-xs text-gray-400">{v.user?.email}</p>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <Avatar name={v.user?.name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm text-gray-700">{v.user?.name}</p>
+                          <p className="truncate text-xs text-gray-400">{v.user?.email}</p>
+                        </div>
                       </div>
                       <button
                         onClick={() => removeVet.mutate(v.user_id)}
@@ -2601,22 +2615,28 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               ) : (
                 <div className="space-y-1.5">
                   {assignees.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
-                      <div>
-                        <p className="text-sm text-gray-700">{m.user?.name}</p>
-                        <p className="text-xs text-gray-400">{m.user?.email}</p>
+                    <div key={m.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <Avatar name={m.user?.name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm text-gray-700">{m.user?.name}</p>
+                          <p className="truncate text-xs text-gray-400">{m.user?.email}</p>
+                        </div>
                       </div>
-                      {canEdit && (
-                        <button
-                          onClick={() => removeMember.mutate(m.user_id)}
-                          className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
-                          title="Quitar"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {m.role && <RoleBadge role={m.role} size="sm" />}
+                        {canEdit && (
+                          <button
+                            onClick={() => removeMember.mutate(m.user_id)}
+                            className="rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition cursor-pointer"
+                            title="Quitar"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

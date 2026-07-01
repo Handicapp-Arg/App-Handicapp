@@ -9,7 +9,7 @@ import { useCreateBoardingRequest, useBoardingRequests } from '@/hooks/use-board
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonRow } from '@/components/ui/skeleton';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { Avatar } from '@/components/ui/avatar';
 import { Building2, Search as SearchIcon } from 'lucide-react';
 
 interface DirectorioItem {
@@ -211,12 +211,7 @@ export default function DirectorioPage() {
             return (
               <div key={item.id} className="group rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 duration-200">
                 <div className="flex items-start gap-4">
-                  <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white text-lg font-bold"
-                    style={{ backgroundImage: avatarGradient(item.name) }}
-                  >
-                    {initialsOf(item.name)}
-                  </div>
+                  <Avatar name={item.name} size="lg" shape="rounded" />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-900 truncate tracking-tight">{item.name}</p>
                     <p className="text-sm text-gray-400 mt-0.5">

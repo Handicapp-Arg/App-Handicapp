@@ -15,3 +15,5 @@ export { OrganizacionSkeleton, SuperadminSkeleton, ListSkeleton } from './page-s
 export { ThemeToggle } from './theme-toggle';
 export { ShortcutsCheatsheet } from './shortcuts-cheatsheet';
 export { VetVerifiedBadge, HorseVerifiedBadge, isVetVerified } from './verified-badge';
+export { Avatar, type AvatarSize, type AvatarShape } from './avatar';
+export { RoleBadge } from './role-badge';

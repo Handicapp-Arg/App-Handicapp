@@ -12,7 +12,7 @@ import { HorseshoeH, HorseHead } from '@/components/icons/equine';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { useCommandPalette } from '@/lib/command-palette';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { Avatar } from '@/components/ui/avatar';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -251,12 +251,7 @@ export function Navbar() {
                   pathname === '/perfil' ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-fg)]' : 'text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
                 }`}
               >
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white uppercase ring-1 ring-transparent"
-                  style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
-                >
-                  {initialsOf(user?.name)}
-                </span>
+                <Avatar name={user?.name} avatarUrl={user?.avatar_url} avatarColor={user?.avatar_color} size="xs" />
                 <span className="flex min-w-0 flex-1 flex-col leading-tight">
                   <span className="truncate text-[13px] font-semibold text-[var(--sidebar-fg)] tracking-[-0.01em]">{user?.name}</span>
                   <span className="truncate text-[10px] font-medium text-[var(--sidebar-fg-muted)] tracking-[0.03em]">

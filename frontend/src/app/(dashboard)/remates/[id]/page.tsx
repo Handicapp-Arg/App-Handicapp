@@ -9,7 +9,7 @@ import {
   useToggleWatch,
 } from '@/hooks/use-auctions';
 import { useAuth } from '@/lib/auth-context';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { Avatar } from '@/components/ui/avatar';
 import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -70,12 +70,7 @@ function BidRow({ bid, isSeller, onAccept }: { bid: AuctionBid; isSeller: boolea
   return (
     <div className={`flex items-center justify-between p-3 rounded-xl border ${bid.status === 'active' ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10' : 'border-gray-100 bg-gray-50'}`}>
       <div className="flex items-center gap-3">
-        <div
-          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-          style={{ backgroundImage: avatarGradient(bid.bidder?.name, bid.bidder?.avatar_color) }}
-        >
-          {initialsOf(bid.bidder?.name)}
-        </div>
+        <Avatar name={bid.bidder?.name} avatarColor={bid.bidder?.avatar_color} size="sm" />
         <div>
           <p className="text-sm font-semibold text-gray-900">{bid.bidder?.name ?? 'Usuario'}</p>
           <p className="text-xs text-gray-400">{new Date(bid.created_at).toLocaleString('es-AR')}</p>
@@ -359,12 +354,7 @@ export default function AuctionDetailPage() {
             <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Vendedor</p>
               <div className="flex items-center gap-2.5">
-                <div
-                  className="h-9 w-9 rounded-full flex items-center justify-center font-bold text-white text-sm"
-                  style={{ backgroundImage: avatarGradient(auction.seller?.name, auction.seller?.avatar_color) }}
-                >
-                  {initialsOf(auction.seller?.name)}
-                </div>
+                <Avatar name={auction.seller?.name} avatarColor={auction.seller?.avatar_color} size="sm" />
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{auction.seller?.name}</p>
                   <p className="text-xs text-gray-400">Propietario registrado</p>

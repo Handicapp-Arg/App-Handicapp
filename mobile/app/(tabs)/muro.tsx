@@ -19,7 +19,7 @@ import {
 import { useHorses } from '../../hooks/use-horses';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
-import { avatarColor, initialsOf } from '../../lib/avatar-color';
+import { Avatar as UserAvatar } from '../../components/Avatar';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
@@ -36,11 +36,7 @@ import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge'
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
 
 function Avatar({ name, colorId, size = 38, s }: { name: string; colorId?: string | null; size?: number; s: Styles }) {
-  return (
-    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(name, colorId) }]}>
-      <Text style={[s.avatarText, { fontSize: size * 0.35 }]}>{initialsOf(name)}</Text>
-    </View>
-  );
+  return <UserAvatar name={name} avatarColor={colorId} size={size} />;
 }
 
 function timeAgo(date: string) {

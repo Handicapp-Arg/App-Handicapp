@@ -5,27 +5,13 @@ import { useAuth } from '@/lib/auth-context';
 import { useCreatePost } from '@/hooks/use-feed';
 import { ImageIcon, X, Send, Megaphone, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { Avatar } from '@/components/ui/avatar';
 
 const POST_TYPES = [
   { value: 'general', label: 'General', icon: null },
   { value: 'horse_update', label: 'Actualización', icon: Tag },
   { value: 'announcement', label: 'Anuncio', icon: Megaphone },
 ] as const;
-
-function ComposerAvatar({ name, avatarUrl, colorId }: { name: string; avatarUrl?: string | null; colorId?: string | null }) {
-  return (
-    <div
-      className="h-10 w-10 overflow-hidden rounded-full text-white font-bold flex items-center justify-center shrink-0 shadow-sm text-sm"
-      style={{ backgroundImage: avatarGradient(name, colorId) }}
-    >
-      {avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
-      ) : initialsOf(name)}
-    </div>
-  );
-}
 
 interface Props { onPosted?: () => void; }
 
@@ -88,7 +74,7 @@ export default function PostComposer({ onPosted }: Props) {
       expanded ? 'border-gray-300 shadow-md' : 'border-gray-200',
     )}>
       <div className="flex gap-3 p-4">
-        <ComposerAvatar name={user.name} avatarUrl={user.avatar_url} colorId={user.avatar_color} />
+        <Avatar name={user.name} avatarUrl={user.avatar_url} avatarColor={user.avatar_color} size="md" />
 
         <div className="flex-1 min-w-0">
           {!expanded ? (
@@ -191,5 +177,3 @@ export default function PostComposer({ onPosted }: Props) {
     </div>
   );
 }
-
-export { ComposerAvatar as Avatar };

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
 import { cn } from '@/lib/utils';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
+import { Avatar } from '@/components/ui/avatar';
 import type { FeedPost, FeedComment } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 import { useConfirm } from '@/lib/confirm-context';
@@ -25,21 +25,6 @@ const ROLE_CONFIG: Record<string, { label: string; gradient: string; badge: stri
   veterinario:    { label: 'Veterinario',    gradient: 'from-amber-glow to-clay-500',     badge: 'bg-[var(--color-amber-soft)] text-clay-700 ring-1 ring-clay-100' },
   admin:          { label: 'Admin',          gradient: 'from-bark-400 to-bark-600',       badge: 'bg-sand-300 text-bark-600 ring-1 ring-sand-400' },
 };
-
-// ─── Avatar ────────────────────────────────────────────────────────────────────
-function Avatar({ name, colorId, size = 'md' }: { name: string; role?: string; colorId?: string | null; size?: 'sm' | 'md' }) {
-  return (
-    <div
-      style={{ backgroundImage: avatarGradient(name, colorId) }}
-      className={cn(
-        'rounded-full text-white font-bold flex items-center justify-center flex-shrink-0 shadow-sm',
-        size === 'md' ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]',
-      )}
-    >
-      {initialsOf(name)}
-    </div>
-  );
-}
 
 // ─── Image grid ────────────────────────────────────────────────────────────────
 function ImageGrid({ urls }: { urls: string[] }) {
@@ -125,7 +110,7 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
           )}
           {visibleComments.map((c: FeedComment) => (
             <div key={c.id} className="flex gap-2.5 group">
-              <Avatar name={c.user?.name ?? 'U'} role={c.user?.role} colorId={c.user?.avatar_color} size="sm" />
+              <Avatar name={c.user?.name} avatarUrl={c.user?.avatar_url} avatarColor={c.user?.avatar_color} size="xs" />
               <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
                 <div className="flex items-baseline gap-1.5 mb-0.5">
                   <span className="text-xs font-semibold text-gray-900">{c.user?.name}</span>
@@ -151,7 +136,7 @@ function CommentsSection({ postId, currentUserId }: { postId: string; currentUse
       )}
 
       <form onSubmit={handleSubmit} className="flex gap-2">
-        {user && <Avatar name={user.name} role={user.role} colorId={user.avatar_color} size="sm" />}
+        {user && <Avatar name={user.name} avatarUrl={user.avatar_url} avatarColor={user.avatar_color} size="xs" />}
         <div className="flex-1 flex gap-2">
           <input
             value={text}
@@ -188,8 +173,8 @@ export default function PostCard({ post }: Props) {
   const isOwner = user?.id === post.author_id;
   const isAdmin = user?.role === 'admin';
   const authorName = post.author?.name ?? 'Usuario';
-  const authorRole = post.author?.role ?? '';
   const authorColor = post.author?.avatar_color;
+  const authorUrl = post.author?.avatar_url;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
 
   return (
@@ -207,7 +192,7 @@ export default function PostCard({ post }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <Avatar name={authorName} role={authorRole} colorId={authorColor} />
+            <Avatar name={authorName} avatarUrl={authorUrl} avatarColor={authorColor} size="md" />
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-sm text-gray-900 truncate">{authorName}</span>
@@ -354,5 +339,3 @@ export default function PostCard({ post }: Props) {
     </article>
   );
 }
-
-export { Avatar };

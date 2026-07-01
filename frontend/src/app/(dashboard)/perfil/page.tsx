@@ -11,15 +11,10 @@ import api from '@/lib/api';
 import { Spinner } from '@/components/ui/skeleton';
 import { Modal } from '@/components/ui/modal';
 import { VetVerifiedBadge, isVetVerified } from '@/components/ui/verified-badge';
+import { Avatar } from '@/components/ui/avatar';
+import { RoleBadge } from '@/components/ui/role-badge';
 import { PaymentMethods } from '@/components/ui/payment-methods';
 import { usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
-
-const roleLabel: Record<string, string> = {
-  admin: 'Administrador',
-  propietario: 'Propietario',
-  establecimiento: 'Establecimiento',
-  veterinario: 'Veterinario',
-};
 
 const planLabel: Record<string, string> = { free: 'Gratis', pro: 'Pro' };
 
@@ -1026,17 +1021,15 @@ export default function PerfilPage() {
           <div className="-mt-10 flex items-end gap-4">
             {/* Avatar editable */}
             <div className="relative shrink-0">
-              <div
-                className="h-20 w-20 overflow-hidden rounded-2xl ring-4 ring-[var(--surface-card)]"
-                style={{ backgroundImage: avatarGradient(user?.name, user?.avatar_color) }}
-              >
-                {user?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-2xl font-extrabold text-white">{initials}</span>
-                )}
-              </div>
+              <Avatar
+                name={user?.name}
+                avatarUrl={user?.avatar_url}
+                avatarColor={user?.avatar_color}
+                size="xl"
+                shape="rounded"
+                ring
+                className="h-20 w-20 text-2xl"
+              />
               <button
                 onClick={() => avatarInput.current?.click()}
                 disabled={uploading === 'avatar'}
@@ -1046,9 +1039,7 @@ export default function PerfilPage() {
                 {uploading === 'avatar' ? <Spinner size="sm" color="white" /> : <CameraIcon />}
               </button>
             </div>
-            <span className="mb-1 rounded-full bg-clay-50 dark:bg-clay-500/15 px-3 py-1 text-xs font-bold text-clay-700 dark:text-clay-300 ring-1 ring-clay-100 dark:ring-clay-500/25">
-              {roleLabel[user?.role || ''] || user?.role}
-            </span>
+            {user?.role && <span className="mb-1"><RoleBadge role={user.role} /></span>}
           </div>
           <h1 className="mt-3 flex items-center gap-1.5 text-2xl font-extrabold tracking-tight text-gray-900">
             {user?.name}

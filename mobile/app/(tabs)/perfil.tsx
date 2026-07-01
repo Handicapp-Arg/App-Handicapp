@@ -18,7 +18,9 @@ import { useAuth } from '../../lib/auth';
 import api from '../../lib/api';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
-import { avatarColor, initialsOf, AVATAR_PALETTE } from '../../lib/avatar-color';
+import { AVATAR_PALETTE } from '../../lib/avatar-color';
+import { Avatar } from '../../components/Avatar';
+import { RoleBadge } from '../../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
@@ -354,9 +356,7 @@ function AvatarColorSection({ user, c, s }: {
       <Text style={s.sectionTitle}>Color de avatar</Text>
       <View style={s.colorCard}>
         <View style={s.colorPreviewRow}>
-          <View style={[s.colorPreview, { backgroundColor: avatarColor(user.name, current) }]}>
-            <Text style={s.colorPreviewText}>{initialsOf(user.name)}</Text>
-          </View>
+          <Avatar name={user.name} avatarColor={current} size={56} />
           <Text style={s.colorHint}>Elegí el color con el que aparecés en la app. Así te ven los demás.</Text>
         </View>
         <ScrollView
@@ -638,7 +638,6 @@ export default function PerfilScreen() {
 
   if (!user) return null;
 
-  const initials = initialsOf(user.name);
   const isAdmin = user.role === 'admin';
   const showPlan = user.role === 'propietario' || user.role === 'establecimiento';
 
@@ -670,17 +669,13 @@ export default function PerfilScreen() {
       >
         {/* Hero */}
         <View style={s.hero}>
-          <View style={[s.avatar, { backgroundColor: avatarColor(user.name, user.avatar_color) }]}>
-            <Text style={s.avatarText}>{initials}</Text>
-          </View>
+          <Avatar name={user.name} avatarColor={user.avatar_color} size={68} ring />
           <View style={s.userNameRow}>
             <Text style={s.userName}>{user.name}</Text>
             {isVetVerified(user) && <VetVerifiedBadge size="md" />}
           </View>
           <Text style={s.userEmail}>{user.email}</Text>
-          <View style={s.roleBadge}>
-            <Text style={s.roleText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
-          </View>
+          <RoleBadge role={user.role} />
         </View>
 
         <View style={s.sheet}>

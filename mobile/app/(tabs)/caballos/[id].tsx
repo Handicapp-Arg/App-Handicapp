@@ -38,6 +38,7 @@ import { Routes, nav } from '../../../lib/routes';
 import { DatePicker } from '../../../components/DatePicker';
 import { Spinner } from '../../../components/Spinner';
 import { EventTypeBadge } from '../../../components/EventTypeBadge';
+import { Avatar } from '../../../components/Avatar';
 import { useToast } from '../../../components/Toast';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
@@ -156,7 +157,7 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
         <View style={s.commentBody}>
           {comments?.map((c) => (
             <View key={c.id} style={s.commentRow}>
-              <View style={s.commentAvatar}><Text style={s.commentAvatarText}>{c.user?.name?.[0]?.toUpperCase() ?? '?'}</Text></View>
+              <Avatar name={c.user?.name} size={24} />
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={s.commentAuthor}>{c.user?.name}</Text>
@@ -620,9 +621,7 @@ export default function HorseDetailScreen() {
                     <View key={v.id}>
                       {i > 0 && <View style={s.docDivider} />}
                       <View style={s.docRow}>
-                        <View style={[s.docIcon, { backgroundColor: c.brandSoft }]}>
-                          <User size={16} color={c.brand} strokeWidth={2} />
-                        </View>
+                        <Avatar name={v.user.name} size={36} />
                         <View style={{ flex: 1 }}>
                           <Text style={s.docName}>{v.user.name}</Text>
                           <Text style={{ fontSize: 11, color: c.textFaint }}>{v.user.email}</Text>
@@ -659,9 +658,7 @@ export default function HorseDetailScreen() {
                     <View key={m.id}>
                       {i > 0 && <View style={s.docDivider} />}
                       <View style={s.docRow}>
-                        <View style={[s.docIcon, { backgroundColor: c.brandSoft }]}>
-                          <Users size={16} color={c.brand} strokeWidth={2} />
-                        </View>
+                        <Avatar name={m.user.name} size={36} />
                         <View style={{ flex: 1 }}>
                           <Text style={s.docName}>{m.user.name}</Text>
                           <Text style={{ fontSize: 11, color: c.textFaint }}>{m.user.email}</Text>

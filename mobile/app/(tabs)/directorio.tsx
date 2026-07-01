@@ -19,6 +19,7 @@ import { ListRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
+import { Avatar } from '../../components/Avatar';
 import { space, text, radius, weight } from '../../styles/tokens';
 
 interface DirectorioItem {
@@ -232,9 +233,7 @@ export default function DirectorioScreen() {
             const hasPending = pendingForEstab(item.id);
             return (
               <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={[s.itemWrap, s.card]}>
-                <View style={s.avatar}>
-                  <Text style={s.avatarText}>{item.name[0]?.toUpperCase()}</Text>
-                </View>
+                <Avatar name={item.name} size={44} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.cardName}>{item.name}</Text>
                   <Text style={s.cardSub}>

@@ -11,10 +11,9 @@ import {
   ROLE_LABELS, PLAN_LABELS, type OrgRole,
 } from '@/hooks/use-organizations';
 import { useAuth } from '@/lib/auth-context';
-import { avatarGradient, initialsOf } from '@/lib/avatar-color';
 import {
   PageHeader, EmptyState, Card, Badge, Button, Input, Modal, Select,
-  OrganizacionSkeleton,
+  OrganizacionSkeleton, Avatar, RoleBadge,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
@@ -421,12 +420,12 @@ export default function OrganizacionPage() {
             const isMe = member.user_id === user?.id;
             return (
               <li key={member.id} className="flex items-center gap-3 px-5 py-3.5">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                  style={{ backgroundImage: avatarGradient(member.user.name, member.user.avatar_color) }}
-                >
-                  {initialsOf(member.user.name)}
-                </div>
+                <Avatar
+                  name={member.user.name}
+                  avatarUrl={member.user.avatar_url}
+                  avatarColor={member.user.avatar_color}
+                  size="md"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-gray-900">
                     {member.user.name}
@@ -446,10 +445,10 @@ export default function OrganizacionPage() {
                         aria-label={`Cambiar rol de ${member.user.name}`}
                       />
                     </div>
+                  ) : isOrgOwner ? (
+                    <RoleBadge role="owner_role" label="Dueño" />
                   ) : (
-                    <Badge tone={isOrgOwner ? 'gold' : 'neutral'} dot={isOrgOwner}>
-                      {isOrgOwner ? 'Dueño' : ROLE_LABELS[member.role_in_org]}
-                    </Badge>
+                    <RoleBadge role={member.role_in_org} label={ROLE_LABELS[member.role_in_org]} />
                   )}
                   {canInvite && !isOrgOwner && !isMe && (
                     <Button

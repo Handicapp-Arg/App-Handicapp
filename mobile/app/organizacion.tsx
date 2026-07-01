@@ -18,7 +18,8 @@ import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
-import { avatarColor, initialsOf } from '../lib/avatar-color';
+import { Avatar } from '../components/Avatar';
+import { RoleBadge } from '../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 
@@ -262,9 +263,7 @@ export default function OrganizacionScreen() {
               const isOrgOwner = m.user_id === org.owner_id;
               return (
                 <Animated.View key={m.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.memberCard}>
-                  <View style={[s.memberAvatar, { backgroundColor: avatarColor(m.user.name, m.user.avatar_color) }]}>
-                    <Text style={s.memberAvatarText}>{initialsOf(m.user.name)}</Text>
-                  </View>
+                  <Avatar name={m.user.name} avatarColor={m.user.avatar_color} size={36} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.memberName} numberOfLines={1}>
                       {m.user.name}
@@ -272,11 +271,13 @@ export default function OrganizacionScreen() {
                     </Text>
                     <Text style={s.memberEmail} numberOfLines={1}>{m.user.email}</Text>
                   </View>
-                  <View style={[s.roleBadge, isOrgOwner && s.roleBadgeOwner]}>
-                    <Text style={[s.roleBadgeText, isOrgOwner && s.roleBadgeTextOwner]}>
-                      {isOrgOwner ? 'Dueño' : ROLE_LABELS[m.role_in_org]}
-                    </Text>
-                  </View>
+                  {isOrgOwner ? (
+                    <View style={[s.roleBadge, s.roleBadgeOwner]}>
+                      <Text style={[s.roleBadgeText, s.roleBadgeTextOwner]}>Dueño</Text>
+                    </View>
+                  ) : (
+                    <RoleBadge role={m.role_in_org} size="sm" />
+                  )}
                   {isAdmin && !isOrgOwner && m.user_id !== user?.id && (
                     <TouchableOpacity
                       onPress={() => {

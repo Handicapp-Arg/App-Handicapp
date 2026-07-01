@@ -8,6 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, XCircle, Info, Star } from 'lucide-react-native';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { Avatar } from '../../../components/Avatar';
 import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../../hooks/use-auctions';
 import { useAuth } from '../../../lib/auth';
 import { colors } from '../../../lib/colors';
@@ -226,9 +227,7 @@ export default function AuctionDetailScreen() {
             {bids.slice(0, 10).map((b, index) => (
               <Animated.View key={b.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 <View style={[s.bidRow, b.status === 'active' && s.bidRowActive]}>
-                  <View style={s.bidAvatar}>
-                    <Text style={s.bidAvatarText}>{b.bidder?.name?.charAt(0) ?? '?'}</Text>
-                  </View>
+                  <Avatar name={b.bidder?.name} size={32} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.bidderName}>{b.bidder?.name ?? 'Usuario'}</Text>
                     <Text style={s.bidDate}>{new Date(b.created_at).toLocaleString('es-AR')}</Text>
