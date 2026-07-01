@@ -66,7 +66,7 @@ export function GlobalSearch() {
       </div>
 
       {open && query.trim().length >= 2 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-2xl overflow-hidden max-h-80 overflow-y-auto">
+        <div className="animate-scale-in absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 bg-[var(--surface-card)] shadow-2xl overflow-hidden max-h-80 overflow-y-auto">
           {!hasResults && !isFetching && (
             <p className="px-4 py-6 text-center text-xs text-gray-400">Sin resultados para "{query}"</p>
           )}

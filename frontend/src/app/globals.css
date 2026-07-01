@@ -469,6 +469,34 @@ body {
 }
 .animate-auth-slide { animation: authSlide var(--duration-base) var(--ease-out-quart) both; }
 
+/* ─── Microinteracciones (sutiles, mismos timings/easings) ───
+   Entrada escalonada de hijos directos (grillas/listas). Se aplica la clase en el
+   CONTENEDOR y cada hijo hace fade-in-up con un delay incremental. Tope ~200ms para
+   que el conjunto no se sienta lento. Sólo cuando el usuario no pidió menos motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .stagger-children > * {
+    animation: fadeInUp var(--duration-base) var(--ease-out-quart) both;
+  }
+  .stagger-children > *:nth-child(1)   { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2)   { animation-delay: 40ms; }
+  .stagger-children > *:nth-child(3)   { animation-delay: 80ms; }
+  .stagger-children > *:nth-child(4)   { animation-delay: 120ms; }
+  .stagger-children > *:nth-child(5)   { animation-delay: 160ms; }
+  .stagger-children > *:nth-child(n+6) { animation-delay: 200ms; }
+}
+
+/* Entrada de modales / dropdowns / popovers: fade + leve scale (pop discreto). */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-scale-in { animation: scaleIn var(--duration-base) var(--ease-out-expo) both; transform-origin: top center; }
+.animate-modal-in { animation: modalIn var(--duration-base) var(--ease-out-expo) both; }
+
 /* Skeleton shimmer reutilizable */
 .skeleton-shimmer {
   background: linear-gradient(90deg, var(--color-gray-100) 0%, var(--color-gray-200) 50%, var(--color-gray-100) 100%);
@@ -476,12 +504,16 @@ body {
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
-/* Respetar preferencias del usuario */
+/* Respetar preferencias del usuario — anula animaciones y sus delays (evita el
+   flash de contenido invisible del stagger) y las transiciones. Guard global. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

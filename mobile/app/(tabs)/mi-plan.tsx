@@ -13,6 +13,7 @@ import { WhatsappLogo } from '../../components/icons/WhatsappLogo';
 import { PaymentMethods } from '../../components/PaymentMethods';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useAuth } from '../../lib/auth';
+import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
@@ -279,7 +280,7 @@ function PlanCardInner({
         </View>
       ) : paid ? (
         <Pressable
-          onPress={() => onSubscribe(plan)}
+          onPress={() => { haptic.medium(); onSubscribe(plan); }}
           style={({ pressed }) => [
             s.subBtn,
             { backgroundColor: onDark ? '#f8fafc' : accent },

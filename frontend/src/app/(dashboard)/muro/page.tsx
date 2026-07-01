@@ -199,7 +199,7 @@ export default function MuroPage() {
             />
           ) : (
             <>
-              <div className="space-y-4">
+              <div className="stagger-children space-y-4">
                 {posts.map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}

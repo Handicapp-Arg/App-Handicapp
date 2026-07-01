@@ -77,7 +77,7 @@ export function Modal({
       <div
         ref={ref}
         className={cn(
-          'animate-fade-in-up relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-2xl',
+          'animate-modal-in relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-2xl',
           SIZES[size],
         )}
       >

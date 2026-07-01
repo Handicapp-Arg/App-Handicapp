@@ -967,7 +967,7 @@ export default function CaballosPage() {
           }
         />
         ) : user?.role === 'propietario' ? (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+        <div className="stagger-children grid gap-4 grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
           {filteredHorses.map((horse) => (
             <div key={horse.id}
               onClick={() => router.push(`/caballos/${horse.id}`)}
@@ -1033,7 +1033,7 @@ export default function CaballosPage() {
           ))}
         </div>
         ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="stagger-children grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredHorses.map((horse) => (
             <div
               key={horse.id}

@@ -656,7 +656,7 @@ export default function EventosPage() {
             }
           />
         ) : (
-          <div className="space-y-3">
+          <div className="stagger-children space-y-3">
             {displayEvents.map((event) => (
               <div key={event.id} className="rounded-xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2 mb-2">

@@ -276,7 +276,7 @@ export default function ReportesScreen() {
           />
         ) : data ? (
           <>
-            <View style={s.statRow}>
+            <Animated.View style={s.statRow} entering={FadeInDown.duration(320)}>
               <StatCard
                 icon={<BarChart3 size={20} color={c.brand} strokeWidth={2} />}
                 label="Caballos" value={String(data.horses.total)} hint="Gestionados" s={s}
@@ -290,15 +290,15 @@ export default function ReportesScreen() {
                 icon={<TrendingUp size={20} color={c.brand} strokeWidth={2} />}
                 label="Gasto mes" value={fmtMoney(data.expenses.month_total)} s={s}
               />
-            </View>
+            </Animated.View>
 
-            <Animated.View entering={FadeInDown.duration(320)}>
+            <Animated.View entering={FadeInDown.duration(320).delay(60)}>
               <HealthCard health={data.health} c={c} s={s} />
             </Animated.View>
-            <Animated.View entering={FadeInDown.duration(320).delay(60)}>
+            <Animated.View entering={FadeInDown.duration(320).delay(120)}>
               <ExpensesCard expenses={data.expenses} c={c} s={s} />
             </Animated.View>
-            <Animated.View entering={FadeInDown.duration(320).delay(120)}>
+            <Animated.View entering={FadeInDown.duration(320).delay(180)}>
               <UpcomingCard upcoming={data.upcoming} c={c} s={s} />
             </Animated.View>
           </>

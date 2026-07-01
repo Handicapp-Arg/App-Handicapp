@@ -22,6 +22,7 @@ import { useDashboard } from '../../../hooks/use-dashboard';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
+import { PressableScale } from '../../../components/PressableScale';
 import { EmptyState } from '../../../components/EmptyState';
 import { useToast } from '../../../components/Toast';
 import { useAuth } from '../../../lib/auth';
@@ -41,10 +42,9 @@ function HorseCard({ horse, monthlySpend, c, s }: {
   const subtitle = [horse.breed?.name, horse.sex ? sexLabel[horse.sex] : null].filter(Boolean).join(' · ');
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={s.card}
       onPress={() => { haptic.light(); router.push(`/(tabs)/caballos/${horse.id}`); }}
-      activeOpacity={0.88}
     >
       {/* Photo */}
       <View style={s.cardPhotoWrap}>
@@ -92,7 +92,7 @@ function HorseCard({ horse, monthlySpend, c, s }: {
       <View style={s.cardActions}>
         <ChevronRight size={18} color={c.textFaint} strokeWidth={2} />
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

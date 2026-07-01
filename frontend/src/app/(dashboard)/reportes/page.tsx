@@ -379,7 +379,7 @@ export default function ReportesPage() {
           />
         </Card>
       ) : data ? (
-        <div className="space-y-5">
+        <div className="stagger-children space-y-5">
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
               icon={<BarChart3 className="h-5 w-5" strokeWidth={1.9} />}

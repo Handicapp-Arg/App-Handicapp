@@ -160,7 +160,7 @@ function MisPublicaciones({ userId }: { userId: string }) {
       </div>
     );
   }
-  return <div className="space-y-4">{posts.map((p) => <PostCard key={p.id} post={p} />)}</div>;
+  return <div className="stagger-children space-y-4">{posts.map((p) => <PostCard key={p.id} post={p} />)}</div>;
 }
 
 /** Chip de feature (para plan actual y tarjetas del catálogo).
@@ -1077,7 +1077,8 @@ export default function PerfilPage() {
         ))}
       </div>
 
-      {/* Contenido */}
+      {/* Contenido — fade al cambiar de pestaña (key fuerza el re-montaje) */}
+      <div key={tab} className="animate-fade-in">
       {tab === 'posts' ? (
         user && <MisPublicaciones userId={user.id} />
       ) : tab === 'plan' ? (
@@ -1211,6 +1212,7 @@ export default function PerfilPage() {
           </SectionCard>
         </div>
       )}
+      </div>
     </div>
   );
 }
