@@ -90,6 +90,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="directorio"     options={{ href: null }} />
       <Tabs.Screen name="contratos"      options={{ href: null }} />
       <Tabs.Screen name="arbol"          options={{ href: null }} />
+      <Tabs.Screen name="mi-plan"        options={{ href: null }} />
     </Tabs>
   );
 }

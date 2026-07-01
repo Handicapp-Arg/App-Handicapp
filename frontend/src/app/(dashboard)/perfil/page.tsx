@@ -7,6 +7,7 @@ import { useFeed } from '@/hooks/use-feed';
 import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
 import { Spinner } from '@/components/ui/skeleton';
+import { usePlanStatus, usePlanCatalog, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
 
 const roleLabel: Record<string, string> = {
   admin: 'Administrador',
@@ -16,6 +17,26 @@ const roleLabel: Record<string, string> = {
 };
 
 const planLabel: Record<string, string> = { free: 'Gratis', pro: 'Pro' };
+
+/** Traducción de las keys de features del backend a labels legibles. */
+const FEATURE_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  libreta_digital: 'Libreta digital',
+  reportes: 'Reportes',
+  reproductivo: 'Módulo reproductivo',
+};
+const featureLabel = (key: string) => FEATURE_LABELS[key] ?? key;
+
+/** Rol del usuario → role_target del catálogo de planes. */
+function roleTargetFor(role?: string): PlanRoleTarget {
+  if (role === 'veterinario') return 'veterinario';
+  if (role === 'establecimiento') return 'establecimiento';
+  if (role === 'haras') return 'haras';
+  return 'propietario';
+}
+
+const fmtPrice = (ars: number) =>
+  ars > 0 ? `$${ars.toLocaleString('es-AR')}/mes` : 'Gratis';
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -49,6 +70,166 @@ function MisPublicaciones({ userId }: { userId: string }) {
     );
   }
   return <div className="space-y-4">{posts.map((p) => <PostCard key={p.id} post={p} />)}</div>;
+}
+
+/** Chip de feature (para plan actual y tarjetas del catálogo). */
+function FeatureChip({ label, active = true }: { label: string; active?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+        active
+          ? 'bg-clay-50 text-clay-700 ring-1 ring-clay-100 dark:bg-clay-500/15 dark:text-clay-300 dark:ring-clay-500/25'
+          : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'
+      }`}
+    >
+      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+      </svg>
+      {label}
+    </span>
+  );
+}
+
+/** Tarjeta de un plan del catálogo. */
+function PlanCard({ plan, current }: { plan: Plan; current: boolean }) {
+  return (
+    <div
+      className={`relative flex flex-col rounded-2xl border p-5 transition ${
+        current
+          ? 'border-clay-300 bg-clay-50/50 ring-2 ring-clay-500/40 dark:border-clay-500/40 dark:bg-clay-500/10'
+          : 'border-gray-200 bg-[var(--surface-card)]'
+      }`}
+    >
+      {current && (
+        <span className="absolute -top-2.5 left-5 rounded-full bg-clay-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+          Tu plan
+        </span>
+      )}
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-base font-extrabold text-gray-900">{plan.name}</h3>
+        <span className="text-sm font-bold text-clay-700 dark:text-clay-300">{fmtPrice(plan.price_ars)}</span>
+      </div>
+      <p className="mt-1 text-sm text-gray-500">
+        {plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos`}
+      </p>
+      {plan.features.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {plan.features.map((f) => (
+            <FeatureChip key={f} label={featureLabel(f)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Vista "Mi Plan": plan actual + catálogo del rol + CTA informativo. */
+function MiPlan({ role }: { role?: string }) {
+  const { data: status, isLoading: loadingStatus } = usePlanStatus();
+  const { data: catalog, isLoading: loadingCatalog } = usePlanCatalog();
+
+  const roleTarget = roleTargetFor(role);
+  const myPlans = (catalog ?? [])
+    .filter((p) => p.role_target === roleTarget)
+    .sort((a, b) => a.tier - b.tier);
+
+  const usagePct = status && status.horse_limit
+    ? Math.min(100, Math.round((status.horse_count / status.horse_limit) * 100))
+    : 0;
+
+  const expires = status?.plan_expires_at
+    ? new Date(status.plan_expires_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null;
+
+  return (
+    <div className="space-y-5">
+      {/* Plan actual */}
+      <SectionCard title="Plan actual">
+        {loadingStatus || !status ? (
+          <div className="h-24 animate-pulse rounded-xl bg-gray-100" />
+        ) : (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-clay-500/15 text-clay-600 dark:text-clay-300">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.664 1.319a.75.75 0 0 1 .672 0 41.06 41.06 0 0 1 8.198 5.424.75.75 0 0 1-.254 1.285 31.372 31.372 0 0 0-7.86 3.83.75.75 0 0 1-.84 0 31.508 31.508 0 0 0-2.08-1.287V9.394a.75.75 0 0 0-.293-.593 41.103 41.103 0 0 0-1.668-1.288.75.75 0 0 1 .619-1.318 41.7 41.7 0 0 1 3.328 1.81Z" /></svg>
+                </span>
+                <div>
+                  <p className="text-lg font-extrabold text-gray-900">{status.label}</p>
+                  <p className="text-xs text-gray-400">
+                    {status.price_ars > 0 ? fmtPrice(status.price_ars) : 'Plan gratuito'}
+                    {expires && ` · vence el ${expires}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Uso de caballos */}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-sm">
+                <span className="font-semibold text-gray-700">Caballos</span>
+                <span className="text-gray-500">
+                  {status.horse_count}
+                  {status.horse_limit == null ? ' · ilimitado' : ` / ${status.horse_limit}`}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all ${status.is_limited ? 'bg-red-500' : 'bg-clay-500'}`}
+                  style={{ width: status.horse_limit == null ? '100%' : `${usagePct}%` }}
+                />
+              </div>
+              {status.is_limited && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">Alcanzaste el límite de caballos de tu plan.</p>
+              )}
+            </div>
+
+            {/* Features activas */}
+            <div>
+              <p className="mb-2 text-sm font-semibold text-gray-700">Funciones incluidas</p>
+              {status.features.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {status.features.map((f) => (
+                    <FeatureChip key={f} label={featureLabel(f)} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Tu plan actual no incluye funciones adicionales.</p>
+              )}
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Catálogo del rol */}
+      <SectionCard title="Planes disponibles">
+        {loadingCatalog ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[1, 2].map((i) => <div key={i} className="h-40 animate-pulse rounded-2xl bg-gray-100" />)}
+          </div>
+        ) : myPlans.length === 0 ? (
+          <p className="text-sm text-gray-400">No hay planes disponibles para tu rol por ahora.</p>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {myPlans.map((p) => (
+                <PlanCard key={p.id} plan={p} current={status?.plan === p.tier_key} />
+              ))}
+            </div>
+            <div className="mt-5 flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4 text-center dark:bg-gray-500/5">
+              <button
+                disabled
+                className="cursor-not-allowed rounded-xl bg-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+              >
+                Actualizar plan
+              </button>
+              <p className="text-xs text-gray-400">Pronto vas a poder actualizar tu plan desde acá.</p>
+            </div>
+          </>
+        )}
+      </SectionCard>
+    </div>
+  );
 }
 
 function CameraIcon() {
@@ -135,7 +316,7 @@ export default function PerfilPage() {
   const [passwordError, setPasswordError] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const [tab, setTab] = useState<'posts' | 'config'>('posts');
+  const [tab, setTab] = useState<'posts' | 'plan' | 'config'>('posts');
 
   const avatarInput = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
@@ -276,7 +457,7 @@ export default function PerfilPage() {
 
       {/* Pestañas */}
       <div className="flex gap-6 border-b border-gray-200">
-        {([['posts', 'Publicaciones'], ['config', 'Configuración']] as const).map(([key, label]) => (
+        {([['posts', 'Publicaciones'], ['plan', 'Mi Plan'], ['config', 'Configuración']] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -293,6 +474,8 @@ export default function PerfilPage() {
       {/* Contenido */}
       {tab === 'posts' ? (
         user && <MisPublicaciones userId={user.id} />
+      ) : tab === 'plan' ? (
+        <MiPlan role={user?.role} />
       ) : (
         <div className="space-y-5">
           {/* Datos personales */}

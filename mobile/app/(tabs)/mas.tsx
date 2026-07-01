@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Trophy, GitBranch, BookOpen, FileText, Receipt,
   Mail, Building2, Settings, ShieldCheck, ChevronRight,
-  Map, type LucideIcon,
+  Map, CreditCard, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
@@ -173,6 +173,12 @@ export default function MasScreen() {
   ];
 
   const cuenta: MenuItem[] = [
+    {
+      icon: CreditCard,
+      label: 'Mi Plan',
+      desc: 'Tu plan actual y planes disponibles',
+      path: Routes.miPlan,
+    },
     ...(isAdmin ? [{
       icon: Settings,
       label: 'Config. notificaciones',

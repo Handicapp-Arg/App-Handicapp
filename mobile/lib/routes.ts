@@ -23,6 +23,7 @@ export const Routes = {
   superadmin:          '/superadmin',
   muro:                '/(tabs)/muro',
   mas:                 '/(tabs)/mas',
+  miPlan:              '/(tabs)/mi-plan',
   remates:             '/(tabs)/remates',
   remateCrear:         '/(tabs)/remates/crear',
   remate:              (id: string) => `/(tabs)/remates/${id}`,
