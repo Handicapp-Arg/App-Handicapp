@@ -687,12 +687,90 @@ function MovementRow({ movement }: { movement: HorseMovement }) {
 /* ─── Medical Labels ─── */
 
 const medicalTypeLabel: Record<string, string> = {
-  vacuna: 'Vacuna', desparasitacion: 'Desparasitación', analisis: 'Análisis', tratamiento: 'Tratamiento',
+  vacuna: 'Vacuna', desparasitacion: 'Desparasitación', analisis: 'Análisis', tratamiento: 'Tratamiento', sanidad: 'Sanidad',
 };
 const medicalTypeBadge: Record<string, string> = {
   vacuna: 'bg-green-50 text-green-700', desparasitacion: 'bg-orange-50 text-orange-700',
   analisis: 'bg-blue-50 text-blue-700', tratamiento: 'bg-red-50 text-red-700',
+  sanidad: 'bg-teal-50 text-teal-700',
 };
+
+/* ─── Libreta sanitaria (semáforo) ─── */
+
+const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [
+  { key: 'aie',              name: 'AIE',              validityDays: 60,  match: /aie|anemia|coggins/i },
+  { key: 'encefalomielitis', name: 'Encefalomielitis', validityDays: 365, match: /encefalo/i },
+  { key: 'influenza',        name: 'Influenza',         validityDays: 90,  match: /influenza|gripe/i },
+];
+
+type HealthStatus = 'verde' | 'amarillo' | 'rojo';
+
+function healthStatusFromNextDue(nextDue: string | null | undefined): HealthStatus {
+  if (!nextDue) return 'rojo';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(nextDue + 'T00:00:00');
+  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86_400_000);
+  if (diffDays < 0) return 'rojo';
+  if (diffDays <= 15) return 'amarillo';
+  return 'verde';
+}
+
+const HEALTH_STATUS_STYLE: Record<HealthStatus, { dot: string; badge: string; label: string }> = {
+  verde:    { dot: 'bg-green-500',  badge: 'bg-green-50 text-green-700',   label: 'Vigente' },
+  amarillo: { dot: 'bg-amber-500',  badge: 'bg-amber-50 text-amber-700',   label: 'Por vencer' },
+  rojo:     { dot: 'bg-red-500',    badge: 'bg-red-50 text-red-700',       label: 'Vencido' },
+};
+
+function HealthBook({ records, canEdit, onCertify }: {
+  records: MedicalRecord[];
+  canEdit: boolean;
+  onCertify: (diseaseName: string) => void;
+}) {
+  const sanidad = records.filter((r) => r.type === 'sanidad');
+  const rows = SANITARY_DISEASES.map((d) => {
+    const last = sanidad.find((r) => d.match.test(r.name)) ?? null;
+    const nextDue = last?.next_due ?? null;
+    return { ...d, last, nextDue, status: healthStatusFromNextDue(nextDue) };
+  });
+
+  return (
+    <div className="mb-4 rounded-2xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] p-3">
+      <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-gray-500">
+        Libreta sanitaria
+      </h3>
+      <div className="space-y-1.5">
+        {rows.map((row) => {
+          const st = HEALTH_STATUS_STYLE[row.status];
+          return (
+            <div key={row.key} className="flex items-center justify-between gap-2 rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-card)] px-3 py-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{row.name}</p>
+                  <p className="text-[10px] text-gray-400">
+                    {row.nextDue
+                      ? row.status === 'rojo'
+                        ? `Vencido el ${new Date(row.nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                        : `Vence el ${new Date(row.nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                      : 'Sin registro'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${st.badge}`}>{st.label}</span>
+                {canEdit && (
+                  <button onClick={() => onCertify(row.name)}
+                    className="rounded-lg border border-[var(--color-primary)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-primary)] hover:bg-clay-500 hover:text-white transition cursor-pointer"
+                  >Certificar</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 /* ─── MedicalSection ─── */
 
@@ -706,12 +784,13 @@ interface MedicalSectionProps {
   onFormChange: (partial: Partial<CreateMedicalRecordDto>) => void;
   onSubmit: () => Promise<void>;
   onDelete: (id: string) => void;
+  onCertify: (diseaseName: string) => void;
   isPending: boolean;
   horseId: string;
   horseName: string;
 }
 
-function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, isPending, horseId, horseName }: MedicalSectionProps) {
+function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseForm, onFormChange, onSubmit, onDelete, onCertify, isPending, horseId, horseName }: MedicalSectionProps) {
   const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(horseId, horseName);
   const inputCls = 'w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none';
   return (
@@ -756,6 +835,8 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
         </div>
       </div>
 
+      <HealthBook records={records} canEdit={canEdit} onCertify={onCertify} />
+
       {showForm && (
         <form className="mb-3 space-y-2 rounded-xl border border-green-100 bg-green-50 dark:bg-green-500/10 p-3"
           onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
@@ -768,6 +849,7 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
                 <option value="desparasitacion">Desparasitación</option>
                 <option value="analisis">Análisis</option>
                 <option value="tratamiento">Tratamiento</option>
+                <option value="sanidad">Sanidad</option>
               </select>
             </div>
             <div>
@@ -2264,6 +2346,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             onFormChange={(f) => setMedicalForm((prev) => ({ ...prev, ...f }))}
             onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
             onDelete={(rid) => deleteMedical.mutate(rid)}
+            onCertify={(name) => { setMedicalForm({ type: 'sanidad', name, date: new Date().toISOString().split('T')[0] }); setShowAddMedical(true); }}
             isPending={addMedical.isPending}
             horseId={id}
             horseName={horse.name}
@@ -2822,6 +2905,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           onFormChange={(f) => setMedicalForm((prev) => ({ ...prev, ...f }))}
           onSubmit={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: new Date().toISOString().split('T')[0] }); }}
           onDelete={(rid) => deleteMedical.mutate(rid)}
+          onCertify={(name) => { setMedicalForm({ type: 'sanidad', name, date: new Date().toISOString().split('T')[0] }); setShowAddMedical(true); }}
           isPending={addMedical.isPending}
           horseId={id}
           horseName={horse.name}

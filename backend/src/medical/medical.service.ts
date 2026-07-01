@@ -13,7 +13,34 @@ const TYPE_LABELS: Record<string, string> = {
   desparasitacion: 'Desparasitaciones',
   analisis: 'Análisis / Laboratorio',
   tratamiento: 'Tratamientos',
+  sanidad: 'Libreta sanitaria',
 };
+
+// Enfermedades oficiales de la libreta sanitaria con su vigencia (días).
+export const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [
+  { key: 'aie',              name: 'AIE',             validityDays: 60,  match: /aie|anemia|coggins/i },
+  { key: 'encefalomielitis', name: 'Encefalomielitis', validityDays: 365, match: /encefalo/i },
+  { key: 'influenza',        name: 'Influenza',        validityDays: 90,  match: /influenza|gripe/i },
+];
+
+export type HealthStatus = 'verde' | 'amarillo' | 'rojo';
+
+function addDays(dateISO: string, days: number): string {
+  const d = new Date(dateISO + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+/** Deriva el semáforo a partir del next_due (YYYY-MM-DD) del último registro sanitario. */
+export function healthStatusFromNextDue(nextDue: string | null | undefined): HealthStatus {
+  if (!nextDue) return 'rojo';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(nextDue + 'T00:00:00');
+  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86_400_000);
+  if (diffDays < 0) return 'rojo';
+  if (diffDays <= 15) return 'amarillo';
+  return 'verde';
+}
 
 @Injectable()
 export class MedicalService {
@@ -36,10 +63,45 @@ export class MedicalService {
     });
   }
 
+  /** Libreta sanitaria: último registro sanitario de cada enfermedad oficial con su semáforo. */
+  async getHealthBook(horseId: string, user: User): Promise<
+    { key: string; name: string; validityDays: number; last: MedicalRecord | null; next_due: string | null; status: HealthStatus }[]
+  > {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const records = await this.recordRepository.find({
+      where: { horse_id: horseId, type: MedicalRecordType.SANIDAD },
+      order: { date: 'DESC' },
+    });
+
+    return SANITARY_DISEASES.map((disease) => {
+      const last = records.find((r) => disease.match.test(r.name)) ?? null;
+      const next_due = last?.next_due ?? null;
+      return {
+        key: disease.key,
+        name: disease.name,
+        validityDays: disease.validityDays,
+        last,
+        next_due,
+        status: healthStatusFromNextDue(next_due),
+      };
+    });
+  }
+
   async create(horseId: string, dto: CreateMedicalRecordDto, user: User): Promise<MedicalRecord> {
     const horse = await this.horseRepository.findOne({ where: { id: horseId } });
     if (!horse) throw new NotFoundException('Caballo no encontrado');
     await this.assertAccess(horse, user);
+
+    // Libreta sanitaria: si no vino next_due, se auto-calcula según la vigencia
+    // oficial de la enfermedad (AIE 60d, Encefalomielitis 365d, Influenza 90d).
+    let nextDue = dto.next_due ?? null;
+    if (dto.type === MedicalRecordType.SANIDAD && !nextDue) {
+      const disease = SANITARY_DISEASES.find((d) => d.match.test(dto.name ?? ''));
+      if (disease) nextDue = addDays(dto.date, disease.validityDays);
+    }
 
     return this.recordRepository.save(
       this.recordRepository.create({
@@ -47,7 +109,7 @@ export class MedicalService {
         type: dto.type,
         name: dto.name,
         date: dto.date,
-        next_due: dto.next_due ?? null,
+        next_due: nextDue,
         brand: dto.brand ?? null,
         batch: dto.batch ?? null,
         notes: dto.notes ?? null,

@@ -5,7 +5,7 @@ import api from '@/lib/api';
 export interface MedicalRecord {
   id: string;
   horse_id: string;
-  type: 'vacuna' | 'desparasitacion' | 'analisis' | 'tratamiento';
+  type: 'vacuna' | 'desparasitacion' | 'analisis' | 'tratamiento' | 'sanidad';
   name: string;
   date: string;
   next_due: string | null;

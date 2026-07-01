@@ -7,7 +7,7 @@ import api, { getToken } from '../lib/api';
 export interface MedicalRecord {
   id: string;
   horse_id: string;
-  type: 'vacuna' | 'desparasitacion' | 'analisis' | 'tratamiento';
+  type: 'vacuna' | 'desparasitacion' | 'analisis' | 'tratamiento' | 'sanidad';
   name: string;
   date: string;
   next_due: string | null;
@@ -32,6 +32,7 @@ export const MEDICAL_TYPE_LABELS: Record<string, string> = {
   desparasitacion: 'Desparasitación',
   analisis: 'Análisis',
   tratamiento: 'Tratamiento',
+  sanidad: 'Sanidad',
 };
 
 export const MEDICAL_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -39,7 +40,27 @@ export const MEDICAL_TYPE_COLORS: Record<string, { bg: string; text: string }> =
   desparasitacion: { bg: '#fff7ed', text: '#c2410c' },
   analisis:      { bg: '#eff6ff', text: '#1d4ed8' },
   tratamiento:   { bg: '#fef2f2', text: '#b91c1c' },
+  sanidad:       { bg: '#f0fdfa', text: '#0f766e' },
 };
+
+// Libreta sanitaria: enfermedades oficiales SENASA con su vigencia (días).
+export const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [
+  { key: 'aie',              name: 'AIE',              validityDays: 60,  match: /aie|anemia|coggins/i },
+  { key: 'encefalomielitis', name: 'Encefalomielitis', validityDays: 365, match: /encefalo/i },
+  { key: 'influenza',        name: 'Influenza',         validityDays: 90,  match: /influenza|gripe/i },
+];
+
+export type HealthStatus = 'verde' | 'amarillo' | 'rojo';
+
+export function healthStatusFromNextDue(nextDue: string | null | undefined): HealthStatus {
+  if (!nextDue) return 'rojo';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(nextDue + 'T00:00:00');
+  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86_400_000);
+  if (diffDays < 0) return 'rojo';
+  if (diffDays <= 15) return 'amarillo';
+  return 'verde';
+}
 
 export function useMedicalRecords(horseId: string) {
   return useQuery<MedicalRecord[]>({

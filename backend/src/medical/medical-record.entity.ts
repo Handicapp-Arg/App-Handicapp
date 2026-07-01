@@ -10,6 +10,7 @@ export enum MedicalRecordType {
   DEWORMING = 'desparasitacion',
   LAB = 'analisis',
   TREATMENT = 'tratamiento',
+  SANIDAD = 'sanidad',
 }
 
 @Entity('medical_records')
@@ -24,7 +25,9 @@ export class MedicalRecord {
   @JoinColumn({ name: 'horse_id' })
   horse: Horse;
 
-  @Column({ type: 'enum', enum: MedicalRecordType })
+  // Guardado como varchar (no enum de Postgres) para poder agregar tipos nuevos
+  // sin depender de ALTER TYPE. La validación de valores vive en el DTO (MedicalRecordType).
+  @Column({ type: 'varchar' })
   type: MedicalRecordType;
 
   @Column()

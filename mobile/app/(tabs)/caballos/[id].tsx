@@ -24,7 +24,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseAssignees, useHorseOrgMembers, useAssignMember, useRemoveMember, useTransferHorse, usePropietarios, useHorseMovements, useUploadDocument, useDeleteDocument } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../hooks/use-activity-photos';
-import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
+import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, SANITARY_DISEASES, healthStatusFromNextDue, type HealthStatus, type CreateMedicalRecordDto } from '../../../hooks/use-medical';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../hooks/use-event-comments';
 import { useEventsByHorse, useCreateEvent } from '../../../hooks/use-events';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
@@ -52,6 +52,12 @@ const TABS: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: 'pedigree',  label: 'Pedigrí',   icon: Network },
   { key: 'finanzas',  label: 'Finanzas',  icon: Banknote },
 ];
+
+const HEALTH_STATUS_META: Record<HealthStatus, { dot: string; bg: string; text: string; label: string }> = {
+  verde:    { dot: '#22c55e', bg: '#f0fdf4', text: '#15803d', label: 'Vigente' },
+  amarillo: { dot: '#f59e0b', bg: '#fffbeb', text: '#b45309', label: 'Por vencer' },
+  rojo:     { dot: '#ef4444', bg: '#fef2f2', text: '#b91c1c', label: 'Vencido' },
+};
 
 const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string }> = {
   alimentacion:  { Icon: Wheat,    color: '#16a34a' },
@@ -876,6 +882,44 @@ export default function HorseDetailScreen() {
             </View>
           </View>
 
+          {/* Libreta sanitaria */}
+          <View style={s.healthBook}>
+            <Text style={s.healthBookTitle}>Libreta sanitaria</Text>
+            {SANITARY_DISEASES.map((d) => {
+              const last = medicalRecords?.filter((r) => r.type === 'sanidad').find((r) => d.match.test(r.name)) ?? null;
+              const nextDue = last?.next_due ?? null;
+              const status = healthStatusFromNextDue(nextDue);
+              const meta = HEALTH_STATUS_META[status];
+              return (
+                <View key={d.key} style={s.healthRow}>
+                  <View style={[s.healthDot, { backgroundColor: meta.dot }]} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.healthName} numberOfLines={1}>{d.name}</Text>
+                    <Text style={s.healthDue}>
+                      {nextDue
+                        ? status === 'rojo'
+                          ? `Vencido el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                          : `Vence el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                        : 'Sin registro'}
+                    </Text>
+                  </View>
+                  <View style={[s.healthBadge, { backgroundColor: meta.bg }]}>
+                    <Text style={[s.healthBadgeText, { color: meta.text }]}>{meta.label}</Text>
+                  </View>
+                  {can('horses', 'update') && (
+                    <TouchableOpacity
+                      style={s.healthCertifyBtn}
+                      onPress={() => { haptic.light(); setMedicalForm({ type: 'sanidad', name: d.name, date: todayISO }); setShowAddMedical(true); }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={s.healthCertifyText}>Certificar</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
           {!medicalRecords?.length ? (
             <Text style={s.emptyText}>Sin registros médicos. Agregá vacunas, desparasitaciones y tratamientos.</Text>
           ) : (
@@ -1084,7 +1128,7 @@ export default function HorseDetailScreen() {
             <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.modalBody, { paddingBottom: 8 }]}>
               <Text style={s.fieldLabel}>Tipo</Text>
               <View style={s.medTypeGrid}>
-                {(['vacuna', 'desparasitacion', 'analisis', 'tratamiento'] as const).map((t) => {
+                {(['vacuna', 'desparasitacion', 'analisis', 'tratamiento', 'sanidad'] as const).map((t) => {
                   const c = MEDICAL_TYPE_COLORS[t];
                   const active = medicalForm.type === t;
                   return (
@@ -1642,6 +1686,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
   /* Médico */
+  healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 12, gap: 8 },
+  healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingHorizontal: 10, paddingVertical: 8 },
+  healthDot: { width: 10, height: 10, borderRadius: 999 },
+  healthName: { fontSize: 13, fontWeight: '600', color: c.text },
+  healthDue: { fontSize: 10, color: c.textFaint, marginTop: 1 },
+  healthBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  healthBadgeText: { fontSize: 9, fontWeight: '700' },
+  healthCertifyBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.brand, paddingHorizontal: 10, paddingVertical: 5 },
+  healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
   medCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },

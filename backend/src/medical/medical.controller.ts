@@ -28,6 +28,11 @@ export class MedicalController {
     return this.medicalService.create(horseId, dto, user);
   }
 
+  @Get('health-book')
+  getHealthBook(@Param('horseId') horseId: string, @GetUser() user: User) {
+    return this.medicalService.getHealthBook(horseId, user);
+  }
+
   @Get('pdf')
   async downloadPdf(
     @Param('horseId') horseId: string,
