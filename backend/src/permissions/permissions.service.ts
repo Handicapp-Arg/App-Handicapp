@@ -108,6 +108,22 @@ export class PermissionsService implements OnModuleInit {
       { role: 'veterinario', resource: 'horses', action: 'read' },
       { role: 'veterinario', resource: 'events', action: 'create' },
       { role: 'veterinario', resource: 'events', action: 'read' },
+      // Encargado: gestiona caballos y eventos de la org (sin borrar, sin facturación ni plan)
+      { role: 'encargado', resource: 'horses', action: 'read' },
+      { role: 'encargado', resource: 'horses', action: 'update' },
+      ...['create', 'read', 'update'].map((action) => ({
+        role: 'encargado',
+        resource: 'events',
+        action,
+      })),
+      // Jinete: ve caballos asignados, registra entrenamientos
+      { role: 'jinete', resource: 'horses', action: 'read' },
+      { role: 'jinete', resource: 'events', action: 'create' },
+      { role: 'jinete', resource: 'events', action: 'read' },
+      // Peón: ve caballos asignados, registra tareas
+      { role: 'peon', resource: 'horses', action: 'read' },
+      { role: 'peon', resource: 'events', action: 'create' },
+      { role: 'peon', resource: 'events', action: 'read' },
     ];
 
     // Upsert idempotente: inserta solo los que no existen

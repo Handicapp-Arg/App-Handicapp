@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 
 export type OrgPlan = 'free' | 'basic' | 'pro' | 'enterprise';
-export type OrgRole = 'admin' | 'staff' | 'owner_role' | 'vet';
+export type OrgRole = 'admin' | 'staff' | 'owner_role' | 'vet' | 'encargado' | 'jinete' | 'peon';
 
 export interface OrgMember {
   id: string;
@@ -172,6 +172,9 @@ export const ROLE_LABELS: Record<OrgRole, string> = {
   staff: 'Staff',
   owner_role: 'Propietario',
   vet: 'Veterinario',
+  encargado: 'Encargado',
+  jinete: 'Jinete',
+  peon: 'Peón',
 };
 
 export const PLAN_LABELS: Record<OrgPlan, string> = {

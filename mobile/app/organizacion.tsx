@@ -26,6 +26,9 @@ const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
   { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal del establecimiento' },
   { value: 'owner_role', label: 'Propietario',    desc: 'Solo ve sus caballos' },
   { value: 'vet',        label: 'Veterinario',    desc: 'Ve los caballos asignados' },
+  { value: 'encargado',  label: 'Encargado',      desc: 'Gestiona caballos, eventos y agenda' },
+  { value: 'jinete',     label: 'Jinete',         desc: 'Ve caballos asignados y registra entrenamientos' },
+  { value: 'peon',       label: 'Peón',           desc: 'Registra tareas sobre caballos asignados' },
   { value: 'admin',      label: 'Administrador',  desc: 'Control total de la organización' },
 ];
 

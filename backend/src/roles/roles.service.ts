@@ -52,7 +52,11 @@ export class RolesService implements OnModuleInit {
   }
 
   private async seed(): Promise<void> {
-    const defaults = ['admin', 'propietario', 'establecimiento', 'veterinario'];
+    const defaults = [
+      'admin', 'propietario', 'establecimiento', 'veterinario',
+      // Roles operativos (invitados por un establecimiento/haras, no pagan plan)
+      'encargado', 'jinete', 'peon',
+    ];
     for (const name of defaults) {
       const exists = await this.roleRepository.findOne({ where: { name } });
       if (!exists) {

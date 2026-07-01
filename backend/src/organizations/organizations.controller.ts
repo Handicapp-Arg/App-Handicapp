@@ -16,12 +16,12 @@ class CreateInvitationDto {
   @IsEmail()
   email: string;
 
-  @IsIn(['admin', 'staff', 'owner_role', 'vet'])
+  @IsIn(['admin', 'staff', 'owner_role', 'vet', 'encargado', 'jinete', 'peon'])
   role_in_org: OrgMemberRole;
 }
 
 class ChangeRoleDto {
-  @IsIn(['admin', 'staff', 'owner_role', 'vet'])
+  @IsIn(['admin', 'staff', 'owner_role', 'vet', 'encargado', 'jinete', 'peon'])
   role_in_org: OrgMemberRole;
 }
 

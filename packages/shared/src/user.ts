@@ -1,4 +1,7 @@
-export type UserRole = 'admin' | 'propietario' | 'establecimiento' | 'veterinario';
+export type UserRole =
+  | 'admin' | 'propietario' | 'establecimiento' | 'veterinario'
+  // Roles operativos (invitados a una organización, no pagan plan)
+  | 'encargado' | 'jinete' | 'peon';
 
 export type UserPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 

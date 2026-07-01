@@ -10,7 +10,12 @@ import { User } from '../auth/user.entity';
 // staff: equivale a "establecimiento" — puede crear caballos, eventos, contratos
 // owner_role: propietario invitado — solo ve sus caballos
 // vet: veterinario invitado — ve los caballos asignados
-export type OrgMemberRole = 'admin' | 'staff' | 'owner_role' | 'vet';
+// encargado: brazo derecho — gestiona caballos/eventos/agenda, sin facturación ni plan
+// jinete: monta y entrena — ve caballos asignados, registra entrenamientos
+// peon: tareas de campo — registra tareas sobre caballos asignados
+export type OrgMemberRole =
+  | 'admin' | 'staff' | 'owner_role' | 'vet'
+  | 'encargado' | 'jinete' | 'peon';
 
 @Entity('organization_members')
 @Unique(['organization_id', 'user_id'])
