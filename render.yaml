@@ -58,3 +58,23 @@ services:
       # --- Reglas de negocio ---
       - key: HEALTH_REMINDER_DAYS
         value: 30
+
+      # --- MercadoPago (suscripciones) ---
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false        # token de PRODUCCIÓN (APP_USR-...) desde developers.mercadopago.com
+      - key: MP_BACK_URL
+        sync: false        # a dónde vuelve tras pagar, ej: https://app.handicapp.com/perfil
+
+      # --- WhatsApp (Meta Cloud API) ---
+      - key: WHATSAPP_TOKEN
+        sync: false        # dejar vacío = WhatsApp deshabilitado (no rompe)
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_API_VERSION
+        value: v21.0
+      - key: WHATSAPP_TEMPLATE_LANG
+        value: es_AR
+      - key: WHATSAPP_TEMPLATE_HEALTH
+        value: recordatorio_salud
+      - key: WHATSAPP_TEMPLATE_MEDICAL
+        value: recordatorio_medico

@@ -22,7 +22,12 @@
       "bundleIdentifier": "com.handicapp.app",
       "associatedDomains": [
         "applinks:app.handicapp.com"
-      ]
+      ],
+      "infoPlist": {
+        "NSCameraUsageDescription": "HandicApp necesita acceso a la cámara para sacar fotos de los caballos y las tareas.",
+        "NSPhotoLibraryUsageDescription": "HandicApp necesita acceso a tu galería para subir fotos de caballos.",
+        "NSPhotoLibraryAddUsageDescription": "HandicApp guarda en tu galería los certificados y fotos que descargues."
+      }
     },
     "android": {
       "package": "com.handicapp.app",
@@ -60,7 +65,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "HandicApp necesita acceso a tu galería para subir fotos de caballos."
+          "photosPermission": "HandicApp necesita acceso a tu galería para subir fotos de caballos.",
+          "cameraPermission": "HandicApp necesita acceso a la cámara para sacar fotos de los caballos y las tareas."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "HandicApp necesita acceso a la cámara para sacar fotos de los caballos y las tareas."
         }
       ],
       [
