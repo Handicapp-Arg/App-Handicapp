@@ -285,27 +285,34 @@ export default function JineteHorse() {
           textAlignVertical="top"
         />
 
-        <Text style={s.label}>Fotos (opcional)</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
-          {photoUris.map((uri, i) => (
-            <View key={uri} style={s.photoThumb}>
-              <Image source={{ uri }} style={s.photoImg} />
-              <TouchableOpacity
-                style={s.photoRemove}
-                onPress={() => { haptic.light(); setPhotoUris((p) => p.filter((_, idx) => idx !== i)); }}
-                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-              >
-                <X size={12} color="#fff" strokeWidth={2.5} />
+        <Text style={s.label}>Fotos de la monta <Text style={s.labelOpt}>(opcional)</Text></Text>
+        {photoUris.length === 0 ? (
+          <TouchableOpacity style={s.photoBtnFull} onPress={pickPhoto} activeOpacity={0.8}>
+            <Camera size={22} color={c.brand} strokeWidth={2} />
+            <Text style={s.photoBtnFullText}>Sacar foto</Text>
+          </TouchableOpacity>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
+            {photoUris.map((uri, i) => (
+              <View key={uri} style={s.photoThumb}>
+                <Image source={{ uri }} style={s.photoImg} />
+                <TouchableOpacity
+                  style={s.photoRemove}
+                  onPress={() => { haptic.light(); setPhotoUris((p) => p.filter((_, idx) => idx !== i)); }}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                >
+                  <X size={12} color="#fff" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {photoUris.length < 5 && (
+              <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
+                <Camera size={20} color={c.textMuted} strokeWidth={2} />
+                <Text style={s.photoAddText}>Otra</Text>
               </TouchableOpacity>
-            </View>
-          ))}
-          {photoUris.length < 5 && (
-            <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
-              <Camera size={20} color={c.textMuted} strokeWidth={2} />
-              <Text style={s.photoAddText}>Sacar foto</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
+            )}
+          </ScrollView>
+        )}
 
         <PressableScale style={s.saveBtn} scaleTo={0.97} onPress={save} disabled={saving}>
           {saving
@@ -459,6 +466,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center', gap: 2, backgroundColor: c.surfaceAlt,
   },
   photoAddText: { fontSize: 10, color: c.textFaint, fontFamily: fontFamily.semibold, fontWeight: '600' },
+  labelOpt: { color: c.textFaint, fontWeight: '400' },
+  photoBtnFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space[2],
+    height: 54,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: c.borderStrong,
+    borderStyle: 'dashed',
+    backgroundColor: c.surfaceAlt,
+  },
+  photoBtnFullText: { fontSize: 15, color: c.brand, fontFamily: fontFamily.semibold, fontWeight: '600' },
   saveBtn: {
     marginTop: space[5],
     backgroundColor: c.brand,
