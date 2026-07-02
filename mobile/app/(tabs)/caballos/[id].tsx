@@ -811,6 +811,19 @@ export default function HorseDetailScreen() {
               })}
             </View>
 
+            {/* Prueba de trabajo: quién cargó la rutina de hoy */}
+            {todayRoutine?.filler?.name && (
+              <View style={s.routineAuthor}>
+                <User size={12} color={c.textFaint} strokeWidth={2} />
+                <Text style={s.routineAuthorText}>
+                  Cargó {todayRoutine.filler.name}
+                  {todayRoutine.created_at
+                    ? ` · ${new Date(todayRoutine.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`
+                    : ''}
+                </Text>
+              </View>
+            )}
+
             {/* Tendencia de los últimos días */}
             {routines && routines.length > 1 && (
               <View style={s.routineTrend}>
@@ -1056,12 +1069,23 @@ export default function HorseDetailScreen() {
             <View style={s.photosGrid}>
               {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).slice(0, 9).map((p) => {
                 const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
+                const stamp = p.taken_at
+                  ? new Date(p.taken_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                  : '';
                 return (
                   <TouchableOpacity key={p.id} style={s.photoWrap} onPress={() => Linking.openURL(p.url)} activeOpacity={0.85}>
                     <Image source={{ uri: p.url }} style={s.photoThumb} />
                     <View style={[s.photoBadge, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
                       <Text style={[s.photoBadgeText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
+                    {(p.photographer?.name || stamp) && (
+                      <View style={s.photoStamp}>
+                        {!!p.photographer?.name && (
+                          <Text style={s.photoStampAuthor} numberOfLines={1}>{p.photographer.name}</Text>
+                        )}
+                        {!!stamp && <Text style={s.photoStampTime} numberOfLines={1}>{stamp}</Text>}
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -1707,6 +1731,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   routineItemChecked: { borderColor: c.isDark ? 'rgba(34,197,94,0.4)' : '#86efac', backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
   routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: c.textMuted },
   routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d' },
+  routineAuthor: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10 },
+  routineAuthorText: { fontSize: 11, color: c.textFaint, fontWeight: weight.medium },
   routineTrend: { marginTop: 12, backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
   routineTrendTitle: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   routineTrendDays: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 52 },
@@ -1778,8 +1804,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   photoWrap: { width: '31%', aspectRatio: 1, position: 'relative' },
   photoThumb: { width: '100%', height: '100%', borderRadius: 10 },
-  photoBadge: { position: 'absolute', bottom: 3, left: 3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
+  photoBadge: { position: 'absolute', top: 3, left: 3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
   photoBadgeText: { fontSize: 8, fontWeight: '700' },
+  photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', borderBottomLeftRadius: 10, borderBottomRightRadius: 10, paddingHorizontal: 4, paddingVertical: 3 },
+  photoStampAuthor: { fontSize: 8, fontWeight: '700', color: '#fff' },
+  photoStampTime: { fontSize: 8, fontWeight: '500', color: 'rgba(255,255,255,0.85)' },
 
   /* Botones pequeños */
   smallBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },

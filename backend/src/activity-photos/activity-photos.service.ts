@@ -79,15 +79,19 @@ export class ActivityPhotosService {
       }),
     );
 
-    // Notificar al propietario si quien sube no es el propietario
+    // Notificar al propietario y a los encargados (capataces) de la organización
+    // si quien sube no es el propietario — cerrar el loop de supervisión
     if (user.id !== horse.owner_id) {
       const label = ACTIVITY_LABELS[activityType] ?? 'Actividad';
-      const notifications = await this.notificationsService.createMany([{
-        type: NotificationType.HEALTH_REMINDER,
-        title: `Nueva foto de ${label} — ${horse.name}`,
-        message: `${user.name} subió una foto verificada de ${horse.name} (${label})`,
-        recipient_id: horse.owner_id,
-      }]);
+      const recipientIds = await this.resolveRecipients(horse, user);
+      const notifications = await this.notificationsService.createMany(
+        recipientIds.map((recipient_id) => ({
+          type: NotificationType.HEALTH_REMINDER,
+          title: `Nueva foto de ${label} — ${horse.name}`,
+          message: `${user.name} subió una foto de ${horse.name} (${label})`,
+          recipient_id,
+        })),
+      );
       for (const n of notifications) this.gateway.sendToUser(n.recipient_id, n);
     }
 
@@ -102,6 +106,30 @@ export class ActivityPhotosService {
     await this.assertAccess(photo.horse, user);
     await this.cloudinaryService.delete(photo.public_id);
     await this.photoRepository.remove(photo);
+  }
+
+  /**
+   * Resuelve los destinatarios de la notificación: el propietario del caballo
+   * más los encargados (capataces) de su organización. Deduplica y excluye a
+   * quien hizo la acción. Si el caballo no tiene organización, solo el owner.
+   */
+  private async resolveRecipients(horse: Horse, user: User): Promise<string[]> {
+    const recipients = new Set<string>();
+    if (horse.owner_id) recipients.add(horse.owner_id);
+
+    if (horse.organization_id) {
+      const encargados: { user_id: string }[] = await this.horseRepository.query(
+        `SELECT om.user_id
+           FROM organization_members om
+          WHERE om.organization_id = $1
+            AND om.role_in_org = 'encargado'`,
+        [horse.organization_id],
+      );
+      for (const e of encargados) recipients.add(e.user_id);
+    }
+
+    recipients.delete(user.id);
+    return [...recipients];
   }
 
   private async assertAccess(horse: Horse, user: User): Promise<void> {

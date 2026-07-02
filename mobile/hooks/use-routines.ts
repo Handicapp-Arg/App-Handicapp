@@ -14,6 +14,10 @@ export interface DailyRoutine {
   box_cleaned: boolean;
   groomed: boolean;
   observations: string | null;
+  /** Quién cargó la rutina (viene eager del backend). */
+  filled_by?: string;
+  filler?: { id: string; name: string };
+  created_at?: string;
 }
 
 /** Alias corto usado por el Modo Peón. */

@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { useHorse, useHorseOwnership, useDeleteHorse, useTransferHorse, usePropietarios, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseAssignees, useHorseOrgMembers, useAssignMember, useRemoveMember, useHorseDocuments, useUploadDocument, useDeleteDocument, useWeightRecords, useAddWeightRecord, useDeleteWeightRecord, useHorseMovements, type HorseMovement } from '@/hooks/use-horses';
 import { useEventsByHorse, useCreateEvent, useUpdateEvent, useDeleteEvent, useShareEvent } from '@/hooks/use-events';
 import { useFinancialSummary } from '@/hooks/use-financial-summary';
-import { useRoutines, useUpsertRoutine } from '@/hooks/use-routines';
+import { useRoutines, useUpsertRoutine, type DailyRoutine } from '@/hooks/use-routines';
 import { useActivityPhotos, useUploadActivityPhoto, useDeleteActivityPhoto, ACTIVITY_TYPES } from '@/hooks/use-activity-photos';
 import { useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, useDownloadHealthCertificate, type MedicalRecord, type CreateMedicalRecordDto } from '@/hooks/use-medical';
 import { usePlanStatus } from '@/hooks/use-plan';
@@ -1291,6 +1291,65 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
   );
 }
 
+/* ─── Rutina: helpers de "prueba de trabajo" ─── */
+const ROUTINE_HISTORY_ITEMS = [
+  { key: 'morning_feed',   short: 'Comida mañana' },
+  { key: 'afternoon_feed', short: 'Comida tarde' },
+  { key: 'evening_feed',   short: 'Comida noche' },
+  { key: 'water_ok',       short: 'Agua' },
+  { key: 'paddock',        short: 'Paddock' },
+  { key: 'trained',        short: 'Entrenamiento' },
+  { key: 'health_check',   short: 'Revisión salud' },
+] as const;
+
+function fillerLine(r: DailyRoutine): string | null {
+  if (!r.filler) return null;
+  const hora = new Date(r.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return `${r.filler.name} · ${hora}`;
+}
+
+function RoutineHistory({ routines, todayISO }: { routines: DailyRoutine[] | undefined; todayISO: string }) {
+  const past = (routines ?? [])
+    .filter((r) => r.date !== todayISO)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (!past.length) return null;
+  return (
+    <div className="mt-4 border-t border-gray-100 pt-3">
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Últimos días</h3>
+      <div className="space-y-2">
+        {past.map((r) => {
+          const done = ROUTINE_HISTORY_ITEMS.filter(({ key }) => r[key]);
+          const autor = fillerLine(r);
+          return (
+            <div key={r.id} className="rounded-xl border border-gray-100 bg-[var(--surface-page)] px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-gray-700 capitalize">
+                  {new Date(r.date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </span>
+                {autor && <span className="shrink-0 text-[10px] text-gray-400">{autor}</span>}
+              </div>
+              {done.length ? (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {done.map(({ key, short }) => (
+                    <span key={key} className="inline-flex items-center gap-1 rounded-full bg-green-50 px-1.5 py-0.5 text-[9px] font-medium text-green-700">
+                      <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      {short}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="mt-1.5 block text-[10px] text-gray-300">Sin registros</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function HorseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -2169,7 +2228,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Rutina diaria (mobile) */}
-        {canFillRoutine && contentTab === 'rutina' && (
+        {contentTab === 'rutina' && (
           <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
@@ -2180,15 +2239,18 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <div>
                 <h2 className="text-base font-bold text-gray-900">Rutina de hoy</h2>
                 <p className="text-[11px] text-gray-400">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                {todayRoutine && fillerLine(todayRoutine) && (
+                  <p className="text-[11px] font-medium text-gray-500">Cargó {fillerLine(todayRoutine)}</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {ROUTINE_ITEMS.map(({ key, label }) => {
                 const checked = todayRoutine?.[key] ?? false;
                 return (
-                  <button key={key} onClick={() => toggleRoutineItem(key)}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition cursor-pointer ${
-                      checked ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  <button key={key} onClick={canFillRoutine ? () => toggleRoutineItem(key) : undefined} disabled={!canFillRoutine}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${canFillRoutine ? 'cursor-pointer' : 'cursor-default'} ${
+                      checked ? 'border-green-200 bg-green-50 text-green-700' : `border-gray-200 text-gray-500 ${canFillRoutine ? 'hover:bg-gray-50' : ''}`
                     }`}
                   >
                     <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
@@ -2205,6 +2267,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 );
               })}
             </div>
+            {!canFillRoutine && (
+              <p className="mt-3 text-[10px] text-gray-400">Solo lectura · no tenés permiso para editar la rutina.</p>
+            )}
+            <RoutineHistory routines={routines} todayISO={todayISO} />
           </div>
         )}
 
@@ -2396,8 +2462,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
-                    <p className="mt-0.5 text-[9px] text-gray-400 text-center">
-                      {new Date(p.taken_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                    <p className="mt-0.5 text-[9px] text-gray-400 text-center leading-tight">
+                      {p.photographer?.name ? `${p.photographer.name} · ` : ''}
+                      {new Date(p.taken_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 );
@@ -2829,19 +2896,22 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         </div>}
 
         {/* Rutina diaria (desktop) */}
-        {canFillRoutine && contentTab === 'rutina' && (
+        {contentTab === 'rutina' && (
           <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Rutina de hoy</h2>
               <p className="text-[10px] text-gray-400">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+              {todayRoutine && fillerLine(todayRoutine) && (
+                <p className="text-[10px] font-medium text-gray-500">Cargó {fillerLine(todayRoutine)}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {ROUTINE_ITEMS.map(({ key, label }) => {
                 const checked = todayRoutine?.[key] ?? false;
                 return (
-                  <button key={key} onClick={() => toggleRoutineItem(key)}
-                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition cursor-pointer ${
-                      checked ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500 hover:bg-gray-50'
+                  <button key={key} onClick={canFillRoutine ? () => toggleRoutineItem(key) : undefined} disabled={!canFillRoutine}
+                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition ${canFillRoutine ? 'cursor-pointer' : 'cursor-default'} ${
+                      checked ? 'border-green-200 bg-green-50 text-green-700' : `border-gray-100 text-gray-500 ${canFillRoutine ? 'hover:bg-gray-50' : ''}`
                     }`}
                   >
                     <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
@@ -2858,6 +2928,10 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 );
               })}
             </div>
+            {!canFillRoutine && (
+              <p className="mt-2.5 text-[10px] text-gray-400">Solo lectura · no tenés permiso para editar la rutina.</p>
+            )}
+            <RoutineHistory routines={routines} todayISO={todayISO} />
           </div>
         )}
 
@@ -3027,11 +3101,17 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 {activityPhotos.map((p) => {
                   const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
                   return (
-                    <div key={p.id} className="relative group aspect-square">
-                      <a href={p.url} target="_blank" rel="noopener noreferrer">
-                        <img src={p.url} alt={meta.label} className="h-full w-full rounded-xl object-cover" />
-                      </a>
-                      <span className={`absolute top-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${meta.bg} ${meta.color}`}>{meta.label}</span>
+                    <div key={p.id}>
+                      <div className="relative group aspect-square">
+                        <a href={p.url} target="_blank" rel="noopener noreferrer">
+                          <img src={p.url} alt={meta.label} className="h-full w-full rounded-xl object-cover" />
+                        </a>
+                        <span className={`absolute top-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${meta.bg} ${meta.color}`}>{meta.label}</span>
+                      </div>
+                      <p className="mt-0.5 text-[9px] text-gray-400 leading-tight text-center">
+                        {p.photographer?.name ? `${p.photographer.name} · ` : ''}
+                        {new Date(p.taken_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                   );
                 })}

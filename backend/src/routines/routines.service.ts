@@ -67,20 +67,48 @@ export class RoutinesService {
         }),
       );
 
-      // Notificar al propietario cuando el establecimiento o vet carga la rutina
+      // Notificar al propietario y a los encargados (capataces) cuando el
+      // establecimiento, peón o vet carga la rutina — cerrar el loop de supervisión
       if (user.role !== 'propietario' && horse.owner_id !== user.id) {
         const summary = this.buildSummary(routine);
-        const notifications = await this.notificationsService.createMany([{
-          type: NotificationType.HEALTH_REMINDER,
-          title: `Rutina diaria — ${horse.name}`,
-          message: `${user.name} completó la rutina de hoy: ${summary}`,
-          recipient_id: horse.owner_id,
-        }]);
+        const recipientIds = await this.resolveRecipients(horse, user);
+        const notifications = await this.notificationsService.createMany(
+          recipientIds.map((recipient_id) => ({
+            type: NotificationType.HEALTH_REMINDER,
+            title: `Rutina diaria — ${horse.name}`,
+            message: `${user.name} cargó la rutina de ${horse.name}: ${summary}`,
+            recipient_id,
+          })),
+        );
         for (const n of notifications) this.gateway.sendToUser(n.recipient_id, n);
       }
     }
 
     return routine;
+  }
+
+  /**
+   * Resuelve los destinatarios de la notificación: el propietario del caballo
+   * más los encargados (capataces) de su organización. Deduplica y excluye a
+   * quien hizo la acción. Si el caballo no tiene organización, solo el owner.
+   */
+  private async resolveRecipients(horse: Horse, user: User): Promise<string[]> {
+    const recipients = new Set<string>();
+    if (horse.owner_id) recipients.add(horse.owner_id);
+
+    if (horse.organization_id) {
+      const encargados: { user_id: string }[] = await this.horseRepository.query(
+        `SELECT om.user_id
+           FROM organization_members om
+          WHERE om.organization_id = $1
+            AND om.role_in_org = 'encargado'`,
+        [horse.organization_id],
+      );
+      for (const e of encargados) recipients.add(e.user_id);
+    }
+
+    recipients.delete(user.id);
+    return [...recipients];
   }
 
   private buildSummary(r: DailyRoutine): string {
