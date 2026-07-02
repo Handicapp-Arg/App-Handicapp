@@ -14,7 +14,12 @@ export default function Home() {
     if (!user) {
       router.replace('/login');
     } else {
-      router.replace(user.role === 'encargado' ? '/supervision' : '/caballos');
+      // encargado → Supervisión; jinete/peón/veterinario → Caballos; resto (propietario/establecimiento) → Caballos.
+      if (user.role === 'encargado') {
+        router.replace('/supervision');
+      } else {
+        router.replace('/caballos');
+      }
     }
   }, [user, loading, router]);
 

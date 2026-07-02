@@ -104,6 +104,11 @@ export function Sidebar() {
   const isEst = user?.role === 'establecimiento';
   const isProp = user?.role === 'propietario';
   const isEncargado = user?.role === 'encargado';
+  const isJinete = user?.role === 'jinete';
+  const isPeon = user?.role === 'peon';
+  const isVeterinario = user?.role === 'veterinario';
+  // Roles operativos: menú reducido (solo navegación; permisos ya los limita el backend).
+  const isOperativo = isEncargado || isJinete || isPeon || isVeterinario;
   const hasReportes = planStatus?.features?.includes('reportes') ?? false;
 
   const sections: NavSection[] = isAdmin
@@ -131,11 +136,29 @@ export function Sidebar() {
           ],
         },
       ]
-    : [
+    : isOperativo
+    ? [
         {
           label: 'Principal',
           items: [
             ...(isEncargado ? [{ href: '/supervision', label: 'Supervisión', icon: icons.panel }] : []),
+            { href: '/muro', label: 'Muro', icon: icons.muro },
+            { href: '/caballos', label: 'Caballos', icon: icons.caballos },
+            // Peón no ve Eventos; encargado, jinete y veterinario sí.
+            ...(!isPeon ? [{ href: '/eventos', label: 'Eventos', icon: icons.eventos }] : []),
+          ].filter(Boolean) as NavItem[],
+        },
+        {
+          label: 'Gestión',
+          items: [
+            { href: '/agenda', label: 'Agenda', icon: icons.agenda },
+          ],
+        },
+      ].filter((s) => s.items.length > 0)
+    : [
+        {
+          label: 'Principal',
+          items: [
             { href: '/muro', label: 'Muro', icon: icons.muro },
             { href: '/caballos', label: 'Caballos', icon: icons.caballos },
             { href: '/padron', label: 'Padrón', icon: icons.padron },
