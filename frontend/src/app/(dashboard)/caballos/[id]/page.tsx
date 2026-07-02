@@ -41,7 +41,7 @@ const PUBLIC_BASE = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL || (typeof window !=
 const typeBadge: Record<string, { label: string; cls: string }> = {
   salud:         { label: 'Salud',         cls: 'bg-red-50 text-red-700' },
   entrenamiento: { label: 'Entrenamiento', cls: 'bg-yellow-50 text-yellow-700' },
-  gasto:         { label: 'Gasto',         cls: 'bg-purple-50 text-purple-700' },
+  gasto:         { label: 'Gasto',         cls: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300' },
   nota:          { label: 'Nota',          cls: 'bg-gray-100 text-gray-700' },
 };
 
@@ -346,7 +346,7 @@ function EventCard({
       </div>
       <p className="text-sm text-gray-700 line-clamp-2">{event.description}</p>
       {event.type === 'gasto' && event.amount != null && (
-        <p className="mt-1 text-sm font-semibold text-purple-700">
+        <p className="mt-1 text-sm font-semibold text-purple-700 dark:text-purple-300">
           ${Number(event.amount).toLocaleString('es-AR')}
         </p>
       )}
@@ -702,7 +702,7 @@ const medicalTypeLabel: Record<string, string> = {
 const medicalTypeBadge: Record<string, string> = {
   vacuna: 'bg-green-50 text-green-700', desparasitacion: 'bg-orange-50 text-orange-700',
   analisis: 'bg-blue-50 text-blue-700', tratamiento: 'bg-red-50 text-red-700',
-  sanidad: 'bg-teal-50 text-teal-700',
+  sanidad: 'bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
 };
 
 /* ─── Libreta sanitaria (semáforo) ─── */
@@ -1051,13 +1051,13 @@ function FinancialDashboard({
           </button>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-purple-50 p-4">
-            <p className="text-[11px] font-semibold text-purple-500 uppercase tracking-wide">Total acumulado</p>
-            <p className="mt-1 text-2xl font-bold text-purple-900">${financial.total.toLocaleString('es-AR')}</p>
+          <div className="rounded-xl bg-purple-50 dark:bg-purple-500/10 p-4">
+            <p className="text-[11px] font-semibold text-purple-500 dark:text-purple-300 uppercase tracking-wide">Total acumulado</p>
+            <p className="mt-1 text-2xl font-bold text-purple-900 dark:text-purple-200">${financial.total.toLocaleString('es-AR')}</p>
           </div>
           <div className="rounded-xl bg-blue-50 p-4">
             <p className="text-[11px] font-semibold text-blue-500 uppercase tracking-wide">Promedio mensual</p>
-            <p className="mt-1 text-2xl font-bold text-blue-900">${financial.average_monthly.toLocaleString('es-AR')}</p>
+            <p className="mt-1 text-2xl font-bold text-blue-900 dark:text-blue-200">${financial.average_monthly.toLocaleString('es-AR')}</p>
           </div>
         </div>
       </div>
@@ -1859,7 +1859,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <HorseVerifiedBadge variant="soft" size="md" className="rounded-full" />
             )}
             {horse.breed && (
-              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-100">
+              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-500/15 dark:text-violet-300 dark:ring-violet-500/25">
                 {horse.breed.name}
               </span>
             )}
@@ -1956,7 +1956,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
                   </svg>
@@ -2403,7 +2403,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'fotos' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
@@ -2536,7 +2536,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <h1 className="text-lg font-bold text-gray-900">{horse.name}</h1>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {horse.breed && (
-                  <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                  <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                     {horse.breed.name}
                   </span>
                 )}
@@ -2771,15 +2771,15 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-900">Finanzas</h2>
                 <button onClick={() => setContentTab('finanzas')}
-                  className="text-[10px] font-medium text-purple-600 hover:text-purple-800 transition cursor-pointer"
+                  className="text-[10px] font-medium text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200 transition cursor-pointer"
                 >
                   Ver detalle →
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="rounded-xl bg-purple-50 p-3">
-                  <p className="text-[10px] font-medium text-purple-500 uppercase tracking-wide">Total</p>
-                  <p className="mt-0.5 text-base font-bold text-purple-900">${financial.total.toLocaleString('es-AR')}</p>
+                <div className="rounded-xl bg-purple-50 dark:bg-purple-500/10 p-3">
+                  <p className="text-[10px] font-medium text-purple-500 dark:text-purple-300 uppercase tracking-wide">Total</p>
+                  <p className="mt-0.5 text-base font-bold text-purple-900 dark:text-purple-200">${financial.total.toLocaleString('es-AR')}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-3">
                   <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Prom/mes</p>

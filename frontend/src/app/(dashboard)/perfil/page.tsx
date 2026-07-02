@@ -239,7 +239,7 @@ function TierBadge({ tier }: { tier: number }) {
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ${
         isFree
-          ? 'bg-gray-50 text-gray-500 ring-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'
+          ? 'bg-gray-50 text-gray-500 ring-gray-200'
           : 'bg-clay-50 text-clay-700 ring-clay-100 dark:bg-clay-500/15 dark:text-clay-300 dark:ring-clay-500/25'
       }`}
     >
@@ -338,7 +338,7 @@ function PlanCard({
 
       {/* Features como checklist con el check del color del tier */}
       {plan.features.length > 0 && (
-        <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5 dark:border-gray-700/60">
+        <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5">
           {plan.features.map((f) => (
             <FeatureRow key={f} label={featureLabel(f)} accent={t.accent} featureKey={f} />
           ))}
@@ -348,7 +348,7 @@ function PlanCard({
       {/* CTA — anclado al fondo para tarjetas parejas */}
       <div className="mt-6 flex flex-1 items-end">
         {current ? (
-          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400 dark:border-gray-700 dark:bg-gray-800/60">
+          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400">
             Plan actual
           </div>
         ) : canSubscribe ? (
@@ -360,7 +360,7 @@ function PlanCard({
             Suscribirme
           </button>
         ) : (
-          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400 dark:border-gray-700 dark:bg-gray-800/60">
+          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400">
             Incluido
           </div>
         )}
@@ -433,7 +433,7 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
           </ul>
 
           {/* Medios de pago aceptados */}
-          <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
+          <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-400">Medios de pago aceptados</p>
             <PaymentMethods />
           </div>
@@ -584,7 +584,7 @@ function MiPlan({ role }: { role?: string }) {
             </div>
 
             {/* Sello de confianza — medios de pago */}
-            <div className="mt-6 flex flex-col items-center gap-3 border-t border-gray-100 pt-5 dark:border-gray-700/60 sm:flex-row sm:justify-center">
+            <div className="mt-6 flex flex-col items-center gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-center">
               <PaymentMethods />
               <p className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
                 <Lock className="h-3.5 w-3.5" />
@@ -653,7 +653,7 @@ function Alert({ type, message }: { type: AlertType; message: string }) {
     <div className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium ${
       type === 'success'
         ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
-        : 'border-red-100 bg-red-50 text-red-600'
+        : 'border-red-100 bg-red-50 text-red-600 dark:text-red-300'
     }`}>
       {type === 'success' ? (
         <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -673,7 +673,7 @@ function Alert({ type, message }: { type: AlertType; message: string }) {
 
 type LicenseDot = 'gray' | 'amber' | 'emerald' | 'red';
 const LICENSE_BADGE: Record<string, { label: string; cls: string; dot: LicenseDot }> = {
-  none:     { label: 'Sin cargar', dot: 'gray',    cls: 'bg-gray-100 text-gray-500 ring-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700' },
+  none:     { label: 'Sin cargar', dot: 'gray',    cls: 'bg-gray-100 text-gray-500 ring-gray-200' },
   pending:  { label: 'Pendiente',  dot: 'amber',   cls: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/25' },
   approved: { label: 'Aprobada',   dot: 'emerald', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/25' },
   rejected: { label: 'Rechazada',  dot: 'red',     cls: 'bg-red-50 text-red-600 ring-red-200 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-500/25' },
@@ -741,7 +741,7 @@ function VetLicenseSection() {
     <SectionCard title="Matrícula profesional">
       <div className="space-y-4">
         {/* Cabecera de estado */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-gray-700/60 dark:bg-gray-800/40">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-clay-500/15 text-clay-600 dark:text-clay-300">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -788,7 +788,7 @@ function VetLicenseSection() {
               type="file"
               accept="image/*"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-clay-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-clay-700 hover:file:bg-clay-100 sm:max-w-sm"
+              className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-clay-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-clay-700 dark:file:text-clay-300 hover:file:bg-clay-100 sm:max-w-sm"
             />
           </Field>
           {msg && <Alert type="success" message={msg} />}
@@ -873,8 +873,8 @@ function ContactSection() {
           </button>
         </form>
 
-        <div className="border-t border-gray-100 pt-5 dark:border-gray-700/60">
-          <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
+        <div className="border-t border-gray-100 pt-5">
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
             <div className="flex min-w-0 items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15">
                 <WhatsApp size={20} />
@@ -891,7 +891,7 @@ function ContactSection() {
               onClick={handleToggle}
               disabled={togglingOptIn}
               className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 cursor-pointer ${
-                optIn ? 'bg-clay-500' : 'bg-gray-200 dark:bg-gray-600'
+                optIn ? 'bg-clay-500' : 'bg-gray-200'
               }`}
             >
               <span
