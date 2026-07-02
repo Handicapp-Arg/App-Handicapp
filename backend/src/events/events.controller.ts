@@ -113,7 +113,9 @@ export class EventsController {
   }
 
   @Post(':id/training-metrics')
-  @RequirePermission('events', 'update')
+  // 'create': cargar las métricas es parte de registrar la sesión de entrenamiento
+  // (el jinete tiene events:create, no update). El acceso al caballo lo valida el service.
+  @RequirePermission('events', 'create')
   upsertTrainingMetrics(
     @Param('id') id: string,
     @Body(ValidationPipe) dto: TrainingMetricsDto,
