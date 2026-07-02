@@ -7,7 +7,6 @@ import { Bell, ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { Avatar } from '@/components/ui/avatar';
-import { RoleBadge } from '@/components/ui/role-badge';
 
 // Título de página derivado del primer segmento de la ruta.
 const PAGE_TITLES: Record<string, string> = {
@@ -69,9 +68,8 @@ export function Topbar() {
           className="flex items-center gap-2.5 rounded-xl py-1.5 pl-1.5 pr-3 transition hover:bg-gray-100 cursor-pointer"
         >
           <Avatar name={user?.name} avatarUrl={user?.avatar_url} avatarColor={user?.avatar_color} size="sm" />
-          <span className="flex flex-col items-start gap-0.5 leading-tight">
+          <span className="flex flex-col items-start leading-tight">
             <span className="text-[13px] font-semibold text-gray-900">{user?.name}</span>
-            {user?.role && <RoleBadge role={user.role} size="sm" />}
           </span>
           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
