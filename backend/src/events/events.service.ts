@@ -269,11 +269,18 @@ export class EventsService {
 
     await this.assertAccess(horse, user);
 
-    return this.eventRepository.find({
-      where: { horse_id: horseId },
-      relations: ['photos'],
-      order: { date: 'DESC' },
-    });
+    const qb = this.eventRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.photos', 'photos')
+      .where('event.horse_id = :horseId', { horseId })
+      .orderBy('event.date', 'DESC');
+
+    // Roles operativos (jinete/peon): no ven eventos financieros (gastos).
+    if (user.role === 'jinete' || user.role === 'peon') {
+      qb.andWhere("event.type != 'gasto'");
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string, user: User): Promise<Event> {

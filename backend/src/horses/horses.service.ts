@@ -333,6 +333,9 @@ export class HorsesService implements OnModuleInit {
   }
 
   async exportExpenses(id: string, user: User): Promise<string> {
+    if (user.role === 'jinete' || user.role === 'peon') {
+      throw new ForbiddenException('No tenés acceso a la información financiera');
+    }
     const horse = await this.horseRepository.findOne({ where: { id } });
     if (!horse) throw new NotFoundException('Caballo no encontrado');
     await this.assertAccess(horse, user);
@@ -380,6 +383,9 @@ export class HorsesService implements OnModuleInit {
   }
 
   async getFinancialSummary(id: string, user: User) {
+    if (user.role === 'jinete' || user.role === 'peon') {
+      throw new ForbiddenException('No tenés acceso a la información financiera');
+    }
     const horse = await this.horseRepository.findOne({ where: { id } });
     if (!horse) throw new NotFoundException('Caballo no encontrado');
     await this.assertAccess(horse, user);

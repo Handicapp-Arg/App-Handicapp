@@ -1359,7 +1359,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   const { data: horse, isLoading, error } = useHorse(id);
   const { data: ownership } = useHorseOwnership(id);
   const { data: events } = useEventsByHorse(id);
-  const { data: financial } = useFinancialSummary(id);
+  const { data: financial } = useFinancialSummary(id, user?.role !== 'jinete' && user?.role !== 'peon');
   const { data: propietarios } = usePropietarios();
   const { data: vets } = useHorseVets(id);
   const { data: veterinarios } = useVeterinarios();
@@ -1420,6 +1420,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
   const canEdit = can('horses', 'update');
   const { data: orgMembers } = useHorseOrgMembers(id, canEdit);
+
+  // Roles operativos (jinete/peon): no ven nada financiero.
+  const isJineteOrPeon = user?.role === 'jinete' || user?.role === 'peon';
 
   const ROUTINE_ITEMS = [
     { key: 'morning_feed',   label: 'Comida mañana' },
@@ -2075,7 +2078,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             { key: 'fotos',     label: 'Fotos',     count: activityPhotos?.length },
             { key: 'rutina',    label: 'Rutina',    count: null },
             { key: 'finanzas',  label: 'Finanzas',  count: null },
-          ] as const).map(({ key, label, count }) => (
+          ] as const).filter(({ key }) => !(isJineteOrPeon && key === 'finanzas')).map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setContentTab(key)}
@@ -2766,7 +2769,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* ─── Resumen financiero (desktop sidebar) ─── */}
-          {financial && financial.total > 0 && (
+          {!isJineteOrPeon && financial && financial.total > 0 && (
             <div className="rounded-2xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-900">Finanzas</h2>
@@ -2830,7 +2833,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
             { key: 'fotos',     label: 'Fotos',     count: activityPhotos?.length },
             { key: 'rutina',    label: 'Rutina',    count: null },
             { key: 'finanzas',  label: 'Finanzas',  count: null },
-          ] as const).map(({ key, label, count }) => (
+          ] as const).filter(({ key }) => !(isJineteOrPeon && key === 'finanzas')).map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setContentTab(key)}

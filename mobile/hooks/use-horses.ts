@@ -103,11 +103,11 @@ export interface FinancialSummary {
   recent_expenses: { id: string; date: string; description: string; amount: number; expense_category: string | null }[];
 }
 
-export function useFinancialSummary(horseId: string) {
+export function useFinancialSummary(horseId: string, enabled = true) {
   return useQuery<FinancialSummary>({
     queryKey: ['horses', horseId, 'financial-summary'],
     queryFn: async () => (await api.get(`/horses/${horseId}/financial-summary`)).data,
-    enabled: !!horseId,
+    enabled: !!horseId && enabled,
   });
 }
 

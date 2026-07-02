@@ -229,7 +229,13 @@ export default function HorseDetailScreen() {
 
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
-  const { data: financial } = useFinancialSummary(id);
+  // Roles operativos (jinete/peon): no ven nada financiero.
+  const isJineteOrPeon = user?.role === 'jinete' || user?.role === 'peon';
+  const { data: financial } = useFinancialSummary(id, !isJineteOrPeon);
+  const visibleTabs = useMemo(
+    () => TABS.filter((t) => !(isJineteOrPeon && t.key === 'finanzas')),
+    [isJineteOrPeon],
+  );
   const { data: documents } = useHorseDocuments(id);
   const { data: weightRecords } = useWeightRecords(id);
   const addWeight = useAddWeightRecord(id);
@@ -535,7 +541,7 @@ export default function HorseDetailScreen() {
 
       {/* ─── Tab bar ─── */}
       <View style={s.tabBar}>
-        {TABS.map(({ key, label, icon }) => {
+        {visibleTabs.map(({ key, label, icon }) => {
           const TabIconCmp = icon;
           const tabColor = activeTab === key ? c.text : c.textFaint;
           return (
@@ -566,7 +572,7 @@ export default function HorseDetailScreen() {
           )}
 
           {/* Resumen financiero */}
-          {financial && financial.total > 0 && (
+          {!isJineteOrPeon && financial && financial.total > 0 && (
             <View style={s.section}>
               <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
                 <Text style={s.sectionTitle}>Finanzas</Text>

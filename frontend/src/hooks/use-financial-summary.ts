@@ -17,13 +17,13 @@ export interface FinancialSummary {
   recent_expenses: RecentExpense[];
 }
 
-export function useFinancialSummary(horseId: string) {
+export function useFinancialSummary(horseId: string, enabled = true) {
   return useQuery<FinancialSummary>({
     queryKey: ['horses', horseId, 'financial-summary'],
     queryFn: async () => {
       const { data } = await api.get(`/horses/${horseId}/financial-summary`);
       return data;
     },
-    enabled: !!horseId,
+    enabled: !!horseId && enabled,
   });
 }
