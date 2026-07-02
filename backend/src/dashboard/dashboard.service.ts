@@ -356,9 +356,16 @@ export class DashboardService {
         }>(),
     ]);
 
-    // Helper: combinar date (YYYY-MM-DD) + event_time (HH:MM) en ISO
-    const eventAt = (date: string, time: string | null): string =>
-      new Date(`${date}T${time ?? '00:00'}:00`).toISOString();
+    // Helper: combinar date + event_time en ISO. El driver puede devolver `date`
+    // como Date o string, y `time` como 'HH:MM' o 'HH:MM:SS' → normalizamos ambos.
+    const eventAt = (date: string | Date, time: string | null): string => {
+      const d = date instanceof Date
+        ? date.toISOString().split('T')[0]
+        : String(date).split('T')[0];
+      const t = time ? String(time).slice(0, 5) : '00:00';
+      const dt = new Date(`${d}T${t}:00`);
+      return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+    };
 
     const feed: FeedItem[] = [];
 
