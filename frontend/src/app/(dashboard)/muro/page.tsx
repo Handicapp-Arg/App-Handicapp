@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { avatarGradient } from '@/lib/avatar-color';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Avatar } from '@/components/ui/avatar';
-import { RoleBadge } from '@/components/ui/role-badge';
 
 // ─── Admin stat card ───────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, color }: {
@@ -83,7 +82,6 @@ function FeedSidebar({ user, stats, isAdmin }: {
           </div>
           <div>
             <p className="text-sm font-semibold leading-tight text-gray-900">{user?.name}</p>
-            {role && <div className="mt-1.5"><RoleBadge role={role} size="sm" /></div>}
           </div>
           <Link
             href="/perfil"
