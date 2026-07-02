@@ -139,6 +139,15 @@ export class DevSeedService implements OnModuleInit {
       this.logger.warn('Seed operativo: no hay caballos en la DB para asignar');
     }
 
+    // 2b) Vincular esos caballos a la organización de prueba, para que el ENCARGADO
+    //     (que supervisa por caballeriza) los vea en su panel. Idempotente.
+    for (const horse of horses) {
+      if (horse.organization_id !== org.id) {
+        horse.organization_id = org.id;
+        await this.horseRepo.save(horse);
+      }
+    }
+
     // 3) Por cada usuario operativo: membresía + caballos asignados (idempotente).
     for (const { email, roleInOrg } of OPERATIONAL_MEMBERS) {
       const user = await this.userRepo.findOne({ where: { email } });
