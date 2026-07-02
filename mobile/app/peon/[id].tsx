@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Check, X } from 'lucide-react-native';
+import { ChevronLeft, Check, X, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useHorse } from '../../hooks/use-horses';
 import { useRoutine, useUpsertRoutine, todayISO, type Routine } from '../../hooks/use-routines';
 import { useCreateEvent } from '../../hooks/use-events';
+import { useUploadActivityPhoto } from '../../hooks/use-activity-photos';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
@@ -45,6 +47,7 @@ export default function PeonHorse() {
   const { data: routine } = useRoutine(horseId, today);
   const upsert = useUpsertRoutine(horseId);
   const createEvent = useCreateEvent();
+  const uploadPhoto = useUploadActivityPhoto(horseId);
 
   const [rareOpen, setRareOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -90,6 +93,24 @@ export default function PeonHorse() {
     );
   };
 
+  // Sacar una foto de la tarea: la hora la estampa el servidor (no manipulable).
+  const takePhoto = async () => {
+    haptic.light();
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) { toast.error('Necesitamos permiso para usar la cámara'); return; }
+    const res = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (res.canceled || !res.assets?.[0]?.uri) return;
+    toast.info('Subiendo foto…');
+    try {
+      await uploadPhoto.mutateAsync({ uri: res.assets[0].uri, activity_type: 'otro' });
+      haptic.success();
+      toast.success('✓ Foto guardada con la hora');
+    } catch {
+      haptic.error();
+      toast.error('No se pudo subir la foto. Probá de nuevo.');
+    }
+  };
+
   const buttons: { emoji: string; label: string; done: boolean; onPress: () => void }[] = [
     { emoji: '🥕', label: 'Comida', done: !!routine?.[feedField], onPress: () => markRoutine(feedField, 'Comida anotada') },
     { emoji: '💧', label: 'Agua', done: !!routine?.water_ok, onPress: () => markRoutine('water_ok', 'Agua anotada') },
@@ -121,6 +142,16 @@ export default function PeonHorse() {
         contentContainerStyle={[s.grid, { paddingBottom: insets.bottom + space[6] }]}
         showsVerticalScrollIndicator={false}
       >
+        <PressableScale style={s.photoBtn} scaleTo={0.96} onPress={takePhoto} disabled={uploadPhoto.isPending}>
+          {uploadPhoto.isPending ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <>
+              <Camera size={30} color={colors.white} strokeWidth={2.4} />
+              <Text style={s.photoBtnText} numberOfLines={1}>Sacar foto de la tarea</Text>
+            </>
+          )}
+        </PressableScale>
         {buttons.map((b) => (
           <PressableScale
             key={b.label}
@@ -246,6 +277,25 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  photoBtn: {
+    width: '100%',
+    minHeight: 76,
+    flexDirection: 'row',
+    gap: space[3],
+    borderRadius: radius.xl,
+    backgroundColor: c.brand,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: space[4],
+    marginBottom: space[1],
+    ...shadow.md,
+  },
+  photoBtnText: {
+    fontSize: 21,
+    fontFamily: fontFamily.extrabold,
+    fontWeight: '800',
+    color: colors.white,
   },
   btnEmoji: { fontSize: 42, marginBottom: space[2] },
   btnLabel: {
