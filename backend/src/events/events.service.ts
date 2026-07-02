@@ -226,9 +226,25 @@ export class EventsService {
         });
     } else if (user.role === 'establecimiento') {
       qb.where('horse.establishment_id = :uid', { uid: user.id });
-    } else if (user.role === 'veterinario') {
+    } else if (user.role === 'veterinario' || user.role === 'jinete' || user.role === 'peon') {
+      // Roles de asignación: solo eventos de caballos asignados vía horse_users.
       qb.innerJoin('horse.horseUsers', 'hu2')
         .where('hu2.user_id = :uid', { uid: user.id });
+    } else if (user.role === 'encargado') {
+      // Encargado: eventos de los caballos de su(s) organización(es).
+      const orgRows: { organization_id: string }[] = await this.eventRepository.query(
+        'SELECT organization_id FROM organization_members WHERE user_id = $1',
+        [user.id],
+      );
+      const orgIds = orgRows.map((r) => r.organization_id).filter((id) => id != null);
+      if (orgIds.length) {
+        qb.where('horse.organization_id IN (:...orgIds)', { orgIds });
+      } else {
+        qb.where('1 = 0'); // sin org → no ve nada
+      }
+    } else if (user.role !== 'admin') {
+      // Cualquier otro rol no contemplado: no ver nada (evita fugas por fallthrough).
+      qb.where('1 = 0');
     }
 
     if (type) qb.andWhere('event.type = :type', { type });
