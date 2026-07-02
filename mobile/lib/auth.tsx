@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // La pantalla de invitación es accesible sin sesión (para poder registrarse desde el link).
     const inInvite = segments[0] === 'invitacion';
     const inPeon = segments[0] === 'peon';
+    const inJinete = segments[0] === 'jinete';
     if (!user && !inAuth && !inInvite) { router.replace('/(auth)/login'); return; }
     // Modo Peón: experiencia simplificada. El peón vive dentro de /peon y no
     // debe ver la app normal (tabs). Si aparece fuera de /peon, lo reenviamos.
@@ -67,8 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (inAuth || !inPeon) router.replace('/peon');
       return;
     }
-    // Otros roles: si un no-peón cae en /peon, lo mandamos a la app normal.
-    if (user && inPeon) { router.replace('/(tabs)'); return; }
+    // Modo Jinete: experiencia propia (registrar montas + progreso). El jinete
+    // vive dentro de /jinete. Si aparece fuera, lo reenviamos.
+    const isJinete = user?.role === 'jinete';
+    if (user && isJinete) {
+      if (inAuth || !inJinete) router.replace('/jinete');
+      return;
+    }
+    // Otros roles: si un no-peón/no-jinete cae en /peon o /jinete, lo mandamos a la app normal.
+    if (user && (inPeon || inJinete)) { router.replace('/(tabs)'); return; }
     if (user && inAuth) router.replace('/(tabs)');
   }, [user, loading, segments]);
 

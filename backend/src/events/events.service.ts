@@ -335,6 +335,88 @@ export class EventsService {
     );
   }
 
+  // Histórico de entrenamientos de un caballo (modo jinete: ver progreso).
+  // Lista los eventos tipo entrenamiento con sus métricas embebidas + resumen.
+  async getTrainingHistory(
+    horseId: string,
+    user: User,
+  ): Promise<{
+    summary: { total_rides: number; km_this_month: number };
+    items: Array<{
+      id: string;
+      date: string;
+      event_time: string | null;
+      description: string;
+      author_name?: string;
+      distance_km: number | null;
+      duration_min: number | null;
+      intensity: number | null;
+      discipline: string | null;
+    }>;
+  }> {
+    const horse = await this.horseRepository.findOne({ where: { id: horseId } });
+    if (!horse) throw new NotFoundException('Caballo no encontrado');
+    await this.assertAccess(horse, user);
+
+    const rows = await this.eventRepository
+      .createQueryBuilder('event')
+      .leftJoin(TrainingMetrics, 'tm', 'tm.event_id = event.id')
+      .leftJoin('event.author', 'author')
+      .select('event.id', 'id')
+      .addSelect('event.date', 'date')
+      .addSelect('event.event_time', 'event_time')
+      .addSelect('event.description', 'description')
+      .addSelect('author.name', 'author_name')
+      .addSelect('tm.distance_km', 'distance_km')
+      .addSelect('tm.duration_min', 'duration_min')
+      .addSelect('tm.intensity', 'intensity')
+      .addSelect('tm.discipline', 'discipline')
+      .where('event.horse_id = :horseId', { horseId })
+      .andWhere('event.type = :type', { type: EventType.ENTRENAMIENTO })
+      .andWhere('event.deleted_at IS NULL')
+      .orderBy('event.date', 'DESC')
+      .addOrderBy('event.event_time', 'DESC')
+      .limit(50)
+      .getRawMany();
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      date: r.date,
+      event_time: r.event_time ?? null,
+      description: r.description,
+      author_name: r.author_name ?? undefined,
+      distance_km: r.distance_km != null ? Number(r.distance_km) : null,
+      duration_min: r.duration_min != null ? Number(r.duration_min) : null,
+      intensity: r.intensity != null ? Number(r.intensity) : null,
+      discipline: r.discipline ?? null,
+    }));
+
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+    const agg = await this.eventRepository
+      .createQueryBuilder('event')
+      .leftJoin(TrainingMetrics, 'tm', 'tm.event_id = event.id')
+      .select('COUNT(event.id)', 'total_rides')
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN event.date >= :monthStart THEN tm.distance_km ELSE 0 END), 0)',
+        'km_this_month',
+      )
+      .where('event.horse_id = :horseId', { horseId })
+      .andWhere('event.type = :type', { type: EventType.ENTRENAMIENTO })
+      .andWhere('event.deleted_at IS NULL')
+      .setParameters({ horseId, type: EventType.ENTRENAMIENTO, monthStart })
+      .getRawOne();
+
+    return {
+      summary: {
+        total_rides: Number(agg?.total_rides ?? 0),
+        km_this_month: Number(agg?.km_this_month ?? 0),
+      },
+      items,
+    };
+  }
+
   async getTrainingMetrics(eventId: string, user: User): Promise<TrainingMetrics | null> {
     const event = await this.eventRepository.findOne({ where: { id: eventId }, relations: ['horse'] });
     if (!event) throw new NotFoundException('Evento no encontrado');

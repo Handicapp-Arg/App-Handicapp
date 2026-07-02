@@ -78,6 +78,15 @@ export class EventsController {
     return this.eventsService.findByHorse(horseId, user);
   }
 
+  @Get('horse/:horseId/training-history')
+  @RequirePermission('events', 'read')
+  getTrainingHistory(
+    @Param('horseId') horseId: string,
+    @GetUser() user: User,
+  ) {
+    return this.eventsService.getTrainingHistory(horseId, user);
+  }
+
   @Get(':id')
   @RequirePermission('events', 'read')
   findOne(
