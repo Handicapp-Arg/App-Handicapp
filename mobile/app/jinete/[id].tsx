@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView, TextInput,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ChevronLeft, Star } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { ChevronLeft, Star, X, Camera } from 'lucide-react-native';
 import { useHorse } from '../../hooks/use-horses';
 import { useCreateEvent } from '../../hooks/use-events';
 import { useUpsertTrainingMetrics, useTrainingHistory, type TrainingHistoryItem } from '../../hooks/use-training-metrics';
@@ -93,6 +94,19 @@ export default function JineteHorse() {
   const [intensity, setIntensity] = useState(0);
   const [response, setResponse] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
+
+  const pickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { haptic.error(); toast.error('Necesitamos acceso a tu galería.'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], allowsMultipleSelection: true, quality: 0.8, selectionLimit: 5,
+    });
+    if (!result.canceled) {
+      haptic.selection();
+      setPhotoUris((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 5));
+    }
+  };
 
   const saving = createEvent.isPending || upsert.isPending;
 
@@ -123,6 +137,7 @@ export default function JineteHorse() {
     setIntensity(0);
     setResponse(null);
     setNote('');
+    setPhotoUris([]);
   };
 
   const buildDescription = (): string => {
@@ -142,6 +157,7 @@ export default function JineteHorse() {
         description: buildDescription(),
         date: todayISO(),
         horse_id: horseId,
+        photoUris: photoUris.length > 0 ? photoUris : undefined,
       });
       await upsert.mutateAsync({
         eventId: event.id,
@@ -268,6 +284,28 @@ export default function JineteHorse() {
           multiline
           textAlignVertical="top"
         />
+
+        <Text style={s.label}>Fotos (opcional)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
+          {photoUris.map((uri, i) => (
+            <View key={uri} style={s.photoThumb}>
+              <Image source={{ uri }} style={s.photoImg} />
+              <TouchableOpacity
+                style={s.photoRemove}
+                onPress={() => { haptic.light(); setPhotoUris((p) => p.filter((_, idx) => idx !== i)); }}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <X size={12} color="#fff" strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {photoUris.length < 5 && (
+            <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
+              <Camera size={20} color={c.textMuted} strokeWidth={2} />
+              <Text style={s.photoAddText}>Agregar foto</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
 
         <PressableScale style={s.saveBtn} scaleTo={0.97} onPress={save} disabled={saving}>
           {saving
@@ -409,6 +447,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.borderStrong,
   },
+  photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
+  photoImg: { width: '100%', height: '100%' },
+  photoRemove: {
+    position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 9,
+    backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center',
+  },
+  photoAdd: {
+    width: 72, height: 72, borderRadius: radius.md, borderWidth: 1.5,
+    borderColor: c.borderStrong, borderStyle: 'dashed', justifyContent: 'center',
+    alignItems: 'center', gap: 2, backgroundColor: c.surfaceAlt,
+  },
+  photoAddText: { fontSize: 10, color: c.textFaint, fontFamily: fontFamily.semibold, fontWeight: '600' },
   saveBtn: {
     marginTop: space[5],
     backgroundColor: c.brand,
