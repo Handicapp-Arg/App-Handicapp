@@ -96,15 +96,15 @@ export default function JineteHorse() {
   const [note, setNote] = useState('');
   const [photoUris, setPhotoUris] = useState<string[]>([]);
 
+  // Cámara directa: saca la foto en el momento (como el peón), de a una, hasta 5.
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { haptic.error(); toast.error('Necesitamos acceso a tu galería.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], allowsMultipleSelection: true, quality: 0.8, selectionLimit: 5,
-    });
-    if (!result.canceled) {
-      haptic.selection();
-      setPhotoUris((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 5));
+    if (photoUris.length >= 5) { toast.info('Ya cargaste 5 fotos'); return; }
+    haptic.selection();
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) { haptic.error(); toast.error('Necesitamos permiso para usar la cámara.'); return; }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setPhotoUris((prev) => [...prev, result.assets[0].uri].slice(0, 5));
     }
   };
 
@@ -302,7 +302,7 @@ export default function JineteHorse() {
           {photoUris.length < 5 && (
             <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
               <Camera size={20} color={c.textMuted} strokeWidth={2} />
-              <Text style={s.photoAddText}>Agregar foto</Text>
+              <Text style={s.photoAddText}>Sacar foto</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
