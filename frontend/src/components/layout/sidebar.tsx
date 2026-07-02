@@ -103,6 +103,7 @@ export function Sidebar() {
   const isAdmin = user?.role === 'admin';
   const isEst = user?.role === 'establecimiento';
   const isProp = user?.role === 'propietario';
+  const isEncargado = user?.role === 'encargado';
   const hasReportes = planStatus?.features?.includes('reportes') ?? false;
 
   const sections: NavSection[] = isAdmin
@@ -134,6 +135,7 @@ export function Sidebar() {
         {
           label: 'Principal',
           items: [
+            ...(isEncargado ? [{ href: '/supervision', label: 'Supervisión', icon: icons.panel }] : []),
             { href: '/muro', label: 'Muro', icon: icons.muro },
             { href: '/caballos', label: 'Caballos', icon: icons.caballos },
             { href: '/padron', label: 'Padrón', icon: icons.padron },

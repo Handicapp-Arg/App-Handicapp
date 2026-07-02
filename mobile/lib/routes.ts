@@ -32,6 +32,7 @@ export const Routes = {
   caballo:             (id: string) => `/(tabs)/caballos/${id}`,
   arbol:               '/(tabs)/arbol',
   padron:              '/padron',
+  supervision:         '/supervision',
 } as const;
 
 /** Wrappers tipados para no esparcir `as never` por la app. */

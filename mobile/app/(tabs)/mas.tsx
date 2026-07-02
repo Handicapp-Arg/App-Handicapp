@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Trophy, GitBranch, BookOpen, FileText, Receipt,
   Mail, Building2, Settings, ShieldCheck, ChevronRight,
-  Map, CreditCard, BarChart3, type LucideIcon,
+  Map, CreditCard, BarChart3, LayoutDashboard, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
@@ -108,10 +108,17 @@ export default function MasScreen() {
   const isProp  = role === 'propietario';
   const isEstab = role === 'establecimiento';
   const isAdmin = role === 'admin';
+  const isEncargado = role === 'encargado';
 
   const push = (path: string) => nav.push(router, path);
 
   const principal: MenuItem[] = [
+    ...(isEncargado ? [{
+      icon: LayoutDashboard,
+      label: 'Supervisión',
+      desc: 'Actividad de todos los caballos de la caballeriza',
+      path: Routes.supervision,
+    }] : []),
     {
       icon: Trophy,
       label: 'Remates',

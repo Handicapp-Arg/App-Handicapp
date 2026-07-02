@@ -5,6 +5,9 @@ import { User } from '../auth/user.entity';
 import { Horse } from '../horses/horse.entity';
 import { Event } from '../events/event.entity';
 import { MedicalRecord } from '../medical/medical-record.entity';
+import { DailyRoutine } from '../routines/daily-routine.entity';
+import { ActivityPhoto } from '../activity-photos/activity-photo.entity';
+import { TrainingMetrics } from '../events/training-metrics.entity';
 
 @Injectable()
 export class DashboardService {
@@ -17,6 +20,12 @@ export class DashboardService {
     private readonly eventRepository: Repository<Event>,
     @InjectRepository(MedicalRecord)
     private readonly medicalRepository: Repository<MedicalRecord>,
+    @InjectRepository(DailyRoutine)
+    private readonly routineRepository: Repository<DailyRoutine>,
+    @InjectRepository(ActivityPhoto)
+    private readonly photoRepository: Repository<ActivityPhoto>,
+    @InjectRepository(TrainingMetrics)
+    private readonly metricsRepository: Repository<TrainingMetrics>,
   ) {}
 
   async getForUser(user: User) {
@@ -24,6 +33,7 @@ export class DashboardService {
     if (user.role === 'propietario') return this.getPropietarioDashboard(user.id);
     if (user.role === 'establecimiento') return this.getEstablecimientoDashboard(user.id);
     if (user.role === 'veterinario') return this.getVeterinarioDashboard(user.id);
+    if (user.role === 'encargado') return this.getEncargadoDashboard(user.id);
     return {};
   }
 
@@ -222,6 +232,222 @@ export class DashboardService {
       horses,
       recent_health_events: recentHealthEvents,
       upcoming_medical: upcomingMedical,
+    };
+  }
+
+  // Dashboard del encargado (capataz): feed consolidado de la actividad
+  // reciente de TODOS los caballos de su(s) organización(es). Solo lectura.
+  private async getEncargadoDashboard(userId: string) {
+    type FeedItem = {
+      kind: 'rutina' | 'foto' | 'entrenamiento' | 'aviso';
+      horse_id: string;
+      horse_name: string;
+      author_name: string | null;
+      at: string;
+      title: string;
+      detail: string | null;
+      photo_url: string | null;
+      is_alert: boolean;
+    };
+
+    const emptyResult = {
+      role: 'encargado' as const,
+      horses_total: 0,
+      activity_today: 0,
+      alerts_count: 0,
+      feed: [] as FeedItem[],
+    };
+
+    // 1) Orgs del encargado
+    const orgRows: { organization_id: string }[] = await this.userRepository.query(
+      `SELECT organization_id FROM organization_members WHERE user_id = $1`,
+      [userId],
+    );
+    const orgIds = orgRows.map((r) => r.organization_id).filter((id) => id != null);
+    if (!orgIds.length) return emptyResult;
+
+    // 2) Caballos de esas orgs
+    const horses = await this.horseRepository
+      .createQueryBuilder('h')
+      .select(['h.id AS id', 'h.name AS name'])
+      .where('h.organization_id IN (:...orgIds)', { orgIds })
+      .andWhere('h.deleted_at IS NULL')
+      .getRawMany<{ id: string; name: string }>();
+
+    const horseIds = horses.map((h) => h.id);
+    const horseNameById = new Map(horses.map((h) => [h.id, h.name]));
+    if (!horseIds.length) {
+      return { ...emptyResult, horses_total: 0 };
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // 3) Las 4 fuentes de actividad, en paralelo
+    const [routines, photos, trainings, alerts] = await Promise.all([
+      // Rutinas diarias
+      this.routineRepository
+        .createQueryBuilder('r')
+        .where('r.horse_id IN (:...horseIds)', { horseIds })
+        .orderBy('r.created_at', 'DESC')
+        .limit(15)
+        .getMany(),
+      // Fotos de actividad
+      this.photoRepository
+        .createQueryBuilder('p')
+        .where('p.horse_id IN (:...horseIds)', { horseIds })
+        .orderBy('p.taken_at', 'DESC')
+        .limit(15)
+        .getMany(),
+      // Entrenamientos (evento + métricas), patrón de getTrainingHistory
+      this.eventRepository
+        .createQueryBuilder('event')
+        .leftJoin(TrainingMetrics, 'tm', 'tm.event_id = event.id')
+        .leftJoin('event.author', 'author')
+        .select('event.id', 'id')
+        .addSelect('event.horse_id', 'horse_id')
+        .addSelect('event.date', 'date')
+        .addSelect('event.event_time', 'event_time')
+        .addSelect('event.description', 'description')
+        .addSelect('author.name', 'author_name')
+        .addSelect('tm.distance_km', 'distance_km')
+        .addSelect('tm.duration_min', 'duration_min')
+        .addSelect('tm.discipline', 'discipline')
+        .where('event.horse_id IN (:...horseIds)', { horseIds })
+        .andWhere('event.type = :type', { type: 'entrenamiento' })
+        .andWhere('event.deleted_at IS NULL')
+        .orderBy('event.date', 'DESC')
+        .addOrderBy('event.event_time', 'DESC')
+        .limit(15)
+        .getRawMany<{
+          id: string;
+          horse_id: string;
+          date: string;
+          event_time: string | null;
+          description: string;
+          author_name: string | null;
+          distance_km: string | null;
+          duration_min: number | null;
+          discipline: string | null;
+        }>(),
+      // Avisos (tarea con ⚠️)
+      this.eventRepository
+        .createQueryBuilder('event')
+        .leftJoin('event.author', 'author')
+        .select('event.id', 'id')
+        .addSelect('event.horse_id', 'horse_id')
+        .addSelect('event.date', 'date')
+        .addSelect('event.event_time', 'event_time')
+        .addSelect('event.description', 'description')
+        .addSelect('author.name', 'author_name')
+        .where('event.horse_id IN (:...horseIds)', { horseIds })
+        .andWhere('event.type = :type', { type: 'tarea' })
+        .andWhere("event.description LIKE '⚠️%'")
+        .andWhere('event.deleted_at IS NULL')
+        .orderBy('event.date', 'DESC')
+        .addOrderBy('event.event_time', 'DESC')
+        .limit(15)
+        .getRawMany<{
+          id: string;
+          horse_id: string;
+          date: string;
+          event_time: string | null;
+          description: string;
+          author_name: string | null;
+        }>(),
+    ]);
+
+    // Helper: combinar date (YYYY-MM-DD) + event_time (HH:MM) en ISO
+    const eventAt = (date: string, time: string | null): string =>
+      new Date(`${date}T${time ?? '00:00'}:00`).toISOString();
+
+    const feed: FeedItem[] = [];
+
+    // Rutinas → FeedItem
+    for (const r of routines) {
+      const done: string[] = [];
+      if (r.morning_feed || r.afternoon_feed || r.evening_feed) done.push('Comida');
+      if (r.water_ok) done.push('Agua');
+      if (r.box_cleaned) done.push('Box limpio');
+      if (r.paddock) done.push('Paddock');
+      if (r.groomed) done.push('Cepillado');
+      feed.push({
+        kind: 'rutina',
+        horse_id: r.horse_id,
+        horse_name: horseNameById.get(r.horse_id) ?? '',
+        author_name: r.filler?.name ?? null,
+        at: r.created_at.toISOString(),
+        title: done.length ? done.join(', ') : 'Rutina',
+        detail: r.observations ?? null,
+        photo_url: null,
+        is_alert: false,
+      });
+    }
+
+    // Fotos → FeedItem
+    for (const p of photos) {
+      feed.push({
+        kind: 'foto',
+        horse_id: p.horse_id,
+        horse_name: horseNameById.get(p.horse_id) ?? '',
+        author_name: p.photographer?.name ?? null,
+        at: p.taken_at.toISOString(),
+        title: `Foto · ${p.activity_type}`,
+        detail: p.caption ?? null,
+        photo_url: p.url,
+        is_alert: false,
+      });
+    }
+
+    // Entrenamientos → FeedItem
+    for (const t of trainings) {
+      const dist = t.distance_km != null ? Number(t.distance_km) : null;
+      const disc = t.discipline ?? 'Entrenamiento';
+      const title = dist != null ? `${disc} · ${dist} km` : disc;
+      feed.push({
+        kind: 'entrenamiento',
+        horse_id: t.horse_id,
+        horse_name: horseNameById.get(t.horse_id) ?? '',
+        author_name: t.author_name ?? null,
+        at: eventAt(t.date, t.event_time),
+        title,
+        detail: t.description ?? null,
+        photo_url: null,
+        is_alert: false,
+      });
+    }
+
+    // Avisos → FeedItem
+    for (const a of alerts) {
+      const reason = a.description.replace(/^⚠️\s*/, '');
+      feed.push({
+        kind: 'aviso',
+        horse_id: a.horse_id,
+        horse_name: horseNameById.get(a.horse_id) ?? '',
+        author_name: a.author_name ?? null,
+        at: eventAt(a.date, a.event_time),
+        title: reason,
+        detail: null,
+        photo_url: null,
+        is_alert: true,
+      });
+    }
+
+    // Merge cronológico DESC + límite
+    feed.sort((x, y) => new Date(y.at).getTime() - new Date(x.at).getTime());
+    const merged = feed.slice(0, 40);
+
+    // Contadores (sobre el feed completo, no solo el recorte de 40)
+    const activityToday = feed.filter((f) => f.at.split('T')[0] === today).length;
+    const alertsToday = feed.filter(
+      (f) => f.is_alert && f.at.split('T')[0] === today,
+    ).length;
+
+    return {
+      role: 'encargado' as const,
+      horses_total: horseIds.length,
+      activity_today: activityToday,
+      alerts_count: alertsToday,
+      feed: merged,
     };
   }
 }

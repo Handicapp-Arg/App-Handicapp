@@ -40,7 +40,27 @@ export interface VeterinarioDashboard {
   upcoming_medical: MedicalDue[];
 }
 
-export type DashboardData = AdminDashboard | PropietarioDashboard | EstablecimientoDashboard | VeterinarioDashboard;
+export interface EncargadoFeedItem {
+  kind: 'rutina' | 'foto' | 'entrenamiento' | 'aviso';
+  horse_id: string;
+  horse_name: string;
+  author_name: string | null;
+  at: string; // ISO datetime
+  title: string;
+  detail: string | null;
+  photo_url: string | null;
+  is_alert: boolean;
+}
+
+export interface EncargadoDashboard {
+  role: 'encargado';
+  horses_total: number;
+  activity_today: number;
+  alerts_count: number;
+  feed: EncargadoFeedItem[];
+}
+
+export type DashboardData = AdminDashboard | PropietarioDashboard | EstablecimientoDashboard | VeterinarioDashboard | EncargadoDashboard;
 
 export function useDashboard() {
   return useQuery<DashboardData>({

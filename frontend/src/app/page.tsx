@@ -11,7 +11,11 @@ export default function Home() {
   useEffect(() => {
     if (loading) return;
     // Sin pantalla intermedia: directo al login o al dashboard según sesión.
-    router.replace(user ? '/caballos' : '/login');
+    if (!user) {
+      router.replace('/login');
+    } else {
+      router.replace(user.role === 'encargado' ? '/supervision' : '/caballos');
+    }
   }, [user, loading, router]);
 
   // Splash mínimo mientras resuelve la sesión y redirige.

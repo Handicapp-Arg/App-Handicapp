@@ -47,6 +47,7 @@ function InnerLayout() {
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
           <Stack.Screen name="peon" />
           <Stack.Screen name="jinete" />
+          <Stack.Screen name="supervision" />
         </Stack>
       </NotificationsProvider>
     </ToastProvider>

@@ -33,3 +33,31 @@ export function useDashboard() {
     queryFn: async () => (await api.get('/dashboard')).data,
   });
 }
+
+/** Un ítem del feed de supervisión del encargado (capataz). */
+export interface EncargadoFeedItem {
+  kind: 'rutina' | 'foto' | 'entrenamiento' | 'aviso';
+  horse_id: string;
+  horse_name: string;
+  author_name: string | null;
+  at: string;
+  title: string;
+  detail: string | null;
+  photo_url: string | null;
+  is_alert: boolean;
+}
+
+/** Panel de supervisión del encargado: `GET /dashboard` cuando el rol es encargado. */
+export interface EncargadoDashboard {
+  horses_total: number;
+  activity_today: number;
+  alerts_count: number;
+  feed: EncargadoFeedItem[];
+}
+
+export function useEncargadoDashboard() {
+  return useQuery<EncargadoDashboard>({
+    queryKey: ['dashboard', 'encargado'],
+    queryFn: async () => (await api.get('/dashboard')).data,
+  });
+}
