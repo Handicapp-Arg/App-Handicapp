@@ -11,5 +11,7 @@ export class UpsertRoutineDto {
   @IsOptional() @IsBoolean() paddock?: boolean;
   @IsOptional() @IsBoolean() trained?: boolean;
   @IsOptional() @IsBoolean() health_check?: boolean;
+  @IsOptional() @IsBoolean() box_cleaned?: boolean;
+  @IsOptional() @IsBoolean() groomed?: boolean;
   @IsOptional() @IsString() observations?: string;
 }

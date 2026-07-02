@@ -58,7 +58,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const inAuth = segments[0] === '(auth)';
     // La pantalla de invitación es accesible sin sesión (para poder registrarse desde el link).
     const inInvite = segments[0] === 'invitacion';
-    if (!user && !inAuth && !inInvite) router.replace('/(auth)/login');
+    const inPeon = segments[0] === 'peon';
+    if (!user && !inAuth && !inInvite) { router.replace('/(auth)/login'); return; }
+    // Modo Peón: experiencia simplificada. El peón vive dentro de /peon y no
+    // debe ver la app normal (tabs). Si aparece fuera de /peon, lo reenviamos.
+    const isPeon = user?.role === 'peon';
+    if (user && isPeon) {
+      if (inAuth || !inPeon) router.replace('/peon');
+      return;
+    }
+    // Otros roles: si un no-peón cae en /peon, lo mandamos a la app normal.
+    if (user && inPeon) { router.replace('/(tabs)'); return; }
     if (user && inAuth) router.replace('/(tabs)');
   }, [user, loading, segments]);
 

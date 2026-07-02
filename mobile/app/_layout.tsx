@@ -44,7 +44,9 @@ function InnerLayout() {
   return (
     <ToastProvider>
       <NotificationsProvider userId={user?.id}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+          <Stack.Screen name="peon" />
+        </Stack>
       </NotificationsProvider>
     </ToastProvider>
   );

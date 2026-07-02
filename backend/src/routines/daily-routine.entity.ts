@@ -45,6 +45,13 @@ export class DailyRoutine {
   @Column({ default: false })
   health_check: boolean;
 
+  // Cuidado / modo peón
+  @Column({ type: 'boolean', default: false })
+  box_cleaned: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  groomed: boolean;
+
   @Column({ type: 'text', nullable: true })
   observations: string | null;
 

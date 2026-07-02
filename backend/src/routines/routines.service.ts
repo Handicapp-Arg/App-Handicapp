@@ -60,6 +60,8 @@ export class RoutinesService {
           paddock: dto.paddock ?? false,
           trained: dto.trained ?? false,
           health_check: dto.health_check ?? false,
+          box_cleaned: dto.box_cleaned ?? false,
+          groomed: dto.groomed ?? false,
           observations: dto.observations ?? null,
           filled_by: user.id,
         }),
