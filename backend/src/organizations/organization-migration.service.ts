@@ -6,6 +6,7 @@ import { Organization } from './organization.entity';
 import { OrganizationMember } from './organization-member.entity';
 import { User } from '../auth/user.entity';
 import { Horse } from '../horses/horse.entity';
+import { generateUniqueJoinCode } from './join-code.util';
 
 /**
  * Migra automáticamente al modelo de organizaciones.
@@ -41,9 +42,29 @@ export class OrganizationMigrationService implements OnModuleInit {
     if (process.env.SKIP_ORG_MIGRATION === 'true') return;
     try {
       await this.migrate();
+      await this.backfillJoinCodes();
       await this.downgradeExpiredPlans();
     } catch (err) {
       this.logger.error('Migración de organizaciones falló', err as Error);
+    }
+  }
+
+  /** Genera un join_code único chequeando contra la tabla de organizaciones. */
+  private async newJoinCode(): Promise<string> {
+    return generateUniqueJoinCode(async (code) => {
+      const exists = await this.orgRepo.findOne({ where: { join_code: code } });
+      return !!exists;
+    });
+  }
+
+  /** Asigna join_code a organizaciones existentes que aún no lo tengan. Idempotente. */
+  private async backfillJoinCodes(): Promise<void> {
+    const pending = await this.orgRepo.find({ where: { join_code: IsNull() } });
+    if (!pending.length) return;
+    this.logger.log(`Generando join_code para ${pending.length} organizaciones existentes...`);
+    for (const org of pending) {
+      org.join_code = await this.newJoinCode();
+      await this.orgRepo.save(org);
     }
   }
 
@@ -117,6 +138,7 @@ export class OrganizationMigrationService implements OnModuleInit {
         plan: orgPlan.plan,
         horse_limit: orgPlan.horse_limit,
         status: 'active',
+        join_code: await this.newJoinCode(),
         plan_expires_at: (estab as any).plan_expires_at ?? null,
       }),
     );

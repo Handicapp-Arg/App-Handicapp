@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import {
-  CheckCircle2, Copy, MessageCircle, Plus, Sparkles, UserMinus,
+  CheckCircle2, Copy, KeyRound, MessageCircle, Plus, Sparkles, UserMinus,
 } from 'lucide-react';
 import { OrganizationIllustration } from '@/components/illustrations';
 import {
   useMyOrganizations, useOrganization, useOrgInvitations,
   useCreateInvitation, useCancelInvitation, useRemoveMember, useChangeMemberRole,
-  ROLE_LABELS, PLAN_LABELS, type OrgRole,
+  useJoinRequests, useApproveJoinRequest, useRejectJoinRequest, useRequestJoin,
+  ROLE_LABELS, PLAN_LABELS, type OrgRole, type OrgJoinRequest,
 } from '@/hooks/use-organizations';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
 import {
   PageHeader, EmptyState, Card, Badge, Button, Input, Modal, Select,
   OrganizacionSkeleton, Avatar, RoleBadge,
@@ -287,6 +289,219 @@ function ConfirmRemoveModal({
   );
 }
 
+// Roles habilitados al aprobar una solicitud de ingreso.
+const JOIN_ROLE_OPTIONS: { value: OrgRole; label: string }[] = [
+  { value: 'jinete',    label: 'Jinete' },
+  { value: 'peon',      label: 'Peón' },
+  { value: 'encargado', label: 'Encargado' },
+  { value: 'vet',       label: 'Veterinario' },
+];
+
+// ─────────────────────────── Join code (haras) ───────────────────────────
+function JoinCodeCard({ code }: { code: string }) {
+  const toast = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    toast.success('Código copiado');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Card className="p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            Código de la caballeriza
+          </p>
+          <p className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] text-gray-900">{code}</p>
+          <p className="mt-1.5 text-xs text-slate-500">
+            Compartí este código para que se unan a tu caballeriza.
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          iconLeft={<Copy className="h-4 w-4" />}
+          onClick={handleCopy}
+        >
+          {copied ? 'Copiado' : 'Copiar código'}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+// ─────────────────────────── Join requests (admin) ───────────────────────────
+function JoinRequestRow({
+  req, onApprove, onReject, loading,
+}: {
+  req: OrgJoinRequest;
+  onApprove: (role: OrgRole) => void;
+  onReject: () => void;
+  loading: boolean;
+}) {
+  const [role, setRole] = useState<OrgRole>('jinete');
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-gray-900">{req.requester.name}</p>
+        <p className="mt-0.5 truncate text-xs text-slate-500">
+          {req.requester.email}
+          {' · '}pidió el {new Date(req.created_at).toLocaleDateString('es-AR')}
+        </p>
+        {req.message && (
+          <p className="mt-1 truncate text-xs italic text-slate-500">“{req.message}”</p>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="w-36">
+          <Select
+            value={role}
+            onChange={(e) => setRole(e.target.value as OrgRole)}
+            options={JOIN_ROLE_OPTIONS}
+            aria-label={`Rol para ${req.requester.name}`}
+          />
+        </div>
+        <Button size="sm" onClick={() => onApprove(role)} loading={loading}>
+          Aprobar
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onReject}
+          aria-label={`Rechazar solicitud de ${req.requester.name}`}
+        >
+          Rechazar
+        </Button>
+      </div>
+    </li>
+  );
+}
+
+function JoinRequestsCard({ orgId }: { orgId: string }) {
+  const toast = useToast();
+  const { data: requests } = useJoinRequests(orgId);
+  const approve = useApproveJoinRequest(orgId);
+  const reject = useRejectJoinRequest(orgId);
+
+  const pending = (requests ?? []).filter((r) => r.status === 'pending');
+  if (pending.length === 0) return null;
+
+  return (
+    <Card padded={false} className="overflow-hidden border-clay-500/30 bg-clay-50/40">
+      <div className="border-b border-clay-500/20 px-5 py-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-clay-600 dark:text-clay-300">
+          Solicitudes de ingreso ({pending.length})
+        </p>
+      </div>
+      <ul className="divide-y divide-clay-500/10">
+        {pending.map((req) => (
+          <JoinRequestRow
+            key={req.id}
+            req={req}
+            loading={approve.isPending}
+            onApprove={async (role) => {
+              try {
+                await approve.mutateAsync({ requestId: req.id, role_in_org: role });
+                toast.success(`${req.requester.name} se unió a la caballeriza`);
+              } catch {
+                toast.error('No pudimos aprobar la solicitud');
+              }
+            }}
+            onReject={async () => {
+              try {
+                await reject.mutateAsync(req.id);
+                toast.success('Solicitud rechazada');
+              } catch {
+                toast.error('No pudimos rechazar la solicitud');
+              }
+            }}
+          />
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+// ─────────────────────────── Join org with code (sin caballeriza) ───────────────────────────
+function JoinOrgCard() {
+  const toast = useToast();
+  const requestJoin = useRequestJoin();
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setError('Ingresá el código de la caballeriza');
+      return;
+    }
+    setError(null);
+    try {
+      await requestJoin.mutateAsync({ join_code: trimmed });
+      setSent(true);
+      setCode('');
+      toast.success('Solicitud enviada, esperá la aprobación');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No pudimos enviar la solicitud';
+      setError(msg);
+    }
+  };
+
+  if (sent) {
+    return (
+      <Card className="p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-50">
+            <CheckCircle2 className="h-7 w-7 text-success-500" strokeWidth={1.8} aria-hidden />
+          </div>
+          <p className="text-sm font-semibold text-gray-900">Solicitud enviada</p>
+          <p className="text-sm text-slate-500">
+            Le avisamos al establecimiento. Vas a poder entrar cuando aprueben tu ingreso.
+          </p>
+          <Button variant="secondary" onClick={() => setSent(false)}>
+            Enviar otra solicitud
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-clay-50 text-clay-600 dark:text-clay-300">
+          <KeyRound className="h-5 w-5" aria-hidden />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900">Unirme a una caballeriza</p>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Pedí el código a tu establecimiento e ingresalo para solicitar el ingreso.
+          </p>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="mt-4 flex flex-wrap items-end gap-3">
+        <div className="min-w-[12rem] flex-1">
+          <Input
+            label="Código de la caballeriza"
+            placeholder="Ej: ABC123"
+            value={code}
+            onChange={(e) => { setCode(e.target.value); setError(null); }}
+            error={error ?? undefined}
+          />
+        </div>
+        <Button type="submit" loading={requestJoin.isPending} disabled={!code.trim()}>
+          Enviar solicitud
+        </Button>
+      </form>
+    </Card>
+  );
+}
+
 // ─────────────────────────── Page ───────────────────────────
 export default function OrganizacionPage() {
   const { user } = useAuth();
@@ -323,6 +538,7 @@ export default function OrganizacionPage() {
     return (
       <div className="max-w-3xl space-y-6">
         <PageHeader title="Organización" />
+        <JoinOrgCard />
         <EmptyState
           icon={OrganizationIllustration}
           illustration
@@ -365,6 +581,9 @@ export default function OrganizacionPage() {
         />
       </div>
 
+      {/* Código de la caballeriza */}
+      {canInvite && org.join_code && <JoinCodeCard code={org.join_code} />}
+
       {/* Invitaciones pendientes */}
       {invitations && invitations.length > 0 && (
         <Card padded={false} className="overflow-hidden border-warning-500/30 bg-warning-50/40">
@@ -406,6 +625,9 @@ export default function OrganizacionPage() {
           </ul>
         </Card>
       )}
+
+      {/* Solicitudes de ingreso */}
+      {canInvite && orgId && <JoinRequestsCard orgId={orgId} />}
 
       {/* Miembros */}
       <Card padded={false} className="overflow-hidden">

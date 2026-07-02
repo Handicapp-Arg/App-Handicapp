@@ -22,6 +22,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { RefreshToken } from './refresh-token.entity';
 import { OrganizationInvitation } from '../organizations/organization-invitation.entity';
 import { OrganizationMember, OrgMemberRole } from '../organizations/organization-member.entity';
+import { generateUniqueJoinCode } from '../organizations/join-code.util';
 
 /**
  * Mapea el rol dentro de la organización (role_in_org de la invitación) al
@@ -199,11 +200,18 @@ export class AuthService {
     // Si es un establecimiento, crear automáticamente su organización
     if (savedUser.role === 'establecimiento') {
       try {
+        const joinCode = await generateUniqueJoinCode(async (code) => {
+          const rows: unknown[] = await this.userRepository.query(
+            `SELECT 1 FROM organizations WHERE join_code = $1 LIMIT 1`,
+            [code],
+          );
+          return rows.length > 0;
+        });
         await this.userRepository.query(
-          `INSERT INTO organizations (id, name, owner_id, plan, horse_limit, status, created_at, updated_at)
-           VALUES (gen_random_uuid(), $1, $2, 'free', 3, 'active', NOW(), NOW())
+          `INSERT INTO organizations (id, name, owner_id, plan, horse_limit, status, join_code, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, 'free', 3, 'active', $3, NOW(), NOW())
            RETURNING id`,
-          [savedUser.name, savedUser.id],
+          [savedUser.name, savedUser.id, joinCode],
         );
         const org: { id: string }[] = await this.userRepository.query(
           `SELECT id FROM organizations WHERE owner_id = $1 LIMIT 1`,

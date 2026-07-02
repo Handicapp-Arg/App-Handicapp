@@ -15,6 +15,7 @@ export const Routes = {
   authRegistro:        '/(auth)/registro',
   buscar:              '/buscar',
   organizacion:        '/organizacion',
+  unirme:              '/unirme',
   directorio:          '/directorio',
   contratos:           '/contratos',
   solicitudes:         '/solicitudes',

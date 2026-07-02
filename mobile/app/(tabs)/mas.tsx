@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Trophy, GitBranch, BookOpen, FileText, Receipt,
   Mail, Building2, Settings, ShieldCheck, ChevronRight,
-  Map, CreditCard, BarChart3, LayoutDashboard, type LucideIcon,
+  Map, CreditCard, BarChart3, LayoutDashboard, KeyRound, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
@@ -169,6 +169,12 @@ export default function MasScreen() {
       label: 'Directorio',
       desc: 'Encontrá establecimientos en HandicApp',
       path: Routes.directorio,
+    }] : []),
+    ...(!isEstab ? [{
+      icon: KeyRound,
+      label: 'Unirme a una caballeriza',
+      desc: 'Ingresá con un código para pedir acceso',
+      path: Routes.unirme,
     }] : []),
     ...(isEstab || isAdmin ? [{
       icon: Building2,

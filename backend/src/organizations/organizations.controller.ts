@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { IsEmail, IsIn } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
 import { OrganizationsService } from './organizations.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { RequireOrgMembership } from '../common/decorators/require-org-membership.decorator';
@@ -21,6 +21,20 @@ class CreateInvitationDto {
 }
 
 class ChangeRoleDto {
+  @IsIn(['admin', 'staff', 'owner_role', 'vet', 'encargado', 'jinete', 'peon'])
+  role_in_org: OrgMemberRole;
+}
+
+class CreateJoinRequestDto {
+  @IsString()
+  join_code: string;
+
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
+
+class ApproveJoinRequestDto {
   @IsIn(['admin', 'staff', 'owner_role', 'vet', 'encargado', 'jinete', 'peon'])
   role_in_org: OrgMemberRole;
 }
@@ -90,6 +104,37 @@ export class OrganizationsController {
     @GetUser() user: User,
   ) {
     return this.service.cancelInvitation(id, invitationId, user);
+  }
+
+  // ─── Solicitudes de ingreso (join requests) ───
+
+  // Cualquier usuario autenticado puede solicitar unirse con el código (sin membresía previa)
+  @Post('join-requests')
+  createJoinRequest(
+    @Body(ValidationPipe) dto: CreateJoinRequestDto,
+    @GetUser() user: User,
+  ) {
+    return this.service.requestJoin(dto.join_code, user);
+  }
+
+  @Get(':id/join-requests')
+  @RequireOrgMembership({ admin: true })
+  listJoinRequests(@Param('id') id: string, @GetUser() user: User) {
+    return this.service.listJoinRequests(id, user);
+  }
+
+  @Patch('join-requests/:id/approve')
+  approveJoinRequest(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: ApproveJoinRequestDto,
+    @GetUser() user: User,
+  ) {
+    return this.service.approveJoinRequest(id, dto.role_in_org, user);
+  }
+
+  @Patch('join-requests/:id/reject')
+  rejectJoinRequest(@Param('id') id: string, @GetUser() user: User) {
+    return this.service.rejectJoinRequest(id, user);
   }
 }
 

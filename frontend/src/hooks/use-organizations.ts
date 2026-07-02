@@ -24,6 +24,15 @@ export interface OrgInvitation {
   created_at: string;
 }
 
+export interface OrgJoinRequest {
+  id: string;
+  organization_id: string;
+  message: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  requester: { id: string; name: string; email: string; role: string };
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -34,6 +43,7 @@ export interface Organization {
   plan_expires_at: string | null;
   members: OrgMember[];
   horse_count: number;
+  join_code: string | null;
   created_at: string;
 }
 
@@ -164,6 +174,75 @@ export function useInvitationByToken(token: string | null) {
     queryFn: async () => (await api.get(`/invitations/${token}`)).data,
     enabled: !!token,
     retry: false,
+  });
+}
+
+export function useJoinRequests(orgId: string | null) {
+  return useQuery<OrgJoinRequest[]>({
+    queryKey: ['organizations', orgId, 'join-requests'],
+    queryFn: async () => (await api.get(`/organizations/${orgId}/join-requests`)).data,
+    enabled: !!orgId,
+  });
+}
+
+/** Optimistic: la solicitud desaparece de la lista al instante. Rollback si la API falla. */
+export function useApproveJoinRequest(orgId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ requestId, role_in_org }: { requestId: string; role_in_org: OrgRole }) =>
+      (await api.patch(`/organizations/join-requests/${requestId}/approve`, { role_in_org })).data,
+    onMutate: async ({ requestId }) => {
+      const key = ['organizations', orgId, 'join-requests'];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<OrgJoinRequest[]>(key);
+      if (previous) {
+        qc.setQueryData<OrgJoinRequest[]>(key, previous.filter((r) => r.id !== requestId));
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        qc.setQueryData(['organizations', orgId, 'join-requests'], ctx.previous);
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['organizations', orgId, 'join-requests'] });
+      qc.invalidateQueries({ queryKey: ['organizations', orgId] });
+    },
+  });
+}
+
+/** Optimistic: la solicitud desaparece de la lista al instante. */
+export function useRejectJoinRequest(orgId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      await api.patch(`/organizations/join-requests/${requestId}/reject`);
+    },
+    onMutate: async (requestId) => {
+      const key = ['organizations', orgId, 'join-requests'];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<OrgJoinRequest[]>(key);
+      if (previous) {
+        qc.setQueryData<OrgJoinRequest[]>(key, previous.filter((r) => r.id !== requestId));
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        qc.setQueryData(['organizations', orgId, 'join-requests'], ctx.previous);
+      }
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['organizations', orgId, 'join-requests'] }),
+  });
+}
+
+export function useRequestJoin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: { join_code: string; message?: string }) =>
+      (await api.post('/organizations/join-requests', dto)).data as OrgJoinRequest,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations'] }),
   });
 }
 

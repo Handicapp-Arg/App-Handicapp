@@ -9,6 +9,7 @@ import { User } from '../auth/user.entity';
 import { Horse } from '../horses/horse.entity';
 import { PLAN_LIMITS } from '../plans/plans.service';
 import { SenasaService } from '../senasa/senasa.service';
+import { generateUniqueJoinCode } from '../organizations/join-code.util';
 
 const PLAN_PRICES_ARS: Record<OrganizationPlan, number> = {
   free:       0,
@@ -136,6 +137,11 @@ export class SuperAdminService {
       expires.setMonth(expires.getMonth() + dto.months);
     }
 
+    const joinCode = await generateUniqueJoinCode(async (code) => {
+      const found = await this.orgRepo.findOne({ where: { join_code: code } });
+      return !!found;
+    });
+
     const org = await this.orgRepo.save(
       this.orgRepo.create({
         name: dto.name,
@@ -143,6 +149,7 @@ export class SuperAdminService {
         plan: dto.plan,
         horse_limit: limit.horses,
         status: 'active',
+        join_code: joinCode,
         plan_expires_at: expires,
         notes: dto.notes ?? null,
       }),

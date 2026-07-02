@@ -63,6 +63,32 @@ export class EmailService {
     await this.send(to, 'Recuperar contraseña — HandicApp', html);
   }
 
+  async sendOrganizationInvitation(opts: {
+    to: string;
+    orgName: string;
+    inviterName: string;
+    link: string;
+    role: string;
+  }): Promise<void> {
+    const { to, orgName, inviterName, link, role } = opts;
+    const html = this.baseHtml(`
+      <p style="color:#374151;margin:0 0 8px;font-size:15px">Hola,</p>
+      <p style="color:#6b7280;margin:0 0 24px;font-size:14px">
+        <strong>${inviterName}</strong> te invitó a unirte a <strong>${orgName}</strong> en HandicApp
+        con el rol de <strong>${role}</strong>.
+      </p>
+      <a href="${link}"
+        style="display:inline-block;background:#0f1f3d;color:#fff;text-decoration:none;
+               border-radius:10px;padding:13px 28px;font-weight:700;font-size:14px">
+        Unirme a ${orgName}
+      </a>
+      <p style="font-size:12px;color:#9ca3af;margin:20px 0 0">
+        Esta invitación expira en 7 días. Si no esperabas este mensaje, ignoralo.
+      </p>
+    `);
+    await this.send(to, `Invitación a ${orgName} — HandicApp`, html);
+  }
+
   async sendEventNotification(opts: {
     to: string;
     recipientName: string;

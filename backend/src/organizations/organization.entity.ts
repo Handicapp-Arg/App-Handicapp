@@ -16,6 +16,10 @@ export class Organization {
   @Column()
   name: string;
 
+  // Código de enlace para que otros usuarios soliciten unirse a la caballeriza
+  @Column({ type: 'varchar', length: 8, unique: true, nullable: true })
+  join_code: string | null;
+
   // Establecimiento dueño de la organización (paga el plan)
   @Column('uuid')
   owner_id: string;

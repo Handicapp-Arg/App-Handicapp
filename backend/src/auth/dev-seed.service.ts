@@ -10,6 +10,7 @@ import {
 } from '../organizations/organization-member.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
+import { generateUniqueJoinCode } from '../organizations/join-code.util';
 
 interface SeedUser {
   email: string;
@@ -116,11 +117,16 @@ export class DevSeedService implements OnModuleInit {
 
     let org = await this.orgRepo.findOne({ where: { owner_id: establishment.id } });
     if (!org) {
+      const joinCode = await generateUniqueJoinCode(async (code) => {
+        const found = await this.orgRepo.findOne({ where: { join_code: code } });
+        return !!found;
+      });
       org = await this.orgRepo.save(this.orgRepo.create({
         name: 'Haras Los Pinos',
         owner_id: establishment.id,
         plan: 'pro',
         status: 'active',
+        join_code: joinCode,
       }));
       this.logger.log(`✓ Organización de prueba creada: ${org.name}`);
     }

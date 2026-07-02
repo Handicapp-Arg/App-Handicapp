@@ -23,6 +23,15 @@ export interface OrgInvitation {
   created_at: string;
 }
 
+export interface JoinRequest {
+  id: string;
+  organization_id: string;
+  message: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  requester: { id: string; name: string; email: string; role: string };
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -33,6 +42,7 @@ export interface Organization {
   plan_expires_at: string | null;
   members: OrgMember[];
   horse_count: number;
+  join_code: string | null;
   created_at: string;
 }
 
@@ -81,6 +91,43 @@ export function useRemoveMember(orgId: string) {
   return useMutation({
     mutationFn: async (memberId: string) => { await api.delete(`/organizations/${orgId}/members/${memberId}`); },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations', orgId] }),
+  });
+}
+
+export function useJoinRequests(orgId: string | null) {
+  return useQuery<JoinRequest[]>({
+    queryKey: ['organizations', orgId, 'join-requests'],
+    queryFn: async () => (await api.get(`/organizations/${orgId}/join-requests`)).data,
+    enabled: !!orgId,
+  });
+}
+
+export function useApproveJoinRequest(orgId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, role_in_org }: { id: string; role_in_org: OrgRole }) =>
+      (await api.patch(`/organizations/join-requests/${id}/approve`, { role_in_org })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['organizations', orgId, 'join-requests'] });
+      qc.invalidateQueries({ queryKey: ['organizations', orgId] });
+    },
+  });
+}
+
+export function useRejectJoinRequest(orgId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => { await api.patch(`/organizations/join-requests/${id}/reject`); },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations', orgId, 'join-requests'] }),
+  });
+}
+
+export function useRequestJoin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: { join_code: string; message?: string }) =>
+      (await api.post('/organizations/join-requests', dto)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['organizations'] }),
   });
 }
 
