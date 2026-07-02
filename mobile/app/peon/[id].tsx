@@ -112,11 +112,11 @@ export default function PeonHorse() {
   };
 
   const buttons: { emoji: string; label: string; done: boolean; onPress: () => void }[] = [
-    { emoji: '🥕', label: 'Comida', done: !!routine?.[feedField], onPress: () => markRoutine(feedField, 'Comida anotada') },
+    { emoji: '🌾', label: 'Comida', done: !!routine?.[feedField], onPress: () => markRoutine(feedField, 'Comida anotada') },
     { emoji: '💧', label: 'Agua', done: !!routine?.water_ok, onPress: () => markRoutine('water_ok', 'Agua anotada') },
     { emoji: '🧹', label: 'Limpié el box', done: !!routine?.box_cleaned, onPress: () => markRoutine('box_cleaned', 'Box limpio anotado') },
-    { emoji: '🚶', label: 'Lo saqué', done: !!routine?.paddock, onPress: () => markRoutine('paddock', 'Paseo anotado') },
-    { emoji: '✨', label: 'Cepillado', done: !!routine?.groomed, onPress: () => markRoutine('groomed', 'Cepillado anotado') },
+    { emoji: '🐎', label: 'Lo saqué', done: !!routine?.paddock, onPress: () => markRoutine('paddock', 'Paseo anotado') },
+    { emoji: '🧽', label: 'Cepillado', done: !!routine?.groomed, onPress: () => markRoutine('groomed', 'Cepillado anotado') },
     { emoji: '⚠️', label: 'Algo raro', done: false, onPress: () => { haptic.light(); setRareOpen(true); } },
     { emoji: '📝', label: 'Nota', done: !!routine?.observations, onPress: () => { haptic.light(); setNoteText(routine?.observations ?? ''); setNoteOpen(true); } },
   ];
