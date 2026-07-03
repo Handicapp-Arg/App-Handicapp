@@ -19,32 +19,12 @@ import { HorseHead } from '@/components/icons/equine';
 
 const KIND_META: Record<
   EncargadoFeedItem['kind'],
-  { label: string; icon: typeof ClipboardList; iconBg: string; iconFg: string }
+  { label: string; icon: typeof ClipboardList }
 > = {
-  rutina: {
-    label: 'Rutina',
-    icon: ClipboardList,
-    iconBg: 'bg-emerald-50 dark:bg-emerald-500/15',
-    iconFg: 'text-emerald-600 dark:text-emerald-400',
-  },
-  foto: {
-    label: 'Foto',
-    icon: Camera,
-    iconBg: 'bg-blue-50 dark:bg-blue-500/15',
-    iconFg: 'text-blue-600 dark:text-blue-400',
-  },
-  entrenamiento: {
-    label: 'Entrenamiento',
-    icon: Activity,
-    iconBg: 'bg-amber-50 dark:bg-amber-500/15',
-    iconFg: 'text-amber-600 dark:text-amber-400',
-  },
-  aviso: {
-    label: 'Aviso',
-    icon: AlertTriangle,
-    iconBg: 'bg-red-50 dark:bg-red-500/15',
-    iconFg: 'text-red-600 dark:text-red-400',
-  },
+  rutina: { label: 'Rutina', icon: ClipboardList },
+  foto: { label: 'Foto', icon: Camera },
+  entrenamiento: { label: 'Entrenamiento', icon: Activity },
+  aviso: { label: 'Aviso', icon: AlertTriangle },
 };
 
 const formatTime = (iso: string) => {
@@ -102,7 +82,11 @@ function FeedRow({ item, alert = false }: { item: EncargadoFeedItem; alert?: boo
 
   return (
     <div className="flex items-start gap-3 px-4 py-3.5">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.iconBg} ${meta.iconFg}`}>
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+        alert
+          ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400'
+          : 'bg-clay-50 text-clay-600 dark:bg-clay-500/15 dark:text-clay-300'
+      }`}>
         <Icon size={17} strokeWidth={1.9} />
       </span>
 

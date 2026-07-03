@@ -74,12 +74,12 @@ const EXPENSE_CATEGORIES: { value: string; label: string; Icon: LucideIcon }[] =
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  alimentacion:  '#16a34a',
-  veterinario:   '#dc2626',
-  herradero:     '#d97706',
-  entrenamiento: '#7c3aed',
-  mantenimiento: '#0284c7',
-  transporte:    '#0891b2',
+  alimentacion:  '#15803d',
+  veterinario:   '#b91c1c',
+  herradero:     '#b45309',
+  entrenamiento: '#9d6c35',
+  mantenimiento: '#57534e',
+  transporte:    '#7c6f5b',
   otros:         '#6b7280',
 };
 
@@ -847,7 +847,7 @@ function MedicalSection({ records, canEdit, showForm, form, onOpenForm, onCloseF
     <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm lg:rounded-2xl lg:border-gray-200">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.745 3.745 0 0 1 3.296-1.043A3.745 3.745 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 0 1 3.296 1.043 3.745 3.745 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
             </svg>
@@ -1866,7 +1866,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <HorseVerifiedBadge variant="soft" size="md" className="rounded-full" />
             )}
             {horse.breed && (
-              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-500/15 dark:text-violet-300 dark:ring-violet-500/25">
+              <span className="rounded-full bg-clay-500/10 px-2.5 py-1 text-[11px] font-semibold text-[var(--color-primary)] ring-1 ring-clay-500/20">
                 {horse.breed.name}
               </span>
             )}
@@ -1963,7 +1963,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
                   </svg>
@@ -2104,7 +2104,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'medico' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
                 </svg>
@@ -2169,7 +2169,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
@@ -2238,7 +2238,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         {contentTab === 'rutina' && (
           <div className="rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -2285,7 +2285,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'historial' ? 'hidden' : ''}`}>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -2410,7 +2410,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
         <div className={`rounded-3xl border border-gray-100 bg-[var(--surface-card)] p-5 shadow-sm ${contentTab !== 'fotos' ? 'hidden' : ''}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-500/10 text-[var(--color-primary)]">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
@@ -2543,7 +2543,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <h1 className="text-lg font-bold text-gray-900">{horse.name}</h1>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {horse.breed && (
-                  <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                  <span className="rounded-full bg-clay-500/10 px-2 py-0.5 text-[11px] font-medium text-[var(--color-primary)]">
                     {horse.breed.name}
                   </span>
                 )}

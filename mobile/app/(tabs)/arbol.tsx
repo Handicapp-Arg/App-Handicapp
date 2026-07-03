@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHorseRecordsSearch, useHorseRecordTree, HorseRecordNode, HorseRecord } from '../../hooks/use-horse-records';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { HorseHeadOutline } from '../../components/icons/equine';
 import { Routes } from '../../lib/routes';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
@@ -105,7 +106,10 @@ function NodeCard({
       <View
         style={[s.node, s.nodeSubject, { left: placed.x, top: placed.y }]}
       >
-        <Text style={s.subjectLabel}>Sujeto</Text>
+        <View style={s.subjectLabelRow}>
+          <HorseHeadOutline size={11} color="#f3e3cc" strokeWidth={30} />
+          <Text style={s.subjectLabel}>Sujeto</Text>
+        </View>
         <Text style={s.subjectName} numberOfLines={2}>{node.name}</Text>
         {!!subtitle && <Text style={s.subjectSub}>{subtitle}</Text>}
         {node.ownership_status === 'verified' && (
@@ -603,13 +607,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     color: c.textFaint,
     marginTop: 4,
   },
+  subjectLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
   subjectLabel: {
     fontSize: 8,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1,
     color: '#f3e3cc',
-    marginBottom: 2,
   },
   subjectName: {
     fontSize: 13,

@@ -103,11 +103,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: space[1] },
   dayCircle: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
-  daySelected: { backgroundColor: colors.gray900 },
+  daySelected: { backgroundColor: c.brand },
   dayText: { fontSize: text.sm, color: c.text, fontWeight: weight.medium },
   dayTextToday: { color: c.brand, fontWeight: weight.bold },
   dayTextSelected: { color: colors.white, fontWeight: weight.bold },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2, backgroundColor: 'transparent' },
   dotOn: { backgroundColor: c.brand },
-  dotOnSelected: { backgroundColor: colors.gray900 },
+  dotOnSelected: { backgroundColor: colors.white },
 });

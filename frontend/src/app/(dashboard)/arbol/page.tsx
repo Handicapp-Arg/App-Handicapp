@@ -127,7 +127,7 @@ const OWN: Record<string, { border: string; bg: string; badge: React.ReactNode; 
 
 // ─── Sexo: indicador de color (no choca con las ramas azul/rosa de las líneas) ─
 const SEX_META: Record<string, { sym: string; color: string; label: string }> = {
-  macho:    { sym: '♂', color: '#0ea5e9', label: 'Macho' },
+  macho:    { sym: '♂', color: '#9d6c35', label: 'Macho' },
   hembra:   { sym: '♀', color: '#ec4899', label: 'Hembra' },
   castrado: { sym: '⚥', color: '#a78bfa', label: 'Castrado' },
 };
@@ -250,8 +250,8 @@ function EdgeLayer({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; t
     >
       <defs>
         <linearGradient id="sire-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity={dark ? 0.85 : 0.5} />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity={dark ? 0.4 : 0.2} />
+          <stop offset="0%" stopColor="#9d6c35" stopOpacity={dark ? 0.85 : 0.5} />
+          <stop offset="100%" stopColor="#9d6c35" stopOpacity={dark ? 0.4 : 0.2} />
         </linearGradient>
         <linearGradient id="dam-grad" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#f43f5e" stopOpacity={dark ? 0.85 : 0.5} />
@@ -288,7 +288,7 @@ function GenHeaders({ maxGen }: { maxGen: number }) {
           className={cn(
             'text-center text-[10px] font-bold uppercase tracking-widest py-1 rounded-lg',
             g === 0
-              ? 'text-blue-700 bg-blue-50'
+              ? 'text-clay-700 bg-clay-50'
               : g % 2 === 1
               ? 'text-gray-500 bg-gray-50'
               : 'text-gray-400 bg-gray-50/60',
@@ -414,7 +414,7 @@ function Legend() {
     <div className="flex items-center gap-4 text-[10px] text-gray-500">
       <span className="font-bold text-gray-400 uppercase tracking-wider">Referencias</span>
       <div className="flex items-center gap-1.5">
-        <div className="h-3 w-6 rounded bg-blue-400 opacity-50" />
+        <div className="h-3 w-6 rounded bg-clay-500 opacity-50" />
         <span>Línea paterna</span>
       </div>
       <div className="flex items-center gap-1.5">
@@ -434,7 +434,7 @@ function Legend() {
         <span>Sin dueño</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold leading-none text-white" style={{ backgroundColor: '#0ea5e9' }}>♂</span>
+        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold leading-none text-white" style={{ backgroundColor: '#9d6c35' }}>♂</span>
         <span>Macho</span>
       </div>
       <div className="flex items-center gap-1.5">

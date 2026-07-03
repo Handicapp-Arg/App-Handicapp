@@ -319,7 +319,7 @@ function UpcomingCard({ upcoming }: { upcoming: ReportSummary['upcoming'] }) {
         <div className="mt-2 space-y-2">
           {upcoming.medical.map((m) => (
             <div key={m.id} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3 transition-colors hover:bg-gray-100/70 dark:bg-white/5 dark:hover:bg-white/10">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-clay-500/15 text-clay-600 dark:text-clay-300">
                 <Stethoscope className="h-4 w-4" strokeWidth={2} />
               </span>
               <div className="min-w-0 flex-1">

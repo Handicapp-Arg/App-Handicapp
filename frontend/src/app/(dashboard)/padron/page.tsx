@@ -10,6 +10,7 @@ import {
   Database, RefreshCw, Download, TreePine, FileText, User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HorseHead } from '@/components/icons/equine';
 import { useAuth } from '@/lib/auth-context';
 import {
   useHorseRecordsSearch, useHorseRecord, useHorseRecordTree,
@@ -70,13 +71,16 @@ function PedigreeNode({
         className={cn(
           'text-left px-3 py-2 rounded-lg border text-xs font-medium transition',
           depth === 0
-            ? 'bg-black text-white border-black text-sm cursor-default'
+            ? 'bg-clay-500 text-white border-clay-600 text-sm cursor-default'
             : node.id
             ? 'bg-[var(--surface-card)] border-gray-200 hover:border-gray-400 hover:shadow-sm cursor-pointer'
             : 'bg-gray-50 border-gray-100 text-gray-400 cursor-default',
         )}
       >
-        <div className="font-semibold truncate max-w-[140px]">{node.name}</div>
+        <div className="flex items-center gap-1 font-semibold max-w-[140px]">
+          {depth === 0 && <HorseHead size={12} className="shrink-0" />}
+          <span className="truncate">{node.name}</span>
+        </div>
         {node.birth_year && (
           <div className="text-xs opacity-60 mt-0.5">{node.birth_year} · {node.country_code ?? '?'}</div>
         )}
@@ -467,7 +471,7 @@ function RecordCard({ record, selected, onClick }: {
       onClick={onClick}
       className={cn(
         'w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition group cursor-pointer',
-        selected && 'bg-blue-50/60',
+        selected && 'bg-clay-500/10',
       )}
     >
       <div className="flex items-start justify-between gap-2">
