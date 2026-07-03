@@ -159,10 +159,10 @@ function CreateOrgModal({ open, onClose }: { open: boolean; onClose: () => void 
             value={plan}
             onChange={(e) => setPlan(e.target.value as OrgPlan)}
             options={[
-              { value: 'free',       label: 'Free (3 caballos)' },
-              { value: 'basic',      label: 'Stable Basic (15)' },
-              { value: 'pro',        label: 'Stable Pro (50)' },
-              { value: 'enterprise', label: 'Enterprise (∞)' },
+              { value: 'free',       label: `${PLAN_LABELS.free} (3 caballos)` },
+              { value: 'basic',      label: `${PLAN_LABELS.basic} (15 caballos)` },
+              { value: 'pro',        label: `${PLAN_LABELS.pro} (50 caballos)` },
+              { value: 'enterprise', label: `${PLAN_LABELS.enterprise} (sin límite)` },
             ]}
           />
           {plan !== 'free' && (
@@ -239,10 +239,10 @@ function ChangePlanModal({
           value={plan}
           onChange={(e) => setPlan(e.target.value as OrgPlan)}
           options={[
-            { value: 'free',       label: 'Free' },
-            { value: 'basic',      label: 'Stable Basic' },
-            { value: 'pro',        label: 'Stable Pro' },
-            { value: 'enterprise', label: 'Enterprise' },
+            { value: 'free',       label: PLAN_LABELS.free },
+            { value: 'basic',      label: PLAN_LABELS.basic },
+            { value: 'pro',        label: PLAN_LABELS.pro },
+            { value: 'enterprise', label: PLAN_LABELS.enterprise },
           ]}
         />
         {plan !== 'free' && (
@@ -703,8 +703,8 @@ export default function SuperAdminPage() {
           />
           <MetricCard
             label="Distribución de planes"
-            value={`${metrics.by_plan.pro ?? 0} Pro`}
-            sub={`${metrics.by_plan.basic ?? 0} Basic · ${metrics.by_plan.free ?? 0} Free · ${metrics.by_plan.enterprise ?? 0} Ent.`}
+            value={`${metrics.by_plan.pro ?? 0} ${PLAN_LABELS.pro}`}
+            sub={`${metrics.by_plan.basic ?? 0} ${PLAN_LABELS.basic} · ${metrics.by_plan.free ?? 0} ${PLAN_LABELS.free} · ${metrics.by_plan.enterprise ?? 0} ${PLAN_LABELS.enterprise}`}
             tone="gold"
           />
         </div>
@@ -726,10 +726,10 @@ export default function SuperAdminPage() {
             onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
             options={[
               { value: '',           label: 'Todos los planes' },
-              { value: 'free',       label: 'Free' },
-              { value: 'basic',      label: 'Basic' },
-              { value: 'pro',        label: 'Pro' },
-              { value: 'enterprise', label: 'Enterprise' },
+              { value: 'free',       label: PLAN_LABELS.free },
+              { value: 'basic',      label: PLAN_LABELS.basic },
+              { value: 'pro',        label: PLAN_LABELS.pro },
+              { value: 'enterprise', label: PLAN_LABELS.enterprise },
             ]}
           />
         </div>

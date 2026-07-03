@@ -16,6 +16,7 @@ import { useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest
 import { useAuditQueue, useRevokeClaim, useApproveClaim } from '@/hooks/use-horse-records';
 import { useAdminAuctions, useAdminCancelAuction, useAdminPauseAuction } from '@/hooks/use-auctions';
 import { useSuperAdminMetrics } from '@/hooks/use-superadmin';
+import { PLAN_LABELS } from '@/hooks/use-organizations';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import {
@@ -94,9 +95,9 @@ function AdminMetrics() {
       bg: 'bg-amber-50 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20',
     },
     {
-      label: 'Pro',
+      label: PLAN_LABELS.pro,
       value: sa ? `${sa.by_plan?.pro ?? 0}` : '—',
-      sub: sa ? `${sa.by_plan?.basic ?? 0} Basic · ${sa.by_plan?.free ?? 0} Free` : undefined,
+      sub: sa ? `${sa.by_plan?.basic ?? 0} ${PLAN_LABELS.basic} · ${sa.by_plan?.free ?? 0} ${PLAN_LABELS.free}` : undefined,
       accent: 'text-purple-700 dark:text-purple-400',
       bg: 'bg-purple-50 border-purple-100 dark:bg-purple-500/10 dark:border-purple-500/20',
     },

@@ -186,7 +186,7 @@ Leyenda severidad: 🔴 alta · 🟠 media · 🟢 baja.
 2. ✅ **Fase 2 — Emojis → iconos** (HECHA, commit 6fe41f8): EJE A. Excepción: los emojis de los botones del modo peón se mantienen (decisión del usuario).
 3. ✅ **Fase 3 — Arcoíris → marca** (HECHA, commit 3d62067): EJE B (B1-B11). Validada en browser. Nuevos hallazgos B12/B13 (toggles/badge "Público" azul, monto de gasto púrpura) para próxima pasada.
 4. ✅ **Fase 4 — Logos oficiales de pago** (HECHA, commit cf71093): EJE C (C1/C2). SVGs oficiales inline con paridad web↔móvil, sin dependencias. Validado en browser. Pendiente menor: C3 (agregar Cabal/Naranja, quitar Amex si baja penetración) — a definir con el set real que habilite MP.
-5. **Fase 5 — Paridad web/móvil** (EJE D): diccionario compartido de labels/iconos/colores/moneda.
+5. ✅ **Fase 5 — Paridad web/móvil** (HECHA): EJE D. 5a (commit 1d0e558): iconos de nav (D3), taxonomía de eventos (D1), tabs padrón (D6), post muro (D8), copy registro (D7), wordmark móvil (D12). 5b (commits 0838af3 + este): moneda unificada `formatMoney` (D4), nombres de plan (D5), descripciones de rol (D10), labels de remates (D9). D2 ya estaba en Fase 1.
 6. **Fase 6 — Copy + ortografía** (EJE F + G): lenguaje serio, tildes.
 7. **Fase 7 — Dark mode móvil** (EJE H): tokens theme-aware.
 8. **Fase 8 — Flujos rotos/dead-ends** (EJE E resto): E4, E8, E9, E10.

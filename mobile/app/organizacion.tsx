@@ -25,22 +25,23 @@ import { RoleBadge } from '../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 
+// Descripciones de rol unificadas con la web (fuente de verdad: ROLE_OPTIONS de organizacion/page.tsx).
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
-  { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal del establecimiento' },
-  { value: 'owner_role', label: 'Propietario',    desc: 'Solo ve sus caballos' },
-  { value: 'vet',        label: 'Veterinario',    desc: 'Ve los caballos asignados' },
-  { value: 'encargado',  label: 'Encargado',      desc: 'Gestiona caballos, eventos y agenda' },
-  { value: 'jinete',     label: 'Jinete',         desc: 'Ve caballos asignados y registra entrenamientos' },
-  { value: 'peon',       label: 'Peón',           desc: 'Registra tareas sobre caballos asignados' },
-  { value: 'admin',      label: 'Administrador',  desc: 'Control total de la organización' },
+  { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal del establecimiento — gestiona caballos y eventos' },
+  { value: 'owner_role', label: 'Propietario',    desc: 'Solo ve los caballos de su propiedad' },
+  { value: 'vet',        label: 'Veterinario',    desc: 'Solo ve los caballos a los que esté asignado' },
+  { value: 'encargado',  label: 'Encargado',      desc: 'Brazo derecho — gestiona caballos, eventos y agenda (sin facturación ni plan)' },
+  { value: 'jinete',     label: 'Jinete',         desc: 'Monta y entrena — ve caballos asignados y registra entrenamientos' },
+  { value: 'peon',       label: 'Peón',           desc: 'Tareas de campo — registra tareas sobre caballos asignados' },
+  { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la organización' },
 ];
 
 // Roles habilitados al aprobar una solicitud de ingreso (solo roles operativos, sin admin/propietario/staff).
 const JOIN_ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
-  { value: 'jinete',    label: 'Jinete',       desc: 'Ve caballos asignados y registra entrenamientos' },
-  { value: 'peon',      label: 'Peón',         desc: 'Registra tareas sobre caballos asignados' },
-  { value: 'encargado', label: 'Encargado',    desc: 'Gestiona caballos, eventos y agenda' },
-  { value: 'vet',       label: 'Veterinario',  desc: 'Ve los caballos asignados' },
+  { value: 'jinete',    label: 'Jinete',       desc: 'Monta y entrena — ve caballos asignados y registra entrenamientos' },
+  { value: 'peon',      label: 'Peón',         desc: 'Tareas de campo — registra tareas sobre caballos asignados' },
+  { value: 'encargado', label: 'Encargado',    desc: 'Brazo derecho — gestiona caballos, eventos y agenda (sin facturación ni plan)' },
+  { value: 'vet',       label: 'Veterinario',  desc: 'Solo ve los caballos a los que esté asignado' },
 ];
 
 function getInviteUrl(token: string): string {

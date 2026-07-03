@@ -367,7 +367,7 @@ export default function AuctionDetailPage() {
               <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5 dark:text-amber-400" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
                 Las pujas son vinculantes. La transferencia legal del equino requiere documentación notarial.
-                HandicApp aplica <strong>3% de comisión</strong> sobre el precio final.
+                HandicApp retiene un <strong>3%</strong> de comisión sobre el precio final.
               </p>
             </div>
           </div>

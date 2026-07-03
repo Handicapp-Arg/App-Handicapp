@@ -247,7 +247,7 @@ export default function AuctionDetailScreen() {
         <View style={s.legalBox}>
           <Info size={16} color="#92400e" strokeWidth={2} />
           <Text style={s.legalText}>
-            Las pujas son vinculantes. HandicApp retiene 3% de comisión sobre el precio final. La transferencia legal requiere documentación notarial.
+            Las pujas son vinculantes. HandicApp retiene un 3% de comisión sobre el precio final. La transferencia legal requiere documentación notarial.
           </Text>
         </View>
       </ScrollView>

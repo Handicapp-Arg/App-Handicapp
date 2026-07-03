@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, Plus, Trophy, Tag, XCircle, MapPin, Star, CheckCircle2 } from 'lucide-react-native';
+import { Search, Plus, Gavel, Tag, XCircle, MapPin, Star, CheckCircle2 } from 'lucide-react-native';
 import { useAuctions } from '../../../hooks/use-auctions';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
@@ -37,10 +37,10 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
         </View>
         <View style={[s.typeBadge, isRemate ? s.typeBadgeRemate : s.typeBadgeDirecto]}>
           {isRemate
-            ? <Trophy size={11} color="#b07d2b" strokeWidth={2} />
+            ? <Gavel size={11} color="#b07d2b" strokeWidth={2} />
             : <Tag size={11} color="#9d6c35" strokeWidth={2} />}
           <Text style={[s.typeBadgeText, { color: isRemate ? '#b07d2b' : '#9d6c35' }]}>
-            {isRemate ? 'Remate' : 'Directo'}
+            {isRemate ? 'Remate' : 'Venta directa'}
           </Text>
         </View>
       </View>

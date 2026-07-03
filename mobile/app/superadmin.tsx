@@ -20,10 +20,11 @@ import {
 
 const formatARS = (n: number) => formatMoney(n);
 
+// Nombres comerciales canónicos (paridad con PLAN_LABELS de use-organizations).
 const PLAN_LABEL: Record<OrgPlan, string> = {
-  free:       'Free',
-  basic:      'Basic',
-  pro:        'Pro',
+  free:       'Gratis',
+  basic:      'Stable Basic',
+  pro:        'Stable Pro',
   enterprise: 'Enterprise',
 };
 
@@ -158,8 +159,8 @@ export default function SuperAdminScreen() {
                 />
                 <MetricBox
                   label="PLANES"
-                  value={`${metrics.by_plan.pro ?? 0} Pro`}
-                  sub={`${metrics.by_plan.basic ?? 0} Bas · ${metrics.by_plan.free ?? 0} Fr`}
+                  value={`${metrics.by_plan.pro ?? 0} ${PLAN_LABEL.pro}`}
+                  sub={`${metrics.by_plan.basic ?? 0} ${PLAN_LABEL.basic} · ${metrics.by_plan.free ?? 0} ${PLAN_LABEL.free}`}
                   tone="gold"
                   c={c}
                   s={s}

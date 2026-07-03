@@ -29,11 +29,12 @@ const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
   { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la organización' },
 ];
 
-const PLAN_PRICING: Record<string, { horses: string; price: string }> = {
-  free:       { horses: '3 caballos',     price: 'Gratis' },
-  basic:      { horses: '15 caballos',    price: 'Stable Basic' },
-  pro:        { horses: '50 caballos',    price: 'Stable Pro' },
-  enterprise: { horses: 'Sin límite',     price: 'Enterprise' },
+// Cupo de caballos por plan (el nombre comercial sale del mapa canónico PLAN_LABELS).
+const PLAN_HORSES: Record<string, string> = {
+  free:       '3 caballos',
+  basic:      '15 caballos',
+  pro:        '50 caballos',
+  enterprise: 'Sin límite',
 };
 
 // ─────────────────────────── KPI Card ───────────────────────────
@@ -66,7 +67,7 @@ function PlanPanel({
 }: { plan: string; horseCount: number; horseLimit: number | null; expiresAt: string | null }) {
   const pct = horseLimit ? Math.min((horseCount / horseLimit) * 100, 100) : 0;
   const isPro = plan !== 'free';
-  const meta = PLAN_PRICING[plan] ?? { horses: '—', price: PLAN_LABELS[plan as keyof typeof PLAN_LABELS] ?? plan };
+  const meta = { horses: PLAN_HORSES[plan] ?? '—', price: PLAN_LABELS[plan] ?? plan };
   const barTone = pct >= 100 ? 'bg-danger-500' : pct >= 80 ? 'bg-warning-500' : 'bg-navy-700';
   // Número de soporte para el CTA "Mejorar plan". Sin número configurado, no se muestra el CTA.
   const supportWhatsapp = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
@@ -85,7 +86,7 @@ function PlanPanel({
           )}
         </div>
         <Badge tone={isPro ? 'gold' : 'neutral'} dot>
-          {isPro ? 'Activo' : 'Free'}
+          {isPro ? 'Activo' : PLAN_LABELS.free}
         </Badge>
       </div>
 

@@ -256,9 +256,15 @@ export const ROLE_LABELS: Record<OrgRole, string> = {
   peon: 'Peón',
 };
 
-export const PLAN_LABELS: Record<OrgPlan, string> = {
+/**
+ * Nombres comerciales canónicos de los planes. Fuente de verdad única de los
+ * labels de plan en toda la app (web y móvil). No usar "Free"/"Ent."/mezclas:
+ * el cupo ("3 caballos") va como sufijo aparte, nunca como otro label.
+ */
+export const PLAN_LABELS: Record<string, string> = {
   free: 'Gratis',
   basic: 'Stable Basic',
   pro: 'Stable Pro',
+  premium: 'Premium',
   enterprise: 'Enterprise',
 };

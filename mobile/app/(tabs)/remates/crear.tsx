@@ -6,7 +6,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { SlideInDown } from 'react-native-reanimated';
-import { Check, Tag, Trophy, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
+import { Check, Tag, Gavel, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
 import { HorseIcon } from '../../../components/icons/equine';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
@@ -65,7 +65,7 @@ function TypeOption({ type, selected, onSelect, c, s }: {
   const isSelected = type === selected;
   const config = type === 'venta_directa'
     ? { Icon: Tag, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: c.brand }
-    : { Icon: Trophy, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#d9a94e' };
+    : { Icon: Gavel, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#d9a94e' };
 
   return (
     <TouchableOpacity

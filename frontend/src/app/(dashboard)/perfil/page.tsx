@@ -16,8 +16,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { RoleBadge } from '@/components/ui/role-badge';
 import { PaymentMethods } from '@/components/ui/payment-methods';
 import { usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget } from '@/hooks/use-plan';
-
-const planLabel: Record<string, string> = { free: 'Gratis', pro: 'Pro' };
+import { PLAN_LABELS } from '@/hooks/use-organizations';
 
 /** Traducción de las keys de features del backend a labels legibles. */
 const FEATURE_LABELS: Record<string, string> = {
@@ -47,9 +46,10 @@ function roleTargetFor(role?: string): PlanRoleTarget {
 const fmtPrice = (ars: number) =>
   ars > 0 ? `${formatMoney(ars)}/mes` : 'Gratis';
 
-/** Nombre visual del tier (badge) derivado del número de tier del plan. */
-const TIER_LABELS = ['Free', 'Pro', 'Premium', 'Enterprise'];
-const tierName = (tier: number) => TIER_LABELS[tier] ?? `Nivel ${tier + 1}`;
+/** Nombre visual del tier (badge) derivado del número de tier del plan.
+ *  Usa el mapa canónico de labels de plan (una sola fuente de verdad). */
+const TIER_KEYS = ['free', 'pro', 'premium', 'enterprise'] as const;
+const tierName = (tier: number) => PLAN_LABELS[TIER_KEYS[tier]] ?? `Nivel ${tier + 1}`;
 
 /* ─── Identidad visual por tier ───
    Cada plan se reconoce de un vistazo: color, ícono, peso y personalidad
@@ -1054,7 +1054,7 @@ export default function PerfilPage() {
             {plan && (
               <span className="inline-flex items-center gap-1.5">
                 <svg className="h-4 w-4 text-clay-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.664 1.319a.75.75 0 0 1 .672 0 41.06 41.06 0 0 1 8.198 5.424.75.75 0 0 1-.254 1.285 31.372 31.372 0 0 0-7.86 3.83.75.75 0 0 1-.84 0 31.508 31.508 0 0 0-2.08-1.287V9.394a.75.75 0 0 0-.293-.593 41.103 41.103 0 0 0-1.668-1.288.75.75 0 0 1 .619-1.318 41.7 41.7 0 0 1 3.328 1.81Z" /></svg>
-                Plan {planLabel[plan] ?? plan}
+                Plan {PLAN_LABELS[plan] ?? plan}
               </span>
             )}
             {memberSince && <span>Miembro desde {memberSince}</span>}

@@ -150,7 +150,7 @@ function CreateAuctionModal({
     type: 'venta_directa' as AuctionType,
     title: '',
     description: '',
-    currency: 'ARS' as AuctionCurrency,
+    currency: 'USD' as AuctionCurrency,
     asking_price: '',
     starting_bid: '',
     bid_increment: '',
