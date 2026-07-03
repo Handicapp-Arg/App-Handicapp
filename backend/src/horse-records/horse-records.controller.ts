@@ -30,6 +30,14 @@ export class HorseRecordsController {
     return this.service.search(dto);
   }
 
+  // ─── Búsqueda EN VIVO en el Stud Book AR (importa y devuelve) ────────────
+  // Mismo nivel de auth y mismo shape que /search, para consumo idéntico.
+  @Get('search-live')
+  async searchLive(@Query('name') name: string) {
+    const items = await this.scraping.searchLiveStudbookAR(name ?? '');
+    return { items, total: items.length };
+  }
+
   // ─── Stats de registros ───────────────────────────────────────────────────
   @Get('stats')
   @UseGuards(AuthGuard('jwt'), RolesGuard)

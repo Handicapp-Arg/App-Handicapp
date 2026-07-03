@@ -5,7 +5,7 @@ import { Cron } from '@nestjs/schedule';
 import { HorseRecord } from './horse-record.entity';
 import { fuzzyMatchNames, ScrapedHorseRecord } from './scrapers/base-record-scraper';
 import { WikidataScraper } from './scrapers/wikidata.scraper';
-import { StudbookArScraper } from './scrapers/studbook-ar.scraper';
+import { StudbookArScraper, StudbookListItem } from './scrapers/studbook-ar.scraper';
 import { PedigreeQueryRecordScraper } from './scrapers/pedigreequery-record.scraper';
 import { PuppeteerScraperService } from './scrapers/puppeteer-scraper.service';
 
@@ -58,6 +58,85 @@ export class HorseRecordsScrapingService {
     return Array.from(this.jobs.values()).sort(
       (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
     );
+  }
+
+  // ─── BÚSQUEDA EN VIVO en el Stud Book AR ─────────────────────────────────
+  // Consulta el autocomplete del Stud Book Argentino en tiempo real, importa
+  // los ejemplares que no estén en la copia local y devuelve los HorseRecords.
+  // Distingue homónimos por (nombre + año de nacimiento) para no colapsar, por
+  // ejemplo, los 3 "FURTIVO" (2021/1997/1981) en un solo registro.
+  async searchLiveStudbookAR(name: string): Promise<HorseRecord[]> {
+    const term = name?.trim() ?? '';
+    if (term.length < 2) return [];
+
+    // Reutiliza el mapeo de collectAll (queryAutocomplete → mapRawToListItem)
+    const { items } = await this.studbookAr.listByLetter(term);
+    const limited = items.slice(0, 20);
+
+    const results: HorseRecord[] = [];
+    for (const item of limited) {
+      const rec = await this.upsertLiveStudbookRecord(item);
+      if (rec) results.push(rec);
+    }
+    return results;
+  }
+
+  // Upsert distinguiendo por (nombre + birth_year) para respetar homónimos.
+  private async upsertLiveStudbookRecord(item: StudbookListItem): Promise<HorseRecord | null> {
+    const name = item.name?.trim();
+    if (!name) return null;
+    const p = item.prefetched;
+    const birthYear = p?.birth_year ?? null;
+
+    const qb = this.recordRepo
+      .createQueryBuilder('r')
+      .where('UPPER(r.name) = :name', { name: name.toUpperCase() });
+    if (birthYear === null) qb.andWhere('r.birth_year IS NULL');
+    else qb.andWhere('r.birth_year = :y', { y: birthYear });
+    const existing = await qb.getOne();
+
+    if (existing) {
+      const upd: Partial<HorseRecord> = {};
+      if (!existing.sire_name && p?.sire_name) upd.sire_name = p.sire_name;
+      if (!existing.dam_name && p?.dam_name) upd.dam_name = p.dam_name;
+      if (!existing.sex && p?.sex) upd.sex = p.sex;
+      if (!existing.color && p?.color) upd.color = p.color;
+      if (!existing.registration_number && p?.registration_number)
+        upd.registration_number = p.registration_number;
+      if (!existing.source_url && item.profileUrl) upd.source_url = item.profileUrl;
+
+      if (Object.keys(upd).length > 0) {
+        upd.last_scraped_at = new Date();
+        upd.scrape_status = 'done';
+        await this.recordRepo.update(existing.id, upd);
+        if (upd.sire_name || upd.dam_name) {
+          await this.resolveRelatives(existing.id, { sire_name: p?.sire_name, dam_name: p?.dam_name } as any);
+        }
+        return (await this.recordRepo.findOne({ where: { id: existing.id } })) ?? existing;
+      }
+      return existing;
+    }
+
+    const saved = await this.recordRepo.save(this.recordRepo.create({
+      name,
+      birth_year: birthYear,
+      sex: p?.sex ?? null,
+      color: p?.color ?? null,
+      country_code: 'ARG',
+      sire_name: p?.sire_name ?? null,
+      dam_name: p?.dam_name ?? null,
+      registration_number: p?.registration_number ?? null,
+      registration_source: 'studbook_ar',
+      source_url: item.profileUrl ?? null,
+      scrape_status: 'done',
+      data_confidence: (p?.sire_name && p?.dam_name) ? 'high' : 'medium',
+      last_scraped_at: new Date(),
+    }));
+
+    if (p?.sire_name || p?.dam_name) {
+      await this.resolveRelatives(saved.id, { sire_name: p?.sire_name, dam_name: p?.dam_name } as any);
+    }
+    return saved;
   }
 
   // ─── IMPORTACIÓN COMPLETA — todos los libros + pedigrí profundo ──────────
