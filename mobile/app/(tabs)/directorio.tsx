@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
   RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
@@ -160,11 +160,13 @@ export default function DirectorioScreen() {
 
   const isPropietario = user?.role === 'propietario';
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = (v: string) => {
     setSearch(v);
-    clearTimeout((global as any).__dirTimer);
-    (global as any).__dirTimer = setTimeout(() => setDebouncedSearch(v), 400);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(v), 400);
   };
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const pendingForEstab = (estabId: string) =>
     myRequests?.some((r) => r.establishment_id === estabId && r.status === 'pending');
@@ -178,7 +180,7 @@ export default function DirectorioScreen() {
       {/* Solicitudes pendientes propias */}
       {isPropietario && pendingRequests.length > 0 && (
         <View style={s.pendingBanner}>
-          <Clock size={14} color="#92400e" strokeWidth={2} />
+          <Clock size={14} color={c.isDark ? '#fbbf24' : '#92400e'} strokeWidth={2} />
           <Text style={s.pendingText}>
             {pendingRequests.length} solicitud{pendingRequests.length !== 1 ? 'es' : ''} pendiente{pendingRequests.length !== 1 ? 's' : ''}
           </Text>
@@ -276,8 +278,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: c.borderStrong, borderTopColor: c.brand },
-  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: '#fffbeb', borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: '#fde68a' },
-  pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#92400e' },
+  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: c.isDark ? 'rgba(251,191,36,0.12)' : '#fffbeb', borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: c.isDark ? 'rgba(251,191,36,0.3)' : '#fde68a' },
+  pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#fbbf24' : '#92400e' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: space[3], paddingVertical: 2 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: c.text },
   list: { paddingBottom: space[8] },
@@ -289,8 +291,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cardSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   requestBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 7 },
   requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
-  pendingChip: { borderRadius: radius.full, backgroundColor: '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#fde68a' },
-  pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: '#92400e' },
+  pendingChip: { borderRadius: radius.full, backgroundColor: c.isDark ? 'rgba(251,191,36,0.12)' : '#fffbeb', paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: c.isDark ? 'rgba(251,191,36,0.3)' : '#fde68a' },
+  pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: c.isDark ? '#fbbf24' : '#92400e' },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },

@@ -89,7 +89,7 @@ function ContractCard({
 
       {contract.status === 'signed' && contract.signed_name && (
         <View style={cs.signedBanner}>
-          <Check size={13} color="#15803d" strokeWidth={2.5} />
+          <Check size={13} color={c.isDark ? '#34d399' : '#15803d'} strokeWidth={2.5} />
           <Text style={cs.signedText}>
             Firmado por {contract.signed_name} · {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
           </Text>
@@ -97,7 +97,7 @@ function ContractCard({
       )}
       {contract.status === 'rejected' && contract.rejection_reason && (
         <View style={cs.rejectedBanner}>
-          <X size={13} color="#b91c1c" strokeWidth={2.5} />
+          <X size={13} color={c.isDark ? '#f87171' : '#b91c1c'} strokeWidth={2.5} />
           <Text style={cs.rejectedText}>Motivo: {contract.rejection_reason}</Text>
         </View>
       )}
@@ -282,7 +282,7 @@ export default function ContratosScreen() {
               {emailToSearch && !searchingUser && (
                 foundUser ? (
                   <View style={s.userFound}>
-                    <Check size={18} color="#16a34a" strokeWidth={2.5} />
+                    <Check size={18} color={c.isDark ? '#34d399' : '#16a34a'} strokeWidth={2.5} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.userFoundName}>{foundUser.name}</Text>
                       <Text style={s.userFoundRole}>{foundUser.role}</Text>
@@ -457,12 +457,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   rejectSubmitBtn: { borderRadius: radius.md, backgroundColor: colors.red500, paddingVertical: space[3] + 1, alignItems: 'center' },
   searchBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
   searchBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
-  userFoundIcon: { fontSize: 18, color: '#16a34a' },
-  userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: '#15803d' },
-  userFoundRole: { fontSize: text.xs, color: '#16a34a', textTransform: 'capitalize' },
-  userNotFound: { backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
-  userNotFoundText: { fontSize: text.xs, color: '#b91c1c' },
+  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
+  userFoundIcon: { fontSize: 18, color: c.isDark ? '#34d399' : '#16a34a' },
+  userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: c.isDark ? '#34d399' : '#15803d' },
+  userFoundRole: { fontSize: text.xs, color: c.isDark ? '#6ee7b7' : '#16a34a', textTransform: 'capitalize' },
+  userNotFound: { backgroundColor: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
+  userNotFoundText: { fontSize: text.xs, color: c.isDark ? '#f87171' : '#b91c1c' },
 });
 
 type CStyles = ReturnType<typeof makeCStyles>;
@@ -479,10 +479,10 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
   horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: c.surfaceAlt },
   horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
-  signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3] },
-  signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: '#15803d' },
-  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3] },
-  rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: '#b91c1c' },
+  signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', borderRadius: radius.md, padding: space[3] },
+  signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#34d399' : '#15803d' },
+  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', borderRadius: radius.md, padding: space[3] },
+  rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#f87171' : '#b91c1c' },
   body: { borderTopWidth: 1, borderTopColor: c.border },
   bodyScroll: { maxHeight: 200, padding: space[4] },
   bodyText: { fontSize: text.sm, color: c.text, lineHeight: 20 },

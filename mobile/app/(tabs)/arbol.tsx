@@ -126,12 +126,9 @@ function NodeCard({
       style={[
         s.node,
         { left: placed.x, top: placed.y, borderColor: own.border, backgroundColor: own.bg },
-        !node.id && s.nodeEmpty,
       ]}
     >
-      <Text style={s.nodeName} numberOfLines={2}>
-        {node.name || <Text style={s.nodeNoData}>Sin datos</Text>}
-      </Text>
+      <Text style={s.nodeName} numberOfLines={2}>{node.name}</Text>
       {!!subtitle && <Text style={s.nodeSub}>{subtitle}</Text>}
       {own.badge ? (
         <Text style={[s.nodeBadge, { color: own.badgeColor }]}>{own.badge}</Text>
@@ -576,21 +573,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.15,
     elevation: 4,
   },
-  nodeEmpty: {
-    borderStyle: 'dashed',
-    opacity: 0.5,
-  },
   nodeName: {
     fontSize: 12,
     fontWeight: '700',
     color: c.text,
     lineHeight: 16,
-  },
-  nodeNoData: {
-    color: c.textFaint,
-    fontStyle: 'italic',
-    fontWeight: '400',
-    fontSize: 11,
   },
   nodeSub: {
     fontSize: 10,
