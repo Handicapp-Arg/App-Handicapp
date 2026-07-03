@@ -26,7 +26,7 @@ import { fontFamily } from '../../styles/fonts';
 import { useToast } from '../../components/Toast';
 import {
   Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
-  Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check,
+  Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check, Megaphone,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { HorseIcon } from '../../components/icons/equine';
@@ -180,9 +180,16 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
               </View>
             )}
           </View>
-          <Text style={s.timeAgo}>
-            {timeAgo(post.created_at)}{post.horse ? ` · 🐴 ${post.horse.name}` : ''}
-          </Text>
+          <View style={s.timeAgoRow}>
+            <Text style={s.timeAgo}>{timeAgo(post.created_at)}</Text>
+            {post.horse && (
+              <View style={s.timeAgoHorse}>
+                <Text style={s.timeAgo}>· </Text>
+                <HorseIcon size={12} color={c.textFaint} />
+                <Text style={s.timeAgo}> {post.horse.name}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {(isOwner || isAdmin) && (
@@ -411,8 +418,10 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
                     onPress={() => setType(t)}
                     activeOpacity={0.8}
                   >
+                    {t === 'horse_update' && <HorseIcon size={13} color={type === t ? colors.white : c.textMuted} />}
+                    {t === 'announcement' && <Megaphone size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
                     <Text style={[s.typeBtnText, type === t && s.typeBtnTextActive]}>
-                      {t === 'general' ? 'General' : t === 'horse_update' ? '🐴 Caballo' : '📌 Anuncio'}
+                      {t === 'general' ? 'General' : t === 'horse_update' ? 'Caballo' : 'Anuncio'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -672,7 +681,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   roleBadgeText: { fontSize: 10, fontWeight: weight.semibold },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
   pinnedText: { fontSize: 10, color: '#b45309', fontWeight: weight.semibold },
-  timeAgo: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  timeAgo: { fontSize: text.xs, color: c.textFaint },
+  timeAgoRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 2 },
+  timeAgoHorse: { flexDirection: 'row', alignItems: 'center' },
   menuBtn: { padding: 4, marginTop: -2 },
 
   content: { fontSize: text.sm, color: c.text, lineHeight: 20, paddingHorizontal: space[4], paddingVertical: space[3] },
@@ -707,7 +718,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   postBtn: { backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.full },
   postBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   typeRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
-  typeBtn: { paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
   typeBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
   typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   typeBtnTextActive: { color: colors.white },

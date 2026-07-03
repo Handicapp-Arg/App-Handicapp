@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckCircle2, XCircle, Info, Star } from 'lucide-react-native';
+import { CheckCircle2, XCircle, Info, Star, MapPin } from 'lucide-react-native';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import { Avatar } from '../../../components/Avatar';
 import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../../hooks/use-auctions';
@@ -124,7 +124,10 @@ export default function AuctionDetailScreen() {
         <Text style={s.auctionTitle}>{auction.title}</Text>
         <Text style={s.horseName}>{auction.horse?.name}</Text>
         {auction.location && (
-          <Text style={s.location}>📍 {auction.location}</Text>
+          <View style={s.locationRow}>
+            <MapPin size={12} color={c.textFaint} strokeWidth={2} />
+            <Text style={s.location}>{auction.location}</Text>
+          </View>
         )}
 
         {/* Precio */}
@@ -263,7 +266,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   auctionTitle: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.4, marginBottom: 4 },
   horseName: { fontSize: text.sm, color: c.textMuted },
-  location: { fontSize: text.xs, color: c.textFaint, marginTop: 4, marginBottom: space[4] },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, marginBottom: space[4] },
+  location: { fontSize: text.xs, color: c.textFaint },
 
   priceCard: {
     backgroundColor: c.surface, borderRadius: radius.xl,

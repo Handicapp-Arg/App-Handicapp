@@ -167,7 +167,7 @@ export default function JineteHorse() {
         discipline,
       });
       haptic.success();
-      toast.success('✓ Monta registrada');
+      toast.success('Monta registrada');
       resetForm();
     } catch {
       haptic.error();

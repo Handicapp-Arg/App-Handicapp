@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonRow } from '@/components/ui/skeleton';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
-import { Receipt } from 'lucide-react';
+import { Receipt, X } from 'lucide-react';
 import { formatAmount, type Currency } from '@/lib/currency';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i] }));
@@ -68,7 +68,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
         <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-xl my-4">
           <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: 'var(--color-clay-500)' }}>
             <h2 className="text-base font-semibold text-white">Nueva factura</h2>
-            <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer">✕</button>
+            <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer"><X size={18} /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {/* Caballo y período */}
@@ -137,7 +137,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
                     placeholder="$ precio" min="0" step="0.01" className={inputCls} required
                   />
                   {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="text-gray-300 hover:text-red-400 cursor-pointer text-lg leading-none">✕</button>
+                    <button type="button" onClick={() => removeItem(i)} className="text-gray-300 hover:text-red-400 cursor-pointer leading-none"><X size={16} /></button>
                   )}
                 </div>
               ))}

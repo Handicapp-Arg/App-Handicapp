@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FileText, ChevronDown, X } from 'lucide-react-native';
+import { FileText, ChevronDown, X, Check } from 'lucide-react-native';
 import { PressableScale } from '../../components/PressableScale';
 import { useContracts, useCreateContract, useSignContract, useRejectContract, useDeleteContract, useLookupUserByEmail, type Contract } from '../../hooks/use-contracts';
 import { useAuth } from '../../lib/auth';
@@ -89,14 +89,16 @@ function ContractCard({
 
       {contract.status === 'signed' && contract.signed_name && (
         <View style={cs.signedBanner}>
+          <Check size={13} color="#15803d" strokeWidth={2.5} />
           <Text style={cs.signedText}>
-            ✓ Firmado por {contract.signed_name} · {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
+            Firmado por {contract.signed_name} · {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
           </Text>
         </View>
       )}
       {contract.status === 'rejected' && contract.rejection_reason && (
         <View style={cs.rejectedBanner}>
-          <Text style={cs.rejectedText}>✕ Motivo: {contract.rejection_reason}</Text>
+          <X size={13} color="#b91c1c" strokeWidth={2.5} />
+          <Text style={cs.rejectedText}>Motivo: {contract.rejection_reason}</Text>
         </View>
       )}
 
@@ -280,7 +282,7 @@ export default function ContratosScreen() {
               {emailToSearch && !searchingUser && (
                 foundUser ? (
                   <View style={s.userFound}>
-                    <Text style={s.userFoundIcon}>✓</Text>
+                    <Check size={18} color="#16a34a" strokeWidth={2.5} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.userFoundName}>{foundUser.name}</Text>
                       <Text style={s.userFoundRole}>{foundUser.role}</Text>
@@ -477,10 +479,10 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
   horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: c.surfaceAlt },
   horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
-  signedBanner: { marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3] },
-  signedText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#15803d' },
-  rejectedBanner: { marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3] },
-  rejectedText: { fontSize: text.xs, fontWeight: weight.semibold, color: '#b91c1c' },
+  signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: space[3] },
+  signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: '#15803d' },
+  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: '#fef2f2', borderRadius: radius.md, padding: space[3] },
+  rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: '#b91c1c' },
   body: { borderTopWidth: 1, borderTopColor: c.border },
   bodyScroll: { maxHeight: 200, padding: space[4] },
   bodyText: { fontSize: text.sm, color: c.text, lineHeight: 20 },

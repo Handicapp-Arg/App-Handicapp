@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Carrot, Camera, Activity, AlertTriangle, Bell, ChevronRight, ClipboardList,
+  Camera, Activity, AlertTriangle, Bell, ChevronRight, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboard, type EncargadoDashboard, type EncargadoFeedItem } from '@/hooks/use-dashboard';
@@ -19,11 +19,11 @@ import { HorseHead } from '@/components/icons/equine';
 
 const KIND_META: Record<
   EncargadoFeedItem['kind'],
-  { label: string; icon: typeof Carrot; iconBg: string; iconFg: string }
+  { label: string; icon: typeof ClipboardList; iconBg: string; iconFg: string }
 > = {
   rutina: {
     label: 'Rutina',
-    icon: Carrot,
+    icon: ClipboardList,
     iconBg: 'bg-emerald-50 dark:bg-emerald-500/15',
     iconFg: 'text-emerald-600 dark:text-emerald-400',
   },
@@ -69,7 +69,7 @@ function StatCard({
 }: {
   label: string;
   value: number;
-  icon: typeof Carrot;
+  icon: typeof ClipboardList;
   tone?: 'neutral' | 'alert';
 }) {
   const alert = tone === 'alert' && value > 0;
@@ -156,7 +156,7 @@ function SupervisionView({ data }: { data: EncargadoDashboard }) {
     <div className="space-y-5">
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Caballos" value={data.horses_total} icon={HorseHead as unknown as typeof Carrot} />
+        <StatCard label="Caballos" value={data.horses_total} icon={HorseHead as unknown as typeof ClipboardList} />
         <StatCard label="Actividad hoy" value={data.activity_today} icon={Activity} />
         <StatCard label="Alertas" value={data.alerts_count} icon={Bell} tone="alert" />
       </div>

@@ -58,7 +58,12 @@ function AppointmentCard({
         <Clock size={13} color={c.textFaint} strokeWidth={2} />
         <Text style={s.apptTime}>{timeStr}</Text>
       </View>
-      {appt.completed && <Text style={s.completedText}>✓ Completado</Text>}
+      {appt.completed && (
+        <View style={s.completedRow}>
+          <Check size={13} color="#16a34a" strokeWidth={2.5} />
+          <Text style={s.completedText}>Completado</Text>
+        </View>
+      )}
 
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={s.apptMenuOverlay} onPress={() => setMenuOpen(false)}>
@@ -403,6 +408,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   apptDateRow: { flexDirection: 'row', gap: space[2] },
   apptDate: { fontSize: text.xs, color: c.textMuted },
   apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold },
+  completedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   completedText: { fontSize: text.xs, color: '#16a34a', fontWeight: weight.semibold },
   apptMenuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space[8] },
   apptMenu: { backgroundColor: c.surface, borderRadius: radius.xl, width: '100%', maxWidth: 340, paddingVertical: space[1], shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 12 },

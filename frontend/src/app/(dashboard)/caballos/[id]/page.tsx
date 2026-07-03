@@ -24,7 +24,8 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import ImagePicker from '@/components/image-picker';
 import { cldTransform } from '@/lib/cloudinary';
 import { calcAge, formatDate as fmtDate } from '@/lib/utils';
-import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList, ShieldCheck, AlertTriangle, XCircle, Lock, CalendarClock } from 'lucide-react';
+import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList, ShieldCheck, AlertTriangle, XCircle, Lock, CalendarClock, Wheat, Hammer, Activity, Wrench, Truck, Package, Banknote } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
 import { HorseVerifiedBadge } from '@/components/ui/verified-badge';
 import { Avatar } from '@/components/ui/avatar';
@@ -62,14 +63,14 @@ const typeOptions = [
 const inputClass =
   'w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm text-gray-900 transition focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/10';
 
-const EXPENSE_CATEGORIES = [
-  { value: 'alimentacion',  label: 'Alimentación', icon: '🌾' },
-  { value: 'veterinario',   label: 'Veterinario',  icon: '💉' },
-  { value: 'herradero',     label: 'Herradero',    icon: '🔨' },
-  { value: 'entrenamiento', label: 'Entrenamiento',icon: '🏇' },
-  { value: 'mantenimiento', label: 'Mantenimiento',icon: '🔧' },
-  { value: 'transporte',    label: 'Transporte',   icon: '🚛' },
-  { value: 'otros',         label: 'Otros',        icon: '📦' },
+const EXPENSE_CATEGORIES: { value: string; label: string; Icon: LucideIcon }[] = [
+  { value: 'alimentacion',  label: 'Alimentación', Icon: Wheat },
+  { value: 'veterinario',   label: 'Veterinario',  Icon: Syringe },
+  { value: 'herradero',     label: 'Herradero',    Icon: Hammer },
+  { value: 'entrenamiento', label: 'Entrenamiento',Icon: Activity },
+  { value: 'mantenimiento', label: 'Mantenimiento',Icon: Wrench },
+  { value: 'transporte',    label: 'Transporte',   Icon: Truck },
+  { value: 'otros',         label: 'Otros',        Icon: Package },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -163,7 +164,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
                     expenseCategory === cat.value ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
-                  {cat.icon} {cat.label}
+                  <span className="flex items-center justify-center gap-1"><cat.Icon size={13} /> {cat.label}</span>
                 </button>
               ))}
             </div>
@@ -579,7 +580,7 @@ function CreateEventModal({
                     expenseCategory === cat.value ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
-                  {cat.icon} {cat.label}
+                  <span className="flex items-center justify-center gap-1"><cat.Icon size={13} /> {cat.label}</span>
                 </button>
               ))}
             </div>
@@ -1026,7 +1027,7 @@ function FinancialDashboard({
   if (financial.total === 0 && financial.monthly.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 bg-[var(--surface-card)] p-8 shadow-sm text-center">
-        <span className="text-3xl">💰</span>
+        <Banknote className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" strokeWidth={1.5} />
         <p className="mt-2 text-sm font-medium text-gray-500">Sin gastos registrados</p>
         <p className="mt-1 text-xs text-gray-400">Los gastos de tipo "Gasto" aparecerán aquí con su categoría</p>
       </div>
@@ -1070,12 +1071,13 @@ function FinancialDashboard({
           <div className="space-y-3">
             {financial.by_category.map((c) => {
               const cat = EXPENSE_CATEGORIES.find((x) => x.value === c.category);
+              const CatIcon = cat?.Icon ?? Package;
               const pct = (c.total / financial.total) * 100;
               return (
                 <div key={c.category}>
                   <div className="mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                      <span>{cat?.icon ?? '📦'}</span>
+                      <CatIcon size={14} style={{ color: CATEGORY_COLORS[c.category] ?? '#6b7280' }} />
                       {cat?.label ?? c.category}
                     </span>
                     <span className="text-sm font-semibold text-gray-900">${c.total.toLocaleString('es-AR')}</span>
@@ -1128,9 +1130,10 @@ function FinancialDashboard({
           <div className="space-y-2">
             {financial.recent_expenses.map((exp) => {
               const cat = EXPENSE_CATEGORIES.find((x) => x.value === exp.expense_category);
+              const CatIcon = cat?.Icon ?? Package;
               return (
                 <div key={exp.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2.5">
-                  <span className="text-base">{cat?.icon ?? '📦'}</span>
+                  <CatIcon size={18} className="shrink-0" style={{ color: CATEGORY_COLORS[exp.expense_category ?? ''] ?? '#6b7280' }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{exp.description}</p>
                     <p className="text-[11px] text-gray-400">
@@ -2794,10 +2797,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="space-y-1.5">
                   {financial.by_category.slice(0, 4).map((c) => {
                     const cat = EXPENSE_CATEGORIES.find((x) => x.value === c.category);
+                    const CatIcon = cat?.Icon ?? Package;
                     const maxVal = Math.max(...financial.by_category.map((x) => x.total));
                     return (
                       <div key={c.category} className="flex items-center gap-2">
-                        <span className="w-5 text-center text-[11px]">{cat?.icon ?? '📦'}</span>
+                        <span className="w-5 flex justify-center"><CatIcon size={13} style={{ color: CATEGORY_COLORS[c.category] ?? '#6b7280' }} /></span>
                         <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${maxVal > 0 ? (c.total / maxVal) * 100 : 0}%`, backgroundColor: CATEGORY_COLORS[c.category] ?? '#6b7280' }} />
                         </div>

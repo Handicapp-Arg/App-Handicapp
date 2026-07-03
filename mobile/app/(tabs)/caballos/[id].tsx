@@ -17,6 +17,7 @@ import {
   Wheat, Syringe, Hammer, Wrench, Truck, Package,
   MoreVertical, Download,
   AlertTriangle, Lock, CalendarClock,
+  Dumbbell, Flag,
   type LucideIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1459,23 +1460,29 @@ export default function HorseDetailScreen() {
               <Text style={s.fieldLabel}>Tipo de evento</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
                 {([
-                  { key: 'nota', label: '📝 Nota', color: '#6b7280' },
-                  { key: 'entrenamiento', label: '🏇 Entrenamiento', color: '#a16207' },
-                  { key: 'salud', label: '💉 Salud', color: '#dc2626' },
-                  { key: 'carrera', label: '🏁 Carrera', color: '#d97706' },
-                ] as const).map((t) => (
-                  <TouchableOpacity
-                    key={t.key}
-                    style={[
-                      s.typeChip,
-                      newEventType === t.key && { backgroundColor: t.color + '18', borderColor: t.color },
-                    ]}
-                    onPress={() => { haptic.selection(); setNewEventType(t.key); }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[s.typeChipText, newEventType === t.key && { color: t.color }]}>{t.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                  { key: 'nota', label: 'Nota', color: '#6b7280', Icon: FileText },
+                  { key: 'entrenamiento', label: 'Entrenamiento', color: '#a16207', Icon: Dumbbell },
+                  { key: 'salud', label: 'Salud', color: '#dc2626', Icon: Syringe },
+                  { key: 'carrera', label: 'Carrera', color: '#d97706', Icon: Flag },
+                ] as const).map((t) => {
+                  const active = newEventType === t.key;
+                  const iconColor = active ? t.color : c.textMuted;
+                  return (
+                    <TouchableOpacity
+                      key={t.key}
+                      style={[
+                        s.typeChip,
+                        { flexDirection: 'row', alignItems: 'center', gap: 6 },
+                        active && { backgroundColor: t.color + '18', borderColor: t.color },
+                      ]}
+                      onPress={() => { haptic.selection(); setNewEventType(t.key); }}
+                      activeOpacity={0.7}
+                    >
+                      <t.Icon size={14} color={iconColor} strokeWidth={2} />
+                      <Text style={[s.typeChipText, active && { color: t.color }]}>{t.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {/* Fecha */}
@@ -1531,7 +1538,7 @@ export default function HorseDetailScreen() {
         <View style={s.section}>
           {!financial || financial.total === 0 ? (
             <View style={s.emptyBox}>
-              <Text style={{ fontSize: 32 }}>💰</Text>
+              <Banknote size={32} color={c.textFaint} strokeWidth={1.75} />
               <Text style={s.emptyTitle}>Sin gastos registrados</Text>
               <Text style={s.emptyText}>Creá un evento de tipo "Gasto" para ver el dashboard</Text>
             </View>

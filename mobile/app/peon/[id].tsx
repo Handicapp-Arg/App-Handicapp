@@ -61,7 +61,7 @@ export default function PeonHorse() {
     upsert.mutate(
       { date: today, [field]: true } as Partial<Routine> & { date: string },
       {
-        onSuccess: () => toast.success(`✓ ${doneLabel}`),
+        onSuccess: () => toast.success(doneLabel),
         onError: () => { haptic.error(); toast.error('No se pudo guardar. Probá de nuevo.'); },
       },
     );
@@ -87,7 +87,7 @@ export default function PeonHorse() {
     upsert.mutate(
       { date: today, observations: txt },
       {
-        onSuccess: () => { toast.success('✓ Nota guardada'); setNoteText(''); },
+        onSuccess: () => { toast.success('Nota guardada'); setNoteText(''); },
         onError: () => { haptic.error(); toast.error('No se pudo guardar. Probá de nuevo.'); },
       },
     );
@@ -104,7 +104,7 @@ export default function PeonHorse() {
     try {
       await uploadPhoto.mutateAsync({ uri: res.assets[0].uri, activity_type: 'otro' });
       haptic.success();
-      toast.success('✓ Foto guardada con la hora');
+      toast.success('Foto guardada con la hora');
     } catch {
       haptic.error();
       toast.error('No se pudo subir la foto. Probá de nuevo.');
