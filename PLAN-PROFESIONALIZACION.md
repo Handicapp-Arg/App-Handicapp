@@ -179,7 +179,8 @@ Leyenda severidad: 🔴 alta · 🟠 media · 🟢 baja.
 
 ## Fases de trabajo propuestas (orden sugerido)
 
-1. **Fase 1 — Bugs y riesgos** (rápido, alto impacto): E1, E2, E3, E5, E6, E7, D2, F1. *Lo que hace quedar mal en serio.*
+1. ✅ **Fase 1 — Bugs y riesgos** (HECHA, commit d1138d5): E1, E2, E3, E5, E6, E7, D2, F1. *Lo que hace quedar mal en serio.*
+   - Pendiente menor detectado: `alerts_count` del dashboard del encargado no cuenta las alertas del día por desfase de zona horaria (el ítem sí aparece en el feed). Revisar junto al patrón TZ conocido (`eventAt`).
 2. **Fase 2 — Emojis → iconos** (EJE A completo): la "cara de IA" #1.
 3. **Fase 3 — Arcoíris → marca** (EJE B): la "cara de IA" #2.
 4. **Fase 4 — Logos oficiales de pago** (EJE C): confianza en el checkout.
