@@ -155,8 +155,8 @@ function DetailModal({ id, onClose, c, d, tr }: { id: string; onClose: () => voi
 
   const TABS: { key: DetailTab; label: string }[] = [
     { key: 'info', label: 'Info' },
-    { key: 'pedigree', label: 'Pedigree' },
-    { key: 'progeny', label: 'Descendencia' },
+    { key: 'pedigree', label: 'Pedigrí' },
+    { key: 'progeny', label: 'Progenie' },
   ];
 
   return (
@@ -243,7 +243,7 @@ function DetailModal({ id, onClose, c, d, tr }: { id: string; onClose: () => voi
                     <TreeNode node={tree} level={0} tr={tr} />
                   </View>
                 )
-                : <Text style={d.empty}>Sin datos de pedigree</Text>
+                : <Text style={d.empty}>Sin datos de pedigrí</Text>
           )}
 
           {tab === 'progeny' && (
@@ -263,7 +263,7 @@ function DetailModal({ id, onClose, c, d, tr }: { id: string; onClose: () => voi
                     ))}
                   </View>
                 )
-                : <Text style={d.empty}>Sin descendencia registrada</Text>
+                : <Text style={d.empty}>Sin progenie registrada</Text>
           )}
 
         </ScrollView>

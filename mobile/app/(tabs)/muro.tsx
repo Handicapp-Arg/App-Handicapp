@@ -26,7 +26,7 @@ import { fontFamily } from '../../styles/fonts';
 import { useToast } from '../../components/Toast';
 import {
   Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
-  Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check, Megaphone,
+  Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check, Megaphone, Tag,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { HorseIcon } from '../../components/icons/equine';
@@ -418,10 +418,10 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
                     onPress={() => setType(t)}
                     activeOpacity={0.8}
                   >
-                    {t === 'horse_update' && <HorseIcon size={13} color={type === t ? colors.white : c.textMuted} />}
+                    {t === 'horse_update' && <Tag size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
                     {t === 'announcement' && <Megaphone size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
                     <Text style={[s.typeBtnText, type === t && s.typeBtnTextActive]}>
-                      {t === 'general' ? 'General' : t === 'horse_update' ? 'Caballo' : 'Anuncio'}
+                      {t === 'general' ? 'General' : t === 'horse_update' ? 'Actualización' : 'Anuncio'}
                     </Text>
                   </TouchableOpacity>
                 ))}

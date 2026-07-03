@@ -9,8 +9,9 @@ import PostComposer from '@/components/feed/PostComposer';
 import PostCard from '@/components/feed/PostCard';
 import {
   Loader2, Rss, EyeOff, Pin, TrendingUp,
-  ChevronRight, Trophy, BookOpen, GitBranch, Users, Inbox,
+  ChevronRight, Gavel, BookOpen, GitBranch, MapPin, FileText, CalendarDays, Inbox,
 } from 'lucide-react';
+import { HorseHead } from '@/components/icons/equine';
 import { cn } from '@/lib/utils';
 import { avatarGradient } from '@/lib/avatar-color';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -42,18 +43,18 @@ function FeedSidebar({ user, stats, isAdmin }: {
 
   const quickLinks = [
     ...(role === 'propietario' ? [
-      { href: '/remates', label: 'Remates', icon: <Trophy className="h-4 w-4" /> },
-      { href: '/caballos', label: `Mis caballos${horses?.length ? ` (${horses.length})` : ''}`, icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" /></svg> },
-      { href: '/directorio', label: 'Directorio', icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg> },
+      { href: '/remates', label: 'Remates', icon: <Gavel className="h-4 w-4" /> },
+      { href: '/caballos', label: `Mis caballos${horses?.length ? ` (${horses.length})` : ''}`, icon: <HorseHead size={16} /> },
+      { href: '/directorio', label: 'Directorio', icon: <MapPin className="h-4 w-4" /> },
     ] : []),
     ...(role === 'establecimiento' ? [
       { href: '/solicitudes', label: 'Solicitudes', icon: <Inbox className="h-4 w-4" /> },
-      { href: '/caballos', label: `Caballos${horses?.length ? ` (${horses.length})` : ''}`, icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" /></svg> },
-      { href: '/contratos', label: 'Contratos', icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg> },
+      { href: '/caballos', label: `Caballos${horses?.length ? ` (${horses.length})` : ''}`, icon: <HorseHead size={16} /> },
+      { href: '/contratos', label: 'Contratos', icon: <FileText className="h-4 w-4" /> },
     ] : []),
     ...(role === 'veterinario' ? [
-      { href: '/caballos', label: `Pacientes${horses?.length ? ` (${horses.length})` : ''}`, icon: <Users className="h-4 w-4" /> },
-      { href: '/agenda', label: 'Agenda', icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg> },
+      { href: '/caballos', label: `Pacientes${horses?.length ? ` (${horses.length})` : ''}`, icon: <HorseHead size={16} /> },
+      { href: '/agenda', label: 'Agenda', icon: <CalendarDays className="h-4 w-4" /> },
     ] : []),
     { href: '/padron', label: 'Padrón oficial', icon: <BookOpen className="h-4 w-4" /> },
     { href: '/arbol', label: 'Árbol genealógico', icon: <GitBranch className="h-4 w-4" /> },

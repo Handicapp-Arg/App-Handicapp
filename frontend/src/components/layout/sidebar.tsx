@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Newspaper, ScrollText, Network, CalendarClock, Gavel,
+  LayoutDashboard, Newspaper, BookOpen, GitBranch, CalendarClock, Gavel,
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
-  CreditCard, BarChart3, PanelLeftClose, PanelLeftOpen,
+  CreditCard, BarChart3, ClipboardList, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { usePlanStatus } from '@/hooks/use-plan';
@@ -93,10 +93,11 @@ export function Sidebar() {
     planes:         <CreditCard className={ic} strokeWidth={1.8} />,
     reportes:       <BarChart3 className={ic} strokeWidth={1.8} />,
     superadmin:     <ShieldCheck className={ic} strokeWidth={1.8} />,
+    supervision:    <ClipboardList className={ic} strokeWidth={1.8} />,
     remates:        <Gavel className={ic} strokeWidth={1.8} />,
     muro:           <Newspaper className={ic} strokeWidth={1.8} />,
-    padron:         <ScrollText className={ic} strokeWidth={1.8} />,
-    arbol:          <Network className={ic} strokeWidth={1.8} />,
+    padron:         <BookOpen className={ic} strokeWidth={1.8} />,
+    arbol:          <GitBranch className={ic} strokeWidth={1.8} />,
   };
 
   /* ─── Secciones por rol ─── */
@@ -141,7 +142,7 @@ export function Sidebar() {
         {
           label: 'Principal',
           items: [
-            ...(isEncargado ? [{ href: '/supervision', label: 'Supervisión', icon: icons.panel }] : []),
+            ...(isEncargado ? [{ href: '/supervision', label: 'Supervisión', icon: icons.supervision }] : []),
             { href: '/muro', label: 'Muro', icon: icons.muro },
             { href: '/caballos', label: 'Caballos', icon: icons.caballos },
             // Peón no ve Eventos; encargado, jinete y veterinario sí.

@@ -32,6 +32,20 @@ const typeBadge: Record<string, string> = {
   tarea: 'bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
   gasto: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
   nota: 'bg-gray-100 text-gray-700',
+  carrera: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  aviso: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+};
+
+// Etiquetas para TODOS los tipos canónicos (no todos son creables desde acá,
+// pero un evento de cualquier tipo debe mostrar su badge/label correcto).
+const typeLabels: Record<string, string> = {
+  salud: 'Salud',
+  entrenamiento: 'Entrenamiento',
+  tarea: 'Tarea',
+  gasto: 'Gasto',
+  nota: 'Nota',
+  carrera: 'Carrera',
+  aviso: 'Aviso',
 };
 
 // Gating por rol en la UI: jinete solo ve "entrenamiento", peón solo "tarea".
@@ -662,7 +676,7 @@ export default function EventosPage() {
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${typeBadge[event.type] || typeBadge.nota}`}>
-                      {typeOptions.find(t => t.value === event.type)?.label || event.type}
+                      {typeLabels[event.type] || typeOptions.find(t => t.value === event.type)?.label || event.type}
                     </span>
                     {event.horse && (
                       <span className="text-xs text-gray-400 font-medium">{event.horse.name}</span>

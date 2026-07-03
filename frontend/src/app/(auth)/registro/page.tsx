@@ -72,9 +72,9 @@ function RegistroForm() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Creá tu cuenta</h1>
         <p className="mt-1 text-sm text-gray-400">
-          {invitation ? 'Registrate para unirte a la organización' : 'Completá tus datos para registrarte'}
+          {invitation ? 'Registrate para unirte a la organización' : 'Empezá a gestionar tus caballos'}
         </p>
       </div>
 

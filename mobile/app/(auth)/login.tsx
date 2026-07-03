@@ -11,6 +11,7 @@ import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
 import { HorseshoeH } from '../../components/icons/equine';
+import { fontFamily } from '../../styles/fonts';
 
 const DEV_USERS = [
   { email: 'admin@handicapp.com',           password: 'handicapp2026', name: 'Alejo Admin',          role: 'Administrador' },
@@ -179,7 +180,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
 
   header: { alignItems: 'center', marginBottom: 26, gap: 10 },
-  wordmark: { fontSize: 30, fontWeight: '700', letterSpacing: -0.3, color: c.text, marginTop: 2 },
+  wordmark: { fontSize: 30, fontWeight: '700', fontFamily: fontFamily.semibold, letterSpacing: -0.3, color: c.text, marginTop: 2 },
 
   card: {
     backgroundColor: c.surface, borderRadius: 24, padding: 22, gap: 14,

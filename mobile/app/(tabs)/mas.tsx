@@ -4,9 +4,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Trophy, GitBranch, BookOpen, FileText, Receipt,
-  Mail, Building2, Settings, ShieldCheck, ChevronRight,
-  Map, CreditCard, BarChart3, LayoutDashboard, KeyRound, type LucideIcon,
+  Gavel, GitBranch, BookOpen, FileText, Receipt, CalendarClock,
+  Inbox, Building2, Settings, ShieldCheck, ChevronRight,
+  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
@@ -114,13 +114,13 @@ export default function MasScreen() {
 
   const principal: MenuItem[] = [
     ...(isEncargado ? [{
-      icon: LayoutDashboard,
+      icon: ClipboardList,
       label: 'Supervisión',
       desc: 'Actividad de todos los caballos de la caballeriza',
       path: Routes.supervision,
     }] : []),
     {
-      icon: Trophy,
+      icon: Gavel,
       label: 'Remates',
       desc: 'Comprá y vendé caballos en subastas',
       path: Routes.remates,
@@ -138,7 +138,7 @@ export default function MasScreen() {
       path: Routes.padron,
     },
     {
-      icon: FileText,
+      icon: CalendarClock,
       label: 'Eventos',
       desc: 'Historial de carreras y actividades',
       path: Routes.tabsEventos,
@@ -159,13 +159,13 @@ export default function MasScreen() {
       path: Routes.contratos,
     }] : []),
     ...(isEstab || isAdmin ? [{
-      icon: Mail,
+      icon: Inbox,
       label: 'Solicitudes de pensión',
       desc: 'Aceptá o rechazá solicitudes entrantes',
       path: Routes.solicitudes,
     }] : []),
     ...(isProp ? [{
-      icon: Map,
+      icon: MapPin,
       label: 'Directorio',
       desc: 'Encontrá establecimientos en HandicApp',
       path: Routes.directorio,

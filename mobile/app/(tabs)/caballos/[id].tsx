@@ -1460,10 +1460,10 @@ export default function HorseDetailScreen() {
               <Text style={s.fieldLabel}>Tipo de evento</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
                 {([
-                  { key: 'nota', label: 'Nota', color: '#6b7280', Icon: FileText },
+                  { key: 'nota', label: 'Nota', color: '#374151', Icon: FileText },
                   { key: 'entrenamiento', label: 'Entrenamiento', color: '#a16207', Icon: Dumbbell },
-                  { key: 'salud', label: 'Salud', color: '#dc2626', Icon: Syringe },
-                  { key: 'carrera', label: 'Carrera', color: '#d97706', Icon: Flag },
+                  { key: 'salud', label: 'Salud', color: '#b91c1c', Icon: Syringe },
+                  { key: 'carrera', label: 'Carrera', color: '#92400e', Icon: Flag },
                 ] as const).map((t) => {
                   const active = newEventType === t.key;
                   const iconColor = active ? t.color : c.textMuted;

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   X, Menu, Command, Bell,
-  LayoutDashboard, Newspaper, ScrollText, Network, CalendarClock, Gavel,
+  LayoutDashboard, Newspaper, BookOpen, GitBranch, CalendarClock, Gavel,
   CalendarDays, FileText, Receipt, MapPin, Building2, Inbox, Library, ShieldCheck,
 } from 'lucide-react';
 import { HorseshoeH, HorseHead } from '@/components/icons/equine';
@@ -90,8 +90,8 @@ export function Navbar() {
     catalogo:       <Library className={ic} strokeWidth={1.8} />,
     remates:        <Gavel className={ic} strokeWidth={1.8} />,
     muro:           <Newspaper className={ic} strokeWidth={1.8} />,
-    arbol:          <Network className={ic} strokeWidth={1.8} />,
-    padron:         <ScrollText className={ic} strokeWidth={1.8} />,
+    arbol:          <GitBranch className={ic} strokeWidth={1.8} />,
+    padron:         <BookOpen className={ic} strokeWidth={1.8} />,
   };
 
   /* ─── Mismas secciones que el sidebar ─── */
