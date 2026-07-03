@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
 import {
-  FileSignature, FilePen, Plus, X,
+  FileSignature, FilePen, Plus, X, Eraser,
 } from 'lucide-react';
 import { ContractIllustration } from '@/components/illustrations';
 import {
@@ -22,6 +23,46 @@ const STATUS_META: Record<string, { label: string; tone: BadgeTone }> = {
   rejected: { label: 'Rechazado', tone: 'danger' },
 };
 
+const fmtDate = (d: string | null, withTime = false) =>
+  d
+    ? new Date(d).toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+      })
+    : '—';
+
+// Bloque de firma electrónica de una de las partes (imagen + nombre + fecha).
+function SignatureBlock({
+  role, name, at, url,
+}: {
+  role: string;
+  name: string | null;
+  at: string | null;
+  url: string | null;
+}) {
+  return (
+    <div className="flex-1 rounded-xl border border-clay-200 bg-clay-50 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-clay-700">{role}</p>
+      {at ? (
+        <>
+          {url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={url}
+              alt={`Firma de ${name ?? role}`}
+              className="mt-2 h-16 w-full rounded-md bg-white object-contain"
+            />
+          )}
+          <p className="mt-2 text-xs font-medium text-gray-900">{name ?? '—'}</p>
+          <p className="text-[11px] text-slate-500">Firmado el {fmtDate(at, true)}</p>
+        </>
+      ) : (
+        <p className="mt-2 text-xs italic text-slate-400">Pendiente de firma</p>
+      )}
+    </div>
+  );
+}
+
 const DEFAULT_BODY = `CONTRATO DE PENSIÓN EQUINA
 
 Entre el establecimiento ({establecimiento}) y el propietario ({propietario}), se acuerda:
@@ -32,7 +73,7 @@ Entre el establecimiento ({establecimiento}) y el propietario ({propietario}), s
 4. Cualquier gasto extraordinario (cirugías, medicamentos especiales) será consultado y acordado con el propietario.
 5. El contrato tiene una duración mínima de 3 meses, renovable automáticamente.
 
-Firmado digitalmente en HandicApp.`;
+Firmado electrónicamente en HandicApp.`;
 
 // ─────────────────────────── Contract Card ───────────────────────────
 function ContractCard({
@@ -49,6 +90,23 @@ function ContractCard({
   const meta = STATUS_META[contract.status] ?? STATUS_META.pending;
   const isOwner = contract.owner_id === userId;
   const isEstablishment = contract.establishment_id === userId;
+
+  // Doble firma: cada parte firma la suya. El contrato queda "signed" recién
+  // cuando ambas firmaron.
+  const ownerSigned = !!contract.signed_at;
+  const establishmentSigned = !!contract.establishment_signed_at;
+  const canSign =
+    contract.status === 'pending' &&
+    ((isOwner && !ownerSigned) || (isEstablishment && !establishmentSigned));
+  const canReject = isOwner && !ownerSigned && contract.status === 'pending';
+
+  // Texto del estado real de firmas mientras está pendiente.
+  const pendingSignatureText =
+    ownerSigned && !establishmentSigned
+      ? 'Firmado por el propietario — falta el establecimiento'
+      : establishmentSigned && !ownerSigned
+        ? 'Firmado por el establecimiento — falta el propietario'
+        : 'Pendiente de firma de ambas partes';
 
   return (
     <Card padded={false} className="overflow-hidden">
@@ -71,7 +129,7 @@ function ContractCard({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            {isEstablishment && contract.status === 'pending' && (
+            {isEstablishment && contract.status === 'pending' && !establishmentSigned && !ownerSigned && (
               <Button size="sm" variant="ghost" onClick={() => onDelete(contract.id)}>
                 Cancelar
               </Button>
@@ -82,12 +140,16 @@ function ContractCard({
           </div>
         </div>
 
-        {contract.status === 'signed' && contract.signed_name && (
+        {contract.status === 'signed' && (
           <div className="mt-3 rounded-lg border border-success-500/20 bg-success-50 px-3 py-2">
             <p className="text-xs text-success-700">
-              Firmado por <strong>{contract.signed_name}</strong> el{' '}
-              {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+              Firmado electrónicamente por ambas partes.
             </p>
+          </div>
+        )}
+        {contract.status === 'pending' && (
+          <div className="mt-3 rounded-lg border border-warning-500/20 bg-warning-50 px-3 py-2">
+            <p className="text-xs text-warning-700">{pendingSignatureText}</p>
           </div>
         )}
         {contract.status === 'rejected' && contract.rejection_reason && (
@@ -102,14 +164,40 @@ function ContractCard({
           <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-slate-700">
             {contract.body}
           </pre>
-          {isOwner && contract.status === 'pending' && (
+
+          {/* Firmas electrónicas de ambas partes */}
+          <div className="mt-5">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              Firma electrónica
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <SignatureBlock
+                role={`Establecimiento${contract.establishment?.name ? ` · ${contract.establishment.name}` : ''}`}
+                name={contract.establishment_signed_name}
+                at={contract.establishment_signed_at}
+                url={contract.establishment_signature_url}
+              />
+              <SignatureBlock
+                role={`Propietario${contract.owner?.name ? ` · ${contract.owner.name}` : ''}`}
+                name={contract.signed_name}
+                at={contract.signed_at}
+                url={contract.owner_signature_url}
+              />
+            </div>
+          </div>
+
+          {(canSign || canReject) && (
             <div className="mt-5 flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => onReject(contract)}>
-                Rechazar
-              </Button>
-              <Button className="flex-1" iconLeft={<FileSignature className="h-4 w-4" />} onClick={() => onSign(contract)}>
-                Firmar digitalmente
-              </Button>
+              {canReject && (
+                <Button variant="secondary" className="flex-1" onClick={() => onReject(contract)}>
+                  Rechazar
+                </Button>
+              )}
+              {canSign && (
+                <Button className="flex-1" iconLeft={<FileSignature className="h-4 w-4" />} onClick={() => onSign(contract)}>
+                  Firmar
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -138,6 +226,8 @@ export default function ContratosPage() {
   });
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [signedName, setSignedName] = useState('');
+  const [hasSignature, setHasSignature] = useState(false);
+  const sigPadRef = useRef<SignatureCanvas>(null);
   const [rejectingContract, setRejectingContract] = useState<Contract | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -145,6 +235,34 @@ export default function ContratosPage() {
 
   const resetForm = () => {
     setForm({ owner_id: '', horse_id: '', title: 'Contrato de Pensión', body: DEFAULT_BODY });
+  };
+
+  // Abre el modal de firma autocompletando con el nombre del usuario actual.
+  const openSign = (c: Contract) => {
+    setSigningContract(c);
+    setSignedName(user?.name ?? '');
+    setHasSignature(false);
+  };
+  const closeSign = () => {
+    setSigningContract(null);
+    setSignedName('');
+    setHasSignature(false);
+  };
+  const clearSignature = () => {
+    sigPadRef.current?.clear();
+    setHasSignature(false);
+  };
+  const confirmSign = async () => {
+    if (!signingContract || !sigPadRef.current) return;
+    if (sigPadRef.current.isEmpty() || !signedName.trim()) return;
+    const canvas = sigPadRef.current.getCanvas();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/png'),
+    );
+    if (!blob) return;
+    const file = new File([blob], 'firma.png', { type: 'image/png' });
+    await signContract.mutateAsync({ id: signingContract.id, signature: file, signed_name: signedName.trim() });
+    closeSign();
   };
 
   return (
@@ -181,7 +299,7 @@ export default function ContratosPage() {
               key={c.id}
               contract={c}
               userId={user?.id ?? ''}
-              onSign={setSigningContract}
+              onSign={openSign}
               onReject={setRejectingContract}
               onDelete={(id) => deleteContract.mutate(id)}
             />
@@ -266,25 +384,20 @@ export default function ContratosPage() {
       {/* ── Modal: firmar ── */}
       <Modal
         open={!!signingContract}
-        onClose={() => { setSigningContract(null); setSignedName(''); }}
-        title="Firmar digitalmente"
+        onClose={closeSign}
+        title="Firma electrónica"
         description={signingContract ? `“${signingContract.title}”` : undefined}
-        size="sm"
+        size="md"
         footer={
           <>
-            <Button variant="secondary" onClick={() => { setSigningContract(null); setSignedName(''); }}>
+            <Button variant="secondary" onClick={closeSign}>
               Cancelar
             </Button>
             <Button
               loading={signContract.isPending}
-              disabled={!signedName.trim()}
+              disabled={!signedName.trim() || !hasSignature}
               iconLeft={<FilePen className="h-4 w-4" />}
-              onClick={async () => {
-                if (!signingContract) return;
-                await signContract.mutateAsync({ id: signingContract.id, signed_name: signedName.trim() });
-                setSigningContract(null);
-                setSignedName('');
-              }}
+              onClick={confirmSign}
             >
               Confirmar firma
             </Button>
@@ -293,14 +406,36 @@ export default function ContratosPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Escribí tu nombre completo tal como aparecerá en la firma. Quedará registrado con fecha y hora.
+            Dibujá tu firma con el mouse o el dedo y escribí tu nombre completo.
+            Quedará registrada con fecha y hora.
           </p>
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-600">Tu firma</label>
+              <button
+                type="button"
+                onClick={clearSignature}
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-clay-600"
+              >
+                <Eraser className="h-3.5 w-3.5" /> Borrar
+              </button>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
+              <SignatureCanvas
+                ref={sigPadRef}
+                penColor="#382514"
+                onEnd={() => setHasSignature(true)}
+                canvasProps={{ className: 'mx-auto block touch-none', width: 460, height: 180 }}
+              />
+            </div>
+          </div>
+
           <Input
             label="Tu nombre completo"
             value={signedName}
             onChange={(e) => setSignedName(e.target.value)}
             placeholder="Ej. Juan Pérez"
-            autoFocus
           />
         </div>
       </Modal>

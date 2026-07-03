@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Image,
   KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
+import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -54,7 +55,22 @@ function ContractCard({
   const sc = STATUS_COLORS[contract.status] ?? STATUS_COLORS.pending;
   const isOwner = contract.owner_id === userId;
   const isEstab = contract.establishment_id === userId;
+  const ownerSigned = !!contract.signed_at;
+  const estabSigned = !!contract.establishment_signed_at;
   const dateStr = new Date(contract.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const fmtDate = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+
+  // Aviso de firma parcial (una parte firmó, falta la otra).
+  const partialMsg =
+    contract.status === 'pending' && estabSigned && !ownerSigned
+      ? 'Firmado por el establecimiento — falta la firma del propietario'
+      : contract.status === 'pending' && ownerSigned && !estabSigned
+        ? 'Firmado por el propietario — falta la firma del establecimiento'
+        : null;
+
+  const showOwnerActions = isOwner && contract.status === 'pending' && !ownerSigned;
+  const showEstabSign = isEstab && contract.status === 'pending' && !estabSigned;
 
   return (
     <View style={cs.card}>
@@ -87,12 +103,18 @@ function ContractCard({
         />
       </TouchableOpacity>
 
-      {contract.status === 'signed' && contract.signed_name && (
+      {contract.status === 'signed' && (
         <View style={cs.signedBanner}>
           <Check size={13} color={c.isDark ? '#34d399' : '#15803d'} strokeWidth={2.5} />
           <Text style={cs.signedText}>
-            Firmado por {contract.signed_name} · {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
+            Firmado por ambas partes · {fmtDate(contract.signed_at)}
           </Text>
+        </View>
+      )}
+      {partialMsg && (
+        <View style={cs.pendingBanner}>
+          <Check size={13} color={c.isDark ? '#fbbf24' : '#b45309'} strokeWidth={2.5} />
+          <Text style={cs.pendingText}>{partialMsg}</Text>
         </View>
       )}
       {contract.status === 'rejected' && contract.rejection_reason && (
@@ -108,14 +130,42 @@ function ContractCard({
             <Text style={cs.bodyText}>{contract.body}</Text>
           </ScrollView>
 
-          {isOwner && contract.status === 'pending' && (
+          {/* Presentación: ambas firmas al pie del contrato firmado */}
+          {contract.status === 'signed' && (
+            <View style={cs.signBlock}>
+              <Text style={cs.signBlockLabel}>FIRMA ELECTRÓNICA</Text>
+              <View style={cs.signRow}>
+                {([
+                  { label: 'Establecimiento', name: contract.establishment_signed_name ?? contract.establishment?.name, url: contract.establishment_signature_url, at: contract.establishment_signed_at },
+                  { label: 'Propietario', name: contract.signed_name ?? contract.owner?.name, url: contract.owner_signature_url, at: contract.signed_at },
+                ]).map((p) => (
+                  <View key={p.label} style={cs.signCell}>
+                    {p.url ? (
+                      <Image source={{ uri: p.url }} style={cs.signImg} resizeMode="contain" />
+                    ) : (
+                      <View style={cs.signImg} />
+                    )}
+                    <View style={cs.signLine} />
+                    <Text style={cs.signName} numberOfLines={1}>{p.name ?? '—'}</Text>
+                    <Text style={cs.signRole}>{p.label} · {fmtDate(p.at)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {(showOwnerActions || showEstabSign) && (
             <View style={cs.actions}>
-              <PressableScale style={cs.rejectBtn} onPress={() => onReject(contract)}>
-                <Text style={cs.rejectBtnText}>Rechazar</Text>
-              </PressableScale>
-              <PressableScale style={cs.signBtn} onPress={() => onSign(contract)}>
-                <Text style={cs.signBtnText}>Firmar</Text>
-              </PressableScale>
+              {showOwnerActions && (
+                <PressableScale style={cs.rejectBtn} onPress={() => onReject(contract)}>
+                  <Text style={cs.rejectBtnText}>Rechazar</Text>
+                </PressableScale>
+              )}
+              {(showOwnerActions || showEstabSign) && (
+                <PressableScale style={cs.signBtn} onPress={() => onSign(contract)}>
+                  <Text style={cs.signBtnText}>Firmar</Text>
+                </PressableScale>
+              )}
             </View>
           )}
           {isEstab && contract.status === 'pending' && (
@@ -160,8 +210,34 @@ export default function ContratosScreen() {
   const [signedName, setSignedName] = useState('');
   const [rejectingContract, setRejectingContract] = useState<Contract | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const signatureRef = useRef<SignatureViewRef>(null);
 
   const isEstab = user?.role === 'establecimiento' || user?.role === 'admin';
+
+  // Abre el modal de firma autocompletando con el nombre del usuario.
+  const openSign = (contract: Contract) => { setSignedName(user?.name ?? ''); setSigningContract(contract); };
+  const closeSign = () => { setSigningContract(null); setSignedName(''); };
+
+  // Recibe el dataURL del pad y ejecuta el alta multipart.
+  const submitSignature = async (signature: string) => {
+    if (!signingContract) return;
+    if (!signature || signature === 'data:,') {
+      Alert.alert('Firma requerida', 'Dibujá tu firma en el recuadro antes de confirmar.');
+      return;
+    }
+    await signContract.mutateAsync({ id: signingContract.id, signature, signed_name: signedName.trim() });
+    haptic.success();
+    closeSign();
+  };
+
+  // Estilo del canvas (theme-aware). Ocultamos el footer nativo: usamos botones propios.
+  const signatureWebStyle = useMemo(() => `
+    .m-signature-pad { box-shadow: none; border: none; margin: 0; background-color: ${c.surfaceAlt}; }
+    .m-signature-pad--body { border: none; }
+    .m-signature-pad--body canvas { background-color: ${c.surfaceAlt}; }
+    .m-signature-pad--footer { display: none; margin: 0; }
+    body, html { margin: 0; height: 100%; background-color: ${c.surfaceAlt}; }
+  `, [c]);
 
   const pending = contracts?.filter((c) => c.status === 'pending') ?? [];
   const others = contracts?.filter((c) => c.status !== 'pending') ?? [];
@@ -219,7 +295,7 @@ export default function ContratosScreen() {
                   {pending.map((ct, index) => (
                     <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                       <ContractCard contract={ct} userId={user?.id ?? ''} role={user?.role ?? ''}
-                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
+                        onSign={openSign} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
                     </Animated.View>
                   ))}
                 </View>
@@ -230,7 +306,7 @@ export default function ContratosScreen() {
                   {others.map((ct, index) => (
                     <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                       <ContractCard contract={ct} userId={user?.id ?? ''} role={user?.role ?? ''}
-                        onSign={setSigningContract} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
+                        onSign={openSign} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
                     </Animated.View>
                   ))}
                 </View>
@@ -336,34 +412,47 @@ export default function ContratosScreen() {
       {/* Modal firmar */}
       <Modal visible={!!signingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
+          <Animated.View style={[s.modalCard, { maxHeight: '88%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
             <View style={[s.modalHeader, { backgroundColor: '#16a34a' }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Firmar digitalmente</Text>
-              <TouchableOpacity onPress={() => setSigningContract(null)}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
+              <TouchableOpacity onPress={closeSign}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
             </View>
             <View style={s.modalBody}>
-              <Text style={s.fieldLabel}>Escribí tu nombre completo tal como aparecerá en la firma:</Text>
+              <Text style={s.fieldLabel}>Tu nombre completo</Text>
               <TextInput
                 style={s.input} value={signedName} onChangeText={setSignedName}
                 placeholder="Tu nombre completo" placeholderTextColor={c.textFaint}
                 autoCapitalize="words"
               />
+
+              <View style={s.signHeaderRow}>
+                <Text style={s.fieldLabel}>Dibujá tu firma</Text>
+                <TouchableOpacity onPress={() => signatureRef.current?.clearSignature()} activeOpacity={0.7}>
+                  <Text style={s.clearLink}>Limpiar</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={s.signPad}>
+                <SignatureScreen
+                  ref={signatureRef}
+                  onOK={submitSignature}
+                  onEmpty={() => Alert.alert('Firma requerida', 'Dibujá tu firma en el recuadro antes de confirmar.')}
+                  webStyle={signatureWebStyle}
+                  penColor={c.brand}
+                  backgroundColor="transparent"
+                  autoClear={false}
+                  descriptionText=""
+                />
+              </View>
               <Text style={s.hint}>Al confirmar, la firma quedará registrada con fecha y hora.</Text>
             </View>
             <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.cancelBtn, { flex: 1 }]} onPress={() => setSigningContract(null)}>
+              <TouchableOpacity style={[s.cancelBtn, { flex: 1 }]} onPress={closeSign}>
                 <Text style={s.cancelBtnText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.signSubmitBtn, { flex: 1 }, (!signedName.trim() || signContract.isPending) && { opacity: 0.5 }]}
                 disabled={!signedName.trim() || signContract.isPending}
-                onPress={async () => {
-                  if (!signingContract) return;
-                  await signContract.mutateAsync({ id: signingContract.id, signed_name: signedName.trim() });
-                  haptic.success();
-                  setSigningContract(null);
-                  setSignedName('');
-                }}
+                onPress={() => signatureRef.current?.readSignature()}
                 activeOpacity={0.85}
               >
                 {signContract.isPending
@@ -449,6 +538,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
+  signHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space[3] },
+  clearLink: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
+  signPad: { height: 200, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   cancelBtn: { borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, paddingVertical: space[3] + 1, alignItems: 'center' },
   cancelBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   submitBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingVertical: space[3] + 1, alignItems: 'center' },
@@ -481,6 +573,16 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
   signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', borderRadius: radius.md, padding: space[3] },
   signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#34d399' : '#15803d' },
+  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb', borderRadius: radius.md, padding: space[3] },
+  pendingText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#fbbf24' : '#b45309' },
+  signBlock: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[2] },
+  signBlockLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, marginBottom: space[3] },
+  signRow: { flexDirection: 'row', gap: space[3] },
+  signCell: { flex: 1 },
+  signImg: { width: '100%', height: 64, backgroundColor: c.surfaceAlt, borderRadius: radius.sm },
+  signLine: { height: 1, backgroundColor: c.borderStrong, marginTop: 2, marginBottom: space[2] },
+  signName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  signRole: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
   rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', borderRadius: radius.md, padding: space[3] },
   rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#f87171' : '#b91c1c' },
   body: { borderTopWidth: 1, borderTopColor: c.border },

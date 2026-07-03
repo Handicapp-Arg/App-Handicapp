@@ -11,8 +11,15 @@ export interface Contract {
   title: string;
   body: string;
   status: 'pending' | 'signed' | 'rejected';
+  // Firma del propietario (owner)
   signed_name: string | null;
   signed_at: string | null;
+  owner_signature_url: string | null;
+  // Firma del establecimiento
+  establishment_signed_name: string | null;
+  establishment_signed_at: string | null;
+  establishment_signature_url: string | null;
+  body_hash: string | null;
   rejection_reason: string | null;
   created_at: string;
   establishment?: { id: string; name: string };
@@ -45,8 +52,15 @@ export function useSignContract() {
   const queryClient = useQueryClient();
   const toast = useToast();
   return useMutation({
-    mutationFn: async ({ id, signed_name }: { id: string; signed_name: string }) =>
-      (await api.post(`/contracts/${id}/sign`, { signed_name })).data as Contract,
+    mutationFn: async ({ id, signature, signed_name }: { id: string; signature: File; signed_name: string }) => {
+      const fd = new FormData();
+      fd.append('signature', signature);
+      fd.append('signed_name', signed_name);
+      const { data } = await api.post(`/contracts/${id}/sign`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data as Contract;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       toast.success('Contrato firmado');

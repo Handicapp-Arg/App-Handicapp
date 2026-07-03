@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system/legacy';
 import api from '../lib/api';
 
 export function useLookupUserByEmail(email: string) {
@@ -23,8 +24,16 @@ export interface Contract {
   title: string;
   body: string;
   status: 'pending' | 'signed' | 'rejected';
+  // Firma del PROPIETARIO
   signed_name: string | null;
   signed_at: string | null;
+  owner_signature_url: string | null;
+  // Firma del ESTABLECIMIENTO
+  establishment_signed_name: string | null;
+  establishment_signed_at: string | null;
+  establishment_signature_url: string | null;
+  // Huella anti-adulteración del cuerpo
+  body_hash: string | null;
   rejection_reason: string | null;
   created_at: string;
   establishment?: { id: string; name: string };
@@ -51,8 +60,22 @@ export function useCreateContract() {
 export function useSignContract() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, signed_name }: { id: string; signed_name: string }) =>
-      (await api.post(`/contracts/${id}/sign`, { signed_name })).data as Contract,
+    // `signature` es el dataURL PNG (base64) que devuelve el pad de firma.
+    mutationFn: async ({ id, signature, signed_name }: { id: string; signature: string; signed_name: string }) => {
+      // El upload multipart necesita un archivo con URI: escribimos el base64 del
+      // dataURL a un archivo temporal y mandamos esa uri como { uri, name, type }.
+      const base64 = signature.replace(/^data:image\/\w+;base64,/, '');
+      const uri = `${FileSystem.cacheDirectory}firma-${id}-${Date.now()}.png`;
+      await FileSystem.writeAsStringAsync(uri, base64, { encoding: FileSystem.EncodingType.Base64 });
+
+      const formData = new FormData();
+      formData.append('signature', { uri, name: 'firma.png', type: 'image/png' } as unknown as Blob);
+      formData.append('signed_name', signed_name);
+      const { data } = await api.post(`/contracts/${id}/sign`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data as Contract;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contracts'] }),
   });
 }
