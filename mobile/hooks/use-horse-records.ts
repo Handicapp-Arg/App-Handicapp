@@ -41,6 +41,23 @@ export function useHorseRecordsSearch(name: string, enabled = true) {
   });
 }
 
+/**
+ * Búsqueda en vivo en el Stud Book Argentino oficial.
+ * Consulta el registro oficial (~1-2s), importa los ejemplares encontrados
+ * y los devuelve como registros normales del padrón (mismo shape que /search).
+ * Se dispara de forma explícita (mutación) por su costo/latencia.
+ */
+export function useSearchLiveStudbook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string): Promise<SearchResult> =>
+      api.get('/horse-records/search-live', { params: { name } }).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['horse-records', 'search'] });
+    },
+  });
+}
+
 export function useHorseRecordTree(id: string | null, depth = 4) {
   return useQuery<HorseRecordNode>({
     queryKey: ['horse-records', id, 'tree', depth],

@@ -6,13 +6,13 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { X, CheckCircle2, Info, ChevronLeft, Search } from 'lucide-react-native';
+import { X, CheckCircle2, Info, ChevronLeft, Search, Globe } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Routes } from '../lib/routes';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { haptic } from '../lib/haptics';
-import { useHorseRecordTree, type HorseRecord, type HorseRecordNode } from '../hooks/use-horse-records';
+import { useHorseRecordTree, useSearchLiveStudbook, type HorseRecord, type HorseRecordNode } from '../hooks/use-horse-records';
 import { ListRowSkeleton } from '../components/Skeleton';
 import api from '../lib/api';
 
@@ -283,6 +283,9 @@ export default function PadronScreen() {
 
   const { data, isLoading, isFetching } = useSearch(query);
 
+  // Búsqueda en vivo en el Stud Book Argentino (complemento explícito)
+  const liveSearch = useSearchLiveStudbook();
+
   const handleSelect = useCallback((id: string) => {
     haptic.light();
     setSelectedId(id);
@@ -290,6 +293,67 @@ export default function PadronScreen() {
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
+
+  const term = query.trim();
+  const liveActive = !!term && liveSearch.variables === term;
+  const liveItems = liveActive && liveSearch.data ? liveSearch.data.items : [];
+  const liveSearched = liveActive && liveSearch.isSuccess;
+  // Ofrecemos la búsqueda oficial cuando lo local trae 0 o muy pocos resultados
+  const offerLiveSearch = !!term && !isLoading && total <= 2 && !liveSearched;
+
+  const runLiveSearch = useCallback(() => {
+    if (!term) return;
+    haptic.light();
+    liveSearch.mutate(term);
+  }, [term, liveSearch]);
+
+  const liveFooter = (!term || (!offerLiveSearch && !liveSearch.isPending && !liveSearched)) ? null : (
+    <View style={s.liveWrap}>
+      {(offerLiveSearch || liveSearch.isPending) && (
+        <TouchableOpacity
+          style={[s.liveBtn, liveSearch.isPending && { opacity: 0.7 }]}
+          onPress={runLiveSearch}
+          disabled={liveSearch.isPending}
+          activeOpacity={0.85}
+        >
+          {liveSearch.isPending ? (
+            <>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={s.liveBtnText}>Buscando en el registro oficial…</Text>
+            </>
+          ) : (
+            <>
+              <Globe size={18} color="#fff" strokeWidth={2} />
+              <Text style={s.liveBtnText}>Buscar en el Stud Book Argentino</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+
+      {liveSearch.isPending && (
+        <Text style={s.liveHint}>Consultando el registro oficial, puede tardar unos segundos…</Text>
+      )}
+
+      {liveSearch.isError && (
+        <Text style={s.liveError}>No pudimos consultar el Stud Book Argentino. Reintentá en un momento.</Text>
+      )}
+
+      {liveSearched && (
+        liveItems.length > 0 ? (
+          <View style={{ marginTop: space[2] }}>
+            <Text style={s.liveSectionTitle}>{liveItems.length} en el Stud Book Argentino</Text>
+            {liveItems.map((record, index) => (
+              <Animated.View key={record.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                <RecordCard record={record} onPress={() => handleSelect(record.id)} cs={cardS} c={c} />
+              </Animated.View>
+            ))}
+          </View>
+        ) : (
+          <Text style={s.liveEmpty}>No se encontró en el Stud Book Argentino.</Text>
+        )
+      )}
+    </View>
+  );
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -340,11 +404,12 @@ export default function PadronScreen() {
           )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={liveFooter}
           ListEmptyComponent={
             <View style={s.center}>
               <Search size={40} color={c.textFaint} strokeWidth={2} />
               <Text style={s.emptyTitle}>Sin resultados</Text>
-              {query ? <Text style={s.emptySubtitle}>No encontramos "{query}"</Text> : null}
+              {query ? <Text style={s.emptySubtitle}>No está en el padrón local</Text> : null}
             </View>
           }
         />
@@ -396,6 +461,29 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   loadingText: { fontSize: text.sm, color: c.textFaint, marginTop: space[3] },
   emptyTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted, marginTop: space[3] },
   emptySubtitle: { fontSize: text.sm, color: c.textFaint, marginTop: space[1] },
+  liveWrap: { marginTop: space[2], marginBottom: space[4] },
+  liveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space[2],
+    backgroundColor: c.brand,
+    borderRadius: radius.lg,
+    paddingVertical: space[3],
+    paddingHorizontal: space[4],
+    ...shadow.sm,
+  },
+  liveBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: '#fff' },
+  liveHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[2] },
+  liveError: { fontSize: text.xs, color: c.isDark ? '#f87171' : '#b91c1c', textAlign: 'center', marginTop: space[2] },
+  liveSectionTitle: {
+    fontSize: text.xs,
+    fontWeight: weight.semibold,
+    color: c.textMuted,
+    marginBottom: space[2],
+    paddingLeft: space[1],
+  },
+  liveEmpty: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', marginTop: space[3] },
 });
 
 type CardStyles = ReturnType<typeof makeCardStyles>;

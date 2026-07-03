@@ -8,6 +8,7 @@ import {
   Search, ChevronRight, CheckCircle2, Clock, AlertCircle,
   Shield, ShieldCheck, ShieldAlert, Upload, X, ChevronDown, ChevronUp,
   Database, RefreshCw, Download, TreePine, FileText, User,
+  Globe, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HorseHead } from '@/components/icons/equine';
@@ -17,6 +18,7 @@ import {
   useHorseRecordProgeny, useMyHorseRecordClaims, useSubmitClaim,
   useUploadClaimDocument, useHorseRecordStats, useAdminImportWikidata,
   useAdminRetryFailed, useAdminImportStudbookAR, useImportJobs,
+  useSearchLiveStudbook,
   type ImportJob,
 } from '@/hooks/use-horse-records';
 import type { HorseRecord, HorseRecordNode, HorseOwnershipClaim } from '@/types';
@@ -657,6 +659,18 @@ export default function RegistroPage() {
     true,
   );
 
+  // Búsqueda en vivo en el Stud Book Argentino (complemento explícito)
+  const liveSearch = useSearchLiveStudbook();
+  const term = debouncedQuery.trim();
+  // Los resultados en vivo sólo valen para el término buscado
+  const liveActive = !!term && liveSearch.variables === term;
+  const liveItems = liveActive && liveSearch.data ? liveSearch.data.items : [];
+  const liveSearched = liveActive && liveSearch.isSuccess;
+  const localCount = results?.total ?? 0;
+  // Ofrecemos la búsqueda oficial cuando lo local trae 0 o muy pocos resultados
+  const offerLiveSearch =
+    !!term && !isLoading && localCount <= 2 && !liveSearched;
+
   const handleSelect = (id: string) => {
     setSelectedId(prev => (prev === id ? null : id));
   };
@@ -713,13 +727,13 @@ export default function RegistroPage() {
                   ))}
                 </div>
               ) : !results?.items?.length ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                   <Search className="h-8 w-8 text-gray-200 mb-3" />
                   <p className="text-sm font-medium text-gray-500">
-                    {query ? `Sin resultados para "${query}"` : 'Buscá un caballo'}
+                    {term ? `Sin resultados para "${term}"` : 'Buscá un caballo'}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {query ? 'El sistema buscará automáticamente en fuentes externas' : 'Escribí el nombre para comenzar'}
+                    {term ? 'No está en el padrón local. Probá el Stud Book Argentino.' : 'Escribí el nombre para comenzar'}
                   </p>
                 </div>
               ) : (
@@ -731,6 +745,69 @@ export default function RegistroPage() {
                     onClick={() => handleSelect(record.id)}
                   />
                 ))
+              )}
+
+              {/* Búsqueda en vivo en el Stud Book Argentino */}
+              {!isLoading && term && (offerLiveSearch || liveSearch.isPending || liveSearched) && (
+                <div className="p-4 border-t border-gray-100 space-y-3">
+                  {(offerLiveSearch || liveSearch.isPending) && (
+                    <button
+                      onClick={() => liveSearch.mutate(term)}
+                      disabled={liveSearch.isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-clay-500 text-white text-sm font-semibold rounded-xl hover:bg-clay-600 transition disabled:opacity-70"
+                    >
+                      {liveSearch.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Buscando en el registro oficial…
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="h-4 w-4" />
+                          Buscar en el Stud Book Argentino
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {liveSearch.isPending && (
+                    <p className="text-xs text-gray-400 text-center">
+                      Consultando el registro oficial, puede tardar unos segundos…
+                    </p>
+                  )}
+
+                  {liveSearch.isError && (
+                    <p className="text-xs text-red-500 text-center">
+                      No pudimos consultar el Stud Book Argentino. Reintentá en un momento.
+                    </p>
+                  )}
+
+                  {liveSearched && (
+                    <>
+                      {liveItems.length > 0 ? (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 px-1">
+                            {liveItems.length} en el Stud Book Argentino
+                          </p>
+                          <div className="rounded-lg border border-gray-100 overflow-hidden">
+                            {liveItems.map(record => (
+                              <RecordCard
+                                key={record.id}
+                                record={record}
+                                selected={selectedId === record.id}
+                                onClick={() => handleSelect(record.id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 text-center py-2">
+                          No se encontró en el Stud Book Argentino.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
             </div>
 
