@@ -147,6 +147,13 @@ function ExpensesCard({ expenses, c, s }: { expenses: ReportSummary['expenses'];
             const isCurrent = i === chrono.length - 1;
             return (
               <View key={m.month} style={s.chartCol}>
+                <View style={s.chartValRow}>
+                  {isCurrent ? (
+                    <Text style={s.chartVal} numberOfLines={1} adjustsFontSizeToFit>
+                      {fmtMoney(m.total)}
+                    </Text>
+                  ) : null}
+                </View>
                 <View style={s.chartBarTrack}>
                   <View
                     style={[
@@ -356,6 +363,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 104 },
   chartCol: { flex: 1, alignItems: 'center', gap: 5, height: '100%' },
+  chartValRow: { height: 12, alignSelf: 'stretch', justifyContent: 'flex-end', alignItems: 'center' },
+  chartVal: { fontSize: 8, fontWeight: weight.bold, color: c.brand },
   chartBarTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
   chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
   chartLbl: { fontSize: 9, color: c.textFaint, textTransform: 'capitalize' },

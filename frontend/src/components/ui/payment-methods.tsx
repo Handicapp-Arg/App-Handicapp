@@ -106,6 +106,57 @@ function AmexLogo() {
   );
 }
 
+/**
+ * Cabal — wordmark oficial (lowercase "cabal") en azul de marca #164193.
+ * Se dibuja como texto sobre el chip blanco (mismo enfoque que Visa).
+ * No hay path vectorial oficial público del logotipo: versión fiel y sobria
+ * reproduciendo el wordmark en minúscula y el azul institucional de Cabal.
+ */
+function CabalLogo() {
+  return (
+    <svg viewBox="0 0 40 14" width={30} height={10.5} role="presentation">
+      <text
+        x="20"
+        y="11"
+        textAnchor="middle"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="12"
+        fontWeight="800"
+        letterSpacing="-0.4"
+        fill="#164193"
+      >
+        cabal
+      </text>
+    </svg>
+  );
+}
+
+/**
+ * Naranja (Naranja X) — wordmark blanco sobre el naranja de marca #FA4616.
+ * Mismo enfoque de "caja de color + texto" que Amex/MercadoPago.
+ * No hay path vectorial oficial público del logotipo: versión fiel y sobria
+ * con el wordmark "Naranja X" en blanco sobre el naranja institucional.
+ */
+function NaranjaLogo() {
+  return (
+    <svg viewBox="0 0 40 26" width={40} height={26} role="presentation">
+      <rect width="40" height="26" rx="5" fill="#FA4616" />
+      <text
+        x="20"
+        y="16.5"
+        textAnchor="middle"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="6.6"
+        fontWeight="800"
+        letterSpacing="0.1"
+        fill="#ffffff"
+      >
+        Naranja X
+      </text>
+    </svg>
+  );
+}
+
 /** MercadoPago — isologo oficial (handshake), blanco sobre azul de marca. */
 function MercadoPagoLogo() {
   return (
@@ -122,13 +173,15 @@ const METHODS = [
   { key: 'visa', title: 'Visa', Logo: VisaLogo },
   { key: 'mastercard', title: 'Mastercard', Logo: MastercardLogo },
   { key: 'amex', title: 'American Express', Logo: AmexLogo },
+  { key: 'cabal', title: 'Cabal', Logo: CabalLogo },
+  { key: 'naranja', title: 'Naranja X', Logo: NaranjaLogo },
   { key: 'mercadopago', title: 'MercadoPago', Logo: MercadoPagoLogo },
 ] as const;
 
 /** Fila con los logos de los medios de pago aceptados. */
 export function PaymentMethods({ className }: { className?: string }) {
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
       {METHODS.map(({ key, title, Logo }) => (
         <Chip key={key} title={title}>
           <Logo />

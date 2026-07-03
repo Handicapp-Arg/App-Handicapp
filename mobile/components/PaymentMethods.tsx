@@ -99,6 +99,55 @@ export function AmexLogo({ h = 24 }: { h?: number }) {
   );
 }
 
+/**
+ * Cabal — wordmark oficial (lowercase "cabal") en azul de marca #164193.
+ * Se dibuja como texto sobre el chip blanco (mismo enfoque que Visa).
+ * Versión fiel y sobria del wordmark (no hay path vectorial oficial público).
+ */
+export function CabalLogo({ h = 11 }: { h?: number }) {
+  const w = h * (40 / 14);
+  return (
+    <Svg width={w} height={h} viewBox="0 0 40 14">
+      <SvgText
+        x="20"
+        y="11"
+        textAnchor="middle"
+        fontFamily="Arial"
+        fontSize="12"
+        fontWeight="800"
+        fill="#164193"
+      >
+        cabal
+      </SvgText>
+    </Svg>
+  );
+}
+
+/**
+ * Naranja (Naranja X) — wordmark blanco sobre el naranja de marca #FA4616.
+ * Mismo enfoque de "caja de color + texto" que Amex/MercadoPago.
+ * Versión fiel y sobria del wordmark (no hay path vectorial oficial público).
+ */
+export function NaranjaLogo({ h = 24 }: { h?: number }) {
+  const w = h * (40 / 26);
+  return (
+    <Svg width={w} height={h} viewBox="0 0 40 26">
+      <Rect width="40" height="26" rx="5" fill="#FA4616" />
+      <SvgText
+        x="20"
+        y="16.5"
+        textAnchor="middle"
+        fontFamily="Arial"
+        fontSize="6.6"
+        fontWeight="800"
+        fill="#ffffff"
+      >
+        Naranja X
+      </SvgText>
+    </Svg>
+  );
+}
+
 /** MercadoPago — isologo oficial (handshake), blanco sobre azul de marca. */
 export function MercadoPagoLogo({ h = 24 }: { h?: number }) {
   const w = h * (40 / 26);
@@ -143,6 +192,8 @@ export function PaymentMethods({
       <View style={chip}><VisaLogo h={logoH * 0.62} /></View>
       <View style={chip}><MastercardLogo h={logoH + 3} /></View>
       <View style={chip}><AmexLogo h={chipH - 8} /></View>
+      <View style={chip}><CabalLogo h={logoH * 0.72} /></View>
+      <View style={chip}><NaranjaLogo h={chipH - 8} /></View>
       <View style={chip}><MercadoPagoLogo h={chipH - 8} /></View>
     </View>
   );

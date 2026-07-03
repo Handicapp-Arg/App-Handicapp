@@ -22,25 +22,25 @@ export function useTrainingMetrics(eventId: string) {
   });
 }
 
-export function useUpsertTrainingMetrics(eventId: string) {
+export function useUpsertTrainingMetrics() {
   const qc = useQueryClient();
   return useMutation({
-    // `eventId` (opcional) permite dirigir la métrica a un evento recién creado
-    // cuyo id no se conocía al montar el hook (ej. flujo "registrar monta").
-    // Si no se pasa, usa el id con el que se instanció el hook.
-    mutationFn: async ({ eventId: overrideId, ...dto }: {
-      eventId?: string;
+    // El `eventId` se recibe en la mutación (no en la construcción del hook):
+    // en el flujo "registrar monta" el evento se crea recién al guardar, así
+    // que su id no se conoce al montar el hook. Recibirlo acá evita el estado
+    // inválido de instanciar con un id vacío.
+    mutationFn: async ({ eventId, ...dto }: {
+      eventId: string;
       distance_km?: number;
       duration_min?: number;
       intensity?: number;
       discipline?: string;
     }) => {
-      const targetId = overrideId ?? eventId;
-      const { data } = await api.post(`/events/${targetId}/training-metrics`, dto);
+      const { data } = await api.post(`/events/${eventId}/training-metrics`, dto);
       return data as TrainingMetrics;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['training-metrics', eventId] });
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['training-metrics', variables.eventId] });
       qc.invalidateQueries({ queryKey: ['training-history'] });
     },
   });

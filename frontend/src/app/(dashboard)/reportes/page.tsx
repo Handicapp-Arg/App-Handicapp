@@ -225,7 +225,16 @@ function ExpensesCard({ expenses }: { expenses: ReportSummary['expenses'] }) {
               const isCurrent = i === chrono.length - 1;
               return (
                 <div key={m.month} className="group flex flex-1 flex-col items-center gap-1.5">
-                  <div className="flex w-full flex-1 items-end">
+                  <div className="flex w-full flex-1 flex-col items-center justify-end">
+                    <span
+                      className={`mb-1 whitespace-nowrap text-[9px] font-semibold leading-none tabular-nums transition-opacity ${
+                        isCurrent
+                          ? 'text-clay-600 opacity-100 dark:text-clay-300'
+                          : 'text-gray-400 opacity-0 group-hover:opacity-100'
+                      }`}
+                    >
+                      {fmtMoney(m.total)}
+                    </span>
                     <div
                       className={`w-full rounded-t-md transition-all ${
                         isCurrent ? 'bg-clay-500' : 'bg-clay-500/50 group-hover:bg-clay-500/80'

@@ -280,7 +280,13 @@ export class DashboardService {
       return { ...emptyResult, horses_total: 0 };
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    // `today` en fecha local de Argentina (UTC-3), consistente con las fechas
+    // de evento (columna `date`, que son locales AR). Usar UTC acá desfasaba el
+    // contador: tras la medianoche UTC una alerta/actividad de "hoy" en AR no se
+    // contaba. 'en-CA' formatea como YYYY-MM-DD.
+    const today = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+    });
 
     // 3) Las 4 fuentes de actividad, en paralelo
     const [routines, photos, trainings, alerts] = await Promise.all([

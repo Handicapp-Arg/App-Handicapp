@@ -85,7 +85,7 @@ export default function JineteHorse() {
 
   const { data: horse } = useHorse(horseId);
   const createEvent = useCreateEvent();
-  const upsert = useUpsertTrainingMetrics(''); // id real se pasa en mutate (evento recién creado)
+  const upsert = useUpsertTrainingMetrics(); // el id del evento (recién creado) se pasa en mutate
   const { data: history, isLoading: histLoading } = useTrainingHistory(horseId);
 
   const [discipline, setDiscipline] = useState<string | null>(null);

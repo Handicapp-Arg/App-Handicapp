@@ -21,7 +21,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
   const pal = c.isDark ? YELLOW_DARK : YELLOW;
   const s = useMemo(() => makeStyles(pal), [pal]);
   const { data: metrics } = useTrainingMetrics(eventId);
-  const upsert = useUpsertTrainingMetrics(eventId);
+  const upsert = useUpsertTrainingMetrics();
   const [editing, setEditing] = useState(false);
   const [distance, setDistance] = useState('');
   const [duration, setDuration] = useState('');
@@ -44,6 +44,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
 
   const save = async () => {
     await upsert.mutateAsync({
+      eventId,
       distance_km: distance ? parseFloat(distance) : undefined,
       duration_min: duration ? parseInt(duration, 10) : undefined,
       intensity: intensity > 0 ? intensity : undefined,
