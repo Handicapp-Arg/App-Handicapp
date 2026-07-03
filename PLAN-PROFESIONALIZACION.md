@@ -193,6 +193,8 @@ Leyenda severidad: 🔴 alta · 🟠 media · 🟢 baja.
 9. ✅ **Fase 9 — Vocabulario + limpieza** (HECHA): EJE I (I1 "caballeriza") + J (J1/J4/J5/J7/J8 dead code y smells). Pendiente menor: J2/J3/J6 (refactors de consolidación peon/jinete-index y árboles duplicados) — pospuestos por ser riesgosos y de bajo valor visible.
 10. ✅ **Fase 10 — Detalles UX** (HECHA): EJE K (K1/K3/K4/K5/K6/K7/K8/K9/K11/K13). QR con copiar/compartir, esfuerzo con estrellas, calendario "Lu Ma Mi…", auth unificada, títulos de página, capitalización. Pendiente menor: K2 (valores en el gráfico de reportes).
 
-**Pendientes menores (BAJA, opcionales):** C3 (Cabal/Naranja en tarjetas), K2 (gráfico de reportes), J2/J3/J6 (refactors de consolidación), B13 (monto de gasto púrpura, va con badges de evento), `alerts_count` TZ del dashboard encargado.
+**Pendientes cerrados (2026-07-03, commit 62c02cf):** C3 ✅ (Cabal/Naranja), K2 ✅ (valores en gráfico de reportes), K11 ✅ (iconos perfil→lucide), B13 ✅ (monto de gasto→cuero), J6 ✅ (hook métricas sin id vacío), `alerts_count` TZ ✅ (dashboard encargado cuenta en hora Argentina).
+
+**Único pendiente restante:** J2/J3 — refactors de consolidación (extraer componente compartido de peon/jinete index; unificar los dos árboles genealógicos). Pospuestos deliberadamente: son refactors internos, riesgosos y sin impacto visual. Todo lo demás del plan está HECHO.
 
 **Lo que está bien (no tocar):** libreta sanitaria (semáforo con iconos), rutina móvil (autor+hora), fotos verificadas, PedigreeTab móvil, superadmin/planes, gating del acceso de pruebas, fechas es-AR consistentes, voseo correcto.
