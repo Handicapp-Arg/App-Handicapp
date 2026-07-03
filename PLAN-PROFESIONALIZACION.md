@@ -40,6 +40,8 @@ Leyenda severidad: 🔴 alta · 🟠 media · 🟢 baja.
 | B9 | Padrón web `padron/page.tsx:471` | card seleccionada `bg-blue-50` | `bg-clay-500/10` | 🟠 |
 | B10 | Reportes `reportes/page.tsx:322` | emerald decorativo en vencimientos (4º color, no semáforo) | icono en color de marca | 🟠 |
 | B11 | Nodo "Sujeto" del árbol | clay (arbol web) / negro (padrón web) / hex (móvil) — 3 colores | unificar + usar `HorseHead` en los 3 | 🟠 |
+| B12 | Ficha caballo web — badge "Público" y toggles "Visible en perfil público" en **azul** (hallado en validación visual) | acento azul off-brand → marca (clay) o verde de estado | 🟠 |
+| B13 | Ficha caballo — monto de gasto en **púrpura** (va con el badge "Gasto") | resolver junto con la taxonomía de badges de evento (D1) | 🟢 |
 
 ---
 
@@ -182,7 +184,7 @@ Leyenda severidad: 🔴 alta · 🟠 media · 🟢 baja.
 1. ✅ **Fase 1 — Bugs y riesgos** (HECHA, commit d1138d5): E1, E2, E3, E5, E6, E7, D2, F1. *Lo que hace quedar mal en serio.*
    - Pendiente menor detectado: `alerts_count` del dashboard del encargado no cuenta las alertas del día por desfase de zona horaria (el ítem sí aparece en el feed). Revisar junto al patrón TZ conocido (`eventAt`).
 2. ✅ **Fase 2 — Emojis → iconos** (HECHA, commit 6fe41f8): EJE A. Excepción: los emojis de los botones del modo peón se mantienen (decisión del usuario).
-3. 🔄 **Fase 3 — Arcoíris → marca** (EN CURSO): EJE B.
+3. ✅ **Fase 3 — Arcoíris → marca** (HECHA, commit 3d62067): EJE B (B1-B11). Validada en browser. Nuevos hallazgos B12/B13 (toggles/badge "Público" azul, monto de gasto púrpura) para próxima pasada.
 4. **Fase 4 — Logos oficiales de pago** (EJE C): confianza en el checkout.
 5. **Fase 5 — Paridad web/móvil** (EJE D): diccionario compartido de labels/iconos/colores/moneda.
 6. **Fase 6 — Copy + ortografía** (EJE F + G): lenguaje serio, tildes.
