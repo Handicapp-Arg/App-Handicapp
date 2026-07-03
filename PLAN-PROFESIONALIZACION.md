@@ -187,10 +187,12 @@ Leyenda severidad: 🔴 alta · 🟠 media · 🟢 baja.
 3. ✅ **Fase 3 — Arcoíris → marca** (HECHA, commit 3d62067): EJE B (B1-B11). Validada en browser. Nuevos hallazgos B12/B13 (toggles/badge "Público" azul, monto de gasto púrpura) para próxima pasada.
 4. ✅ **Fase 4 — Logos oficiales de pago** (HECHA, commit cf71093): EJE C (C1/C2). SVGs oficiales inline con paridad web↔móvil, sin dependencias. Validado en browser. Pendiente menor: C3 (agregar Cabal/Naranja, quitar Amex si baja penetración) — a definir con el set real que habilite MP.
 5. ✅ **Fase 5 — Paridad web/móvil** (HECHA): EJE D. 5a (commit 1d0e558): iconos de nav (D3), taxonomía de eventos (D1), tabs padrón (D6), post muro (D8), copy registro (D7), wordmark móvil (D12). 5b (commits 0838af3 + este): moneda unificada `formatMoney` (D4), nombres de plan (D5), descripciones de rol (D10), labels de remates (D9). D2 ya estaba en Fase 1.
-6. **Fase 6 — Copy + ortografía** (EJE F + G): lenguaje serio, tildes.
-7. **Fase 7 — Dark mode móvil** (EJE H): tokens theme-aware.
-8. **Fase 8 — Flujos rotos/dead-ends** (EJE E resto): E4, E8, E9, E10.
-9. **Fase 9 — Vocabulario + limpieza** (EJE I + J).
-10. **Fase 10 — Detalles UX** (EJE K).
+6. ✅ **Fase 6 — Copy + ortografía** (HECHA): EJE F (F1-F11) + G (tildes G1/G2 distribuido). Copy que filtraba el backend reescrito (claim/score/scraping/new-upd-err → español), "Trial"→"Prueba", comentario del competidor eliminado, "Pago 100% seguro" reformulado.
+7. ✅ **Fase 7 — Dark mode móvil** (HECHA): EJE H (H1-H7). Panel de métricas web, badge nota, y los hex claros de facturación/contratos/directorio/organización/padrón móvil → tokens theme-aware.
+8. ✅ **Fase 8 — Flujos rotos/dead-ends** (HECHA): EJE E (E4/E8/E9/E10/E11/E12/E13). Crear factura móvil, CTA de plan, unirse a caballeriza, desmarcar tarea del peón, confirmación de oferta (+fix bug), Enterprise → contactar ventas.
+9. ✅ **Fase 9 — Vocabulario + limpieza** (HECHA): EJE I (I1 "caballeriza") + J (J1/J4/J5/J7/J8 dead code y smells). Pendiente menor: J2/J3/J6 (refactors de consolidación peon/jinete-index y árboles duplicados) — pospuestos por ser riesgosos y de bajo valor visible.
+10. ✅ **Fase 10 — Detalles UX** (HECHA): EJE K (K1/K3/K4/K5/K6/K7/K8/K9/K11/K13). QR con copiar/compartir, esfuerzo con estrellas, calendario "Lu Ma Mi…", auth unificada, títulos de página, capitalización. Pendiente menor: K2 (valores en el gráfico de reportes).
+
+**Pendientes menores (BAJA, opcionales):** C3 (Cabal/Naranja en tarjetas), K2 (gráfico de reportes), J2/J3/J6 (refactors de consolidación), B13 (monto de gasto púrpura, va con badges de evento), `alerts_count` TZ del dashboard encargado.
 
 **Lo que está bien (no tocar):** libreta sanitaria (semáforo con iconos), rutina móvil (autor+hora), fotos verificadas, PedigreeTab móvil, superadmin/planes, gating del acceso de pruebas, fechas es-AR consistentes, voseo correcto.
