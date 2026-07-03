@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, ValidationPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, ValidationPipe, HttpCode, HttpStatus, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service';
@@ -29,12 +30,20 @@ export class ContractsController {
   }
 
   @Post(':id/sign')
+  @UseInterceptors(
+    FileInterceptor('signature', {
+      limits: { fileSize: 2 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) =>
+        cb(null, /^image\/(png|jpeg|webp)$/.test(file.mimetype)),
+    }),
+  )
   sign(
     @Param('id') id: string,
     @Body('signed_name') signedName: string,
+    @UploadedFile() file: Express.Multer.File,
     @GetUser() user: User,
   ) {
-    return this.contractsService.sign(id, signedName, user);
+    return this.contractsService.sign(id, signedName, file, user);
   }
 
   @Post(':id/reject')

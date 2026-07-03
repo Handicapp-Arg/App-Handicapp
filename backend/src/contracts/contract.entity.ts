@@ -45,6 +45,24 @@ export class Contract {
   @Column({ type: 'timestamp', nullable: true })
   signed_at: Date | null;
 
+  // Firma del propietario (imagen dibujada en Cloudinary). signed_name/signed_at (arriba) son del propietario.
+  @Column({ type: 'varchar', nullable: true })
+  owner_signature_url: string | null;
+
+  // Firma del establecimiento (la otra parte).
+  @Column({ type: 'varchar', nullable: true })
+  establishment_signed_name: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  establishment_signed_at: Date | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  establishment_signature_url: string | null;
+
+  // Huella SHA-256 del body al crear el contrato (anti-adulteración).
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  body_hash: string | null;
+
   @Column('text', { nullable: true })
   rejection_reason: string | null;
 
