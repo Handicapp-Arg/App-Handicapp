@@ -1503,7 +1503,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
   if (error || !horse) {
     return (
       <div className="space-y-4 py-10 text-center">
-        <p className="text-sm text-gray-500">No se encontro el caballo</p>
+        <p className="text-sm text-gray-500">No se encontró el caballo</p>
         <Link href="/caballos" className="text-sm font-medium text-[var(--color-primary)] hover:underline">
           Volver a caballos
         </Link>
@@ -1530,11 +1530,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
 
     <div className="pb-8">
 
-      {/* Confirmacion eliminar caballo */}
+      {/* Confirmación eliminar caballo */}
       {confirmDelete && (
         <ConfirmDialog
-          title={`Eliminar a ${horse.name}?`}
-          message="Esta accion no se puede deshacer. Se eliminaran todos los eventos asociados."
+          title={`¿Eliminar a ${horse.name}?`}
+          message="Esta acción no se puede deshacer. Se eliminarán todos los eventos asociados."
           confirmLabel="Eliminar"
           variant="danger"
           onConfirm={async () => {
@@ -1563,7 +1563,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       {deletingEventId && (
         <ConfirmDialog
           title="¿Eliminar evento?"
-          message="El evento quedará en el historial del sistema pero no será visible."
+          message="Se eliminará el evento. Esta acción no se puede deshacer."
           confirmLabel="Eliminar"
           variant="danger"
           onConfirm={async () => {

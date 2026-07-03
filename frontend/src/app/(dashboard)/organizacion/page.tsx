@@ -20,13 +20,13 @@ import {
 import { cn } from '@/lib/cn';
 
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
-  { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal del establecimiento — gestiona caballos y eventos' },
+  { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal de la caballeriza — gestiona caballos y eventos' },
   { value: 'owner_role', label: 'Propietario',    desc: 'Solo ve los caballos de su propiedad' },
   { value: 'vet',        label: 'Veterinario',    desc: 'Solo ve los caballos a los que esté asignado' },
   { value: 'encargado',  label: 'Encargado',      desc: 'Brazo derecho — gestiona caballos, eventos y agenda (sin facturación ni plan)' },
   { value: 'jinete',     label: 'Jinete',         desc: 'Monta y entrena — ve caballos asignados y registra entrenamientos' },
   { value: 'peon',       label: 'Peón',           desc: 'Tareas de campo — registra tareas sobre caballos asignados' },
-  { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la organización' },
+  { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la caballeriza' },
 ];
 
 // Cupo de caballos por plan (el nombre comercial sale del mapa canónico PLAN_LABELS).
@@ -177,7 +177,7 @@ function InviteModal({
       open={open}
       onClose={handleClose}
       title={createdLink ? 'Invitación lista' : 'Invitar miembro'}
-      description={createdLink ? 'Compartí este link con la persona invitada. Válido 7 días.' : 'Le mandaremos por mail una invitación con un link único.'}
+      description={createdLink ? 'Compartí este link con la persona invitada. Válido 7 días.' : 'Generá un link único de invitación y compartilo por el medio que quieras.'}
       size="md"
       footer={
         createdLink ? (
@@ -286,7 +286,7 @@ function ConfirmRemoveModal({
       }
     >
       <p className="text-sm text-slate-600">
-        <strong className="text-slate-900">{name}</strong> dejará de ser miembro y perderá el acceso. Esta acción es reversible re-invitando a la persona.
+        <strong className="text-slate-900">{name}</strong> dejará de ser miembro y perderá el acceso. Podés volver a invitarla cuando quieras.
       </p>
     </Modal>
   );
@@ -355,7 +355,7 @@ function JoinRequestRow({
           {' · '}pidió el {new Date(req.created_at).toLocaleDateString('es-AR')}
         </p>
         {req.message && (
-          <p className="mt-1 truncate text-xs italic text-slate-500">“{req.message}”</p>
+          <p className="mt-1 line-clamp-3 text-xs italic text-slate-500">“{req.message}”</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">

@@ -9,10 +9,9 @@ import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
-import { Plus, Search, Filter, Gavel, Tag, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Search, Gavel, Tag, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
 import type { Auction, AuctionType, AuctionCurrency } from '@/types';
 
@@ -343,10 +342,14 @@ function CreateAuctionModal({
 
           {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
 
-          <div className="flex gap-3 pt-2">
+          <p className="text-xs text-gray-400">
+            Se crea como <strong className="font-semibold text-gray-500">borrador</strong>. Vas a poder revisarla y publicarla después para que aparezca en el mercado.
+          </p>
+
+          <div className="flex gap-3 pt-1">
             <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>Cancelar</Button>
             <Button type="submit" className="flex-1" disabled={createAuction.isPending}>
-              {createAuction.isPending ? 'Creando…' : 'Crear en borrador'}
+              {createAuction.isPending ? 'Creando…' : 'Crear borrador'}
             </Button>
           </div>
         </form>
@@ -383,7 +386,7 @@ export default function RematesPage() {
           canSell ? (
             <Button onClick={() => setShowCreate(true)}>
               <Plus className="h-4 w-4 mr-1.5" />
-              Publicar subasta
+              Crear subasta
             </Button>
           ) : undefined
         }
@@ -473,8 +476,8 @@ export default function RematesPage() {
               <EmptyState
                 icon={<Gavel className="h-10 w-10 text-gray-300" />}
                 title="Todavía no publicaste subastas"
-                message={canSell ? 'Publicá tu primer caballo en remate.' : 'Solo los propietarios pueden crear subastas.'}
-                action={canSell ? { label: 'Publicar subasta', onClick: () => setShowCreate(true) } : undefined}
+                message={canSell ? 'Creá tu primera subasta. Queda en borrador hasta que la publiques.' : 'Solo los propietarios pueden crear subastas.'}
+                action={canSell ? { label: 'Crear subasta', onClick: () => setShowCreate(true) } : undefined}
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

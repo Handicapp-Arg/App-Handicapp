@@ -353,7 +353,7 @@ function EditModal({
     <div className="p-5 space-y-5">
       {/* Datos básicos */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos basicos</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos básicos</p>
         <Field label="Fecha de nacimiento">
           <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} />
         </Field>
@@ -369,7 +369,7 @@ function EditModal({
 
       {/* Clasificación */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Clasificacion</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Clasificación</p>
         <div className="grid grid-cols-2 gap-3">
           {breeds && breeds.length > 0 && (
             <Field label="Raza">
@@ -398,7 +398,7 @@ function EditModal({
             }}
             inputMode="numeric"
             maxLength={15}
-            placeholder="15 digitos numericos"
+            placeholder="15 dígitos numéricos"
             className={inputClass}
           />
         </Field>

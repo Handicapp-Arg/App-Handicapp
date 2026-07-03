@@ -18,6 +18,9 @@ export type ThemeColors = {
   borderStrong: string;// bordes marcados
   brand: string;       // acento de marca (cuero)
   brandSoft: string;   // fondo de acento sutil
+  goldSoft: string;    // fondo dorado (planes de pago / dueño), theme-aware
+  goldBorder: string;  // borde dorado, theme-aware
+  goldText: string;    // texto sobre fondo dorado, theme-aware
   overlay: string;     // fondo de modales
   isDark: boolean;
 };
@@ -33,6 +36,9 @@ const light: ThemeColors = {
   borderStrong: '#e5e7eb',
   brand: '#9d6c35',
   brandSoft: '#faf3e9',
+  goldSoft: '#fffbeb',
+  goldBorder: '#fde68a',
+  goldText: '#92400e',
   overlay: 'rgba(0,0,0,0.35)',
   isDark: false,
 };
@@ -48,6 +54,9 @@ const dark: ThemeColors = {
   borderStrong: '#3f3f46',
   brand: '#d2aa78',
   brandSoft: 'rgba(210,170,120,0.14)',
+  goldSoft: 'rgba(245,158,11,0.12)',
+  goldBorder: 'rgba(245,158,11,0.3)',
+  goldText: '#fcd34d',
   overlay: 'rgba(0,0,0,0.6)',
   isDark: true,
 };

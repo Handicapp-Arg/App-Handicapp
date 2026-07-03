@@ -9,14 +9,14 @@ import {
   useToggleWatch,
 } from '@/hooks/use-auctions';
 import { useAuth } from '@/lib/auth-context';
+import { useConfirm } from '@/lib/confirm-context';
 import { Avatar } from '@/components/ui/avatar';
 import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, Gavel, Tag, Clock, MapPin, CheckCircle,
-  Eye, AlertCircle, User, Star, StarOff, Play, Pause, X,
+  AlertCircle, Star, StarOff, Play, Pause, X,
 } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
 import type { AuctionBid } from '@/types';

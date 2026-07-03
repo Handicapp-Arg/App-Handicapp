@@ -25,9 +25,29 @@ import type { HorseRecord, HorseRecordNode, HorseOwnershipClaim } from '@/types'
 
 const STATUS_BADGE: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   unverified:     { label: 'Sin dueño',      color: 'bg-gray-100 text-gray-500',  icon: <Shield className="h-3 w-3" /> },
-  pending_claim:  { label: 'Claim pendiente', color: 'bg-amber-100 text-amber-700', icon: <Clock className="h-3 w-3" /> },
+  pending_claim:  { label: 'Solicitud pendiente', color: 'bg-amber-100 text-amber-700', icon: <Clock className="h-3 w-3" /> },
   verified:       { label: 'Dueño verificado', color: 'bg-green-100 text-green-700', icon: <ShieldCheck className="h-3 w-3" /> },
   disputed:       { label: 'Disputado',        color: 'bg-red-100 text-red-600',    icon: <ShieldAlert className="h-3 w-3" /> },
+};
+
+// Etiquetas de cara al usuario (no exponer valores crudos del backend)
+const SOURCE_LABEL: Record<string, string> = {
+  studbook_ar: 'Studbook Argentino',
+  wikidata: 'Wikidata',
+  sra: 'SRA',
+  accc: 'ACCC',
+  aqha: 'AQHA',
+  pedigreequery: 'PedigreeQuery',
+  manual_admin: 'Carga manual',
+  other: 'Otra fuente',
+};
+
+const CONFIDENCE_LABEL: Record<string, string> = {
+  high: 'Alta', medium: 'Media', low: 'Baja',
+};
+
+const CLAIM_STATUS_LABEL: Record<string, string> = {
+  pending: 'pendiente', auto_approved: 'aprobada', approved: 'aprobada', rejected: 'rechazada',
 };
 
 const SCRAPE_DOT: Record<string, string> = {
@@ -224,7 +244,7 @@ function RecordDetail({
                 { label: 'Padre', value: record.sire_name ?? record.sire?.name },
                 { label: 'Madre', value: record.dam_name ?? record.dam?.name },
                 { label: 'N° Registro', value: record.registration_number },
-                { label: 'Fuente', value: record.registration_source },
+                { label: 'Fuente', value: record.registration_source ? (SOURCE_LABEL[record.registration_source] ?? record.registration_source) : null },
               ].filter(f => f.value).map(f => (
                 <div key={f.label} className="bg-gray-50 rounded-lg p-3">
                   <div className="text-xs text-gray-400 mb-0.5">{f.label}</div>
@@ -252,7 +272,7 @@ function RecordDetail({
             {/* Data confidence */}
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <div className={cn('h-2 w-2 rounded-full', SCRAPE_DOT[record.scrape_status])} />
-              <span>Datos: {record.data_confidence ?? 'sin clasificar'}</span>
+              <span>Datos: {record.data_confidence ? (CONFIDENCE_LABEL[record.data_confidence] ?? record.data_confidence) : 'sin clasificar'}</span>
               {record.source_url && (
                 <a href={record.source_url} target="_blank" rel="noreferrer" className="underline hover:text-gray-600">
                   fuente
@@ -361,15 +381,15 @@ function ClaimForm({ record, onClose }: { record: HorseRecord; onClose: () => vo
 
   if (existingClaim) return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
-      <p className="font-medium text-amber-800 dark:text-amber-300">Ya tenés un claim {existingClaim.status === 'pending' ? 'pendiente' : existingClaim.status}</p>
-      <p className="text-amber-600 mt-0.5 text-xs">Score: {existingClaim.match_score ?? 0}/100</p>
+      <p className="font-medium text-amber-800 dark:text-amber-300">Ya tenés una solicitud {CLAIM_STATUS_LABEL[existingClaim.status] ?? 'pendiente'}</p>
+      <p className="text-amber-600 mt-0.5 text-xs">Puntaje: {existingClaim.match_score ?? 0}/100</p>
     </div>
   );
 
   if (done) return (
     <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-center">
       <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-      <p className="font-semibold text-green-800 dark:text-green-300">Claim enviado</p>
+      <p className="font-semibold text-green-800 dark:text-green-300">Solicitud enviada</p>
       <p className="text-green-600 text-xs mt-0.5">El equipo de HandicApp verificará tu documentación.</p>
       <button onClick={onClose} className="mt-3 text-xs underline text-green-700">Cerrar</button>
     </div>
@@ -391,7 +411,7 @@ function ClaimForm({ record, onClose }: { record: HorseRecord; onClose: () => vo
       <div className="space-y-2">
         <input
           value={regNum} onChange={e => setRegNum(e.target.value)}
-          placeholder="Número de registro / HB (40 pts)"
+          placeholder="Número de registro / HB"
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 transition"
         />
         <input

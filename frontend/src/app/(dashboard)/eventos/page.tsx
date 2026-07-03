@@ -24,7 +24,7 @@ const typeOptions = [
   { value: 'entrenamiento', label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30' },
   { value: 'tarea', label: 'Tarea', color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30' },
   { value: 'gasto', label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30' },
-  { value: 'nota', label: 'Nota', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+  { value: 'nota', label: 'Nota', color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30' },
 ];
 
 const typeBadge: Record<string, string> = {
@@ -32,7 +32,7 @@ const typeBadge: Record<string, string> = {
   entrenamiento: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
   tarea: 'bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
   gasto: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
-  nota: 'bg-gray-100 text-gray-700',
+  nota: 'bg-gray-100 text-gray-700 dark:bg-gray-500/15 dark:text-gray-300',
   carrera: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   aviso: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
 };
@@ -763,7 +763,7 @@ export default function EventosPage() {
       {deletingEventId && (
         <ConfirmDialog
           title="¿Eliminar evento?"
-          message="El evento quedará en el historial del sistema pero no será visible."
+          message="Se eliminará el evento. Esta acción no se puede deshacer."
           confirmLabel="Eliminar"
           variant="danger"
           onConfirm={async () => {

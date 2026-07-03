@@ -4,6 +4,7 @@ import {
   Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
   Alert, Share,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { CheckCircle2, Share2, X, XCircle } from 'lucide-react-native';
 import {
@@ -15,7 +16,7 @@ import {
 import { useAuth } from '../lib/auth';
 import { useToast } from '../components/Toast';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { Routes } from '../lib/routes';
+import { Routes, nav } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { haptic } from '../lib/haptics';
@@ -27,13 +28,13 @@ import { space, text, radius, weight } from '../styles/tokens';
 
 // Descripciones de rol unificadas con la web (fuente de verdad: ROLE_OPTIONS de organizacion/page.tsx).
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
-  { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal del establecimiento — gestiona caballos y eventos' },
+  { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal de la caballeriza — gestiona caballos y eventos' },
   { value: 'owner_role', label: 'Propietario',    desc: 'Solo ve los caballos de su propiedad' },
   { value: 'vet',        label: 'Veterinario',    desc: 'Solo ve los caballos a los que esté asignado' },
   { value: 'encargado',  label: 'Encargado',      desc: 'Brazo derecho — gestiona caballos, eventos y agenda (sin facturación ni plan)' },
   { value: 'jinete',     label: 'Jinete',         desc: 'Monta y entrena — ve caballos asignados y registra entrenamientos' },
   { value: 'peon',       label: 'Peón',           desc: 'Tareas de campo — registra tareas sobre caballos asignados' },
-  { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la organización' },
+  { value: 'admin',      label: 'Administrador',  desc: 'Control total sobre la caballeriza' },
 ];
 
 // Roles habilitados al aprobar una solicitud de ingreso (solo roles operativos, sin admin/propietario/staff).
@@ -207,6 +208,7 @@ function ApproveJoinModal({
 }
 
 export default function OrganizacionScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { c } = useTheme();
   const toast = useToast();
@@ -230,7 +232,7 @@ export default function OrganizacionScreen() {
   if (loadingOrgs || loadingOrg) {
     return (
       <View style={s.root}>
-        <ScreenHeader title="Organización" showBack backTo={Routes.mas} />
+        <ScreenHeader title="Caballeriza" showBack backTo={Routes.mas} />
         <View style={{ padding: space[4], gap: space[2] }}>
           {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
@@ -241,11 +243,13 @@ export default function OrganizacionScreen() {
   if (!org) {
     return (
       <View style={s.root}>
-        <ScreenHeader title="Organización" showBack backTo={Routes.mas} />
+        <ScreenHeader title="Caballeriza" showBack backTo={Routes.mas} />
         <EmptyState
           icon="business-outline"
-          title="No pertenecés a una organización"
-          message="Las organizaciones permiten a los establecimientos gestionar propietarios y vets bajo un mismo plan."
+          title="No pertenecés a ninguna caballeriza"
+          message="Las caballerizas permiten centralizar el plan, los miembros y los caballos. Si te compartieron un código, unite para pedir el ingreso."
+          actionLabel="Unirme con un código"
+          onAction={() => { haptic.medium(); nav.push(router, Routes.unirme); }}
         />
       </View>
     );
@@ -256,7 +260,7 @@ export default function OrganizacionScreen() {
 
   return (
     <View style={s.root}>
-      <ScreenHeader title="Organización" showBack backTo={Routes.mas} />
+      <ScreenHeader title="Caballeriza" showBack backTo={Routes.mas} />
 
       <ScrollView contentContainerStyle={{ padding: space[4], paddingBottom: 40, gap: space[4] }} showsVerticalScrollIndicator={false}>
         {/* Card principal */}
@@ -418,7 +422,7 @@ export default function OrganizacionScreen() {
                   {isAdmin && !isOrgOwner && m.user_id !== user?.id && (
                     <TouchableOpacity
                       onPress={() => {
-                        Alert.alert('Quitar miembro', `¿Quitar a ${m.user.name} de la organización?`, [
+                        Alert.alert('Quitar miembro', `¿Quitar a ${m.user.name} de la caballeriza?`, [
                           { text: 'Cancelar', style: 'cancel' },
                           { text: 'Quitar', style: 'destructive', onPress: () => removeMember.mutate(m.id) },
                         ]);
@@ -468,10 +472,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   orgName: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: -0.5 },
   badge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
   badgeGray: { backgroundColor: c.surfaceAlt },
-  badgeGold: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' },
+  badgeGold: { backgroundColor: c.goldSoft, borderWidth: 1, borderColor: c.goldBorder },
   badgeText: { fontSize: 11, fontWeight: weight.bold },
   badgeTextGray: { color: c.textMuted },
-  badgeTextGold: { color: '#92400e' },
+  badgeTextGold: { color: c.goldText },
 
   progressTrack: { height: 8, borderRadius: 4, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
@@ -485,9 +489,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   joinCard: { gap: 8, backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: c.borderStrong },
   joinMessage: { fontSize: text.sm, color: c.textMuted, fontStyle: 'italic' },
 
-  invCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: radius.md, padding: space[3], borderWidth: 1, borderColor: '#fde68a' },
-  invEmail: { fontSize: text.sm, fontWeight: weight.semibold, color: '#92400e' },
-  invMeta: { fontSize: 11, color: '#b45309', marginTop: 1 },
+  invCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.goldSoft, borderRadius: radius.md, padding: space[3], borderWidth: 1, borderColor: c.goldBorder },
+  invEmail: { fontSize: text.sm, fontWeight: weight.semibold, color: c.goldText },
+  invMeta: { fontSize: 11, color: c.goldText, marginTop: 1 },
   invBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: c.surface, justifyContent: 'center', alignItems: 'center' },
 
   inviteBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 6 },
@@ -499,9 +503,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   memberEmail: { fontSize: 11, color: c.textFaint, marginTop: 1 },
   roleBadge: { borderRadius: radius.full, backgroundColor: c.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4 },
-  roleBadgeOwner: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' },
+  roleBadgeOwner: { backgroundColor: c.goldSoft, borderWidth: 1, borderColor: c.goldBorder },
   roleBadgeText: { fontSize: 10, fontWeight: weight.semibold, color: c.textMuted },
-  roleBadgeTextOwner: { color: '#92400e' },
+  roleBadgeTextOwner: { color: c.goldText },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
