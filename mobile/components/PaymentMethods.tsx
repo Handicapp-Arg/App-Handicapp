@@ -1,70 +1,113 @@
 import { View, type ViewStyle, type StyleProp } from 'react-native';
-import Svg, { Text as SvgText, Rect, Circle, Ellipse, Path } from 'react-native-svg';
+import Svg, {
+  Text as SvgText,
+  Rect,
+  Circle,
+  Path,
+  G,
+  ClipPath,
+  Defs,
+} from 'react-native-svg';
 import { useTheme } from '../lib/theme';
 import { shadow } from '../styles/tokens';
 
 /**
- * Logos de medios de pago como SVG (react-native-svg), en chips blancos
- * tipo "checkout real". Solo visual / sello de confianza — NUNCA captura
- * datos de tarjeta. Los datos los procesa MercadoPago.
+ * Logos OFICIALES de medios de pago (react-native-svg), en chips blancos.
+ * Mismos paths / colores / viewBox que la web (frontend .../payment-methods.tsx)
+ * → paridad exacta web↔móvil. Solo visual / sello de confianza; NUNCA captura
+ * datos de tarjeta (los procesa MercadoPago).
  */
 
-/* ─── Logos (colores oficiales) ─── */
+/** Path oficial del isologo (handshake) de Mercado Pago — Simple Icons, viewBox 24x24. */
+const MP_HANDSHAKE_PATH =
+  'M11.115 16.479a.93.927 0 0 1-.939-.886c-.002-.042-.006-.155-.103-.155-.04 0-.074.023-.113.059-.112.103-.254.206-.46.206a.816.814 0 0 1-.305-.066c-.535-.214-.542-.578-.521-.725.006-.038.007-.08-.02-.11l-.032-.03h-.034c-.027 0-.055.012-.093.039a.788.786 0 0 1-.454.16.7.699 0 0 1-.253-.05c-.708-.27-.65-.928-.617-1.126.005-.041-.005-.072-.03-.092l-.05-.04-.047.043a.728.726 0 0 1-.505.203.73.728 0 0 1-.732-.725c0-.4.328-.722.732-.722.364 0 .675.27.721.63l.026.195.11-.165c.01-.018.307-.46.852-.46.102 0 .21.016.316.05.434.13.508.52.519.68.008.094.075.1.09.1.037 0 .064-.024.083-.045a.746.744 0 0 1 .54-.225c.128 0 .263.03.402.09.69.293.379 1.158.374 1.167-.058.144-.061.207-.005.244l.027.013h.02c.03 0 .07-.014.134-.035.093-.032.235-.08.367-.08a.944.942 0 0 1 .94.93.936.934 0 0 1-.94.928zm7.302-4.171c-1.138-.98-3.768-3.24-4.481-3.77-.406-.302-.685-.462-.928-.533a1.559 1.554 0 0 0-.456-.07c-.182 0-.376.032-.58.095-.46.145-.918.505-1.362.854l-.023.018c-.414.324-.84.66-1.164.73a1.986 1.98 0 0 1-.43.049c-.362 0-.687-.104-.81-.258-.02-.025-.007-.066.04-.125l.008-.008 1-1.067c.783-.774 1.525-1.506 3.23-1.545h.085c1.062 0 2.12.469 2.24.524a7.03 7.03 0 0 0 3.056.724c1.076 0 2.188-.263 3.354-.795a9.135 9.11 0 0 0-.405-.317c-1.025.44-2.003.66-2.946.66-.962 0-1.925-.229-2.858-.68-.05-.022-1.22-.567-2.44-.57-.032 0-.065 0-.096.002-1.434.033-2.24.536-2.782.976-.528.013-.982.138-1.388.25-.361.1-.673.186-.979.185-.125 0-.35-.01-.37-.012-.35-.01-2.115-.437-3.518-.962-.143.1-.28.203-.415.31 1.466.593 3.25 1.053 3.812 1.089.157.01.323.027.491.027.372 0 .744-.103 1.104-.203.213-.059.446-.123.692-.17l-.196.194-1.017 1.087c-.08.08-.254.294-.14.557a.705.703 0 0 0 .268.292c.243.162.677.27 1.08.271.152 0 .297-.015.43-.044.427-.095.874-.448 1.349-.82.377-.296.913-.672 1.323-.782a1.494 1.49 0 0 1 .37-.05.611.61 0 0 1 .095.005c.27.034.533.125 1.003.472.835.62 4.531 3.815 4.566 3.846.002.002.238.203.22.537-.007.186-.11.352-.294.466a.902.9 0 0 1-.484.15.804.802 0 0 1-.428-.124c-.014-.01-1.28-1.157-1.746-1.543-.074-.06-.146-.115-.22-.115a.122.122 0 0 0-.096.045c-.073.09.01.212.105.294l1.48 1.47c.002 0 .184.17.204.395.012.244-.106.447-.35.606a.957.955 0 0 1-.526.171.766.764 0 0 1-.42-.127l-.214-.206a21.035 20.978 0 0 0-1.08-1.009c-.072-.058-.148-.112-.221-.112a.127.127 0 0 0-.094.038c-.033.037-.056.103.028.212a.698.696 0 0 0 .075.083l1.078 1.198c.01.01.222.26.024.511l-.038.048a1.18 1.178 0 0 1-.1.096c-.184.15-.43.164-.527.164a.8.798 0 0 1-.147-.012c-.106-.018-.178-.048-.212-.089l-.013-.013c-.06-.06-.602-.609-1.054-.98-.059-.05-.133-.11-.21-.11a.128.128 0 0 0-.096.042c-.09.096.044.24.1.293l.92 1.003a.204.204 0 0 1-.033.062c-.033.044-.144.155-.479.196a.91.907 0 0 1-.122.007c-.345 0-.712-.164-.902-.264a1.343 1.34 0 0 0 .13-.576 1.368 1.365 0 0 0-1.42-1.357c.024-.342-.025-.99-.697-1.274a1.455 1.452 0 0 0-.575-.125c-.146 0-.287.025-.42.075a1.153 1.15 0 0 0-.671-.564 1.52 1.515 0 0 0-.494-.085c-.28 0-.537.08-.767.242a1.168 1.165 0 0 0-.903-.43 1.173 1.17 0 0 0-.82.335c-.287-.217-1.425-.93-4.467-1.613a17.39 17.344 0 0 1-.692-.189 4.822 4.82 0 0 0-.077.494l.67.157c3.108.682 4.136 1.391 4.309 1.525a1.145 1.142 0 0 0-.09.442 1.16 1.158 0 0 0 1.378 1.132c.096.467.406.821.879 1.003a1.165 1.162 0 0 0 .415.08c.09 0 .179-.012.266-.034.086.22.282.493.722.668a1.233 1.23 0 0 0 .457.094c.122 0 .241-.022.355-.063a1.373 1.37 0 0 0 1.269.841c.37.002.726-.147.985-.41.221.121.688.341 1.163.341.06 0 .118-.002.175-.01.47-.059.689-.24.789-.382a.571.57 0 0 0 .048-.078c.11.032.234.058.373.058.255 0 .501-.086.75-.265.244-.174.418-.424.444-.637v-.01c.083.017.167.026.251.026.265 0 .527-.082.773-.242.48-.31.562-.715.554-.98a1.28 1.279 0 0 0 .978-.194 1.04 1.04 0 0 0 .502-.808 1.088 1.085 0 0 0-.16-.653c.804-.342 2.636-1.003 4.795-1.483a4.734 4.721 0 0 0-.067-.492 27.742 27.667 0 0 0-5.049 1.62zm5.123-.763c0 4.027-5.166 7.293-11.537 7.293-6.372 0-11.538-3.266-11.538-7.293 0-4.028 5.165-7.293 11.539-7.293 6.371 0 11.537 3.265 11.537 7.293zm.46.004c0-4.272-5.374-7.755-12-7.755S.002 7.277.002 11.55L0 12.004c0 4.533 4.695 8.203 11.999 8.203 7.347 0 12-3.67 12-8.204z';
 
-/** Visa — wordmark azul #1434CB. */
-export function VisaLogo({ h = 14 }: { h?: number }) {
-  const w = h * 3.1;
-  return (
-    <Svg width={w} height={h} viewBox="0 0 62 20">
-      <SvgText
-        x="1" y="16" fontSize="18" fontWeight="700" fontStyle="italic"
-        fill="#1434CB" fontFamily="Arial" letterSpacing="0.5"
-      >
-        VISA
-      </SvgText>
-    </Svg>
-  );
-}
+/* ─── Logos (paths y colores oficiales, idénticos a la web) ─── */
 
-/** Mastercard — dos círculos rojo #EB001B / ámbar #F79E1B. */
-export function MastercardLogo({ h = 18 }: { h?: number }) {
-  const w = h * (48 / 30);
+/** Visa — wordmark oficial (Simple Icons) en azul #1434CB. */
+export function VisaLogo({ h = 9 }: { h?: number }) {
+  const w = h * (24 / 7.56);
   return (
-    <Svg width={w} height={h} viewBox="0 0 48 30">
-      <Circle cx="19" cy="15" r="11" fill="#EB001B" />
-      <Circle cx="29" cy="15" r="11" fill="#F79E1B" fillOpacity={0.85} />
-    </Svg>
-  );
-}
-
-/** American Express — chip azul #006FCF con "AMEX". */
-export function AmexLogo({ h = 20 }: { h?: number }) {
-  const w = h * (40 / 28);
-  return (
-    <Svg width={w} height={h} viewBox="0 0 40 28">
-      <Rect x="0" y="0" width="40" height="28" rx="4" fill="#006FCF" />
-      <SvgText
-        x="20" y="18.5" fontSize="10" fontWeight="700" fill="#ffffff"
-        textAnchor="middle" fontFamily="Arial" letterSpacing="0.5"
-      >
-        AMEX
-      </SvgText>
-    </Svg>
-  );
-}
-
-/** MercadoPago — chip celeste #00B1EA con handshake amarillo. */
-export function MercadoPagoLogo({ h = 20 }: { h?: number }) {
-  const w = h * (40 / 28);
-  return (
-    <Svg width={w} height={h} viewBox="0 0 40 28">
-      <Rect x="0" y="0" width="40" height="28" rx="6" fill="#00B1EA" />
-      {/* handshake amarillo simplificado */}
-      <Ellipse cx="20" cy="15" rx="12" ry="6.5" fill="#FFE600" />
+    <Svg width={w} height={h} viewBox="0 8.2 24 7.56">
       <Path
-        d="M11 15 q4.5 -5 9 0 q4.5 5 9 0"
-        stroke="#00B1EA" strokeWidth="1.7" fill="none" strokeLinecap="round"
+        fill="#1434CB"
+        d="M9.112 8.262L5.97 15.758H3.92L2.374 9.775c-.094-.368-.175-.503-.461-.658C1.447 8.864.677 8.627 0 8.479l.046-.217h3.3a.904.904 0 01.894.764l.817 4.338 2.018-5.102zm8.033 5.049c.008-1.979-2.736-2.088-2.717-2.972.006-.269.262-.555.822-.628a3.66 3.66 0 011.913.336l.34-1.59a5.207 5.207 0 00-1.814-.333c-1.917 0-3.266 1.02-3.278 2.479-.012 1.079.963 1.68 1.698 2.04.756.367 1.01.603 1.006.931-.005.504-.602.725-1.16.734-.975.015-1.54-.263-1.992-.473l-.351 1.642c.453.208 1.289.39 2.156.398 2.037 0 3.37-1.006 3.377-2.564m5.061 2.447H24l-1.565-7.496h-1.656a.883.883 0 00-.826.55l-2.909 6.946h2.036l.405-1.12h2.488zm-2.163-2.656l1.02-2.815.588 2.815zm-8.16-4.84l-1.603 7.496H8.34l1.605-7.496z"
       />
+    </Svg>
+  );
+}
+
+/** Mastercard — símbolo oficial: 2 círculos + intersección naranja. */
+export function MastercardLogo({ h = 15 }: { h?: number }) {
+  const w = h * (40 / 24);
+  return (
+    <Svg width={w} height={h} viewBox="0 0 40 24">
+      <Defs>
+        <ClipPath id="mc-lens">
+          <Circle cx="15" cy="12" r="9.5" />
+        </ClipPath>
+      </Defs>
+      <Circle cx="15" cy="12" r="9.5" fill="#EB001B" />
+      <Circle cx="25" cy="12" r="9.5" fill="#F79E1B" />
+      <G clipPath="url(#mc-lens)">
+        <Circle cx="25" cy="12" r="9.5" fill="#FF5F00" />
+      </G>
+    </Svg>
+  );
+}
+
+/** American Express — "blue box" oficial. */
+export function AmexLogo({ h = 24 }: { h?: number }) {
+  const w = h * (40 / 26);
+  return (
+    <Svg width={w} height={h} viewBox="0 0 40 26">
+      <Rect width="40" height="26" rx="3" fill="#006FCF" />
+      <Rect
+        x="1.75"
+        y="1.75"
+        width="36.5"
+        height="22.5"
+        rx="1"
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity={0.55}
+        strokeWidth={0.9}
+      />
+      <SvgText
+        x="20"
+        y="11.7"
+        textAnchor="middle"
+        fontFamily="Arial"
+        fontSize="6.2"
+        fontWeight="700"
+        fill="#ffffff"
+      >
+        AMERICAN
+      </SvgText>
+      <SvgText
+        x="20"
+        y="20"
+        textAnchor="middle"
+        fontFamily="Arial"
+        fontSize="6.2"
+        fontWeight="700"
+        fill="#ffffff"
+      >
+        EXPRESS
+      </SvgText>
+    </Svg>
+  );
+}
+
+/** MercadoPago — isologo oficial (handshake), blanco sobre azul de marca. */
+export function MercadoPagoLogo({ h = 24 }: { h?: number }) {
+  const w = h * (40 / 26);
+  return (
+    <Svg width={w} height={h} viewBox="0 0 40 26">
+      <Rect width="40" height="26" rx="5" fill="#00B1EA" />
+      <G transform="translate(9.2 2.2) scale(0.9)">
+        <Path d={MP_HANDSHAKE_PATH} fill="#ffffff" />
+      </G>
     </Svg>
   );
 }
@@ -97,10 +140,10 @@ export function PaymentMethods({
 
   return (
     <View style={[{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, style]}>
-      <View style={chip}><VisaLogo h={logoH} /></View>
+      <View style={chip}><VisaLogo h={logoH * 0.62} /></View>
       <View style={chip}><MastercardLogo h={logoH + 3} /></View>
-      <View style={chip}><AmexLogo h={logoH + 4} /></View>
-      <View style={chip}><MercadoPagoLogo h={logoH + 4} /></View>
+      <View style={chip}><AmexLogo h={chipH - 8} /></View>
+      <View style={chip}><MercadoPagoLogo h={chipH - 8} /></View>
     </View>
   );
 }
