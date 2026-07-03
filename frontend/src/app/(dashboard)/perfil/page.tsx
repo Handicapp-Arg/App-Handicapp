@@ -8,6 +8,7 @@ import { avatarGradient, initialsOf, AVATAR_PALETTE } from '@/lib/avatar-color';
 import { useFeed } from '@/hooks/use-feed';
 import PostCard from '@/components/feed/PostCard';
 import api from '@/lib/api';
+import { formatMoney } from '@/lib/currency';
 import { Spinner } from '@/components/ui/skeleton';
 import { Modal } from '@/components/ui/modal';
 import { VetVerifiedBadge, isVetVerified } from '@/components/ui/verified-badge';
@@ -44,7 +45,7 @@ function roleTargetFor(role?: string): PlanRoleTarget {
 }
 
 const fmtPrice = (ars: number) =>
-  ars > 0 ? `$${ars.toLocaleString('es-AR')}/mes` : 'Gratis';
+  ars > 0 ? `${formatMoney(ars)}/mes` : 'Gratis';
 
 /** Nombre visual del tier (badge) derivado del número de tier del plan. */
 const TIER_LABELS = ['Free', 'Pro', 'Premium', 'Enterprise'];
@@ -316,7 +317,7 @@ function PlanCard({
         {plan.price_ars > 0 ? (
           <>
             <span className="text-[2rem] font-extrabold leading-none tracking-tight text-gray-900 tabular-nums">
-              $ {plan.price_ars.toLocaleString('es-AR')}
+              {formatMoney(plan.price_ars)}
             </span>
             <span className="text-sm font-medium text-gray-400">/mes</span>
           </>
@@ -412,7 +413,7 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
             </div>
             <div className="text-right">
               <div className="text-2xl font-extrabold leading-none tracking-tight text-gray-900 tabular-nums">
-                $ {plan.price_ars.toLocaleString('es-AR')}
+                {formatMoney(plan.price_ars)}
               </div>
               <div className="text-xs font-medium text-gray-400">/mes</div>
             </div>

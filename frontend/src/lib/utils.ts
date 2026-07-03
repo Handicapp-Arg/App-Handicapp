@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { formatMoney, type Currency } from '@/lib/currency';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,8 +13,9 @@ export function calcAge(birthDate: string): string {
   return years === 1 ? '1 año' : `${years} años`;
 }
 
-export function formatCurrency(amount: number, currency = 'ARS'): string {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+/** @deprecated Usar `formatMoney` de `@/lib/currency`. Alias de compatibilidad. */
+export function formatCurrency(amount: number | null | undefined, currency: string = 'ARS'): string {
+  return formatMoney(amount, currency as Currency);
 }
 
 export function formatDate(

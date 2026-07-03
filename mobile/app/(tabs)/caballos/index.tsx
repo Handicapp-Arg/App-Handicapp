@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
 import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../hooks/use-horse-records';
 import { useCreateEvent } from '../../../hooks/use-events';
+import { formatMoney } from '../../../lib/currency';
 import { useDashboard } from '../../../hooks/use-dashboard';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
@@ -83,7 +84,7 @@ function HorseCard({ horse, monthlySpend, c, s }: {
         {monthlySpend != null && monthlySpend > 0 && (
           <View style={s.cardSpendRow}>
             <TrendingUp size={12} color="#059669" strokeWidth={2} />
-            <Text style={s.cardSpend}>${monthlySpend.toLocaleString('es-AR')} este mes</Text>
+            <Text style={s.cardSpend}>{formatMoney(monthlySpend)} este mes</Text>
           </View>
         )}
       </View>

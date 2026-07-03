@@ -24,6 +24,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import ImagePicker from '@/components/image-picker';
 import { cldTransform } from '@/lib/cloudinary';
 import { calcAge, formatDate as fmtDate } from '@/lib/utils';
+import { formatMoney } from '@/lib/currency';
 import { X, Syringe, Home, DoorOpen, RefreshCw, ClipboardList, ShieldCheck, AlertTriangle, XCircle, Lock, CalendarClock, Wheat, Hammer, Activity, Wrench, Truck, Package, Banknote } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
@@ -352,7 +353,7 @@ function EventCard({
       <p className="text-sm text-gray-700 line-clamp-2">{event.description}</p>
       {event.type === 'gasto' && event.amount != null && (
         <p className="mt-1 text-sm font-semibold text-purple-700 dark:text-purple-300">
-          ${Number(event.amount).toLocaleString('es-AR')}
+          {formatMoney(Number(event.amount), event.currency)}
         </p>
       )}
       {event.photos && event.photos.length > 0 && (
@@ -1058,11 +1059,11 @@ function FinancialDashboard({
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-purple-50 dark:bg-purple-500/10 p-4">
             <p className="text-[11px] font-semibold text-purple-500 dark:text-purple-300 uppercase tracking-wide">Total acumulado</p>
-            <p className="mt-1 text-2xl font-bold text-purple-900 dark:text-purple-200">${financial.total.toLocaleString('es-AR')}</p>
+            <p className="mt-1 text-2xl font-bold text-purple-900 dark:text-purple-200">{formatMoney(financial.total)}</p>
           </div>
           <div className="rounded-xl bg-blue-50 p-4">
             <p className="text-[11px] font-semibold text-blue-500 uppercase tracking-wide">Promedio mensual</p>
-            <p className="mt-1 text-2xl font-bold text-blue-900 dark:text-blue-200">${financial.average_monthly.toLocaleString('es-AR')}</p>
+            <p className="mt-1 text-2xl font-bold text-blue-900 dark:text-blue-200">{formatMoney(financial.average_monthly)}</p>
           </div>
         </div>
       </div>
@@ -1083,7 +1084,7 @@ function FinancialDashboard({
                       <CatIcon size={14} style={{ color: CATEGORY_COLORS[c.category] ?? '#6b7280' }} />
                       {cat?.label ?? c.category}
                     </span>
-                    <span className="text-sm font-semibold text-gray-900">${c.total.toLocaleString('es-AR')}</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatMoney(c.total)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden">
@@ -1118,7 +1119,7 @@ function FinancialDashboard({
                   <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                     <div className="h-full rounded-full bg-purple-400" style={{ width: `${(m.total / maxMonthly) * 100}%` }} />
                   </div>
-                  <span className="w-24 shrink-0 text-right text-[11px] font-medium text-gray-700">${m.total.toLocaleString('es-AR')}</span>
+                  <span className="w-24 shrink-0 text-right text-[11px] font-medium text-gray-700">{formatMoney(m.total)}</span>
                 </div>
               );
             })}
@@ -1144,7 +1145,7 @@ function FinancialDashboard({
                       {cat && <> · <span style={{ color: CATEGORY_COLORS[exp.expense_category ?? ''] ?? '#6b7280' }}>{cat.label}</span></>}
                     </p>
                   </div>
-                  <span className="shrink-0 text-sm font-bold text-gray-900">${exp.amount.toLocaleString('es-AR')}</span>
+                  <span className="shrink-0 text-sm font-bold text-gray-900">{formatMoney(exp.amount)}</span>
                 </div>
               );
             })}
@@ -2789,11 +2790,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="rounded-xl bg-purple-50 dark:bg-purple-500/10 p-3">
                   <p className="text-[10px] font-medium text-purple-500 dark:text-purple-300 uppercase tracking-wide">Total</p>
-                  <p className="mt-0.5 text-base font-bold text-purple-900 dark:text-purple-200">${financial.total.toLocaleString('es-AR')}</p>
+                  <p className="mt-0.5 text-base font-bold text-purple-900 dark:text-purple-200">{formatMoney(financial.total)}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-3">
                   <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Prom/mes</p>
-                  <p className="mt-0.5 text-base font-bold text-gray-900">${financial.average_monthly.toLocaleString('es-AR')}</p>
+                  <p className="mt-0.5 text-base font-bold text-gray-900">{formatMoney(financial.average_monthly)}</p>
                 </div>
               </div>
               {financial.by_category.length > 0 && (
@@ -2808,7 +2809,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                         <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${maxVal > 0 ? (c.total / maxVal) * 100 : 0}%`, backgroundColor: CATEGORY_COLORS[c.category] ?? '#6b7280' }} />
                         </div>
-                        <span className="w-16 text-right text-[10px] font-medium text-gray-600">${c.total.toLocaleString('es-AR')}</span>
+                        <span className="w-16 text-right text-[10px] font-medium text-gray-600">{formatMoney(c.total)}</span>
                       </div>
                     );
                   })}

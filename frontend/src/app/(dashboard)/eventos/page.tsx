@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
 import type { Event } from '@/types';
+import { formatMoney } from '@/lib/currency';
 
 
 const typeOptions = [
@@ -716,7 +717,7 @@ export default function EventosPage() {
                 </div>
                 {event.amount != null && (
                   <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">
-                    {event.currency === 'USD' ? 'USD ' : '$'}{Number(event.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    {formatMoney(Number(event.amount), event.currency)}
                   </p>
                 )}
                 <p className="text-sm text-gray-700 leading-relaxed">{event.description}</p>

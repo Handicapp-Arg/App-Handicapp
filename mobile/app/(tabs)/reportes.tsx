@@ -15,6 +15,7 @@ import { Routes } from '../../lib/routes';
 import { useReportSummary, type ReportSummary } from '../../hooks/use-reports';
 import { ReportSkeleton } from '../../components/Skeleton';
 import { EmptyState } from '../../components/EmptyState';
+import { formatMoney } from '../../lib/currency';
 
 const RED = '#dc2626';
 const AMBER = '#d97706';
@@ -40,7 +41,7 @@ const APPOINTMENT_LABELS: Record<string, string> = {
   otro: 'Otro',
 };
 
-const fmtMoney = (n: number) => `$ ${n.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+const fmtMoney = (n: number) => formatMoney(n);
 
 const fmtMonth = (ym: string) => {
   const [y, m] = ym.split('-');

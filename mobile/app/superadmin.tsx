@@ -12,13 +12,13 @@ import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 import { useAuth } from '../lib/auth';
+import { formatMoney } from '../lib/currency';
 import {
   useSuperAdminMetrics, useSuperAdminOrgs, useSetOrgStatus,
   type SuperAdminOrg, type OrgPlan,
 } from '../hooks/use-superadmin';
 
-const formatARS = (n: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+const formatARS = (n: number) => formatMoney(n);
 
 const PLAN_LABEL: Record<OrgPlan, string> = {
   free:       'Free',

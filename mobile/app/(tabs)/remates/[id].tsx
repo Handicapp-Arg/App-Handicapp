@@ -14,10 +14,11 @@ import { useAuth } from '../../../lib/auth';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { formatMoney, type Currency } from '../../../lib/currency';
 
 function formatARS(n: number | null | undefined, cur: string) {
   if (n == null) return '–';
-  return `${cur} ${new Intl.NumberFormat('es-AR').format(Number(n))}`;
+  return formatMoney(Number(n), cur as Currency);
 }
 
 function Countdown({ end, s }: { end: string; s: Styles }) {

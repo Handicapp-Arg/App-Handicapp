@@ -18,6 +18,7 @@ import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes } from '../../lib/routes';
+import { formatMoney } from '../../lib/currency';
 import {
   usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget,
 } from '../../hooks/use-plan';
@@ -46,7 +47,7 @@ function roleTargetFor(role?: string): PlanRoleTarget {
 }
 
 const fmtPrice = (ars: number) =>
-  ars > 0 ? `$${ars.toLocaleString('es-AR')}/mes` : 'Gratis';
+  ars > 0 ? `${formatMoney(ars)}/mes` : 'Gratis';
 
 /* ─────────────────────────────────────────────────────────────
  * IDENTIDAD POR TIER
@@ -233,7 +234,7 @@ function PlanCardInner({
         {paid ? (
           <>
             <Text style={[s.priceBig, { color: priceColor }]}>
-              ${plan.price_ars.toLocaleString('es-AR')}
+              {formatMoney(plan.price_ars)}
             </Text>
             <Text style={[s.priceUnit, { color: unitColor }]}>/mes</Text>
           </>
@@ -397,7 +398,7 @@ function CheckoutSheet({
                 </Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={s.summaryPrice}>${plan.price_ars.toLocaleString('es-AR')}</Text>
+                <Text style={s.summaryPrice}>{formatMoney(plan.price_ars)}</Text>
                 <Text style={s.summaryUnit}>/mes</Text>
               </View>
             </View>

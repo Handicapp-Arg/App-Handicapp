@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { formatMoney } from '@/lib/currency';
 
 interface PublicHistory {
   horse: { name: string; breed?: { name: string }; activity?: { name: string }; birth_date: string | null };
@@ -128,7 +129,7 @@ export default function PublicHistoryPage({ params }: { params: Promise<{ token:
                   </div>
                   <p className="text-sm text-gray-700">{ev.description}</p>
                   {ev.amount != null && (
-                    <p className="text-xs font-semibold text-purple-700 mt-1">${Number(ev.amount).toLocaleString('es-AR')}</p>
+                    <p className="text-xs font-semibold text-purple-700 mt-1">{formatMoney(Number(ev.amount))}</p>
                   )}
                 </div>
               ))}

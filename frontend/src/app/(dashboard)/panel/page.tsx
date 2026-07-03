@@ -22,6 +22,7 @@ import {
   Check, AlertTriangle, Zap, Info, ArrowUpRight, Star, Syringe, Clock,
 } from 'lucide-react';
 import { HorseHead } from '@/components/icons/equine';
+import { formatMoney } from '@/lib/currency';
 import type { Auction } from '@/types';
 
 /* ─── tipos ─── */
@@ -55,8 +56,7 @@ const typeLabel: Record<string, string> = {
   salud: 'Salud', entrenamiento: 'Entrenamiento', gasto: 'Gasto', nota: 'Nota',
 };
 
-const formatARS = (n: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+const formatARS = (n: number) => formatMoney(n);
 
 /* ─── Admin KPI bar ─── */
 
@@ -737,7 +737,7 @@ function PropietarioDashboardView({ data }: { data: PropietarioDashboard }) {
         </div>
         <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Gasto en {monthName}</p>
-          <p className="mt-1 text-2xl font-bold text-purple-700 dark:text-purple-400">${data.monthly_spend.toLocaleString('es-AR')}</p>
+          <p className="mt-1 text-2xl font-bold text-purple-700 dark:text-purple-400">{formatMoney(data.monthly_spend)}</p>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-[var(--surface-card)] p-4 shadow-sm col-span-2 sm:col-span-1">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Eventos recientes</p>

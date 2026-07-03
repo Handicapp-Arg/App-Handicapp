@@ -16,9 +16,10 @@ import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
 import { nav, Routes } from '../../../lib/routes';
 import type { Auction } from '../../../../packages/shared/src/types';
+import { formatMoney, type Currency } from '../../../lib/currency';
 
 function formatARS(n: number, cur: string) {
-  return `${cur} ${new Intl.NumberFormat('es-AR').format(n)}`;
+  return formatMoney(n, cur as Currency);
 }
 
 function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => void; c: ThemeColors; s: Styles }) {

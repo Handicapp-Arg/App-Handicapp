@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Card } from '@/components/ui';
 import { useReportSummary, type ReportSummary } from '@/hooks/use-reports';
+import { formatMoney } from '@/lib/currency';
 
 const CATEGORY_LABELS: Record<string, string> = {
   alimentacion: 'Alimentación',
@@ -29,7 +30,7 @@ const APPOINTMENT_LABELS: Record<string, string> = {
   otro: 'Otro',
 };
 
-const fmtMoney = (n: number) => `$ ${n.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+const fmtMoney = (n: number) => formatMoney(n);
 
 const fmtMonth = (ym: string) => {
   const [y, m] = ym.split('-');

@@ -32,7 +32,7 @@ import { useEventComments, useAddEventComment, useDeleteEventComment } from '../
 import { useEventsByHorse, useCreateEvent } from '../../../hooks/use-events';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
 import { PedigreeTab } from '../../../components/PedigreeTab';
-import { formatCurrency } from '../../../lib/currency';
+import { formatCurrency, formatMoney } from '../../../lib/currency';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
 import { Routes, nav } from '../../../lib/routes';
@@ -585,13 +585,13 @@ export default function HorseDetailScreen() {
                 <View style={s.financialGrid}>
                   <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
                     <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
-                      ${financial.total.toLocaleString('es-AR')}
+                      {formatMoney(financial.total)}
                     </Text>
                     <Text style={[s.financialStatLabel, { color: c.brand }]}>Total gastos</Text>
                   </View>
                   <View style={[s.financialStat, { backgroundColor: c.surfaceAlt }]}>
                     <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
-                      ${financial.average_monthly.toLocaleString('es-AR')}
+                      {formatMoney(financial.average_monthly)}
                     </Text>
                     <Text style={s.financialStatLabel}>Promedio/mes</Text>
                   </View>
@@ -605,7 +605,7 @@ export default function HorseDetailScreen() {
                     <View key={cat.category} style={s.barRow}>
                       <View style={s.barIcon}><MetaIcon size={15} color={meta.color} strokeWidth={2} /></View>
                       <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%` as any, backgroundColor: meta.color }]} /></View>
-                      <Text style={s.barValue}>${cat.total.toLocaleString('es-AR')}</Text>
+                      <Text style={s.barValue}>{formatMoney(cat.total)}</Text>
                     </View>
                   );
                 })}
@@ -1548,13 +1548,13 @@ export default function HorseDetailScreen() {
               <View style={s.financialGrid}>
                 <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
                   <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
-                    ${financial.total.toLocaleString('es-AR')}
+                    {formatMoney(financial.total)}
                   </Text>
                   <Text style={[s.financialStatLabel, { color: c.brand }]}>Total acumulado</Text>
                 </View>
                 <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
                   <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
-                    ${financial.average_monthly.toLocaleString('es-AR')}
+                    {formatMoney(financial.average_monthly)}
                   </Text>
                   <Text style={[s.financialStatLabel, { color: c.brand }]}>Promedio/mes</Text>
                 </View>
@@ -1580,7 +1580,7 @@ export default function HorseDetailScreen() {
                           </View>
                           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                             <Text style={{ fontSize: 11, color: c.textFaint }}>{pct.toFixed(0)}%</Text>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: c.text }}>${cat.total.toLocaleString('es-AR')}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: c.text }}>{formatMoney(cat.total)}</Text>
                           </View>
                         </View>
                         <View style={s.barTrack}>
@@ -1604,7 +1604,7 @@ export default function HorseDetailScreen() {
                       <View key={m.month} style={s.barRow}>
                         <Text style={s.barLabel}>{label}</Text>
                         <View style={s.barTrack}><View style={[s.barFill, { width: `${(m.total / maxVal) * 100}%` as any }]} /></View>
-                        <Text style={s.barValue}>${m.total.toLocaleString('es-AR')}</Text>
+                        <Text style={s.barValue}>{formatMoney(m.total)}</Text>
                       </View>
                     );
                   })}
@@ -1627,7 +1627,7 @@ export default function HorseDetailScreen() {
                             {(() => { let d = new Date(exp.date + 'T12:00:00'); if (isNaN(d.getTime())) d = new Date(exp.date); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: c.text }}>${exp.amount.toLocaleString('es-AR')}</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: c.text }}>{formatMoney(exp.amount)}</Text>
                       </View>
                     );
                   })}

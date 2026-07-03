@@ -11,9 +11,9 @@ import {
   PageHeader, Card, Badge, Button, Modal, Input, type BadgeTone,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { formatMoney } from '@/lib/currency';
 
-const formatARS = (n: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+const formatARS = (n: number) => formatMoney(n);
 
 const ROLE_ORDER: PlanRoleTarget[] = ['propietario', 'veterinario', 'establecimiento', 'haras'];
 

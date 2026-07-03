@@ -18,11 +18,11 @@ import {
   type ColumnDef, type BadgeTone,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { formatMoney } from '@/lib/currency';
 
 const PAGE_SIZE = 15;
 
-const formatARS = (n: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+const formatARS = (n: number) => formatMoney(n);
 
 const PLAN_TONE: Record<OrgPlan, BadgeTone> = {
   free:       'neutral',
