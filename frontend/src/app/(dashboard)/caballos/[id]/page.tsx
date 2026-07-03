@@ -308,14 +308,14 @@ function EventCard({
             {badge.label}
           </span>
           {event.is_public && (
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">Público</span>
+            <span className="rounded-full bg-clay-500/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-primary)]">Público</span>
           )}
         </div>
         <div className="flex items-center gap-1">
           <span className="text-[11px] text-gray-400">{formatDate(event.date)}</span>
           {onShare && hasMedia && (
             <button onClick={() => onShare(event.id)}
-              className="rounded-md p-1 text-gray-300 hover:bg-blue-50 hover:text-blue-400 transition cursor-pointer"
+              className="rounded-md p-1 text-gray-300 hover:bg-clay-500/10 hover:text-clay-500 transition cursor-pointer"
               title={event.feed_post_id ? 'Ya compartido' : 'Compartir al feed'}
               disabled={!!event.feed_post_id}
             >
@@ -396,7 +396,7 @@ function EventCard({
             type="button"
             onClick={() => onTogglePublic(event.id, !event.is_public)}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              event.is_public ? 'bg-blue-500' : 'bg-gray-200'
+              event.is_public ? 'bg-clay-500' : 'bg-gray-200'
             }`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${event.is_public ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -497,7 +497,7 @@ function CreateEventModal({
 
       {/* Modo NOW: hint de cámara */}
       {mode === 'now' && (
-        <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 px-3 py-2.5 text-xs text-blue-600">
+        <div className="rounded-xl bg-clay-500/10 border border-clay-500/20 px-3 py-2.5 text-xs text-[var(--color-primary)]">
           Se registrará con la fecha y hora actuales. Podés adjuntar una foto tomada en el momento.
         </div>
       )}
