@@ -320,11 +320,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt, marginBottom: space[2],
   },
   bidRowActive: { backgroundColor: c.isDark ? 'rgba(16,185,129,0.14)' : '#ecfdf5', borderColor: c.isDark ? 'rgba(16,185,129,0.4)' : '#6ee7b7' },
-  bidAvatar: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: c.borderStrong, justifyContent: 'center', alignItems: 'center',
-  },
-  bidAvatarText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   bidDate: { fontSize: 10, color: c.textFaint },
   bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: c.brand },

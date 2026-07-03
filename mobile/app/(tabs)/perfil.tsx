@@ -19,6 +19,7 @@ import api from '../../lib/api';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { AVATAR_PALETTE } from '../../lib/avatar-color';
+import { Routes } from '../../lib/routes';
 import { Avatar } from '../../components/Avatar';
 import { RoleBadge } from '../../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../../lib/theme';
@@ -49,6 +50,7 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited, c, s }: {
 }) {
   const isPro = plan === 'pro';
   const pct = horseLimit ? Math.min((horseCount / horseLimit) * 100, 100) : 0;
+  const router = useRouter();
 
   if (isPro) {
     return (
@@ -86,6 +88,15 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited, c, s }: {
       <Text style={s.planFreeMsg}>
         {isLimited ? 'Límite alcanzado. Pasate a Pro para caballos ilimitados.' : 'Pasate a Pro para caballos ilimitados.'}
       </Text>
+      <TouchableOpacity
+        style={s.planUpgradeBtn}
+        onPress={() => { haptic.medium(); router.push(Routes.miPlan as never); }}
+        activeOpacity={0.85}
+      >
+        <Crown size={15} color={colors.white} strokeWidth={2.4} />
+        <Text style={s.planUpgradeText}>Mejorar plan</Text>
+        <ChevronRight size={16} color={colors.white} strokeWidth={2.4} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -905,6 +916,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   progressTrack: { height: 6, backgroundColor: c.surfaceAlt, borderRadius: radius.full, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: radius.full },
   planFreeMsg: { fontSize: text.xs, color: c.textFaint },
+  planUpgradeBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
+    backgroundColor: c.brand, borderRadius: radius.md,
+    paddingVertical: space[3], marginTop: space[1],
+  },
+  planUpgradeText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 
   adminRow: {
     backgroundColor: c.surface, borderRadius: radius.lg,

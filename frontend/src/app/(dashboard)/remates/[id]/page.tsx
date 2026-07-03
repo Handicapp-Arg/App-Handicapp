@@ -93,6 +93,7 @@ export default function AuctionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const confirm = useConfirm();
 
   const { data: auction, isLoading } = useAuction(id);
   const { data: bids } = useAuctionBids(id);
@@ -122,9 +123,9 @@ export default function AuctionDetailPage() {
     ? Number(topBidAmount) + Number(auction.bid_increment ?? 1)
     : Number(auction.starting_bid ?? 0);
 
-  const handlePlaceBid = async () => {
+  const handlePlaceBid = async (overrideAmount?: number) => {
     setBidError('');
-    const amount = parseFloat(bidAmount);
+    const amount = overrideAmount ?? parseFloat(bidAmount);
     if (isNaN(amount)) { setBidError('Ingresá un monto válido'); return; }
     try {
       await placeBid.mutateAsync({ auctionId: id, amount });
@@ -310,12 +311,24 @@ export default function AuctionDetailPage() {
               {/* Acción comprador — venta directa */}
               {!isSeller && isActive && !isRemate && (
                 <div className="mt-4 space-y-2">
-                  <Button className="w-full" onClick={() => {
-                    setBidAmount(String(auction.asking_price));
-                    handlePlaceBid();
+                  <Button className="w-full" disabled={placeBid.isPending} onClick={async () => {
+                    const ok = await confirm({
+                      title: 'Confirmar oferta',
+                      message: (
+                        <>
+                          Vas a ofertar{' '}
+                          <strong>{formatCurrency(Number(auction.asking_price), auction.currency)}</strong>{' '}
+                          por este equino. La oferta es <strong>vinculante</strong>.
+                        </>
+                      ),
+                      confirmLabel: 'Ofertar',
+                    });
+                    if (!ok) return;
+                    handlePlaceBid(Number(auction.asking_price));
                   }}>
                     Hacer oferta al precio pedido
                   </Button>
+                  {bidError && <p className="text-xs text-red-600">{bidError}</p>}
                 </div>
               )}
 
@@ -331,7 +344,7 @@ export default function AuctionDetailPage() {
                       onChange={(e) => setBidAmount(e.target.value)}
                       min={minNextBid}
                     />
-                    <Button onClick={handlePlaceBid} disabled={placeBid.isPending}>
+                    <Button onClick={() => handlePlaceBid()} disabled={placeBid.isPending}>
                       Pujar
                     </Button>
                   </div>

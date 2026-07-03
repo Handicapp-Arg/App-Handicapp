@@ -56,6 +56,7 @@ export default function PeonHome() {
       <View style={s.header}>
         <Text style={s.hello} numberOfLines={2}>¡Hola, {firstName}!</Text>
         <Text style={s.date}>{fechaLarga()}</Text>
+        <Text style={s.subtitle}>Registrá las tareas del día</Text>
       </View>
 
       {isLoading ? (
@@ -122,6 +123,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontWeight: '500',
     color: c.textMuted,
     textTransform: 'capitalize',
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: space[2],
+    fontFamily: fontFamily.medium,
+    fontWeight: '500',
+    color: c.textFaint,
   },
   list: {
     paddingHorizontal: space[5],

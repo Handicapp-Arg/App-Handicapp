@@ -243,17 +243,22 @@ export default function JineteHorse() {
         </View>
 
         <Text style={s.label}>Esfuerzo</Text>
-        <View style={s.chipsWrap}>
+        <View style={s.starsInput}>
           {[1, 2, 3, 4, 5].map((n) => {
-            const active = intensity === n;
+            const filled = n <= intensity;
             return (
               <PressableScale
                 key={n}
-                style={[s.effortChip, active && s.chipActive]}
-                scaleTo={0.92}
-                onPress={() => { haptic.selection(); setIntensity(active ? 0 : n); }}
+                style={s.starTouch}
+                scaleTo={0.88}
+                onPress={() => { haptic.selection(); setIntensity(intensity === n ? 0 : n); }}
               >
-                <Text style={[s.chipText, active && s.chipTextActive]}>{n}</Text>
+                <Star
+                  size={30}
+                  color={filled ? c.brand : c.borderStrong}
+                  fill={filled ? c.brand : 'transparent'}
+                  strokeWidth={2}
+                />
               </PressableScale>
             );
           })}
@@ -404,15 +409,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.borderStrong,
   },
-  effortChip: {
-    width: 48,
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: c.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.borderStrong,
-    justifyContent: 'center',
-    alignItems: 'center',
+  starsInput: {
+    flexDirection: 'row',
+    gap: space[1],
+  },
+  starTouch: {
+    padding: space[1] + 1,
   },
   chipActive: {
     backgroundColor: c.brand,

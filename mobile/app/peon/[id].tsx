@@ -57,6 +57,8 @@ export default function PeonHorse() {
   const green = greenFor(c);
 
   const markRoutine = (field: RoutineField, doneLabel: string) => {
+    // Ya está hecho: no re-disparar el mutate ni el toast (evita re-tap accidental).
+    if (routine?.[field]) return;
     haptic.success();
     upsert.mutate(
       { date: today, [field]: true } as Partial<Routine> & { date: string },

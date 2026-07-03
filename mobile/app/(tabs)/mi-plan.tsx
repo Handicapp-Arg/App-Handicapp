@@ -31,6 +31,9 @@ function errMessage(err: unknown, fallback: string): string {
   return m || fallback;
 }
 
+/** Contacto de ventas para planes Enterprise (a medida, sin checkout self-serve). */
+const SALES_MAILTO = 'mailto:ventas@handicapp.com?subject=Consulta%20plan%20Enterprise';
+
 const FEATURE_LABELS: Record<string, string> = {
   whatsapp: 'WhatsApp',
   libreta_digital: 'Libreta digital',
@@ -279,6 +282,20 @@ function PlanCardInner({
             Plan actual
           </Text>
         </View>
+      ) : kind === 'enterprise' ? (
+        <Pressable
+          onPress={() => { haptic.medium(); Linking.openURL(SALES_MAILTO); }}
+          style={({ pressed }) => [
+            s.subBtn,
+            { backgroundColor: onDark ? '#f8fafc' : accent },
+            pressed && { opacity: 0.75 },
+          ]}
+        >
+          <Text style={[s.subBtnText, { color: onDark ? '#0f172a' : colors.white }]}>
+            Contactar ventas
+          </Text>
+          <ArrowRight size={16} color={onDark ? '#0f172a' : colors.white} strokeWidth={2.6} />
+        </Pressable>
       ) : paid ? (
         <Pressable
           onPress={() => { haptic.medium(); onSubscribe(plan); }}
@@ -423,7 +440,7 @@ function CheckoutSheet({
             <View style={s.secureNote}>
               <Lock size={15} color={c.brand} strokeWidth={2.4} />
               <Text style={s.secureNoteText}>
-                Pago 100% seguro. Tus datos de tarjeta los procesa MercadoPago,
+                Pago seguro procesado por MercadoPago. Tus datos de tarjeta
                 no se guardan en HandicApp.
               </Text>
             </View>

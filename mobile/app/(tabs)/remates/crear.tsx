@@ -6,7 +6,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { SlideInDown } from 'react-native-reanimated';
-import { Check, Tag, Gavel, Calendar, ChevronRight, Clock, AlertCircle, Megaphone } from 'lucide-react-native';
+import { Check, Tag, Gavel, Calendar, ChevronRight, Clock, AlertCircle } from 'lucide-react-native';
 import { HorseIcon } from '../../../components/icons/equine';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
@@ -159,7 +159,7 @@ export default function CrearRemateScreen() {
       haptic.success();
       router.replace(`/(tabs)/remates/${auction.id}` as never);
     } catch {
-      setError('No se pudo publicar. Verificá los datos e intentá de nuevo.');
+      setError('No se pudo crear el borrador. Verificá los datos e intentá de nuevo.');
     }
   };
 
@@ -178,7 +178,7 @@ export default function CrearRemateScreen() {
 
   return (
     <View style={s.root}>
-      <ScreenHeader title="Publicar caballo" showBack />
+      <ScreenHeader title="Nueva publicación" showBack />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -416,11 +416,14 @@ export default function CrearRemateScreen() {
               <ActivityIndicator color={colors.white} />
             ) : (
               <>
-                <Megaphone size={20} color={colors.white} strokeWidth={2} />
-                <Text style={s.publishBtnText}>Publicar caballo</Text>
+                <Check size={20} color={colors.white} strokeWidth={2} />
+                <Text style={s.publishBtnText}>Crear borrador</Text>
               </>
             )}
           </TouchableOpacity>
+          <Text style={s.draftNote}>
+            Se guarda como borrador. Después lo revisás y lo publicás para que aparezca en el mercado.
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -597,4 +600,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   publishBtnDisabled: { backgroundColor: c.borderStrong },
   publishBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+  draftNote: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[2], lineHeight: 16 },
 });

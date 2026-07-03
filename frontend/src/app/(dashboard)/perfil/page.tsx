@@ -46,6 +46,9 @@ function roleTargetFor(role?: string): PlanRoleTarget {
 const fmtPrice = (ars: number) =>
   ars > 0 ? `${formatMoney(ars)}/mes` : 'Gratis';
 
+/** Contacto de ventas para planes Enterprise (a medida, sin checkout self-serve). */
+const SALES_MAILTO = 'mailto:ventas@handicapp.com?subject=Consulta%20plan%20Enterprise';
+
 /** Nombre visual del tier (badge) derivado del número de tier del plan.
  *  Usa el mapa canónico de labels de plan (una sola fuente de verdad). */
 const TIER_KEYS = ['free', 'pro', 'premium', 'enterprise'] as const;
@@ -352,6 +355,14 @@ function PlanCard({
           <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400">
             Plan actual
           </div>
+        ) : t.id === 'enterprise' ? (
+          <a
+            href={SALES_MAILTO}
+            style={{ background: t.accent }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer"
+          >
+            Contactar ventas
+          </a>
         ) : canSubscribe ? (
           <button
             onClick={() => onSubscribe(plan)}
@@ -446,7 +457,7 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
               <ShieldCheck className="h-4 w-4" />
             </div>
             <p className="text-xs font-medium leading-relaxed">
-              Pago 100% seguro. Tus datos de tarjeta los procesa MercadoPago, no se guardan en HandicApp.
+              Pago seguro procesado por MercadoPago. Tus datos de tarjeta no se guardan en HandicApp.
             </p>
           </div>
 

@@ -40,13 +40,13 @@ const STATUS_TONE: Record<SuperAdminOrg['status'], BadgeTone> = {
 const STATUS_LABEL: Record<SuperAdminOrg['status'], string> = {
   active:    'Activa',
   suspended: 'Suspendida',
-  trial:     'Trial',
+  trial:     'Prueba',
 };
 
 // ─────────────────────────── Metric Card ───────────────────────────
 function MetricCard({
-  label, value, sub, tone = 'neutral',
-}: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'neutral' }) {
+  label, value, sub, tone = 'neutral', tooltip,
+}: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'neutral'; tooltip?: string }) {
   return (
     <Card
       className={cn(
@@ -56,8 +56,10 @@ function MetricCard({
       )}
     >
       <p
+        title={tooltip}
         className={cn(
           'text-[11px] font-semibold uppercase tracking-widest',
+          tooltip && 'cursor-help decoration-dotted underline underline-offset-2',
           tone === 'navy' ? 'text-white/60' : tone === 'gold' ? 'text-gold-600' : 'text-slate-400',
         )}
       >
@@ -688,7 +690,8 @@ export default function SuperAdminPage() {
           <MetricCard
             label="MRR activo"
             value={formatARS(metrics.mrr_ars)}
-            sub={`ARR estimado: ${formatARS(metrics.arr_ars)}`}
+            sub={`Ingreso anual (ARR): ${formatARS(metrics.arr_ars)}`}
+            tooltip="MRR: ingreso mensual recurrente. ARR: ingreso anual recurrente (MRR × 12)."
             tone="navy"
           />
           <MetricCard
