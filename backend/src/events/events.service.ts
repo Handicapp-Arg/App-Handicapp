@@ -44,7 +44,7 @@ export class EventsService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  // Gating por rol: jinete solo registra entrenamientos, peón solo tareas.
+  // Gating por rol: jinete solo registra entrenamientos; peón, tareas o avisos.
   // Otros roles: sin restricción de tipo.
   private assertTypeAllowedForRole(type: EventType, user: User): void {
     if (user.role === 'jinete' && type !== EventType.ENTRENAMIENTO) {
@@ -52,9 +52,13 @@ export class EventsService {
         'El rol jinete solo puede registrar eventos de tipo entrenamiento',
       );
     }
-    if (user.role === 'peon' && type !== EventType.TAREA) {
+    if (
+      user.role === 'peon' &&
+      type !== EventType.TAREA &&
+      type !== EventType.AVISO
+    ) {
       throw new BadRequestException(
-        'El rol peón solo puede registrar eventos de tipo tarea',
+        'El rol peón solo puede registrar tareas o avisos',
       );
     }
   }

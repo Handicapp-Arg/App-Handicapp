@@ -217,7 +217,13 @@ export default function ContratosPage() {
           className="space-y-4"
           onSubmit={async (e) => {
             e.preventDefault();
-            await createContract.mutateAsync({ ...form, horse_id: form.horse_id || undefined });
+            // Reemplazar tokens del template con los nombres reales antes de enviar.
+            const establecimiento = user?.name ?? 'el establecimiento';
+            const propietario = (propietarios ?? []).find((p) => p.id === form.owner_id)?.name ?? 'el propietario';
+            const body = form.body
+              .replace(/\{establecimiento\}/g, establecimiento)
+              .replace(/\{propietario\}/g, propietario);
+            await createContract.mutateAsync({ ...form, body, horse_id: form.horse_id || undefined });
             setShowCreate(false);
             resetForm();
           }}

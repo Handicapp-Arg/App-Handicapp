@@ -12,7 +12,6 @@ const roleInfo: Record<string, { label: string; desc: string }> = {
   propietario:     { label: 'Propietario',     desc: 'Seguí el historial, eventos y documentos de tus caballos.' },
   establecimiento: { label: 'Establecimiento', desc: 'Gestioná caballos, eventos, contratos y tu equipo.' },
   veterinario:     { label: 'Veterinario',     desc: 'Atendé a tus pacientes con su historial clínico.' },
-  admin:           { label: 'Administrador',   desc: 'Acceso completo a la plataforma.' },
 };
 
 interface RoleOption {
@@ -42,8 +41,9 @@ function RegistroForm() {
     // Con invitación no hace falta elegir rol (lo define la invitación).
     if (invitationToken) return;
     api.get('/roles').then(({ data }) => {
-      setRoles(data);
-      if (data.length > 0) setRole(data[0].name);
+      const filtered = (data as RoleOption[]).filter((r) => r.name !== 'admin');
+      setRoles(filtered);
+      if (filtered.length > 0) setRole(filtered[0].name);
     });
   }, [invitationToken]);
 

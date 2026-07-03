@@ -10,6 +10,7 @@ import { SkeletonRow } from '@/components/ui/skeleton';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
 import { Receipt } from 'lucide-react';
+import { formatAmount, type Currency } from '@/lib/currency';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i] }));
 
@@ -141,7 +142,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
               <div className="text-right text-sm font-bold text-gray-900">
-                Total: ${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                Total: {formatAmount(total, currency)}
               </div>
             </div>
 
@@ -216,6 +217,7 @@ export default function FacturacionPage() {
         <div className="space-y-3">
           {bills.map((bill) => {
             const meta = STATUS_META[bill.status];
+            const billCurrency: Currency = (bill as { currency?: string }).currency === 'USD' ? 'USD' : 'ARS';
             return (
               <div key={bill.id} className="rounded-xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm space-y-3">
                 {/* Header */}
@@ -231,7 +233,7 @@ export default function FacturacionPage() {
                     )}
                   </div>
                   <p className="text-lg font-bold text-gray-900 shrink-0">
-                    {(bill as { currency?: string }).currency === 'USD' ? 'USD ' : '$'}{Number(bill.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    {formatAmount(Number(bill.total), billCurrency)}
                   </p>
                 </div>
 
@@ -240,7 +242,7 @@ export default function FacturacionPage() {
                   {bill.items.map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-xs text-gray-600">
                       <span>{item.description}</span>
-                      <span className="font-medium">{item.quantity} × ${item.unit_price.toLocaleString('es-AR')} = ${item.total.toLocaleString('es-AR')}</span>
+                      <span className="font-medium">{item.quantity} × {formatAmount(item.unit_price, billCurrency)} = {formatAmount(item.total, billCurrency)}</span>
                     </div>
                   ))}
                   {bill.notes && <p className="text-xs text-gray-400 pt-1 border-t border-gray-200">{bill.notes}</p>}

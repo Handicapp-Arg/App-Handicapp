@@ -382,7 +382,7 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
       // Redirige el navegador a MercadoPago para autorizar el cobro.
       window.location.href = data.init_point;
     } catch (err: unknown) {
-      setError(errMessage(err, 'No se pudo iniciar el pago. MercadoPago no está configurado.'));
+      setError(errMessage(err, 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.'));
     }
   };
 

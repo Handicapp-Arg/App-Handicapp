@@ -329,7 +329,7 @@ export class DashboardService {
           duration_min: number | null;
           discipline: string | null;
         }>(),
-      // Avisos (tarea con ⚠️)
+      // Avisos: tipo 'aviso' (nuevo) o legacy 'tarea' con prefijo ⚠️
       this.eventRepository
         .createQueryBuilder('event')
         .leftJoin('event.author', 'author')
@@ -340,8 +340,9 @@ export class DashboardService {
         .addSelect('event.description', 'description')
         .addSelect('author.name', 'author_name')
         .where('event.horse_id IN (:...horseIds)', { horseIds })
-        .andWhere('event.type = :type', { type: 'tarea' })
-        .andWhere("event.description LIKE '⚠️%'")
+        .andWhere(
+          "(event.type = 'aviso' OR (event.type = 'tarea' AND event.description LIKE '⚠️%'))",
+        )
         .andWhere('event.deleted_at IS NULL')
         .orderBy('event.date', 'DESC')
         .addOrderBy('event.event_time', 'DESC')

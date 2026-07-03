@@ -43,6 +43,7 @@ const typeBadge: Record<string, { label: string; cls: string }> = {
   entrenamiento: { label: 'Entrenamiento', cls: 'bg-yellow-50 text-yellow-700' },
   gasto:         { label: 'Gasto',         cls: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300' },
   nota:          { label: 'Nota',          cls: 'bg-gray-100 text-gray-700' },
+  aviso:         { label: 'Aviso',         cls: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' },
 };
 
 const orgRoleLabel: Record<string, string> = {

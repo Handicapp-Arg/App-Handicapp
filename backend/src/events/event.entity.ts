@@ -21,6 +21,7 @@ export enum EventType {
   NOTA = 'nota',
   CARRERA = 'carrera',
   TAREA = 'tarea',
+  AVISO = 'aviso',
 }
 
 export enum ExpenseCategory {

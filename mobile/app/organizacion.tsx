@@ -35,6 +35,14 @@ const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
   { value: 'admin',      label: 'Administrador',  desc: 'Control total de la organización' },
 ];
 
+// Roles habilitados al aprobar una solicitud de ingreso (solo roles operativos, sin admin/propietario/staff).
+const JOIN_ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
+  { value: 'jinete',    label: 'Jinete',       desc: 'Ve caballos asignados y registra entrenamientos' },
+  { value: 'peon',      label: 'Peón',         desc: 'Registra tareas sobre caballos asignados' },
+  { value: 'encargado', label: 'Encargado',    desc: 'Gestiona caballos, eventos y agenda' },
+  { value: 'vet',       label: 'Veterinario',  desc: 'Ve los caballos asignados' },
+];
+
 function getInviteUrl(token: string): string {
   const base = (process.env.EXPO_PUBLIC_WEB_URL ?? 'https://app.handicapp.com').replace(/\/$/, '');
   return `${base}/invitacion/${token}`;
@@ -145,7 +153,7 @@ function InviteModal({ orgId, onClose, c, s }: { orgId: string; onClose: () => v
 function ApproveJoinModal({
   request, onClose, onConfirm, pending, c, s,
 }: { request: JoinRequest; onClose: () => void; onConfirm: (role: OrgRole) => void; pending: boolean; c: ThemeColors; s: Styles }) {
-  const [role, setRole] = useState<OrgRole>('staff');
+  const [role, setRole] = useState<OrgRole>('jinete');
 
   return (
     <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
@@ -160,7 +168,7 @@ function ApproveJoinModal({
               Asigná un rol a <Text style={{ fontWeight: weight.bold, color: c.text }}>{request.requester.name}</Text>
             </Text>
             <View style={{ gap: 8 }}>
-              {ROLE_OPTIONS.map((opt) => (
+              {JOIN_ROLE_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
                   style={[s.roleCard, role === opt.value && s.roleCardActive]}

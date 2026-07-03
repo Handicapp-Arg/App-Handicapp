@@ -71,7 +71,7 @@ export default function PeonHorse() {
     setRareOpen(false);
     haptic.medium();
     createEvent.mutate(
-      { type: 'tarea', description: `⚠️ ${razon}`, date: today, horse_id: horseId },
+      { type: 'aviso', description: razon, date: today, horse_id: horseId },
       {
         onSuccess: () => { haptic.success(); toast.success('Listo, avisamos al encargado'); },
         onError: () => { haptic.error(); toast.error('No se pudo avisar. Probá de nuevo.'); },

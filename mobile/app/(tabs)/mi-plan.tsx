@@ -364,7 +364,7 @@ function CheckoutSheet({
       await Linking.openURL(data.init_point);
       onClose();
     } catch (err: unknown) {
-      setError(errMessage(err, 'No se pudo iniciar el pago. MercadoPago no está configurado.'));
+      setError(errMessage(err, 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.'));
     }
   };
 

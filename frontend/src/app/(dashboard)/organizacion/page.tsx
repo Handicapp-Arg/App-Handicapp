@@ -68,6 +68,8 @@ function PlanPanel({
   const isPro = plan !== 'free';
   const meta = PLAN_PRICING[plan] ?? { horses: '—', price: PLAN_LABELS[plan as keyof typeof PLAN_LABELS] ?? plan };
   const barTone = pct >= 100 ? 'bg-danger-500' : pct >= 80 ? 'bg-warning-500' : 'bg-navy-700';
+  // Número de soporte para el CTA "Mejorar plan". Sin número configurado, no se muestra el CTA.
+  const supportWhatsapp = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
 
   return (
     <Card className="p-5">
@@ -105,11 +107,11 @@ function PlanPanel({
         )}
       </div>
 
-      {!isPro && (
+      {!isPro && supportWhatsapp && (
         <Button
           className="mt-5 w-full"
           iconLeft={<Sparkles className="h-4 w-4" />}
-          onClick={() => window.open('https://wa.me/5491100000000?text=Hola,%20quiero%20mejorar%20el%20plan%20de%20mi%20organizaci%C3%B3n%20en%20HandicApp', '_blank')}
+          onClick={() => window.open(`https://wa.me/${supportWhatsapp}?text=Hola,%20quiero%20mejorar%20el%20plan%20de%20mi%20organizaci%C3%B3n%20en%20HandicApp`, '_blank')}
         >
           Mejorar plan
         </Button>
