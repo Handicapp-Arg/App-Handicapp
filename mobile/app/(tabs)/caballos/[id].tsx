@@ -1,21 +1,22 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
-  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS,
+  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS, Share,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  X, MessageCircle, ArrowUp, ChevronLeft, MoreHorizontal, QrCode, Link2,
+  X, MessageCircle, ArrowUp, ChevronLeft, MoreHorizontal, QrCode,
   ShieldCheck, Megaphone, ChevronRight, User, Users, XCircle, FileText,
   Trash2, CheckCircle2, Camera, Pencil, Stethoscope, Network,
   Info, Clock, Images, Banknote,
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse,
   Wheat, Syringe, Hammer, Wrench, Truck, Package,
-  MoreVertical, Download,
+  MoreVertical, Download, Copy, Share2,
   AlertTriangle, Lock, CalendarClock,
   Dumbbell, Flag,
   type LucideIcon,
@@ -1156,15 +1157,42 @@ export default function HorseDetailScreen() {
             <View style={s.qrWrap}>
               <View style={s.qrInner}>
                 {horse.public_token && (
-                  <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={200} color="#111827" backgroundColor="#ffffff" />
+                  <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={200} color="#9d6c35" backgroundColor="#ffffff" />
                 )}
               </View>
             </View>
             <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
-            <TouchableOpacity style={s.qrLinkBtn} onPress={() => Alert.alert('Enlace', `${PUBLIC_BASE}/caballo/${horse.public_token}`, [{ text: 'OK' }])} activeOpacity={0.85}>
-              <Link2 size={15} color={c.brand} strokeWidth={2.2} />
-              <Text style={s.qrLinkBtnText}>Ver enlace</Text>
-            </TouchableOpacity>
+            <View style={s.qrActions}>
+              <TouchableOpacity
+                style={s.qrLinkBtn}
+                onPress={async () => {
+                  if (!horse.public_token) return;
+                  await Clipboard.setStringAsync(`${PUBLIC_BASE}/caballo/${horse.public_token}`);
+                  haptic.light();
+                  toast.success('Enlace copiado');
+                }}
+                activeOpacity={0.85}
+              >
+                <Copy size={15} color={c.brand} strokeWidth={2.2} />
+                <Text style={s.qrLinkBtnText}>Copiar enlace</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.qrShareBtn}
+                onPress={async () => {
+                  if (!horse.public_token) return;
+                  const url = `${PUBLIC_BASE}/caballo/${horse.public_token}`;
+                  try {
+                    await Share.share({ message: `Mirá el perfil de ${horse.name} en HandicApp: ${url}`, url });
+                  } catch {
+                    // usuario canceló
+                  }
+                }}
+                activeOpacity={0.85}
+              >
+                <Share2 size={15} color={colors.white} strokeWidth={2.2} />
+                <Text style={s.qrShareBtnText}>Compartir</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
         </View>
       </Modal>
@@ -1842,8 +1870,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
   qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
-  qrLinkBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, margin: 16, marginTop: 14, borderRadius: 14, backgroundColor: c.surfaceAlt, paddingVertical: 13 },
+  qrActions: { flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 14 },
+  qrLinkBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.surfaceAlt, paddingVertical: 13 },
   qrLinkBtnText: { fontSize: 14, fontWeight: '700', color: c.brand },
+  qrShareBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.brand, paddingVertical: 13 },
+  qrShareBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 
   /* Modales generales */
   modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },

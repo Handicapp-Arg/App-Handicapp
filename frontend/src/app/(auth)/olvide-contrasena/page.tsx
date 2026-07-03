@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import api from '@/lib/api';
+import { authInputClass, authTitleClass } from '@/lib/auth-ui';
 
 export default function OlvideContrasenaPage() {
   const [email, setEmail] = useState('');
@@ -40,17 +42,18 @@ export default function OlvideContrasenaPage() {
             Si existe una cuenta con <strong>{email}</strong>, vas a recibir un enlace para restablecer tu contraseña en los próximos minutos.
           </p>
         </div>
-        <Link href="/login" className="block text-sm font-semibold text-clay-500 hover:text-clay-600 transition">
-          ← Volver al inicio de sesión
+        <Link href="/login" className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-clay-500 hover:text-clay-600 transition">
+          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+          Volver al inicio de sesión
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Recuperar contraseña</h1>
+        <h1 className={authTitleClass}>Recuperar contraseña</h1>
         <p className="mt-1 text-sm text-gray-400">
           Ingresá tu email y te enviamos un enlace para restablecer tu contraseña.
         </p>
@@ -71,7 +74,7 @@ export default function OlvideContrasenaPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
+            className={authInputClass}
           />
         </div>
 
@@ -85,8 +88,9 @@ export default function OlvideContrasenaPage() {
       </form>
 
       <p className="text-center text-sm text-gray-400">
-        <Link href="/login" className="font-semibold text-clay-500 hover:text-clay-600 transition">
-          ← Volver al inicio de sesión
+        <Link href="/login" className="inline-flex items-center justify-center gap-1.5 font-semibold text-clay-500 hover:text-clay-600 transition">
+          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+          Volver al inicio de sesión
         </Link>
       </p>
     </div>

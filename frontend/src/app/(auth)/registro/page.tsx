@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { ChevronDown, Check } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useInvitationByToken, ROLE_LABELS } from '@/hooks/use-organizations';
+import { authInputClass, authTitleClass } from '@/lib/auth-ui';
 import api from '@/lib/api';
 
 const roleInfo: Record<string, { label: string; desc: string }> = {
@@ -67,12 +68,12 @@ function RegistroForm() {
     }
   };
 
-  const inputClass = "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15";
+  const inputClass = authInputClass;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Creá tu cuenta</h1>
+        <h1 className={authTitleClass}>Creá tu cuenta</h1>
         <p className="mt-1 text-sm text-gray-400">
           {invitation ? 'Registrate para unirte a la organización' : 'Empezá a gestionar tus caballos'}
         </p>

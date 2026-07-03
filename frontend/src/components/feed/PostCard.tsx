@@ -18,14 +18,6 @@ import {
   useFeedComments, useAddComment, useDeleteComment,
 } from '@/hooks/use-feed';
 
-// ─── Role config ───────────────────────────────────────────────────────────────
-const ROLE_CONFIG: Record<string, { label: string; gradient: string; badge: string }> = {
-  propietario:    { label: 'Propietario',    gradient: 'from-clay-400 to-clay-600',      badge: 'bg-clay-50 text-clay-700 ring-1 ring-clay-100' },
-  establecimiento:{ label: 'Establecimiento',gradient: 'from-clay-500 to-clay-700',       badge: 'bg-clay-100 text-clay-800 ring-1 ring-clay-200' },
-  veterinario:    { label: 'Veterinario',    gradient: 'from-amber-glow to-clay-500',     badge: 'bg-[var(--color-amber-soft)] text-clay-700 ring-1 ring-clay-100' },
-  admin:          { label: 'Admin',          gradient: 'from-bark-400 to-bark-600',       badge: 'bg-sand-300 text-bark-600 ring-1 ring-sand-400' },
-};
-
 // ─── Image grid ────────────────────────────────────────────────────────────────
 function ImageGrid({ urls }: { urls: string[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);

@@ -127,7 +127,7 @@ export default function MasScreen() {
     },
     {
       icon: GitBranch,
-      label: 'Árbol Genealógico',
+      label: 'Árbol genealógico',
       desc: 'Pedigree global de caballos desde 1990',
       path: Routes.arbol,
     },
@@ -193,13 +193,13 @@ export default function MasScreen() {
   const cuenta: MenuItem[] = [
     {
       icon: CreditCard,
-      label: 'Mi Plan',
+      label: 'Mi plan',
       desc: 'Tu plan actual y planes disponibles',
       path: Routes.miPlan,
     },
     ...(isAdmin ? [{
       icon: Settings,
-      label: 'Config. notificaciones',
+      label: 'Configuración de notificaciones',
       desc: 'Qué tipos de eventos notifican a cada rol',
       path: Routes.notificacionesConfig,
       iconColor: colors.gray500,

@@ -38,6 +38,25 @@ export function useBills() {
   });
 }
 
+export function useCreateBill() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: {
+      horse_id: string;
+      owner_id: string;
+      month: number;
+      year: number;
+      currency: 'ARS' | 'USD';
+      items: Omit<BillItem, 'total'>[];
+      notes?: string;
+    }) => {
+      const { data } = await api.post('/billing', dto);
+      return data as Bill;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+  });
+}
+
 export function useSendBill() {
   const qc = useQueryClient();
   return useMutation({

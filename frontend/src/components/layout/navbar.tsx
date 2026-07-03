@@ -19,6 +19,9 @@ const roleLabel: Record<string, string> = {
   propietario: 'Propietario',
   establecimiento: 'Establecimiento',
   veterinario: 'Veterinario',
+  encargado: 'Encargado',
+  jinete: 'Jinete',
+  peon: 'Peón',
 };
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number };

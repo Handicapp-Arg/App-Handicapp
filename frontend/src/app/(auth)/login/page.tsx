@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { authInputClass, authTitleClass } from '@/lib/auth-ui';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -63,7 +64,7 @@ function LoginForm() {
   return (
     <div className="space-y-5">
       <div className="mb-1">
-        <h1 className="text-[19px] font-bold tracking-[-0.02em] text-gray-900">Iniciá sesión</h1>
+        <h1 className={authTitleClass}>Iniciá sesión</h1>
         <p className="mt-1 text-[13px] text-gray-400">Ingresá a tu cuenta para continuar</p>
       </div>
 
@@ -89,7 +90,7 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
+            className={authInputClass}
           />
         </div>
 
@@ -106,7 +107,7 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-11 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-clay-400 focus:bg-[var(--surface-card)] focus:ring-4 focus:ring-clay-500/15"
+              className={`${authInputClass} pr-11`}
             />
             <button
               type="button"

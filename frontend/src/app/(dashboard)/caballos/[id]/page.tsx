@@ -3149,7 +3149,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setShowQR(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="w-full max-w-xs rounded-3xl bg-[var(--surface-card)] shadow-2xl overflow-hidden">
-              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #1a3a6b 100%)' }}>
+              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, var(--color-clay-500) 0%, var(--color-clay-700) 100%)' }}>
                 <div>
                   <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Código QR</p>
                   <p className="text-lg font-bold text-white">{horse.name}</p>

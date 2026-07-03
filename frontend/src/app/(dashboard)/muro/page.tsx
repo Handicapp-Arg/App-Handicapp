@@ -194,7 +194,7 @@ export default function MuroPage() {
             <EmptyState
               icon={Rss}
               title="Todavía no hay publicaciones"
-              message="Compartí una novedad, un logro o una foto y empezá la conversación con la comunidad."
+              message="Compartí una novedad, un logro o una foto y empezá la conversación con tu comunidad."
             />
           ) : (
             <>
@@ -208,8 +208,8 @@ export default function MuroPage() {
                 {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
                 {!hasNextPage && posts.length > 5 && (
                   <div className="text-center">
-                    <p className="text-xs text-gray-300 font-medium">Ya viste todo</p>
-                    <p className="text-xs text-gray-200 mt-0.5">Volvé más tarde para ver nuevas publicaciones</p>
+                    <p className="text-xs text-gray-500 font-medium">Estás al día</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Volvé más tarde para ver nuevas publicaciones.</p>
                   </div>
                 )}
               </div>

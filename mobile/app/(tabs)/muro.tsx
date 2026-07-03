@@ -82,7 +82,7 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
       ) : (
         <ScrollView contentContainerStyle={s.commentsList} showsVerticalScrollIndicator={false}>
           {comments.length === 0 && (
-            <Text style={s.emptyComments}>Sin comentarios aún. ¡Sé el primero!</Text>
+            <Text style={s.emptyComments}>Todavía no hay comentarios. ¡Sé el primero!</Text>
           )}
           {(comments as FeedComment[]).map((cm) => (
             <View key={cm.id} style={s.commentRow}>
@@ -615,7 +615,7 @@ export default function MuroTab() {
                 <Newspaper size={32} color={c.textFaint} strokeWidth={2} />
               </View>
               <Text style={s.emptyTitle}>Todavía no hay publicaciones</Text>
-              <Text style={s.emptySub}>¡Sé el primero en compartir algo con tu comunidad!</Text>
+              <Text style={s.emptySub}>Compartí una novedad, un logro o una foto y empezá la conversación con tu comunidad.</Text>
             </View>
           }
         />
@@ -655,14 +655,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   list: { paddingBottom: space[10] },
 
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[3] },
-  navBrand: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: c.text, letterSpacing: -0.3 },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: space[5] },
-
-  screenHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] },
-  screenTitle: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
-  adminBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#faf5ff', paddingHorizontal: space[2] + 2, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: '#e9d5ff' },
-  adminBadgeText: { fontSize: 11, fontWeight: weight.semibold, color: '#7e22ce' },
 
   // Avatar
   avatar: { backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
@@ -677,8 +671,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   authorInfo: { flex: 1 },
   authorRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   authorName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
-  roleBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.full },
-  roleBadgeText: { fontSize: 10, fontWeight: weight.semibold },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
   pinnedText: { fontSize: 10, color: '#b45309', fontWeight: weight.semibold },
   timeAgo: { fontSize: text.xs, color: c.textFaint },

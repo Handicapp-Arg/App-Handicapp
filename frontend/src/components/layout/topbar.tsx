@@ -8,17 +8,31 @@ import { useAuth } from '@/lib/auth-context';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { Avatar } from '@/components/ui/avatar';
 
-// Título de página derivado del primer segmento de la ruta.
+// Título de página resuelto por la ruta más específica (soporta subrutas).
 const PAGE_TITLES: Record<string, string> = {
   panel: 'Panel', muro: 'Muro', caballos: 'Caballos', padron: 'Padrón',
   arbol: 'Árbol genealógico', eventos: 'Eventos', remates: 'Remates',
-  notificaciones: 'Notificaciones', agenda: 'Agenda', contratos: 'Contratos',
+  notificaciones: 'Notificaciones', 'notificaciones-config': 'Notificaciones',
+  agenda: 'Agenda', contratos: 'Contratos',
   facturacion: 'Facturación', directorio: 'Directorio', organizacion: 'Organización',
   solicitudes: 'Solicitudes', catalogo: 'Catálogo', perfil: 'Mi perfil',
-  superadmin: 'Organizaciones', permisos: 'Permisos',
+  superadmin: 'Organizaciones', 'superadmin/planes': 'Planes', permisos: 'Permisos',
+  reportes: 'Reportes', supervision: 'Supervisión', 'mi-plan': 'Mi plan',
+  invitacion: 'Invitación',
 };
 
-/** Barra superior (desktop) con notificaciones + menú de usuario. Estilo "MercadoPago web". */
+// Resuelve el título por la ruta más específica: prueba el path completo y va
+// acortando segmentos (así /superadmin/planes gana sobre /superadmin).
+function resolvePageTitle(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean);
+  for (let i = segments.length; i > 0; i--) {
+    const title = PAGE_TITLES[segments.slice(0, i).join('/')];
+    if (title) return title;
+  }
+  return '';
+}
+
+/** Barra superior (desktop) con notificaciones + menú de usuario. */
 export function Topbar() {
   const { user, logout } = useAuth();
   const { data: unread } = useUnreadCount();
@@ -26,7 +40,7 @@ export function Topbar() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const pageTitle = PAGE_TITLES[pathname.split('/')[1] ?? ''] ?? '';
+  const pageTitle = resolvePageTitle(pathname);
 
   const unreadCount = unread?.count ?? 0;
 
