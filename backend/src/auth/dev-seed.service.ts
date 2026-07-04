@@ -60,8 +60,12 @@ export class DevSeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (process.env.NODE_ENV === 'production') return;
-    if (process.env.SKIP_DEV_SEED === 'true') return;
+    // SEED_DEMO=true fuerza el seed en cualquier entorno (poblar un server de
+    // pruebas). Sin ese flag: no corre en producción ni con SKIP_DEV_SEED.
+    if (process.env.SEED_DEMO !== 'true') {
+      if (process.env.NODE_ENV === 'production') return;
+      if (process.env.SKIP_DEV_SEED === 'true') return;
+    }
 
     try {
       await this.seed();
