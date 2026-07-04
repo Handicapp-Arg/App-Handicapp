@@ -51,8 +51,12 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   logging: process.env.NODE_ENV !== 'production',
   dropSchema: false,
 
-  // 👇🔥 ESTO ES LO QUE TE FALTABA
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
+  // SSL: lo requieren las bases gestionadas (Render, etc.). Se desactiva con
+  // DB_SSL=false para un Postgres local (mismo host), que no expone SSL.
+  ssl:
+    process.env.DB_SSL === 'false'
+      ? false
+      : process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }
+        : false,
 });
