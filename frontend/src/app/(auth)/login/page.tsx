@@ -19,8 +19,12 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
-// Solo en desarrollo: en producción el bundler elimina este array (no expone credenciales).
-const testUsers = process.env.NODE_ENV === 'production' ? [] : [
+// Acceso rápido de pruebas: aparece en desarrollo, o si NEXT_PUBLIC_SHOW_DEV_LOGIN=true
+// (para un server de pruebas). En producción real queda oculto (array vacío).
+const showDevLogin =
+  process.env.NEXT_PUBLIC_SHOW_DEV_LOGIN === 'true' ||
+  process.env.NODE_ENV !== 'production';
+const testUsers = !showDevLogin ? [] : [
   { email: 'admin@handicapp.com',          password: 'handicapp2026', label: 'Admin' },
   { email: 'establecimiento@handicapp.com', password: 'handicapp2026', label: 'Establecimiento' },
   { email: 'propietario@handicapp.com',    password: 'handicapp2026', label: 'Propietario' },
