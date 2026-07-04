@@ -77,7 +77,10 @@ api.interceptors.response.use(
       processQueue(refreshError, null);
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
-      if (typeof window !== 'undefined') window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+        window.location.href = `${basePath}/login`;
+      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
