@@ -13,7 +13,6 @@ import { usePlanStatus } from '../../hooks/use-plan';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { Avatar } from '../../components/Avatar';
-import { RoleBadge } from '../../components/RoleBadge';
 import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
@@ -227,7 +226,6 @@ export default function MasScreen() {
         <Avatar name={user?.name} avatarColor={user?.avatar_color} size={50} />
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Mi perfil'}</Text>
-          {role ? <RoleBadge role={role} size="sm" /> : null}
         </View>
         <ChevronRight size={20} color={c.textFaint} strokeWidth={2} />
       </TouchableOpacity>
