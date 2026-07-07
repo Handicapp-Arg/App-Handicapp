@@ -139,7 +139,7 @@ export default function SolicitudesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PageHeader
         title="Solicitudes de pensión"
         subtitle={isEstab ? 'Propietarios que quieren traer sus caballos a tu establecimiento' : 'Tus solicitudes de pensión enviadas'}

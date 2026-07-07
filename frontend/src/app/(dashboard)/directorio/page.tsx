@@ -154,7 +154,7 @@ export default function DirectorioPage() {
     myRequests?.some((r) => r.establishment_id === estabId && r.status === 'pending');
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PageHeader
         title="Directorio de establecimientos"
         subtitle="Encontrá y contactá establecimientos disponibles en HandicApp"
