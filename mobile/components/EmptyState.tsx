@@ -47,9 +47,9 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, message, actionLabel, onAction, tint }: EmptyStateProps) {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const accent = tint ?? c.brand;            // CTA (botón)
-  const iconColor = tint ?? c.textMuted;     // ícono neutro por defecto (se adapta al tema)
-  const iconBg = tint ? `${tint}15` : c.surfaceAlt;
+  const accent = tint ?? c.brand;            // CTA (botón) — el tint solo pinta el botón
+  const iconColor = c.textMuted;             // ícono SIEMPRE gris neutro (sobrio, no marrón)
+  const iconBg = c.surfaceAlt;               // fondo del ícono SIEMPRE gris sutil
   return (
     <Animated.View entering={FadeInDown.duration(350)} style={s.wrap}>
       <View style={[s.iconCircle, { backgroundColor: iconBg }]}>

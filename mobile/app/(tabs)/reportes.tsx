@@ -245,7 +245,7 @@ function NoPlanState({ c, s }: { c: ThemeColors; s: Styles }) {
   return (
     <View style={s.noPlan}>
       <View style={s.noPlanIcon}>
-        <BarChart3 size={30} color={c.brand} strokeWidth={1.8} />
+        <BarChart3 size={30} color={c.textMuted} strokeWidth={1.8} />
       </View>
       <Text style={s.noPlanTitle}>Tu plan no incluye reportes</Text>
       <Text style={s.noPlanText}>
@@ -395,7 +395,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   noPlanIcon: {
     width: 60, height: 60, borderRadius: radius.xl,
-    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
   },
   noPlanTitle: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, textAlign: 'center' },
   noPlanText: { fontSize: text.sm, color: c.textMuted, textAlign: 'center', lineHeight: 20 },

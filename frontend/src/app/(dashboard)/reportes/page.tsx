@@ -82,7 +82,7 @@ function NoPlanState() {
   return (
     <Card className="mx-auto max-w-lg text-center">
       <div className="flex flex-col items-center gap-3 py-6">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-clay-500/15 text-clay-600 dark:text-clay-300">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-400 dark:bg-white/5">
           <BarChart3 className="h-7 w-7" strokeWidth={1.8} />
         </span>
         <h2 className="font-display text-lg font-bold tracking-tight text-gray-900">
