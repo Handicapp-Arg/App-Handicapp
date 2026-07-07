@@ -81,7 +81,7 @@ function AuctionCard({ auction, onClick }: { auction: Auction; onClick: () => vo
           <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
             {isRemate ? (auction.top_bid ? 'Puja actual' : 'Base') : 'Precio pedido'}
           </p>
-          <p className="text-xl font-bold text-[var(--color-primary)] tracking-tight">
+          <p className="text-xl font-bold text-gray-900 dark:text-gray-50 tracking-tight">
             {price != null ? formatCurrency(price, auction.currency) : '–'}
           </p>
         </div>

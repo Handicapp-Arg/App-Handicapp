@@ -276,7 +276,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     padding: space[5], marginBottom: space[4], ...shadow.sm,
   },
   priceLabelSmall: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  priceMain: { fontSize: 28, fontWeight: weight.extrabold, color: c.brand, letterSpacing: -0.5 },
+  priceMain: { fontSize: 28, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
   bidCount: { fontSize: text.xs, color: c.textFaint, marginTop: 4 },
 
   countBox: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
@@ -322,7 +322,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bidRowActive: { backgroundColor: c.isDark ? 'rgba(16,185,129,0.14)' : '#ecfdf5', borderColor: c.isDark ? 'rgba(16,185,129,0.4)' : '#6ee7b7' },
   bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   bidDate: { fontSize: 10, color: c.textFaint },
-  bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: c.brand },
+  bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: c.text },
 
   legalBox: {
     flexDirection: 'row', gap: space[2], alignItems: 'flex-start',

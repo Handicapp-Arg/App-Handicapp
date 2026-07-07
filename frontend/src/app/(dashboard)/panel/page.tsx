@@ -953,7 +953,7 @@ function VeterinarioDashboardView({ data }: { data: VeterinarioDashboard }) {
   if (data.horses.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
-        <Syringe size={32} className="mx-auto mb-3 text-[var(--color-primary)]" />
+        <Syringe size={32} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
         <p className="text-sm font-semibold text-gray-600">Sin caballos asignados</p>
         <p className="mt-1 text-xs text-gray-400">Un propietario o establecimiento debe asignarte como veterinario desde el detalle del caballo.</p>
       </div>

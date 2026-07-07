@@ -290,7 +290,7 @@ export default function AuctionDetailPage() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
                 {isRemate ? (topBidAmount ? 'Puja actual' : 'Puja inicial') : 'Precio pedido'}
               </p>
-              <p className="text-3xl font-extrabold text-[var(--color-primary)] tracking-tight">
+              <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-50 tracking-tight">
                 {formatCurrency(
                   Number(isRemate ? (topBidAmount ?? auction.starting_bid) : auction.asking_price),
                   auction.currency,

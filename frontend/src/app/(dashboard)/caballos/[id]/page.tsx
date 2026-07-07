@@ -352,7 +352,7 @@ function EventCard({
       </div>
       <p className="text-sm text-gray-700 line-clamp-2">{event.description}</p>
       {event.type === 'gasto' && event.amount != null && (
-        <p className="mt-1 text-sm font-semibold text-clay-600 dark:text-clay-300">
+        <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-50">
           {formatMoney(Number(event.amount), event.currency)}
         </p>
       )}

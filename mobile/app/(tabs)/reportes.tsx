@@ -364,7 +364,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 104 },
   chartCol: { flex: 1, alignItems: 'center', gap: 5, height: '100%' },
   chartValRow: { height: 12, alignSelf: 'stretch', justifyContent: 'flex-end', alignItems: 'center' },
-  chartVal: { fontSize: 8, fontWeight: weight.bold, color: c.brand },
+  chartVal: { fontSize: 8, fontWeight: weight.bold, color: c.text },
   chartBarTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
   chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
   chartLbl: { fontSize: 9, color: c.textFaint, textTransform: 'capitalize' },

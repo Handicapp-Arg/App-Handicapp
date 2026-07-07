@@ -585,10 +585,10 @@ export default function HorseDetailScreen() {
               <View style={s.financialCard}>
                 <View style={s.financialGrid}>
                   <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
-                    <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
                       {formatMoney(financial.total)}
                     </Text>
-                    <Text style={[s.financialStatLabel, { color: c.brand }]}>Total gastos</Text>
+                    <Text style={s.financialStatLabel}>Total gastos</Text>
                   </View>
                   <View style={[s.financialStat, { backgroundColor: c.surfaceAlt }]}>
                     <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
@@ -1575,16 +1575,16 @@ export default function HorseDetailScreen() {
               {/* KPIs */}
               <View style={s.financialGrid}>
                 <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
-                  <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
                     {formatMoney(financial.total)}
                   </Text>
-                  <Text style={[s.financialStatLabel, { color: c.brand }]}>Total acumulado</Text>
+                  <Text style={s.financialStatLabel}>Total acumulado</Text>
                 </View>
                 <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
-                  <Text style={[s.financialStatValue, { color: c.brand }]} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
                     {formatMoney(financial.average_monthly)}
                   </Text>
-                  <Text style={[s.financialStatLabel, { color: c.brand }]}>Promedio/mes</Text>
+                  <Text style={s.financialStatLabel}>Promedio/mes</Text>
                 </View>
               </View>
 
@@ -1787,7 +1787,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: 11, color: c.textFaint },
   eventDesc: { fontSize: 14, color: c.text, lineHeight: 20 },
-  eventAmount: { fontSize: 14, fontWeight: '700', color: c.brand },
+  eventAmount: { fontSize: 14, fontWeight: '700', color: c.text },
 
   /* Comentarios */
   commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 8 },

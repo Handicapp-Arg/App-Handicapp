@@ -79,7 +79,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   date: { fontSize: text.xs, color: c.textFaint },
   deleteBtn: { padding: 2 },
   deleteBtnText: { fontSize: 13, color: c.textFaint },
-  amount: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
+  amount: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   desc: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
   photoCount: { fontSize: text.xs, color: c.textFaint },
 });
