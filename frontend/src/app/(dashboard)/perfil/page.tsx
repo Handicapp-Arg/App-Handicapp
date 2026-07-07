@@ -306,16 +306,16 @@ function PlanCard({
       </div>
 
       {/* Precio prominente */}
-      <div className="mt-5 flex items-baseline gap-1.5">
+      <div className="mt-5 flex items-baseline gap-1">
         {plan.price_ars > 0 ? (
           <>
-            <span className="text-[2rem] font-extrabold leading-none tracking-tight text-gray-900 tabular-nums">
+            <span className="text-[1.7rem] font-extrabold leading-none tracking-tight text-gray-900 tabular-nums">
               {formatMoney(plan.price_ars)}
             </span>
-            <span className="text-sm font-medium text-gray-400">/mes</span>
+            <span className="text-xs font-medium text-gray-400">/mes</span>
           </>
         ) : (
-          <span className="text-[2rem] font-extrabold leading-none tracking-tight text-gray-900">Gratis</span>
+          <span className="text-[1.7rem] font-extrabold leading-none tracking-tight text-gray-900">Gratis</span>
         )}
       </div>
 
