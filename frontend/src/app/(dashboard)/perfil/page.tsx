@@ -103,11 +103,11 @@ const TIER_STYLES: Record<TierId, TierStyle> = {
     label: 'Premium',
     tagline: 'Todo lo que necesitás',
     Icon: Crown,
-    accent: '#8b5cf6',
-    tint: 'rgba(139,92,246,0.16)',
-    ring: 'rgba(139,92,246,0.5)',
-    glow: 'rgba(139,92,246,0.4)',
-    bar: 'linear-gradient(90deg, #a78bfa, #7c3aed)',
+    accent: '#334155',
+    tint: 'rgba(51,65,85,0.14)',
+    ring: 'rgba(51,65,85,0.4)',
+    glow: 'rgba(51,65,85,0.28)',
+    bar: 'linear-gradient(90deg, #64748b, #334155)',
   },
   enterprise: {
     id: 'enterprise',
@@ -263,7 +263,6 @@ function PlanCard({
   onSubscribe: (plan: Plan) => void;
 }) {
   const t = resolveTier(plan);
-  const { Icon } = t;
   // Solo se puede pagar un plan que no es el actual y que tiene precio.
   const canSubscribe = !current && plan.price_ars > 0;
 
@@ -275,15 +274,14 @@ function PlanCard({
           '--tier-glow': t.glow,
         } as React.CSSProperties
       }
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-[var(--surface-card)] p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_-16px_var(--tier-glow)] ${
-        t.featured
-          ? 'border-[color:var(--tier-ring)] shadow-[var(--shadow-lg)] lg:scale-[1.03]'
-          : 'border-gray-200 dark:border-gray-700'
-      } ${current ? 'ring-2 ring-[color:var(--tier-ring)] ring-offset-2 ring-offset-[var(--surface-card)]' : ''}`}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-[var(--surface-card)] p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_-16px_var(--tier-glow)] ${
+        current
+          ? 'border-clay-500 shadow-[var(--shadow-lg)]'
+          : t.featured
+            ? 'border-clay-300 dark:border-clay-500/50 shadow-[var(--shadow-lg)] lg:scale-[1.03]'
+            : 'border-gray-200 dark:border-gray-700'
+      }`}
     >
-      {/* Franja superior de color del tier */}
-      <span className="absolute inset-x-0 top-0 h-1.5" style={{ background: t.bar }} aria-hidden />
-
       {/* Badge flotante: "Tu plan" (prioridad) o "Más elegido" (Pro) */}
       {current ? (
         <span className="absolute right-4 top-4 rounded-full bg-clay-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
@@ -301,18 +299,10 @@ function PlanCard({
         )
       )}
 
-      {/* Ícono del tier en círculo con su color + nombre */}
-      <div className="mt-1.5 flex items-center gap-3">
-        <span
-          className="flex h-11 w-11 items-center justify-center rounded-2xl"
-          style={{ background: t.tint, color: t.id === 'enterprise' ? '#fff' : t.accent }}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="font-display text-lg font-extrabold leading-tight text-gray-900">{plan.name}</h3>
-          <p className="text-xs font-medium text-gray-400">{t.tagline}</p>
-        </div>
+      {/* Nombre del plan (tipográfico, sin ícono ni círculo de color) */}
+      <div className="mt-1.5 min-w-0">
+        <h3 className="font-display text-lg font-extrabold leading-tight text-gray-900">{plan.name}</h3>
+        <p className="text-xs font-medium text-gray-400">{t.tagline}</p>
       </div>
 
       {/* Precio prominente */}
@@ -352,22 +342,20 @@ function PlanCard({
       {/* CTA — anclado al fondo para tarjetas parejas */}
       <div className="mt-6 flex flex-1 items-end">
         {current ? (
-          <div className="w-full cursor-default rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-center text-sm font-semibold text-gray-400">
-            Plan actual
+          <div className="flex w-full cursor-default items-center justify-center gap-1.5 rounded-xl border border-clay-200 bg-clay-50 px-5 py-2.5 text-sm font-semibold text-clay-700 dark:border-clay-500/30 dark:bg-clay-500/10 dark:text-clay-300">
+            <Check className="h-4 w-4" strokeWidth={3} /> Tu plan actual
           </div>
         ) : t.id === 'enterprise' ? (
           <a
             href={SALES_MAILTO}
-            style={{ background: t.accent }}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1c1917] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow-md active:scale-95 cursor-pointer dark:bg-white dark:text-[#1c1917] dark:hover:bg-gray-100"
           >
             Contactar ventas
           </a>
         ) : canSubscribe ? (
           <button
             onClick={() => onSubscribe(plan)}
-            style={{ background: t.accent }}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1c1917] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow-md active:scale-95 cursor-pointer dark:bg-white dark:text-[#1c1917] dark:hover:bg-gray-100"
           >
             Suscribirme
           </button>
@@ -412,12 +400,6 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
               borderColor: 'color-mix(in srgb, ' + t.accent + ' 30%, transparent)',
             }}
           >
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
-              style={{ background: t.tint, color: t.id === 'enterprise' ? '#fff' : t.accent }}
-            >
-              <t.Icon className="h-6 w-6" />
-            </span>
             <div className="min-w-0 flex-1">
               <p className="font-display text-base font-extrabold text-gray-900">{plan.name}</p>
               <p className="text-xs font-medium text-gray-400">{t.tagline}</p>
@@ -582,8 +564,8 @@ function MiPlan({ role }: { role?: string }) {
           <>
             <div
               className={`grid gap-4 sm:grid-cols-2 ${
-                myPlans.length >= 3 ? 'xl:grid-cols-3' : ''
-              } ${myPlans.length >= 4 ? '2xl:grid-cols-4' : ''} items-stretch`}
+                myPlans.length >= 4 ? 'xl:grid-cols-4' : myPlans.length === 3 ? 'xl:grid-cols-3' : ''
+              } items-stretch`}
             >
               {myPlans.map((p) => (
                 <PlanCard
