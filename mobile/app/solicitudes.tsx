@@ -209,7 +209,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
     padding: space[4],
     borderWidth: 1,
-    borderColor: c.border,
+    borderColor: c.borderStrong,
+    shadowColor: '#0f1f3d',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   rowHead: {
     flexDirection: 'row',
