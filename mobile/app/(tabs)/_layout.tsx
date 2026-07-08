@@ -65,7 +65,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         onPress={() => { haptic.light(); router.push(isProp ? '/muro' : '/buscar'); }}
       >
         {isProp
-          ? <BrandIsotipo size={26} color={c.isDark ? '#1a1207' : '#ffffff'} />
+          ? <BrandIsotipo size={40} color={c.isDark ? '#1a1207' : '#ffffff'} />
           : <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />}
       </TouchableOpacity>
       <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>{isProp ? 'Home' : 'QR'}</Text>
