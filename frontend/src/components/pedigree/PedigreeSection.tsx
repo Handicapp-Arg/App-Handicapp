@@ -212,17 +212,17 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
   return createPortal(
     <>
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
-        <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
-          <p className="font-bold text-white">Pedigrí</p>
-          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
+        <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+          <p className="text-base font-semibold text-gray-900">Pedigrí</p>
+          <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto flex-1">{content}</div>
       </div>
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center bg-black/40">
         <div className="w-full max-w-2xl rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between bg-clay-500 px-6 py-4">
-            <p className="font-bold text-white">Pedigrí</p>
-            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <p className="text-base font-semibold text-gray-900">Pedigrí</p>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X size={18} /></button>
           </div>
           <div className="overflow-y-auto max-h-[80vh]">{content}</div>
         </div>

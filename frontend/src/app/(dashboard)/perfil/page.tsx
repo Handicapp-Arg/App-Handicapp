@@ -393,13 +393,13 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
       {plan && t && (
         <div className="space-y-5">
           {/* Resumen del plan */}
-          <div
-            className="flex items-center gap-3 rounded-2xl border p-4"
-            style={{
-              background: 'color-mix(in srgb, ' + t.accent + ' 8%, transparent)',
-              borderColor: 'color-mix(in srgb, ' + t.accent + ' 30%, transparent)',
-            }}
-          >
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] p-4">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: 'color-mix(in srgb, ' + t.accent + ' 14%, transparent)', color: t.accent }}
+            >
+              <t.Icon className="h-5 w-5" />
+            </span>
             <div className="min-w-0 flex-1">
               <p className="font-display text-base font-extrabold text-gray-900">{plan.name}</p>
               <p className="text-xs font-medium text-gray-400">{t.tagline}</p>
@@ -427,7 +427,7 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
           </ul>
 
           {/* Medios de pago aceptados */}
-          <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+          <div className="rounded-2xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] p-4">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-400">Medios de pago aceptados</p>
             <PaymentMethods />
           </div>
@@ -445,22 +445,32 @@ function CheckoutModal({ plan, onClose }: { plan: Plan | null; onClose: () => vo
 
           {error && <p className="text-xs font-medium text-red-500">{error}</p>}
 
-          {/* CTA principal */}
-          <button
-            onClick={handlePay}
-            disabled={subscribe.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-clay-600 hover:shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            {subscribe.isPending ? (
-              <>
-                <Spinner size="sm" color="white" /> Redirigiendo…
-              </>
-            ) : (
-              <>
-                <Lock className="h-4 w-4" /> Ir al pago seguro
-              </>
-            )}
-          </button>
+          {/* Acciones — secundario neutro + CTA cuero */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={subscribe.isPending}
+              className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition-all hover:bg-gray-50 disabled:opacity-50 cursor-pointer dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handlePay}
+              disabled={subscribe.isPending}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-clay-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-clay-600 hover:shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {subscribe.isPending ? (
+                <>
+                  <Spinner size="sm" color="white" /> Redirigiendo…
+                </>
+              ) : (
+                <>
+                  <Lock className="h-4 w-4" /> Ir al pago seguro
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
     </Modal>

@@ -20,11 +20,11 @@ import { formatMoney } from '@/lib/currency';
 
 
 const typeOptions = [
-  { value: 'salud', label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30' },
-  { value: 'entrenamiento', label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30' },
-  { value: 'tarea', label: 'Tarea', color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30' },
-  { value: 'gasto', label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30' },
-  { value: 'nota', label: 'Nota', color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30' },
+  { value: 'salud', label: 'Salud', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30', dot: 'bg-red-500' },
+  { value: 'entrenamiento', label: 'Entrenamiento', color: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30', dot: 'bg-yellow-500' },
+  { value: 'tarea', label: 'Tarea', color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30', dot: 'bg-teal-500' },
+  { value: 'gasto', label: 'Gasto', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30', dot: 'bg-purple-500' },
+  { value: 'nota', label: 'Nota', color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30', dot: 'bg-gray-400' },
 ];
 
 const typeBadge: Record<string, string> = {
@@ -236,16 +236,17 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
   };
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Tipo</label>
         <div className="grid grid-cols-2 gap-2">
           {options.map((t) => (
             <button key={t.value} type="button" onClick={() => setType(t.value)}
-              className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
-                type === t.value ? t.color + ' font-semibold' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
+                type === t.value ? 'border-gray-900 bg-gray-900 text-white font-semibold dark:border-white/25 dark:bg-white/15' : 'border-[var(--surface-card-border)] text-gray-600 hover:bg-gray-50'
               }`}
             >
+              <span className={`h-2 w-2 rounded-full ${t.dot}`} />
               {t.label}
             </button>
           ))}
@@ -254,30 +255,38 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Fecha</label>
         <input type="date" required value={date} onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+          className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
         />
       </div>
       {type === 'gasto' && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Monto</label>
-          <div className="flex gap-2">
-            <select value={currency} onChange={(e) => setCurrency(e.target.value as 'ARS' | 'USD')}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+          <div className="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-white/5">
+            <button type="button" onClick={() => setCurrency('ARS')}
+              className={currency === 'ARS'
+                ? 'flex-1 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm dark:bg-white/10'
+                : 'flex-1 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700'}
             >
-              <option value="ARS">$ ARS</option>
-              <option value="USD">USD</option>
-            </select>
-            <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
-            />
+              $ ARS
+            </button>
+            <button type="button" onClick={() => setCurrency('USD')}
+              className={currency === 'USD'
+                ? 'flex-1 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm dark:bg-white/10'
+                : 'flex-1 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700'}
+            >
+              USD
+            </button>
           </div>
+          <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+          />
         </div>
       )}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">Descripción</label>
         <textarea required rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm resize-none focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+          className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm resize-none focus:border-[var(--color-primary)] focus:outline-none"
         />
       </div>
       {updateEvent.isError && <p className="text-xs text-red-600">Error al guardar. Intentá de nuevo.</p>}
@@ -288,8 +297,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
           Cancelar
         </button>
         <button type="submit" disabled={updateEvent.isPending}
-          className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition cursor-pointer"
-          style={{ backgroundColor: 'var(--color-clay-500)' }}
+          className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white transition hover:bg-clay-600 disabled:opacity-50 cursor-pointer"
         >
           {updateEvent.isPending ? 'Guardando...' : 'Guardar cambios'}
         </button>
@@ -300,9 +308,9 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
   const modal = (
     <>
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
-        <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: 'var(--color-clay-500)' }}>
-          <h2 className="text-base font-semibold text-white">Editar evento</h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
+        <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+          <h2 className="text-base font-semibold text-gray-900">Editar evento</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -310,11 +318,11 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
         </div>
         <div className="flex-1 overflow-y-auto">{formContent}</div>
       </div>
-      <div className="hidden sm:flex fixed inset-0 z-[998] items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="hidden sm:flex fixed inset-0 z-[998] items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-sm">
         <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: 'var(--color-clay-500)' }}>
-            <h2 className="text-base font-semibold text-white">Editar evento</h2>
-            <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <h2 className="text-base font-semibold text-gray-900">Editar evento</h2>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -373,7 +381,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
       : `Crear ${selectedIds.length} eventos`;
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
       {/* Caballos */}
       <HorseSelector horses={horses} selectedIds={selectedIds} onChange={setSelectedIds} />
 
@@ -386,10 +394,11 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
               key={t.value}
               type="button"
               onClick={() => setType(t.value)}
-              className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
-                type === t.value ? t.color + ' font-semibold' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
+                type === t.value ? 'border-gray-900 bg-gray-900 text-white font-semibold dark:border-white/25 dark:bg-white/15' : 'border-[var(--surface-card-border)] text-gray-600 hover:bg-gray-50'
               }`}
             >
+              <span className={`h-2 w-2 rounded-full ${t.dot}`} />
               {t.label}
             </button>
           ))}
@@ -404,7 +413,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+          className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
         />
       </div>
 
@@ -420,7 +429,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+            className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
           />
         </div>
       )}
@@ -434,7 +443,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describí el evento..."
-          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm resize-none focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+          className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm resize-none focus:border-[var(--color-primary)] focus:outline-none"
         />
       </div>
 
@@ -459,8 +468,7 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
         <button
           type="submit"
           disabled={isPending || !selectedIds.length}
-          className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition cursor-pointer"
-          style={{ backgroundColor: 'var(--color-clay-500)' }}
+          className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white transition hover:bg-clay-600 disabled:opacity-50 cursor-pointer"
         >
           {submitLabel}
         </button>
@@ -472,9 +480,9 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
     <>
       {/* Mobile: full screen */}
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: 'var(--color-clay-500)' }}>
-          <h2 className="text-base font-semibold text-white">Nuevo evento</h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
+        <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+          <h2 className="text-base font-semibold text-gray-900">Nuevo evento</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -486,11 +494,11 @@ function CreateEventModal({ horses, onClose }: { horses: { id: string; name: str
       </div>
 
       {/* Desktop: centered modal */}
-      <div className="hidden sm:flex fixed inset-0 z-[998] items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="hidden sm:flex fixed inset-0 z-[998] items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-sm">
         <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: 'var(--color-clay-500)' }}>
-            <h2 className="text-base font-semibold text-white">Nuevo evento</h2>
-            <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <h2 className="text-base font-semibold text-gray-900">Nuevo evento</h2>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>

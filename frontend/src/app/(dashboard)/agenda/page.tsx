@@ -82,14 +82,14 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[998] bg-black/50 hidden sm:block" onClick={onClose} />
+      <div className="fixed inset-0 z-[998] hidden sm:block bg-[var(--overlay)] backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: 'var(--color-clay-500)' }}>
-            <h2 className="text-base font-semibold text-white">Nuevo turno</h2>
-            <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer"><X size={18} /></button>
+        <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <h2 className="text-base font-semibold text-gray-900">Nuevo turno</h2>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X size={18} /></button>
           </div>
-          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Caballo</label>
               <select value={horseId} onChange={(e) => setHorseId(e.target.value)} className={inputCls}>
@@ -99,13 +99,16 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
 
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Tipo</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {TYPE_OPTIONS.map((t) => (
                   <button key={t.value} type="button" onClick={() => setType(t.value)}
-                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition cursor-pointer ${
-                      type === t.value ? `${t.bg} ${t.color} border-transparent` : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition cursor-pointer ${
+                      type === t.value
+                        ? 'border-gray-900 bg-gray-50 text-gray-900 dark:border-white/30 dark:bg-white/10 dark:text-white'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${t.bg}`} aria-hidden />
                     {t.label}
                   </button>
                 ))}
@@ -137,7 +140,7 @@ function CreateModal({ horses, onClose }: { horses: { id: string; name: string }
               <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">
                 Cancelar
               </button>
-              <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer transition" style={{ backgroundColor: 'var(--color-clay-500)' }}>
+              <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white transition hover:bg-clay-600 disabled:opacity-50 cursor-pointer">
                 {create.isPending ? 'Guardando...' : 'Crear turno'}
               </button>
             </div>

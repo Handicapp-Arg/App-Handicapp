@@ -63,12 +63,12 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[998] bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 overflow-y-auto">
         <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] shadow-xl my-4">
-          <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl" style={{ backgroundColor: 'var(--color-clay-500)' }}>
-            <h2 className="text-base font-semibold text-white">Nueva factura</h2>
-            <button onClick={onClose} className="text-white/70 hover:text-white cursor-pointer"><X size={18} /></button>
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <h2 className="text-base font-semibold text-gray-900">Nueva factura</h2>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X size={18} /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {/* Caballo y período */}
@@ -106,11 +106,13 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
             {/* Moneda */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-gray-600">Moneda</label>
-              <div className="flex gap-2">
+              <div className="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-white/5">
                 {(['ARS', 'USD'] as const).map((c) => (
                   <button key={c} type="button" onClick={() => setCurrency(c)}
-                    className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition cursor-pointer ${
-                      currency === c ? 'bg-clay-500 text-white border-transparent' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-sm transition cursor-pointer ${
+                      currency === c
+                        ? 'bg-white font-semibold text-gray-900 shadow-sm dark:bg-white/10'
+                        : 'font-medium text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {c === 'ARS' ? '$ ARS — Pesos' : 'USD — Dólares'}
@@ -126,7 +128,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
                 <button type="button" onClick={addItem} className="text-xs font-medium text-[var(--color-primary)] hover:underline cursor-pointer">+ Agregar ítem</button>
               </div>
               {items.map((item, i) => (
-                <div key={i} className="grid grid-cols-[1fr_80px_90px_32px] gap-2 items-center">
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_72px_minmax(110px,0.7fr)_28px] gap-2 items-center">
                   <input value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)}
                     placeholder="Descripción" className={inputCls} required
                   />
@@ -154,7 +156,7 @@ function CreateBillModal({ onClose }: { onClose: () => void }) {
             <div className="flex gap-2 pt-1">
               <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">Cancelar</button>
               <button type="submit" disabled={createBill.isPending || !horseId || !ownerId}
-                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer" style={{ backgroundColor: 'var(--color-clay-500)' }}
+                className="flex-1 rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white transition hover:bg-clay-600 disabled:opacity-50 cursor-pointer"
               >
                 {createBill.isPending ? 'Creando...' : 'Crear borrador'}
               </button>
@@ -314,27 +316,35 @@ export default function FacturacionPage() {
       {/* Modal disputar */}
       {disputingId && createPortal(
         <>
-          <div className="fixed inset-0 z-[998] bg-black/50" onClick={() => setDisputingId(null)} />
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setDisputingId(null)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl p-5 space-y-4">
-              <h3 className="text-base font-bold text-gray-900">Disputar factura</h3>
-              <textarea rows={3} value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)}
-                placeholder="Explicá el motivo de la disputa..."
-                className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm resize-none focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={() => setDisputingId(null)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 cursor-pointer">Cancelar</button>
-                <button
-                  disabled={!disputeReason.trim()}
-                  onClick={async () => {
-                    await disputeBill.mutateAsync({ id: disputingId, reason: disputeReason });
-                    setDisputingId(null);
-                    setDisputeReason('');
-                  }}
-                  className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer"
-                >
-                  Confirmar disputa
-                </button>
+            <div className="w-full max-w-md rounded-2xl bg-[var(--surface-card)] shadow-xl">
+              <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+                <h3 className="text-base font-semibold text-gray-900">Disputar factura</h3>
+                <button onClick={() => setDisputingId(null)} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X size={18} /></button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-600">Motivo de la disputa</label>
+                  <textarea rows={3} value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)}
+                    placeholder="Explicá el motivo de la disputa..."
+                    className="w-full rounded-xl border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm resize-none focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setDisputingId(null)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer">Cancelar</button>
+                  <button
+                    disabled={!disputeReason.trim()}
+                    onClick={async () => {
+                      await disputeBill.mutateAsync({ id: disputingId, reason: disputeReason });
+                      setDisputingId(null);
+                      setDisputeReason('');
+                    }}
+                    className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    Confirmar disputa
+                  </button>
+                </div>
               </div>
             </div>
           </div>

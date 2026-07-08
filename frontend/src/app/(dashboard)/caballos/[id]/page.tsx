@@ -141,7 +141,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
           {typeOptions.map((opt) => (
             <button key={opt.value} type="button" onClick={() => setType(opt.value)}
               className={`rounded-lg border py-2 text-xs font-medium transition cursor-pointer ${
-                type === opt.value ? 'border-[var(--color-primary)] bg-clay-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                type === opt.value ? 'border-gray-900 bg-gray-900 text-white dark:border-white/25 dark:bg-white/15' : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
               {opt.label}
@@ -198,18 +198,18 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
   return createPortal(
     <>
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
-        <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
-          <p className="font-bold text-white">Editar evento</p>
-          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+        <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+          <p className="text-base font-semibold text-gray-900">Editar evento</p>
+          <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
         </div>
         <div className="flex-1 overflow-y-auto">{formContent}</div>
       </div>
       <div className="fixed inset-0 z-[998] hidden sm:block bg-[var(--overlay)]" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
         <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
-          <div className="flex items-center justify-between rounded-t-2xl bg-clay-500 px-6 py-4">
-            <p className="font-bold text-white">Editar evento</p>
-            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <p className="text-base font-semibold text-gray-900">Editar evento</p>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
           </div>
           <div className="overflow-y-auto flex-1">{formContent}</div>
         </div>
@@ -476,7 +476,7 @@ function CreateEventModal({
       type="button"
       onClick={() => setMode(m)}
       className={`flex flex-1 flex-col items-center gap-1 rounded-xl border py-3 text-xs font-semibold transition cursor-pointer ${
-        mode === m ? 'border-[var(--color-primary)] bg-clay-500 text-white' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+        mode === m ? 'border-gray-900 bg-gray-900 text-white dark:border-white/25 dark:bg-white/15' : 'border-gray-200 text-gray-500 hover:border-gray-300'
       }`}
     >
       {icon}
@@ -513,7 +513,7 @@ function CreateEventModal({
           {typeOptions.map((opt) => (
             <button key={opt.value} type="button" onClick={() => setType(opt.value)}
               className={`rounded-lg border py-2 text-xs font-medium transition cursor-pointer ${
-                type === opt.value ? 'border-[var(--color-primary)] bg-clay-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                type === opt.value ? 'border-gray-900 bg-gray-900 text-white dark:border-white/25 dark:bg-white/15' : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
               {opt.label}
@@ -545,14 +545,14 @@ function CreateEventModal({
 
       {/* Recurrencia */}
       {mode === 'recurring' && (
-        <div className="rounded-xl border border-amber-100 bg-amber-50 dark:bg-amber-500/10 p-3 space-y-3">
+        <div className="rounded-xl border border-[var(--surface-card-border)] p-3 space-y-3">
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-amber-700 uppercase tracking-wide">Frecuencia</label>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Frecuencia</label>
             <div className="grid grid-cols-2 gap-2">
               {RECURRENCE_OPTIONS.map((opt) => (
                 <button key={opt.value} type="button" onClick={() => setRecurrenceType(opt.value)}
                   className={`rounded-lg border py-2 text-xs font-medium transition cursor-pointer ${
-                    recurrenceType === opt.value ? 'border-amber-500 bg-amber-500 text-white' : 'border-amber-200 bg-[var(--surface-card)] text-amber-700 hover:border-amber-300'
+                    recurrenceType === opt.value ? 'border-gray-900 bg-gray-900 text-white dark:border-white/25 dark:bg-white/15' : 'border-[var(--surface-card-border)] text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   {opt.label}
@@ -561,7 +561,7 @@ function CreateEventModal({
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-amber-700 uppercase tracking-wide">Repetir hasta</label>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Repetir hasta</label>
             <input type="date" value={recurrenceEnd} onChange={(e) => setRecurrenceEnd(e.target.value)}
               min={date} className={inputClass} />
           </div>
@@ -620,12 +620,12 @@ function CreateEventModal({
     <>
       {/* Mobile */}
       <div className="fixed inset-0 z-[999] flex flex-col bg-[var(--surface-card)] sm:hidden">
-        <div className="flex items-center justify-between bg-clay-500 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
           <div>
-            <p className="font-bold text-white">Nuevo evento</p>
-            <p className="text-xs text-white/50">{horseName}</p>
+            <p className="text-base font-semibold text-gray-900">Nuevo evento</p>
+            <p className="text-xs text-gray-500">{horseName}</p>
           </div>
-          <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5">{formContent}</div>
@@ -644,12 +644,12 @@ function CreateEventModal({
       <div className="fixed inset-0 z-[998] hidden sm:block bg-[var(--overlay)]" onClick={onClose} />
       <div className="fixed inset-0 z-[999] hidden sm:flex items-center justify-center p-4">
         <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-[var(--surface-card)] shadow-2xl overflow-hidden" style={{ maxHeight: '88dvh' }}>
-          <div className="flex items-center justify-between rounded-t-2xl bg-clay-500 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
             <div>
-              <p className="font-bold text-white">Nuevo evento</p>
-              <p className="text-xs text-white/50">{horseName}</p>
+              <p className="text-base font-semibold text-gray-900">Nuevo evento</p>
+              <p className="text-xs text-gray-500">{horseName}</p>
             </div>
-            <button onClick={onClose} className="p-2 text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
             <div className="overflow-y-auto p-6">{formContent}</div>
@@ -1202,7 +1202,7 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
         <p className="mt-2 text-sm text-gray-400">
           <strong>{selectedEstab?.name}</strong> recibirá una notificación y podrá aceptar o rechazar la solicitud para <strong>{horseName}</strong>.
         </p>
-        <button onClick={onClose} className="mt-6 w-full rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-[#7f5628] transition">
+        <button onClick={onClose} className="mt-6 w-full rounded-xl bg-clay-500 py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-clay-600 transition">
           Cerrar
         </button>
       </div>
@@ -1215,9 +1215,9 @@ function SendToEstabModal({ horseId, horseName, onClose }: {
       <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={onClose} />
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
         <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between bg-clay-500 px-6 py-4">
-            <p className="font-bold text-white">Enviar a establecimiento</p>
-            <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+          <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+            <p className="text-base font-semibold text-gray-900">Enviar a establecimiento</p>
+            <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
           </div>
           <div className="p-6 space-y-4">
             <p className="text-sm text-gray-500">
@@ -1577,12 +1577,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       {/* Modal registrar peso */}
       {showAddWeight && createPortal(
         <>
-          <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={() => setShowAddWeight(false)} />
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setShowAddWeight(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between bg-orange-600 px-5 py-4">
-                <p className="font-bold text-white">Registrar peso</p>
-                <button onClick={() => setShowAddWeight(false)} className="text-white/70 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+              <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+                <p className="text-base font-semibold text-gray-900">Registrar peso</p>
+                <button onClick={() => setShowAddWeight(false)} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
               </div>
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -1590,28 +1590,28 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     <label className="block text-xs font-semibold text-gray-600">Peso (kg) *</label>
                     <input type="number" step="0.1" min="1" value={newWeight} onChange={(e) => setNewWeight(e.target.value)}
                       placeholder="450.0"
-                      className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                      className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-gray-600">Condición (1-9)</label>
                     <input type="number" min="1" max="9" value={newBodyCondition} onChange={(e) => setNewBodyCondition(e.target.value)}
                       placeholder="5"
-                      className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                      className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-gray-600">Fecha</label>
                   <input type="date" value={newWeightDate} onChange={(e) => setNewWeightDate(e.target.value)}
-                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-gray-600">Notas (opcional)</label>
                   <textarea rows={2} value={newWeightNotes} onChange={(e) => setNewWeightNotes(e.target.value)}
                     placeholder="Observaciones..."
-                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm resize-none focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-3 py-2 text-sm resize-none focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -1633,7 +1633,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                       setShowAddWeight(false);
                     }}
                     disabled={!newWeight || addWeight.isPending}
-                    className="flex-1 rounded-lg bg-orange-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-orange-700 transition"
+                    className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-600 transition"
                   >
                     {addWeight.isPending ? 'Guardando...' : 'Guardar'}
                   </button>
@@ -1657,12 +1657,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       {/* Modal asignar veterinario */}
       {showAssignVet && createPortal(
         <>
-          <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={() => setShowAssignVet(false)} />
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setShowAssignVet(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between bg-teal-600 px-5 py-4">
-                <p className="font-bold text-white">Asignar veterinario</p>
-                <button onClick={() => setShowAssignVet(false)} className="text-white/70 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+              <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+                <p className="text-base font-semibold text-gray-900">Asignar veterinario</p>
+                <button onClick={() => setShowAssignVet(false)} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
               </div>
               <div className="p-5 space-y-4">
                 <p className="text-sm text-gray-600">
@@ -1676,7 +1676,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   <select
                     value={selectedVetId}
                     onChange={(e) => setSelectedVetId(e.target.value)}
-                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                   >
                     <option value="">Seleccionar veterinario...</option>
                     {veterinarios
@@ -1707,7 +1707,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                       setSelectedVetId('');
                     }}
                     disabled={!selectedVetId || assignVet.isPending}
-                    className="flex-1 rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-teal-700 transition"
+                    className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-600 transition"
                   >
                     {assignVet.isPending ? 'Asignando...' : 'Confirmar'}
                   </button>
@@ -1722,12 +1722,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       {/* Modal asignar equipo */}
       {showAssignTeam && createPortal(
         <>
-          <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={() => setShowAssignTeam(false)} />
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setShowAssignTeam(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between bg-clay-600 px-5 py-4">
-                <p className="font-bold text-white">Asignar equipo</p>
-                <button onClick={() => setShowAssignTeam(false)} className="text-white/70 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+              <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+                <p className="text-base font-semibold text-gray-900">Asignar equipo</p>
+                <button onClick={() => setShowAssignTeam(false)} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
               </div>
               <div className="p-5 space-y-4">
                 <p className="text-sm text-gray-600">
@@ -1741,7 +1741,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                   <select
                     value={selectedMemberId}
                     onChange={(e) => setSelectedMemberId(e.target.value)}
-                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                    className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                   >
                     <option value="">Seleccionar persona...</option>
                     {orgMembers
@@ -1774,7 +1774,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                       setSelectedMemberId('');
                     }}
                     disabled={!selectedMemberId || assignMember.isPending}
-                    className="flex-1 rounded-lg bg-clay-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-700 transition"
+                    className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-600 transition"
                   >
                     {assignMember.isPending ? 'Asignando...' : 'Confirmar'}
                   </button>
@@ -1789,12 +1789,12 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
       {/* Modal transferir propiedad */}
       {showTransfer && createPortal(
         <>
-          <div className="fixed inset-0 z-[998] bg-[var(--overlay)]" onClick={() => setShowTransfer(false)} />
+          <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setShowTransfer(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between bg-amber-600 px-5 py-4">
-                <p className="font-bold text-white">Transferir {horse?.name}</p>
-                <button onClick={() => setShowTransfer(false)} className="text-white/70 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+              <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-5 py-4">
+                <p className="text-base font-semibold text-gray-900">Transferir {horse?.name}</p>
+                <button onClick={() => setShowTransfer(false)} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
               </div>
               <div className="p-5 space-y-4">
                 <p className="text-sm text-gray-600">
@@ -1803,7 +1803,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 <select
                   value={transferOwnerId}
                   onChange={(e) => setTransferOwnerId(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-gray-400 focus:bg-[var(--surface-card)] focus:outline-none"
+                  className="w-full rounded-lg border border-[var(--surface-card-border)] bg-[var(--surface-page)] px-4 py-2.5 text-sm focus:border-[var(--color-primary)] focus:bg-[var(--surface-card)] focus:outline-none"
                 >
                   <option value="">Seleccionar propietario...</option>
                   {propietarios?.filter((p) => p.id !== horse?.owner_id).map((p) => (
@@ -1818,7 +1818,7 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                     Cancelar
                   </button>
                   <button type="button" onClick={handleTransfer} disabled={!transferOwnerId || transferHorse.isPending}
-                    className="flex-1 rounded-lg bg-amber-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-amber-700 transition"
+                    className="flex-1 rounded-lg bg-clay-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer hover:bg-clay-600 transition"
                   >
                     {transferHorse.isPending ? 'Transfiriendo...' : 'Confirmar'}
                   </button>
@@ -3149,12 +3149,9 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
           <div className="fixed inset-0 z-[998] bg-[var(--overlay)] backdrop-blur-sm" onClick={() => setShowQR(false)} />
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="w-full max-w-xs rounded-3xl bg-[var(--surface-card)] shadow-2xl overflow-hidden">
-              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, var(--color-clay-500) 0%, var(--color-clay-700) 100%)' }}>
-                <div>
-                  <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Código QR</p>
-                  <p className="text-lg font-bold text-white">{horse.name}</p>
-                </div>
-                <button onClick={() => setShowQR(false)} className="text-white/50 hover:text-white transition cursor-pointer"><X className="h-5 w-5" /></button>
+              <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+                <h2 className="text-base font-semibold text-gray-900">Código QR · {horse.name}</h2>
+                <button onClick={() => setShowQR(false)} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer"><X className="h-5 w-5" /></button>
               </div>
               <div className="p-6 flex flex-col items-center gap-4">
                 <div className="rounded-2xl bg-white p-3 shadow-inner border border-gray-100">

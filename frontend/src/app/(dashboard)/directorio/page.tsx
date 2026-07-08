@@ -75,9 +75,9 @@ function RequestModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-[var(--surface-card)] shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between bg-clay-500 px-6 py-4">
-          <p className="font-bold text-white">Solicitar alojamiento</p>
-          <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer transition">✕</button>
+        <div className="flex items-center justify-between border-b border-[var(--surface-card-border)] px-6 py-4">
+          <p className="text-base font-semibold text-gray-900">Solicitar alojamiento</p>
+          <button onClick={onClose} aria-label="Cerrar" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer">✕</button>
         </div>
         <div className="p-6 space-y-4">
           <p className="text-sm text-gray-500">
