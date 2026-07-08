@@ -87,14 +87,14 @@ export default function NotificacionesPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div>
         <ListSkeleton rows={5} />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="space-y-5">
       {unread.length > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">

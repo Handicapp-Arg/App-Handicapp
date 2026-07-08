@@ -134,7 +134,7 @@ export default function CatalogoPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <PageHeader
         title="Catálogo"
         subtitle="Gestioná las razas y actividades disponibles al registrar caballos"
