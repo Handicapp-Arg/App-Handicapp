@@ -177,7 +177,7 @@ export default function PostCard({ post }: Props) {
     )}>
       {/* Pinned top strip */}
       {post.is_pinned && (
-        <div className="h-0.5 bg-gradient-to-r from-amber-400 to-amber-300" />
+        <div className="h-px bg-[var(--surface-card-border)]" />
       )}
 
       <div className="p-4 space-y-3">

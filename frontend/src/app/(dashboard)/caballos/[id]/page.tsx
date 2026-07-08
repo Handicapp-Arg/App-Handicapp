@@ -165,7 +165,7 @@ function EditEventModal({ event, onClose }: { event: Event; onClose: () => void 
               {EXPENSE_CATEGORIES.map((cat) => (
                 <button key={cat.value} type="button" onClick={() => setExpenseCategory(cat.value)}
                   className={`rounded-lg border py-1.5 text-[11px] font-medium transition cursor-pointer ${
-                    expenseCategory === cat.value ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    expenseCategory === cat.value ? 'border-gray-900 bg-gray-900 text-white dark:border-white/25 dark:bg-white/15' : 'border-[var(--surface-card-border)] text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   <span className="flex items-center justify-center gap-1"><cat.Icon size={13} /> {cat.label}</span>
@@ -581,7 +581,7 @@ function CreateEventModal({
               {EXPENSE_CATEGORIES.map((cat) => (
                 <button key={cat.value} type="button" onClick={() => setExpenseCategory(cat.value)}
                   className={`rounded-lg border py-1.5 text-[11px] font-medium transition cursor-pointer ${
-                    expenseCategory === cat.value ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    expenseCategory === cat.value ? 'border-gray-900 bg-gray-900 text-white dark:border-white/25 dark:bg-white/15' : 'border-[var(--surface-card-border)] text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   <span className="flex items-center justify-center gap-1"><cat.Icon size={13} /> {cat.label}</span>
@@ -598,10 +598,10 @@ function CreateEventModal({
       {/* Publicar */}
       <button type="button" onClick={() => setIsPublic((p) => !p)}
         className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
-          isPublic ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+          isPublic ? 'border-clay-200 bg-clay-50 dark:border-clay-500/30 dark:bg-clay-500/10 text-clay-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
         }`}
       >
-        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${isPublic ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${isPublic ? 'border-clay-500 bg-clay-500' : 'border-gray-300'}`}>
           {isPublic && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
         </span>
         Publicar en el perfil público del caballo
@@ -2261,11 +2261,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 return (
                   <button key={key} onClick={canFillRoutine ? () => toggleRoutineItem(key) : undefined} disabled={!canFillRoutine}
                     className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${canFillRoutine ? 'cursor-pointer' : 'cursor-default'} ${
-                      checked ? 'border-green-200 bg-green-50 text-green-700' : `border-gray-200 text-gray-500 ${canFillRoutine ? 'hover:bg-gray-50' : ''}`
+                      checked ? 'border-clay-200 bg-clay-50 dark:border-clay-500/30 dark:bg-clay-500/10 text-clay-700' : `border-gray-200 text-gray-500 ${canFillRoutine ? 'hover:bg-gray-50' : ''}`
                     }`}
                   >
                     <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                      checked ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                      checked ? 'border-clay-500 bg-clay-500' : 'border-gray-300'
                     }`}>
                       {checked && (
                         <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2923,11 +2923,11 @@ export default function HorseDetailPage({ params }: { params: Promise<{ id: stri
                 return (
                   <button key={key} onClick={canFillRoutine ? () => toggleRoutineItem(key) : undefined} disabled={!canFillRoutine}
                     className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition ${canFillRoutine ? 'cursor-pointer' : 'cursor-default'} ${
-                      checked ? 'border-green-200 bg-green-50 text-green-700' : `border-gray-100 text-gray-500 ${canFillRoutine ? 'hover:bg-gray-50' : ''}`
+                      checked ? 'border-clay-200 bg-clay-50 dark:border-clay-500/30 dark:bg-clay-500/10 text-clay-700' : `border-gray-100 text-gray-500 ${canFillRoutine ? 'hover:bg-gray-50' : ''}`
                     }`}
                   >
                     <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                      checked ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                      checked ? 'border-clay-500 bg-clay-500' : 'border-gray-300'
                     }`}>
                       {checked && (
                         <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

@@ -48,7 +48,7 @@ export function VetVerifiedBadge({
       <BadgeCheck
         strokeWidth={2.4}
         className={cn(
-          'text-[#1d4ed8] dark:text-blue-400',
+          'text-blue-600 dark:text-blue-400',
           VET_SIZE[size],
           className,
         )}
