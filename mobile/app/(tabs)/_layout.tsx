@@ -60,12 +60,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
       {/* Botón central que sobresale: Home (logo) para propietario, QR para el resto */}
       <TouchableOpacity
-        style={[isProp ? styles.homeBtn : styles.qrBtn, { bottom: insets.bottom + (isProp ? 18 : 24) }]}
+        style={[isProp ? styles.homeBtn : styles.qrBtn, { bottom: insets.bottom + (isProp ? 22 : 24) }]}
         activeOpacity={0.85}
         onPress={() => { haptic.light(); router.push(isProp ? '/muro' : '/buscar'); }}
       >
         {isProp
-          ? <BrandIsotipo size={60} color={c.brand} />
+          ? <BrandIsotipo size={44} color={c.brand} />
           : <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />}
       </TouchableOpacity>
       <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>{isProp ? 'Home' : 'QR'}</Text>
@@ -162,14 +162,24 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
     color: c.brand,
   },
-  // Prueba: botón Home SIN círculo — el logo (forma de herradura) es el protagonista.
+  // Botón Home: círculo del color de la barra (blanco en claro) con el logo cuero.
+  // El círculo "recorta" la parte que sobresale y le da un fondo limpio al logo.
   homeBtn: {
     position: 'absolute',
     left: '50%',
-    marginLeft: -33,
-    width: 66,
-    height: 66,
+    marginLeft: -32,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: c.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    elevation: 8,
+    shadowColor: '#0f1f3d',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: c.isDark ? 0.3 : 0.14,
+    shadowRadius: 8,
   },
 });
