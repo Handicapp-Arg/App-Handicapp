@@ -38,7 +38,6 @@ if [ "$WHAT" = "all" ] || [ "$WHAT" = "web" ]; then
   echo "   web OK"
 fi
 
-echo "✅ VPS actualizado — http://149.50.152.218/handicapp"
-curl -s --max-time 8 http://127.0.0.1:8080/api/health >/dev/null 2>&1 || \
-  curl -s --max-time 8 http://127.0.0.1/handicapp/api/health -o /dev/null && echo "   health: OK"
+echo "✅ VPS actualizado — https://app.handicapp.com.ar"
+curl -s --max-time 8 https://app.handicapp.com.ar/api/health >/dev/null 2>&1 && echo "   health: OK"
 REMOTE
