@@ -21,17 +21,14 @@ function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; 
     <Link
       href={item.href}
       title={collapsed ? item.label : undefined}
-      className={`group relative flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
+      className={`group relative flex items-center gap-3 rounded-xl py-2.5 text-sm transition-all duration-200 ${
         collapsed ? 'justify-center px-0' : 'px-3'
       } ${
         active
-          ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-fg)]'
-          : 'text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
+          ? 'bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] font-semibold text-[var(--color-primary)]'
+          : 'font-medium text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]'
       }`}
     >
-      {active && !collapsed && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--color-primary)]" />
-      )}
       <span className={`shrink-0 transition-colors ${active ? 'text-[var(--color-primary)]' : 'text-[var(--sidebar-fg-faint)] group-hover:text-[var(--sidebar-fg-muted)]'}`}>
         {item.icon}
       </span>
@@ -50,11 +47,8 @@ function SectionDivider({ label, collapsed }: { label: string; collapsed: boolea
     return <div className="mx-3 my-2 h-px bg-[var(--sidebar-border)]" />;
   }
   return (
-    <div className="px-3 pt-5 pb-2">
-      <div className="flex items-center gap-2">
-        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--sidebar-fg-faint)]">{label}</p>
-        <div className="flex-1 h-px bg-[var(--sidebar-border)]" />
-      </div>
+    <div className="px-3 pt-5 pb-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--sidebar-fg-faint)]">{label}</p>
     </div>
   );
 }
