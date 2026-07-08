@@ -3,7 +3,6 @@ import {
   ScrollView, View, Text, StyleSheet, ActivityIndicator, Pressable, Linking, Modal,
 } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Check, Rocket, Zap, Crown, Building2, Lock, Users, ArrowRight, X,
   BarChart3, ClipboardPlus, Sprout,
@@ -78,10 +77,8 @@ const TIER_KIND_LABEL: Record<TierKind, string> = {
 
 type TierMeta = {
   Icon: ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
-  accent: string;        // color principal del tier
+  accent: string;        // color principal del tier (icono / franja / label)
   soft: string;          // fondo tint del acento
-  onDark: boolean;       // la card tiene fondo oscuro (texto claro)
-  gradient: readonly [string, string] | null;
   featured: boolean;     // card destacada (Pro)
   badge: string | null;  // etiqueta especial ("Más elegido")
 };
@@ -89,28 +86,28 @@ type TierMeta = {
 function tierMetaOf(kind: TierKind, c: ThemeColors): TierMeta {
   switch (kind) {
     case 'pro':
+      // Único tier con identidad de marca (cuero): es el destacado.
       return {
-        Icon: Zap, accent: c.brand, soft: c.brandSoft, onDark: false,
-        gradient: null, featured: true, badge: 'Más elegido',
+        Icon: Zap, accent: c.brand, soft: c.brandSoft,
+        featured: true, badge: 'Más elegido',
       };
     case 'premium':
+      // Grafito/neutro (criterio web): sin morado.
       return {
-        Icon: Crown,
-        accent: c.isDark ? '#a78bfa' : '#7c3aed',
-        soft: c.isDark ? 'rgba(167,139,250,0.16)' : 'rgba(124,58,237,0.10)',
-        onDark: false, gradient: null, featured: false, badge: null,
+        Icon: Crown, accent: c.text, soft: c.surfaceAlt,
+        featured: false, badge: null,
       };
     case 'enterprise':
+      // Grafito/neutro (criterio web): sin card oscura hardcodeada.
       return {
-        Icon: Building2, accent: '#cbd5e1', soft: 'rgba(255,255,255,0.10)',
-        onDark: true, gradient: ['#1e293b', '#0f172a'] as const,
+        Icon: Building2, accent: c.text, soft: c.surfaceAlt,
         featured: false, badge: null,
       };
     case 'free':
     default:
       return {
         Icon: Rocket, accent: c.textMuted, soft: c.surfaceAlt,
-        onDark: false, gradient: null, featured: false, badge: null,
+        featured: false, badge: null,
       };
   }
 }
@@ -181,17 +178,9 @@ function PlanCardInner({
 }) {
   const kind = tierKindOf(plan);
   const m = tierMetaOf(kind, c);
-  const { onDark, accent, soft } = m;
+  const { accent, soft } = m;
   const Icon = m.Icon;
   const paid = plan.price_ars > 0;
-
-  const nameColor = onDark ? '#f8fafc' : c.text;
-  const priceColor = onDark ? '#f8fafc' : c.text;
-  const unitColor = onDark ? 'rgba(248,250,252,0.6)' : c.textFaint;
-  const featTextColor = onDark ? 'rgba(248,250,252,0.78)' : c.textMuted;
-  const chipBg = onDark ? 'rgba(255,255,255,0.08)' : soft;
-  const chipText = onDark ? '#e2e8f0' : c.text;
-  const divider = onDark ? 'rgba(255,255,255,0.12)' : c.border;
 
   const horseLabel = plan.horse_limit == null
     ? 'Caballos ilimitados'
@@ -207,11 +196,11 @@ function PlanCardInner({
 
       {/* Badge esquina: plan actual o "Más elegido" */}
       {current ? (
-        <View style={[s.cornerBadge, { backgroundColor: accent }]}>
+        <View style={[s.cornerBadge, { backgroundColor: c.brand }]}>
           <Text style={s.cornerBadgeText}>Tu plan</Text>
         </View>
       ) : m.badge ? (
-        <View style={[s.cornerBadge, { backgroundColor: accent }]}>
+        <View style={[s.cornerBadge, { backgroundColor: c.brand }]}>
           <Text style={s.cornerBadgeText}>{m.badge}</Text>
         </View>
       ) : null}
@@ -220,12 +209,12 @@ function PlanCardInner({
       <View style={s.cardHead}>
         <View style={[s.tierIcon, {
           backgroundColor: soft,
-          borderColor: onDark ? 'rgba(255,255,255,0.16)' : accent + '33',
+          borderColor: accent + '33',
         }]}>
           <Icon size={20} color={accent} strokeWidth={2.2} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[s.planName, { color: nameColor }]}>{plan.name}</Text>
+          <Text style={[s.planName, { color: c.text }]}>{plan.name}</Text>
           <Text style={[s.tierKindLabel, { color: accent }]}>
             {TIER_KIND_LABEL[kind].toUpperCase()}
           </Text>
@@ -236,37 +225,37 @@ function PlanCardInner({
       <View style={s.priceRow}>
         {paid ? (
           <>
-            <Text style={[s.priceBig, { color: priceColor }]}>
+            <Text style={[s.priceBig, { color: c.text }]}>
               {formatMoney(plan.price_ars)}
             </Text>
-            <Text style={[s.priceUnit, { color: unitColor }]}>/mes</Text>
+            <Text style={[s.priceUnit, { color: c.textFaint }]}>/mes</Text>
           </>
         ) : (
-          <Text style={[s.priceBig, { color: priceColor }]}>Gratis</Text>
+          <Text style={[s.priceBig, { color: c.text }]}>Gratis</Text>
         )}
       </View>
 
       {/* Límites como chips */}
       <View style={s.limitChips}>
-        <View style={[s.limitChip, { backgroundColor: chipBg }]}>
+        <View style={[s.limitChip, { backgroundColor: soft }]}>
           <HorseIcon size={13} color={accent} />
-          <Text style={[s.limitChipText, { color: chipText }]}>{horseLabel}</Text>
+          <Text style={[s.limitChipText, { color: c.text }]}>{horseLabel}</Text>
         </View>
         {staffLabel && (
-          <View style={[s.limitChip, { backgroundColor: chipBg }]}>
+          <View style={[s.limitChip, { backgroundColor: soft }]}>
             <Users size={13} color={accent} strokeWidth={2.4} />
-            <Text style={[s.limitChipText, { color: chipText }]}>{staffLabel}</Text>
+            <Text style={[s.limitChipText, { color: c.text }]}>{staffLabel}</Text>
           </View>
         )}
       </View>
 
       {/* Features como checklist con el color del tier */}
       {plan.features.length > 0 && (
-        <View style={[s.featList, { borderTopColor: divider }]}>
+        <View style={[s.featList, { borderTopColor: c.border }]}>
           {plan.features.map((f) => (
             <FeatureRow
               key={f} label={featureLabel(f)} featureKey={f}
-              accent={accent} soft={soft} textColor={featTextColor} s={s}
+              accent={accent} soft={soft} textColor={c.textMuted} s={s}
             />
           ))}
         </View>
@@ -275,10 +264,10 @@ function PlanCardInner({
       {/* CTA */}
       {current ? (
         <View style={[s.statePill, {
-          backgroundColor: chipBg,
-          borderColor: onDark ? 'rgba(255,255,255,0.14)' : c.borderStrong,
+          backgroundColor: soft,
+          borderColor: c.borderStrong,
         }]}>
-          <Text style={[s.statePillText, { color: onDark ? '#e2e8f0' : c.textMuted }]}>
+          <Text style={[s.statePillText, { color: c.textMuted }]}>
             Plan actual
           </Text>
         </View>
@@ -287,31 +276,31 @@ function PlanCardInner({
           onPress={() => { haptic.medium(); Linking.openURL(SALES_MAILTO); }}
           style={({ pressed }) => [
             s.subBtn,
-            { backgroundColor: onDark ? '#f8fafc' : accent },
+            { backgroundColor: c.brand },
             pressed && { opacity: 0.75 },
           ]}
         >
-          <Text style={[s.subBtnText, { color: onDark ? '#0f172a' : colors.white }]}>
+          <Text style={[s.subBtnText, { color: colors.white }]}>
             Contactar ventas
           </Text>
-          <ArrowRight size={16} color={onDark ? '#0f172a' : colors.white} strokeWidth={2.6} />
+          <ArrowRight size={16} color={colors.white} strokeWidth={2.6} />
         </Pressable>
       ) : paid ? (
         <Pressable
           onPress={() => { haptic.medium(); onSubscribe(plan); }}
           style={({ pressed }) => [
             s.subBtn,
-            { backgroundColor: onDark ? '#f8fafc' : accent },
+            { backgroundColor: c.brand },
             pressed && { opacity: 0.75 },
           ]}
         >
-          <Text style={[s.subBtnText, { color: onDark ? '#0f172a' : colors.white }]}>
+          <Text style={[s.subBtnText, { color: colors.white }]}>
             Suscribirme
           </Text>
-          <ArrowRight size={16} color={onDark ? '#0f172a' : colors.white} strokeWidth={2.6} />
+          <ArrowRight size={16} color={colors.white} strokeWidth={2.6} />
         </Pressable>
       ) : (
-        <View style={[s.statePill, { backgroundColor: chipBg, borderColor: c.borderStrong }]}>
+        <View style={[s.statePill, { backgroundColor: soft, borderColor: c.borderStrong }]}>
           <Text style={[s.statePillText, { color: c.textFaint }]}>Incluido</Text>
         </View>
       )}
@@ -319,7 +308,7 @@ function PlanCardInner({
   );
 }
 
-/** Wrapper de la card: gradiente oscuro para Enterprise, sólido para el resto. */
+/** Wrapper de la card: superficie sólida theme-aware; el destacado (Pro) lleva realce. */
 function PlanCard({
   plan, current, onSubscribe, c, s,
 }: {
@@ -331,20 +320,8 @@ function PlanCard({
   const frameStyle = [
     s.planCard,
     m.featured && [s.planCardFeatured, { borderColor: m.accent }],
-    current && !m.onDark && { borderColor: m.accent, borderWidth: 1.5 },
+    current && { borderColor: m.accent, borderWidth: 1.5 },
   ];
-
-  if (m.gradient) {
-    return (
-      <LinearGradient
-        colors={m.gradient}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={[s.planCard, s.planCardDark]}
-      >
-        <PlanCardInner plan={plan} current={current} onSubscribe={onSubscribe} c={c} s={s} />
-      </LinearGradient>
-    );
-  }
 
   return (
     <View style={frameStyle}>
@@ -517,7 +494,7 @@ export default function MiPlanScreen() {
         ) : (
           <Animated.View entering={FadeInDown.duration(320)} style={s.currentCard}>
             <View style={s.currentHeader}>
-              <View style={[s.currentIcon, { backgroundColor: currentMeta.accent }]}>
+              <View style={[s.currentIcon, { backgroundColor: c.brand }]}>
                 <CurrentIcon size={20} color={colors.white} strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
@@ -544,7 +521,7 @@ export default function MiPlanScreen() {
                     s.progressFill,
                     {
                       width: status.horse_limit == null ? '100%' : `${Math.round(usagePct * 100)}%`,
-                      backgroundColor: status.is_limited ? '#ef4444' : c.brand,
+                      backgroundColor: status.is_limited ? c.danger : c.brand,
                     },
                   ]}
                 />
@@ -644,7 +621,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     height: 8, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden',
   },
   progressFill: { height: '100%', borderRadius: radius.full },
-  limitWarn: { fontSize: text.xs, fontWeight: weight.medium, color: '#ef4444' },
+  limitWarn: { fontSize: text.xs, fontWeight: weight.medium, color: c.danger },
 
   featTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
@@ -666,9 +643,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   planCardFeatured: {
     borderWidth: 2, transform: [{ scale: 1.015 }], ...shadow.md,
-  },
-  planCardDark: {
-    borderWidth: 0, ...shadow.md,
   },
   accentStripe: {
     position: 'absolute', top: 0, left: 0, right: 0, height: 4,
@@ -723,7 +697,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[5], paddingVertical: space[3],
   },
   subBtnText: { fontSize: text.sm, fontWeight: weight.bold },
-  subError: { fontSize: text.xs, fontWeight: weight.medium, color: '#ef4444', textAlign: 'center' },
+  subError: { fontSize: text.xs, fontWeight: weight.medium, color: c.danger, textAlign: 'center' },
 
   /* Sello de confianza */
   trustSeal: { marginTop: space[5], alignItems: 'center', gap: space[2] },

@@ -33,12 +33,28 @@ export const colors = {
   violet700: '#6d28d9',
 } as const;
 
-export const eventTypeColors: Record<string, { bg: string; text: string; label: string }> = {
-  salud:         { bg: colors.red50,    text: colors.red700,    label: 'Salud' },
-  entrenamiento: { bg: colors.yellow50, text: colors.yellow700, label: 'Entrenamiento' },
-  gasto:         { bg: '#faf3e9',       text: colors.brand,     label: 'Gasto' },
-  nota:          { bg: colors.gray100,  text: colors.gray700,   label: 'Nota' },
-  carrera:       { bg: '#fef3c7',       text: '#92400e',        label: 'Carrera' },
-  tarea:         { bg: '#f0fdfa',       text: '#0f766e',        label: 'Tarea' },
-  aviso:         { bg: '#fffbeb',       text: '#b45309',        label: 'Aviso' },
-};
+import type { ThemeColors } from './theme';
+
+export type EventTypeStyle = { bg: string; text: string; label: string };
+
+/**
+ * Colores por tipo de evento, THEME-AWARE (light/dark legibles).
+ * Identidad: cuero (c.brand) SOLO como acento real (gasto). Los tipos que no
+ * expresan un estado real se NEUTRALIZAN (c.textMuted / c.surfaceAlt); los que
+ * sí lo hacen usan el semántico del theme (aviso -> warning, salud -> info).
+ *
+ * API: `makeEventTypeColors(c)[type]` -> { bg, text, label }.
+ * Usado por EventTypeBadge y eventos.tsx.
+ */
+export function makeEventTypeColors(c: ThemeColors): Record<string, EventTypeStyle> {
+  const neutral = { bg: c.surfaceAlt, text: c.textMuted };
+  return {
+    salud:         { bg: c.infoSoft, text: c.info, label: 'Salud' },        // informativo -> semántico
+    entrenamiento: { ...neutral, label: 'Entrenamiento' },
+    gasto:         { bg: c.brandSoft, text: c.brand, label: 'Gasto' },      // acento cuero (identidad)
+    nota:          { ...neutral, label: 'Nota' },
+    carrera:       { ...neutral, label: 'Carrera' },
+    tarea:         { ...neutral, label: 'Tarea' },
+    aviso:         { bg: c.warningSoft, text: c.warning, label: 'Aviso' },  // atención -> semántico
+  };
+}

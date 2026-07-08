@@ -82,7 +82,7 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited, c, s }: {
       </View>
       {horseLimit && (
         <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? colors.amber600 : c.brand }]} />
+          <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: isLimited ? c.warning : c.brand }]} />
         </View>
       )}
       <Text style={s.planFreeMsg}>
@@ -503,13 +503,13 @@ function ContactSection({ user, c, s }: {
 
 /* ─── Matrícula profesional (solo veterinarios) ─── */
 
-type LicenseMeta = { label: string; color: string; bgLight: string; bgDark: string };
-const LICENSE_STATUS: Record<string, LicenseMeta> = {
-  none:     { label: 'Sin cargar', color: '#9ca3af', bgLight: '#f3f4f6',     bgDark: 'rgba(156,163,175,0.16)' },
-  pending:  { label: 'Pendiente',  color: '#d97706', bgLight: '#fffbeb',     bgDark: 'rgba(217,119,6,0.20)' },
-  approved: { label: 'Aprobada',   color: '#16a34a', bgLight: '#f0fdf4',     bgDark: 'rgba(34,197,94,0.20)' },
-  rejected: { label: 'Rechazada',  color: '#ef4444', bgLight: '#fef2f2',     bgDark: 'rgba(239,68,68,0.20)' },
-};
+type LicenseMeta = { label: string; color: string; bg: string };
+const makeLicenseStatus = (c: ThemeColors): Record<string, LicenseMeta> => ({
+  none:     { label: 'Sin cargar', color: c.textMuted, bg: c.surfaceAlt },
+  pending:  { label: 'Pendiente',  color: c.warning,   bg: c.warningSoft },
+  approved: { label: 'Aprobada',   color: c.success,   bg: c.successSoft },
+  rejected: { label: 'Rechazada',  color: c.danger,    bg: c.dangerSoft },
+});
 
 function VetLicenseSection({ user, c, s }: {
   user: { vet_license_number?: string | null; vet_province?: string | null; vet_license_url?: string | null; vet_license_status?: string };
@@ -523,7 +523,8 @@ function VetLicenseSection({ user, c, s }: {
   const [saving, setSaving] = useState(false);
 
   const status = user.vet_license_status ?? 'none';
-  const badge = LICENSE_STATUS[status] ?? LICENSE_STATUS.none;
+  const licenseStatus = makeLicenseStatus(c);
+  const badge = licenseStatus[status] ?? licenseStatus.none;
 
   const pickPhoto = async () => {
     const { status: perm } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -572,7 +573,7 @@ function VetLicenseSection({ user, c, s }: {
             <Text style={s.vetStatusLabel}>Estado de tu matrícula</Text>
             <Text style={s.vetStatusSub}>Se valida manualmente por un administrador.</Text>
           </View>
-          <View style={[s.vetBadge, { backgroundColor: c.isDark ? badge.bgDark : badge.bgLight }]}>
+          <View style={[s.vetBadge, { backgroundColor: badge.bg }]}>
             {status === 'approved'
               ? <Check size={12} color={badge.color} strokeWidth={3.2} />
               : <View style={[s.vetBadgeDot, { backgroundColor: badge.color }]} />}
@@ -784,7 +785,7 @@ export default function PerfilScreen() {
 
           {/* Logout */}
           <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-            <LogOut size={18} color={colors.red500} strokeWidth={2} />
+            <LogOut size={18} color={c.danger} strokeWidth={2} />
             <Text style={s.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </View>
@@ -935,10 +936,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   adminExpires: { fontSize: text.xs, color: c.textFaint },
   planPill: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
   planPillFree: { backgroundColor: c.surfaceAlt },
-  planPillPro: { backgroundColor: colors.amber50 },
+  planPillPro: { backgroundColor: c.goldSoft },
   planPillText: { fontSize: text.xs, fontWeight: weight.bold },
   planPillTextFree: { color: c.textMuted },
-  planPillTextPro: { color: colors.amber600 },
+  planPillTextPro: { color: c.goldText },
   monthsToggle: {
     borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
     paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt,
@@ -949,10 +950,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
     paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surface,
   },
-  monthsOptionActive: { borderColor: c.brand, backgroundColor: '#eff6ff' },
+  monthsOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
   monthsOptionText: { fontSize: text.sm, color: c.textMuted },
   monthsOptionTextActive: { color: c.brand, fontWeight: weight.semibold },
-  activateBtn: { backgroundColor: colors.amber600, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
+  activateBtn: { backgroundColor: c.brand, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   activateBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   revokeBtn: {
     borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
@@ -965,7 +966,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong,
     paddingVertical: space[3] + 2, marginHorizontal: space[4], marginTop: space[5],
   },
-  logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.red500 },
+  logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.danger },
 
   accountCard: {
     backgroundColor: c.surface, borderRadius: radius.lg,
@@ -1053,7 +1054,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   whatsappIcon: {
     width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: 'rgba(22,163,74,0.12)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.successSoft, alignItems: 'center', justifyContent: 'center',
   },
 
   modalOverlay: {
@@ -1072,7 +1073,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignSelf: 'center', marginBottom: space[2],
   },
   editModalTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
-  editModalError: { fontSize: text.sm, color: colors.red700, backgroundColor: '#fef2f2', padding: space[3], borderRadius: radius.md },
+  editModalError: { fontSize: text.sm, color: c.danger, backgroundColor: c.dangerSoft, padding: space[3], borderRadius: radius.md },
   editField: { gap: space[1] + 2 },
   editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   editInput: {

@@ -19,7 +19,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { EventRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { CURRENCY_OPTIONS, type Currency } from '../../lib/currency';
-import { colors, eventTypeColors } from '../../lib/colors';
+import { colors, makeEventTypeColors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { useCommonStyles } from '../../styles/common';
@@ -40,14 +40,16 @@ function defaultTypeForRole(role?: string): string {
   return 'salud';
 }
 
-const EXPENSE_CATEGORIES_MOBILE = [
-  { value: 'alimentacion',  label: 'Alimento',     Icon: Wheat,    color: '#16a34a' },
-  { value: 'veterinario',   label: 'Veterinario',  Icon: Syringe,  color: '#dc2626' },
-  { value: 'herradero',     label: 'Herradero',    Icon: Hammer,   color: '#d97706' },
-  { value: 'entrenamiento', label: 'Entreno',      Icon: Activity, color: '#a16207' },
-  { value: 'mantenimiento', label: 'Mant.',        Icon: Wrench,   color: '#0284c7' },
-  { value: 'transporte',    label: 'Transporte',   Icon: Truck,    color: '#0891b2' },
-  { value: 'otros',         label: 'Otros',        Icon: Package,  color: '#6b7280' },
+// Categorías de gasto: colores neutralizados vía theme (no arcoíris hardcodeado).
+// El ícono es un indicador de tipo, no un estado; usa color neutro secundario.
+const makeExpenseCategories = (c: ThemeColors) => [
+  { value: 'alimentacion',  label: 'Alimento',     Icon: Wheat,    color: c.textMuted },
+  { value: 'veterinario',   label: 'Veterinario',  Icon: Syringe,  color: c.textMuted },
+  { value: 'herradero',     label: 'Herradero',    Icon: Hammer,   color: c.textMuted },
+  { value: 'entrenamiento', label: 'Entreno',      Icon: Activity, color: c.textMuted },
+  { value: 'mantenimiento', label: 'Mant.',        Icon: Wrench,   color: c.textMuted },
+  { value: 'transporte',    label: 'Transporte',   Icon: Truck,    color: c.textMuted },
+  { value: 'otros',         label: 'Otros',        Icon: Package,  color: c.textMuted },
 ];
 
 /* ─── Modal crear evento ─── */
@@ -55,6 +57,8 @@ const EXPENSE_CATEGORIES_MOBILE = [
 function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
   const { typography, modal: modalStyle, input: inputStyle, button } = useCommonStyles();
   const { user } = useAuth();
+  const eventTypeColors = makeEventTypeColors(c);
+  const expenseCategories = makeExpenseCategories(c);
   const typeOpts = visibleTypeOptions(user?.role);
   const { data: horses } = useHorses();
   const createEvent = useCreateEvent();
@@ -177,15 +181,15 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
               <View style={{ gap: space[2] }}>
                 <Text style={typography.label}>Categoría</Text>
                 <View style={s.categoryGrid}>
-                  {EXPENSE_CATEGORIES_MOBILE.map((cat) => (
+                  {expenseCategories.map((cat) => (
                     <TouchableOpacity
                       key={cat.value}
-                      style={[s.categoryBtn, expenseCategory === cat.value && { backgroundColor: c.brand, borderColor: c.brand }]}
+                      style={[s.categoryBtn, expenseCategory === cat.value && { backgroundColor: c.text, borderColor: c.text }]}
                       onPress={() => setExpenseCategory(expenseCategory === cat.value ? '' : cat.value)}
                       activeOpacity={0.75}
                     >
-                      <cat.Icon size={14} color={expenseCategory === cat.value ? '#fff' : cat.color} strokeWidth={2} />
-                      <Text style={[s.categoryBtnText, expenseCategory === cat.value && { color: '#fff' }]}>{cat.label}</Text>
+                      <cat.Icon size={14} color={expenseCategory === cat.value ? c.surface : cat.color} strokeWidth={2} />
+                      <Text style={[s.categoryBtnText, expenseCategory === cat.value && { color: c.surface }]}>{cat.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -262,6 +266,7 @@ export default function EventosScreen() {
   const filterTypeOptions = visibleTypeOptions(user?.role);
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
+  const eventTypeColors = makeEventTypeColors(c);
   const { layout, typography } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
   const [filterType, setFilterType] = useState('');

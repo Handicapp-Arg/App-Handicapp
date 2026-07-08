@@ -75,9 +75,9 @@ function buildLayout(root: HorseRecordNode, maxGen: number) {
 // ─── Ownership colors ─────────────────────────────────────────────────────────
 function ownerStyle(status: string, c: ThemeColors) {
   switch (status) {
-    case 'verified':     return { border: '#34d399', bg: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', badge: '✓ Verificado', badgeColor: c.isDark ? '#34d399' : '#059669' };
-    case 'pending_claim':return { border: '#fbbf24', bg: c.isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb', badge: '⏳ Pendiente',  badgeColor: c.isDark ? '#fbbf24' : '#d97706' };
-    case 'disputed':     return { border: '#f87171', bg: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', badge: '⚠ Disputado',  badgeColor: c.isDark ? '#f87171' : '#dc2626' };
+    case 'verified':     return { border: c.success, bg: c.successSoft, badge: '✓ Verificado', badgeColor: c.success };
+    case 'pending_claim':return { border: c.warning, bg: c.warningSoft, badge: '⏳ Pendiente',  badgeColor: c.warning };
+    case 'disputed':     return { border: c.danger,  bg: c.dangerSoft,  badge: '⚠ Disputado',  badgeColor: c.danger };
     default:             return { border: c.borderStrong, bg: c.surface, badge: null, badgeColor: c.textFaint };
   }
 }
@@ -107,7 +107,7 @@ function NodeCard({
         style={[s.node, s.nodeSubject, { left: placed.x, top: placed.y }]}
       >
         <View style={s.subjectLabelRow}>
-          <HorseHeadOutline size={11} color="#f3e3cc" strokeWidth={30} />
+          <HorseHeadOutline size={11} color={c.brand} strokeWidth={30} />
           <Text style={s.subjectLabel}>Sujeto</Text>
         </View>
         <Text style={s.subjectName} numberOfLines={2}>{node.name}</Text>
@@ -140,17 +140,17 @@ function NodeCard({
 }
 
 // ─── SVG edges ────────────────────────────────────────────────────────────────
-function EdgeSvg({ edges, totalW, totalH }: { edges: Edge[]; totalW: number; totalH: number }) {
+function EdgeSvg({ edges, totalW, totalH, c }: { edges: Edge[]; totalW: number; totalH: number; c: ThemeColors }) {
   return (
     <Svg width={totalW} height={totalH} style={StyleSheet.absoluteFillObject} pointerEvents="none">
       <Defs>
         <LinearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#9d6c35" stopOpacity="0.6" />
-          <Stop offset="1" stopColor="#9d6c35" stopOpacity="0.15" />
+          <Stop offset="0" stopColor={c.brand} stopOpacity="0.6" />
+          <Stop offset="1" stopColor={c.brand} stopOpacity="0.15" />
         </LinearGradient>
         <LinearGradient id="dg" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#f43f5e" stopOpacity="0.6" />
-          <Stop offset="1" stopColor="#f43f5e" stopOpacity="0.15" />
+          <Stop offset="0" stopColor={c.textMuted} stopOpacity="0.55" />
+          <Stop offset="1" stopColor={c.textMuted} stopOpacity="0.12" />
         </LinearGradient>
       </Defs>
       {edges.map((e, i) => {
@@ -229,7 +229,7 @@ function SearchBar({ onSelect, s, c }: { onSelect: (r: HorseRecord) => void; s: 
                   </Text>
                 </View>
                 {item.ownership_status === 'verified' && (
-                  <ShieldCheck size={16} color="#34d399" strokeWidth={2} />
+                  <ShieldCheck size={16} color={c.success} strokeWidth={2} />
                 )}
               </TouchableOpacity>
             )}
@@ -260,23 +260,23 @@ function DepthToggle({ value, onChange, s }: { value: number; onChange: (v: numb
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
-function Legend({ s }: { s: Styles }) {
+function Legend({ s, c }: { s: Styles; c: ThemeColors }) {
   return (
     <View style={s.legend}>
       <View style={s.legendItem}>
-        <View style={[s.legendLine, { backgroundColor: '#9d6c35' }]} />
+        <View style={[s.legendLine, { backgroundColor: c.brand }]} />
         <Text style={s.legendText}>Paterna</Text>
       </View>
       <View style={s.legendItem}>
-        <View style={[s.legendLine, { backgroundColor: '#f43f5e' }]} />
+        <View style={[s.legendLine, { backgroundColor: c.textMuted }]} />
         <Text style={s.legendText}>Materna</Text>
       </View>
       <View style={s.legendItem}>
-        <ShieldCheck size={12} color="#34d399" strokeWidth={2} />
+        <ShieldCheck size={12} color={c.success} strokeWidth={2} />
         <Text style={s.legendText}>Dueño verificado</Text>
       </View>
       <View style={s.legendItem}>
-        <Clock size={12} color="#fbbf24" strokeWidth={2} />
+        <Clock size={12} color={c.warning} strokeWidth={2} />
         <Text style={s.legendText}>Pendiente</Text>
       </View>
     </View>
@@ -386,7 +386,7 @@ export default function ArbolScreen() {
             <View>
               <GenHeaders maxGen={maxGen} s={s} />
               <View style={{ width: layout.totalW, height: layout.totalH, position: 'relative' }}>
-                <EdgeSvg edges={layout.edges} totalW={layout.totalW} totalH={layout.totalH} />
+                <EdgeSvg edges={layout.edges} totalW={layout.totalW} totalH={layout.totalH} c={c} />
                 {layout.nodes.map((placed) => (
                   <NodeCard
                     key={`${placed.gen}-${placed.index}`}
@@ -406,7 +406,7 @@ export default function ArbolScreen() {
       {/* Legend (deja espacio para la tab bar inferior) */}
       <View style={[s.legendBar, { paddingBottom: insets.bottom + 64 }]}>
         <Text style={s.legendTitle}>Referencias</Text>
-        <Legend s={s} />
+        <Legend s={s} c={c} />
       </View>
     </View>
   );
@@ -568,8 +568,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     elevation: 1,
   },
   nodeSubject: {
-    backgroundColor: '#9d6c35',
-    borderColor: '#7f5628',
+    backgroundColor: c.brandSoft,
+    borderColor: c.brand,
     shadowOpacity: 0.15,
     elevation: 4,
   },
@@ -605,23 +605,23 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    color: '#f3e3cc',
+    color: c.brand,
   },
   subjectName: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#ffffff',
+    color: c.text,
     lineHeight: 17,
   },
   subjectSub: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.75)',
+    color: c.textMuted,
     marginTop: 2,
   },
   subjectVerified: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#34d399',
+    color: c.success,
     marginTop: 3,
   },
   // Empty state

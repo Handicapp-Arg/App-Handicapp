@@ -175,7 +175,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
             {isVetVerified(post.author) && <VetVerifiedBadge />}
             {post.is_pinned && (
               <View style={s.pinnedBadge}>
-                <Pin size={10} color="#b45309" strokeWidth={2} />
+                <Pin size={10} color={c.warning} strokeWidth={2} />
                 <Text style={s.pinnedText}>Fijado</Text>
               </View>
             )}
@@ -243,12 +243,12 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
         <TouchableOpacity onPress={handleLike} activeOpacity={0.7} style={s.actionBtn}>
           <Heart
             size={20}
-            color={post.liked_by_me ? '#ef4444' : c.textFaint}
-            fill={post.liked_by_me ? '#ef4444' : 'none'}
+            color={post.liked_by_me ? c.danger : c.textFaint}
+            fill={post.liked_by_me ? c.danger : 'none'}
             strokeWidth={2}
           />
           {post.likes_count > 0 && (
-            <Text style={[s.actionCount, post.liked_by_me && { color: '#ef4444' }]}>
+            <Text style={[s.actionCount, post.liked_by_me && { color: c.danger }]}>
               {post.likes_count}
             </Text>
           )}
@@ -295,8 +295,8 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
             )}
             {(isOwner || isAdmin) && (
               <TouchableOpacity style={s.menuItem} onPress={handleDelete} activeOpacity={0.75}>
-                <Trash2 size={18} color="#ef4444" strokeWidth={2} />
-                <Text style={[s.menuItemText, { color: '#ef4444' }]}>Eliminar</Text>
+                <Trash2 size={18} color={c.danger} strokeWidth={2} />
+                <Text style={[s.menuItemText, { color: c.danger }]}>Eliminar</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -664,15 +664,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   // Card
   card: { backgroundColor: c.surface, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, borderWidth: 1, borderColor: c.borderStrong, overflow: 'hidden', ...shadow.sm },
-  cardPinned: { borderColor: '#fcd34d', backgroundColor: '#fffbeb' },
-  cardHidden: { opacity: 0.55, borderColor: '#fca5a5' },
+  cardPinned: { borderColor: c.warning, backgroundColor: c.warningSoft },
+  cardHidden: { opacity: 0.55, borderColor: c.danger },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], paddingBottom: 0, gap: space[3] },
   authorInfo: { flex: 1 },
   authorRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   authorName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
-  pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
-  pinnedText: { fontSize: 10, color: '#b45309', fontWeight: weight.semibold },
+  pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: c.warningSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
+  pinnedText: { fontSize: 10, color: c.warning, fontWeight: weight.semibold },
   timeAgo: { fontSize: text.xs, color: c.textFaint },
   timeAgoRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 2 },
   timeAgoHorse: { flexDirection: 'row', alignItems: 'center' },

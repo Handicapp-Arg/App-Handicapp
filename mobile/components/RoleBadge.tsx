@@ -5,8 +5,8 @@
  * roles operativos de organización (encargado, jinete, peón). Acepta también los
  * alias del back de organización (owner_role, vet, staff, owner).
  *
- * Theme-aware: fondo tintado con baja opacidad (funciona en claro y oscuro) y
- * texto/ícono en el color del rol.
+ * Theme-aware: chip neutro (superficie sutil + texto/ícono atenuado) que funciona
+ * en claro y oscuro. El rol se distingue por su ícono, no por un color de relleno.
  */
 import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import {
@@ -14,17 +14,18 @@ import {
   User as UserIcon, type LucideIcon,
 } from 'lucide-react-native';
 import { HorseIcon } from './icons/equine';
+import { useTheme } from '../lib/theme';
 
-type RoleMeta = { label: string; color: string; Icon: LucideIcon | typeof HorseIcon };
+type RoleMeta = { label: string; Icon: LucideIcon | typeof HorseIcon };
 
 const ROLE_META: Record<string, RoleMeta> = {
-  propietario:     { label: 'Propietario',    color: '#9d6c35', Icon: Crown },
-  establecimiento: { label: 'Establecimiento', color: '#2563eb', Icon: Building2 },
-  veterinario:     { label: 'Veterinario',    color: '#dc2626', Icon: Stethoscope },
-  admin:           { label: 'Administrador',  color: '#7c3aed', Icon: ShieldCheck },
-  encargado:       { label: 'Encargado',      color: '#0f766e', Icon: ClipboardList },
-  jinete:          { label: 'Jinete',         color: '#b45309', Icon: HorseIcon },
-  peon:            { label: 'Peón',           color: '#475569', Icon: Wrench },
+  propietario:     { label: 'Propietario',    Icon: Crown },
+  establecimiento: { label: 'Establecimiento', Icon: Building2 },
+  veterinario:     { label: 'Veterinario',    Icon: Stethoscope },
+  admin:           { label: 'Administrador',  Icon: ShieldCheck },
+  encargado:       { label: 'Encargado',      Icon: ClipboardList },
+  jinete:          { label: 'Jinete',         Icon: HorseIcon },
+  peon:            { label: 'Peón',           Icon: Wrench },
 };
 
 /** Normaliza alias del back (org roles) a las claves canónicas. */
@@ -42,7 +43,6 @@ function resolveRole(role: string): RoleMeta {
   return (
     ROLE_META[canonical] ?? {
       label: role || 'Rol',
-      color: '#6b7280',
       Icon: UserIcon,
     }
   );
@@ -58,7 +58,8 @@ export type RoleBadgeProps = {
 };
 
 export function RoleBadge({ role, iconOnly = false, size = 'md', style }: RoleBadgeProps) {
-  const { label, color, Icon } = resolveRole(role);
+  const { c } = useTheme();
+  const { label, Icon } = resolveRole(role);
   const iconSize = size === 'sm' ? 11 : 13;
 
   if (iconOnly) {
@@ -66,11 +67,16 @@ export function RoleBadge({ role, iconOnly = false, size = 'md', style }: RoleBa
       <View
         style={[
           styles.iconOnly,
-          { backgroundColor: color + '22', width: iconSize + 14, height: iconSize + 14 },
+          {
+            backgroundColor: c.surfaceAlt,
+            borderColor: c.border,
+            width: iconSize + 14,
+            height: iconSize + 14,
+          },
           style,
         ]}
       >
-        <Icon size={iconSize} color={color} strokeWidth={2.2} />
+        <Icon size={iconSize} color={c.textMuted} strokeWidth={2.2} />
       </View>
     );
   }
@@ -80,13 +86,13 @@ export function RoleBadge({ role, iconOnly = false, size = 'md', style }: RoleBa
       style={[
         styles.badge,
         size === 'sm' && styles.badgeSm,
-        { backgroundColor: color + '1f' },
+        { backgroundColor: c.surfaceAlt, borderColor: c.border },
         style,
       ]}
     >
-      <Icon size={iconSize} color={color} strokeWidth={2.2} />
+      <Icon size={iconSize} color={c.textMuted} strokeWidth={2.2} />
       <Text
-        style={[styles.text, size === 'sm' && styles.textSm, { color }]}
+        style={[styles.text, size === 'sm' && styles.textSm, { color: c.text }]}
         numberOfLines={1}
         allowFontScaling={false}
       >
@@ -103,12 +109,14 @@ const styles = StyleSheet.create({
     gap: 4,
     alignSelf: 'flex-start',
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 9,
     paddingVertical: 3,
   },
   badgeSm: { paddingHorizontal: 7, paddingVertical: 2, gap: 3 },
   iconOnly: {
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },

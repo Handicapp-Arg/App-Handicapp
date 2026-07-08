@@ -23,11 +23,12 @@ import { space, text, radius, weight } from '../../styles/tokens';
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente', signed: 'Firmado', rejected: 'Rechazado',
 };
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  pending:  { bg: '#fffbeb', text: '#b45309' },
-  signed:   { bg: '#f0fdf4', text: '#15803d' },
-  rejected: { bg: '#fef2f2', text: '#b91c1c' },
-};
+// Estados reales del contrato -> semánticos del theme (dark-safe).
+const makeStatusColors = (c: ThemeColors): Record<string, { bg: string; text: string }> => ({
+  pending:  { bg: c.warningSoft, text: c.warning },
+  signed:   { bg: c.successSoft, text: c.success },
+  rejected: { bg: c.dangerSoft, text: c.danger },
+});
 
 const DEFAULT_BODY = `CONTRATO DE PENSIÓN EQUINA
 
@@ -52,7 +53,8 @@ function ContractCard({
   cs: CStyles;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const sc = STATUS_COLORS[contract.status] ?? STATUS_COLORS.pending;
+  const statusColors = makeStatusColors(c);
+  const sc = statusColors[contract.status] ?? statusColors.pending;
   const isOwner = contract.owner_id === userId;
   const isEstab = contract.establishment_id === userId;
   const ownerSigned = !!contract.signed_at;
@@ -84,7 +86,7 @@ function ContractCard({
             {isOwner ? `De ${contract.establishment?.name}` : `Para ${contract.owner?.name}`} · {dateStr}
           </Text>
           <View style={cs.tagRow}>
-            <View style={[cs.statusBadge, { backgroundColor: c.isDark ? sc.text + '26' : sc.bg }]}>
+            <View style={[cs.statusBadge, { backgroundColor: sc.bg }]}>
               <View style={[cs.statusDot, { backgroundColor: sc.text }]} />
               <Text style={[cs.statusText, { color: sc.text }]}>{STATUS_LABEL[contract.status]}</Text>
             </View>
@@ -105,7 +107,7 @@ function ContractCard({
 
       {contract.status === 'signed' && (
         <View style={cs.signedBanner}>
-          <Check size={13} color={c.isDark ? '#34d399' : '#15803d'} strokeWidth={2.5} />
+          <Check size={13} color={c.success} strokeWidth={2.5} />
           <Text style={cs.signedText}>
             Firmado por ambas partes · {fmtDate(contract.signed_at)}
           </Text>
@@ -113,13 +115,13 @@ function ContractCard({
       )}
       {partialMsg && (
         <View style={cs.pendingBanner}>
-          <Check size={13} color={c.isDark ? '#fbbf24' : '#b45309'} strokeWidth={2.5} />
+          <Check size={13} color={c.warning} strokeWidth={2.5} />
           <Text style={cs.pendingText}>{partialMsg}</Text>
         </View>
       )}
       {contract.status === 'rejected' && contract.rejection_reason && (
         <View style={cs.rejectedBanner}>
-          <X size={13} color={c.isDark ? '#f87171' : '#b91c1c'} strokeWidth={2.5} />
+          <X size={13} color={c.danger} strokeWidth={2.5} />
           <Text style={cs.rejectedText}>Motivo: {contract.rejection_reason}</Text>
         </View>
       )}
@@ -358,7 +360,7 @@ export default function ContratosScreen() {
               {emailToSearch && !searchingUser && (
                 foundUser ? (
                   <View style={s.userFound}>
-                    <Check size={18} color={c.isDark ? '#34d399' : '#16a34a'} strokeWidth={2.5} />
+                    <Check size={18} color={c.success} strokeWidth={2.5} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.userFoundName}>{foundUser.name}</Text>
                       <Text style={s.userFoundRole}>{foundUser.role}</Text>
@@ -413,7 +415,7 @@ export default function ContratosScreen() {
       <Modal visible={!!signingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Animated.View style={[s.modalCard, { maxHeight: '88%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-            <View style={[s.modalHeader, { backgroundColor: '#16a34a' }]}>
+            <View style={[s.modalHeader, { backgroundColor: c.success }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Firmar digitalmente</Text>
               <TouchableOpacity onPress={closeSign}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
             </View>
@@ -469,7 +471,7 @@ export default function ContratosScreen() {
       <Modal visible={!!rejectingContract} animationType="fade" transparent statusBarTranslucent>
         <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Animated.View style={[s.modalCard, { maxHeight: '50%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-            <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
+            <View style={[s.modalHeader, { backgroundColor: c.danger }]}>
               <Text style={[s.modalTitle, { color: colors.white }]}>Rechazar contrato</Text>
               <TouchableOpacity onPress={() => setRejectingContract(null)}><X size={22} color="rgba(255,255,255,0.85)" strokeWidth={2} /></TouchableOpacity>
             </View>
@@ -545,16 +547,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cancelBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   submitBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingVertical: space[3] + 1, alignItems: 'center' },
   submitBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
-  signSubmitBtn: { borderRadius: radius.md, backgroundColor: '#16a34a', paddingVertical: space[3] + 1, alignItems: 'center' },
-  rejectSubmitBtn: { borderRadius: radius.md, backgroundColor: colors.red500, paddingVertical: space[3] + 1, alignItems: 'center' },
+  signSubmitBtn: { borderRadius: radius.md, backgroundColor: c.success, paddingVertical: space[3] + 1, alignItems: 'center' },
+  rejectSubmitBtn: { borderRadius: radius.md, backgroundColor: c.danger, paddingVertical: space[3] + 1, alignItems: 'center' },
   searchBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[3], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
   searchBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
-  userFoundIcon: { fontSize: 18, color: c.isDark ? '#34d399' : '#16a34a' },
-  userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: c.isDark ? '#34d399' : '#15803d' },
-  userFoundRole: { fontSize: text.xs, color: c.isDark ? '#6ee7b7' : '#16a34a', textTransform: 'capitalize' },
-  userNotFound: { backgroundColor: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', borderRadius: radius.md, padding: space[3], marginTop: space[2] },
-  userNotFoundText: { fontSize: text.xs, color: c.isDark ? '#f87171' : '#b91c1c' },
+  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.successSoft, borderRadius: radius.md, padding: space[3], marginTop: space[2] },
+  userFoundIcon: { fontSize: 18, color: c.success },
+  userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: c.success },
+  userFoundRole: { fontSize: text.xs, color: c.textMuted, textTransform: 'capitalize' },
+  userNotFound: { backgroundColor: c.dangerSoft, borderRadius: radius.md, padding: space[3], marginTop: space[2] },
+  userNotFoundText: { fontSize: text.xs, color: c.danger },
 });
 
 type CStyles = ReturnType<typeof makeCStyles>;
@@ -571,10 +573,10 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
   horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: c.surfaceAlt },
   horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
-  signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4', borderRadius: radius.md, padding: space[3] },
-  signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#34d399' : '#15803d' },
-  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb', borderRadius: radius.md, padding: space[3] },
-  pendingText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#fbbf24' : '#b45309' },
+  signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.successSoft, borderRadius: radius.md, padding: space[3] },
+  signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.success },
+  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.warningSoft, borderRadius: radius.md, padding: space[3] },
+  pendingText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.warning },
   signBlock: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[2] },
   signBlockLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, marginBottom: space[3] },
   signRow: { flexDirection: 'row', gap: space[3] },
@@ -583,13 +585,13 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   signLine: { height: 1, backgroundColor: c.borderStrong, marginTop: 2, marginBottom: space[2] },
   signName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   signRole: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
-  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2', borderRadius: radius.md, padding: space[3] },
-  rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.isDark ? '#f87171' : '#b91c1c' },
+  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.dangerSoft, borderRadius: radius.md, padding: space[3] },
+  rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.danger },
   body: { borderTopWidth: 1, borderTopColor: c.border },
   bodyScroll: { maxHeight: 200, padding: space[4] },
   bodyText: { fontSize: text.sm, color: c.text, lineHeight: 20 },
   actions: { flexDirection: 'row', gap: space[3], padding: space[4], paddingTop: space[3] },
-  signBtn: { flex: 1, borderRadius: radius.lg, backgroundColor: '#16a34a', paddingVertical: space[3] + 2, alignItems: 'center' },
+  signBtn: { flex: 1, borderRadius: radius.lg, backgroundColor: c.success, paddingVertical: space[3] + 2, alignItems: 'center' },
   signBtnText: { fontSize: text.sm, fontWeight: weight.extrabold, color: colors.white },
   rejectBtn: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, paddingVertical: space[3] + 2, alignItems: 'center' },
   rejectBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },

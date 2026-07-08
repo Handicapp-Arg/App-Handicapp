@@ -21,6 +21,14 @@ export type ThemeColors = {
   goldSoft: string;    // fondo dorado (planes de pago / dueño), theme-aware
   goldBorder: string;  // borde dorado, theme-aware
   goldText: string;    // texto sobre fondo dorado, theme-aware
+  danger: string;      // rojo — peligro / eliminar / vencido (theme-aware)
+  dangerSoft: string;  // fondo rojo sutil
+  success: string;     // verde — ok / confirmado / firmado
+  successSoft: string; // fondo verde sutil
+  warning: string;     // ámbar — atención / pendiente
+  warningSoft: string; // fondo ámbar sutil
+  info: string;        // azul — informativo / neutro-frío
+  infoSoft: string;    // fondo azul sutil
   overlay: string;     // fondo de modales
   isDark: boolean;
 };
@@ -39,6 +47,10 @@ const light: ThemeColors = {
   goldSoft: '#fffbeb',
   goldBorder: '#fde68a',
   goldText: '#92400e',
+  danger: '#dc2626',  dangerSoft: '#fef2f2',
+  success: '#059669', successSoft: '#ecfdf5',
+  warning: '#d97706', warningSoft: '#fffbeb',
+  info: '#2563eb',    infoSoft: '#eff6ff',
   overlay: 'rgba(0,0,0,0.35)',
   isDark: false,
 };
@@ -57,6 +69,10 @@ const dark: ThemeColors = {
   goldSoft: 'rgba(245,158,11,0.12)',
   goldBorder: 'rgba(245,158,11,0.3)',
   goldText: '#fcd34d',
+  danger: '#f87171',  dangerSoft: 'rgba(248,113,113,0.15)',
+  success: '#34d399', successSoft: 'rgba(52,211,153,0.15)',
+  warning: '#fbbf24', warningSoft: 'rgba(251,191,36,0.15)',
+  info: '#60a5fa',    infoSoft: 'rgba(96,165,250,0.15)',
   overlay: 'rgba(0,0,0,0.6)',
   isDark: true,
 };

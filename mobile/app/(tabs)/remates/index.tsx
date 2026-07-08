@@ -37,9 +37,9 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
         </View>
         <View style={[s.typeBadge, isRemate ? s.typeBadgeRemate : s.typeBadgeDirecto]}>
           {isRemate
-            ? <Gavel size={11} color="#b07d2b" strokeWidth={2} />
-            : <Tag size={11} color="#9d6c35" strokeWidth={2} />}
-          <Text style={[s.typeBadgeText, { color: isRemate ? '#b07d2b' : '#9d6c35' }]}>
+            ? <Gavel size={11} color={c.info} strokeWidth={2} />
+            : <Tag size={11} color={c.textMuted} strokeWidth={2} />}
+          <Text style={[s.typeBadgeText, { color: isRemate ? c.info : c.textMuted }]}>
             {isRemate ? 'Remate' : 'Venta directa'}
           </Text>
         </View>
@@ -62,7 +62,7 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
           )}
           {item.watching && (
             <View style={s.metaRow}>
-              <Star size={11} color="#d97706" fill="#d97706" strokeWidth={2} />
+              <Star size={11} color={c.warning} fill={c.warning} strokeWidth={2} />
               <Text style={s.watchingBadge}>Siguiendo</Text>
             </View>
           )}
@@ -72,13 +72,13 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
       <View style={s.docRow}>
         {item.has_health_cert && (
           <View style={s.docTag}>
-            <CheckCircle2 size={11} color={c.isDark ? '#6ee7b7' : '#065f46'} strokeWidth={2.5} />
+            <CheckCircle2 size={11} color={c.success} strokeWidth={2.5} />
             <Text style={s.docTagText}>SENASA</Text>
           </View>
         )}
         {item.has_ownership_docs && (
           <View style={s.docTag}>
-            <CheckCircle2 size={11} color={c.isDark ? '#6ee7b7' : '#065f46'} strokeWidth={2.5} />
+            <CheckCircle2 size={11} color={c.success} strokeWidth={2.5} />
             <Text style={s.docTagText}>Docs</Text>
           </View>
         )}
@@ -254,8 +254,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[2], paddingVertical: 3,
     borderRadius: radius.full, borderWidth: 1,
   },
-  typeBadgeRemate: { backgroundColor: c.isDark ? 'rgba(217,169,78,0.16)' : '#fbf2de', borderColor: c.isDark ? 'rgba(217,169,78,0.3)' : '#f0ddb0' },
-  typeBadgeDirecto: { backgroundColor: c.isDark ? 'rgba(157,108,53,0.18)' : '#faf3e9', borderColor: c.isDark ? 'rgba(157,108,53,0.32)' : '#f3e3cc' },
+  typeBadgeRemate: { backgroundColor: c.infoSoft, borderColor: c.info },
+  typeBadgeDirecto: { backgroundColor: c.surfaceAlt, borderColor: c.border },
   typeBadgeText: { fontSize: 10, fontWeight: weight.semibold },
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
@@ -264,9 +264,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   metaRight: { alignItems: 'flex-end', gap: 3 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   metaText: { fontSize: text.xs, color: c.textFaint },
-  watchingBadge: { fontSize: 10, color: '#d97706', fontWeight: weight.semibold },
+  watchingBadge: { fontSize: 10, color: c.warning, fontWeight: weight.semibold },
 
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },
-  docTag: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: space[2], paddingVertical: 2, backgroundColor: c.isDark ? 'rgba(16,185,129,0.16)' : '#d1fae5', borderRadius: radius.full },
-  docTagText: { fontSize: 10, color: c.isDark ? '#6ee7b7' : '#065f46', fontWeight: weight.semibold },
+  docTag: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: space[2], paddingVertical: 2, backgroundColor: c.successSoft, borderRadius: radius.full },
+  docTagText: { fontSize: 10, color: c.success, fontWeight: weight.semibold },
 });

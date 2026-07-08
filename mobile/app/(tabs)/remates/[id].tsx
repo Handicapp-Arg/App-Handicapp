@@ -34,7 +34,7 @@ function Countdown({ end, s }: { end: string; s: Styles }) {
   const m = Math.floor((left % 3_600_000) / 60_000);
   const sec = Math.floor((left % 60_000) / 1_000);
 
-  if (left === 0) return <Text style={{ color: '#ef4444', fontWeight: weight.bold }}>Remate cerrado</Text>;
+  if (left === 0) return <Text style={s.remateClosed}>Remate cerrado</Text>;
 
   return (
     <View style={{ flexDirection: 'row', gap: space[2] }}>
@@ -107,8 +107,8 @@ export default function AuctionDetailScreen() {
             <TouchableOpacity onPress={() => toggleWatch.mutate(id)} style={s.watchBtn}>
               <Star
                 size={20}
-                color={auction.watching ? '#d97706' : c.textFaint}
-                fill={auction.watching ? '#d97706' : 'none'}
+                color={auction.watching ? c.warning : c.textFaint}
+                fill={auction.watching ? c.warning : 'none'}
                 strokeWidth={2}
               />
             </TouchableOpacity>
@@ -195,11 +195,11 @@ export default function AuctionDetailScreen() {
               { ok: auction.has_health_cert, label: 'Certificado SENASA vigente' },
               { ok: auction.has_ownership_docs, label: 'Docs de propiedad (Studbook/SRA)' },
             ].map(({ ok, label }) => (
-              <View key={label} style={[s.docRow, { backgroundColor: ok ? '#d1fae5' : c.surfaceAlt, borderColor: ok ? '#6ee7b7' : c.borderStrong }]}>
+              <View key={label} style={[s.docRow, { backgroundColor: ok ? c.successSoft : c.surfaceAlt, borderColor: ok ? c.success : c.borderStrong }]}>
                 {ok
-                  ? <CheckCircle2 size={16} color="#059669" strokeWidth={2} />
+                  ? <CheckCircle2 size={16} color={c.success} strokeWidth={2} />
                   : <XCircle size={16} color={c.textFaint} strokeWidth={2} />}
-                <Text style={[s.docLabel, { color: ok ? '#065f46' : c.textFaint }]}>{label}</Text>
+                <Text style={[s.docLabel, { color: ok ? c.success : c.textFaint }]}>{label}</Text>
               </View>
             ))}
           </View>
@@ -245,7 +245,7 @@ export default function AuctionDetailScreen() {
 
         {/* Aviso legal */}
         <View style={s.legalBox}>
-          <Info size={16} color="#92400e" strokeWidth={2} />
+          <Info size={16} color={c.warning} strokeWidth={2} />
           <Text style={s.legalText}>
             Las pujas son vinculantes. HandicApp retiene un 3% de comisión sobre el precio final. La transferencia legal requiere documentación notarial.
           </Text>
@@ -279,6 +279,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   priceMain: { fontSize: 28, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
   bidCount: { fontSize: text.xs, color: c.textFaint, marginTop: 4 },
 
+  remateClosed: { color: c.danger, fontWeight: weight.bold },
+
   countBox: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
   countNum: { color: colors.white, fontSize: text.lg, fontWeight: weight.extrabold },
   countLabel: { fontSize: 10, color: c.textFaint, marginTop: 2, textTransform: 'uppercase' },
@@ -300,7 +302,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4], justifyContent: 'center', alignItems: 'center',
   },
   bidBtnText: { color: colors.white, fontWeight: weight.bold, fontSize: text.sm },
-  bidError: { color: '#ef4444', fontSize: text.xs, marginTop: space[1] },
+  bidError: { color: c.danger, fontSize: text.xs, marginTop: space[1] },
 
   section: { marginBottom: space[4] },
   sectionTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, marginBottom: space[2] },
@@ -319,15 +321,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.border,
     backgroundColor: c.surfaceAlt, marginBottom: space[2],
   },
-  bidRowActive: { backgroundColor: c.isDark ? 'rgba(16,185,129,0.14)' : '#ecfdf5', borderColor: c.isDark ? 'rgba(16,185,129,0.4)' : '#6ee7b7' },
+  bidRowActive: { backgroundColor: c.successSoft, borderColor: c.success },
   bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   bidDate: { fontSize: 10, color: c.textFaint },
   bidAmount: { fontSize: text.sm, fontWeight: weight.extrabold, color: c.text },
 
   legalBox: {
     flexDirection: 'row', gap: space[2], alignItems: 'flex-start',
-    backgroundColor: c.isDark ? 'rgba(245,158,11,0.12)' : '#fffbeb', borderWidth: 1, borderColor: c.isDark ? 'rgba(245,158,11,0.3)' : '#fde68a',
+    backgroundColor: c.warningSoft, borderWidth: 1, borderColor: c.warning,
     borderRadius: radius.xl, padding: space[4], marginTop: space[2],
   },
-  legalText: { flex: 1, fontSize: text.xs, color: c.isDark ? '#fcd34d' : '#92400e', lineHeight: 16 },
+  legalText: { flex: 1, fontSize: text.xs, color: c.warning, lineHeight: 16 },
 });

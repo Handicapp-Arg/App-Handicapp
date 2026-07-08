@@ -59,9 +59,9 @@ const SEX_LABEL: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', ca
 
 function statusStyle(st: string, c: ThemeColors): { color: string; bg: string } {
   switch (st) {
-    case 'verified':      return { color: c.isDark ? '#34d399' : '#15803d', bg: c.isDark ? 'rgba(52,211,153,0.14)' : '#f0fdf4' };
-    case 'pending_claim': return { color: c.isDark ? '#fbbf24' : '#d97706', bg: c.isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb' };
-    case 'disputed':      return { color: c.isDark ? '#f87171' : '#b91c1c', bg: c.isDark ? 'rgba(248,113,113,0.14)' : '#fef2f2' };
+    case 'verified':      return { color: c.success, bg: c.successSoft };
+    case 'pending_claim': return { color: c.warning, bg: c.warningSoft };
+    case 'disputed':      return { color: c.danger, bg: c.dangerSoft };
     default:              return { color: c.textFaint, bg: c.surfaceAlt };
   }
 }
@@ -215,13 +215,13 @@ function DetailModal({ id, onClose, c, d, tr }: { id: string; onClose: () => voi
 
                   {detail.verified_owner && (
                     <View style={d.ownerRow}>
-                      <CheckCircle2 size={16} color={c.isDark ? '#34d399' : '#15803d'} strokeWidth={2} />
+                      <CheckCircle2 size={16} color={c.success} strokeWidth={2} />
                       <Text style={d.ownerText}>Propietario: {detail.verified_owner.name}</Text>
                     </View>
                   )}
                   {!detail.verified_owner && (
                     <View style={d.claimBanner}>
-                      <Info size={18} color={c.isDark ? '#7dd3fc' : '#0369a1'} strokeWidth={2} />
+                      <Info size={18} color={c.info} strokeWidth={2} />
                       <Text style={d.claimText}>Sin propietario verificado. Podés reclamarlo desde la web.</Text>
                     </View>
                   )}
@@ -475,7 +475,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   liveBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: '#fff' },
   liveHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[2] },
-  liveError: { fontSize: text.xs, color: c.isDark ? '#f87171' : '#b91c1c', textAlign: 'center', marginTop: space[2] },
+  liveError: { fontSize: text.xs, color: c.danger, textAlign: 'center', marginTop: space[2] },
   liveSectionTitle: {
     fontSize: text.xs,
     fontWeight: weight.semibold,
@@ -624,18 +624,18 @@ const makeDetailStyles = (c: ThemeColors) => StyleSheet.create({
     borderTopColor: c.border,
     marginTop: space[2],
   },
-  ownerText: { fontSize: text.sm, color: c.isDark ? '#34d399' : '#15803d', fontWeight: weight.medium, marginLeft: space[2] },
+  ownerText: { fontSize: text.sm, color: c.success, fontWeight: weight.medium, marginLeft: space[2] },
   claimBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: c.isDark ? 'rgba(56,189,248,0.12)' : '#eff6ff',
+    backgroundColor: c.infoSoft,
     borderRadius: radius.md,
     padding: space[3],
     marginTop: space[4],
     borderWidth: 1,
-    borderColor: c.isDark ? 'rgba(56,189,248,0.28)' : '#bfdbfe',
+    borderColor: c.info,
   },
-  claimText: { flex: 1, fontSize: text.xs, color: c.isDark ? '#7dd3fc' : '#0369a1', lineHeight: 18, marginLeft: space[2] },
+  claimText: { flex: 1, fontSize: text.xs, color: c.info, lineHeight: 18, marginLeft: space[2] },
   progenyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

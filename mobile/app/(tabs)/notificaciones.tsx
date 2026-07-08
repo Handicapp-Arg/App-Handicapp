@@ -19,25 +19,25 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
 
-/* ─── Tipo → icono + colores ─── */
-const TYPE_META: Record<string, { icon: LucideIcon; bg: string; color: string }> = {
-  event_created:      { icon: FileText,     bg: '#eff6ff', color: '#3b82f6' },
-  health_reminder:    { icon: Stethoscope,  bg: '#fef2f2', color: '#ef4444' },
-  billing:            { icon: Receipt,      bg: '#faf3e9', color: '#9d6c35' },
-  bill_created:       { icon: Receipt,      bg: '#faf3e9', color: '#9d6c35' },
-  bill_disputed:      { icon: AlertCircle,  bg: '#fef9c3', color: '#ca8a04' },
-  contract:           { icon: File,         bg: '#ecfdf5', color: '#10b981' },
-  contract_signed:    { icon: CheckCircle2, bg: '#ecfdf5', color: '#10b981' },
-  contract_rejected:  { icon: XCircle,      bg: '#fef2f2', color: '#ef4444' },
-  invitation_received:{ icon: UserPlus,     bg: '#eff6ff', color: '#3b82f6' },
-  invitation_accepted:{ icon: Users,        bg: '#ecfdf5', color: '#10b981' },
-  boarding_request:   { icon: Home,         bg: '#fff7ed', color: '#f97316' },
-  bid_placed:         { icon: Trophy,       bg: '#fff7ed', color: '#f97316' },
-  auction_won:        { icon: Award,        bg: '#ecfdf5', color: '#10b981' },
-  auction_closed:     { icon: Lock,         bg: '#f3f4f6', color: '#6b7280' },
-  auction_outbid:     { icon: ArrowUp,      bg: '#fef2f2', color: '#ef4444' },
-  default:            { icon: Bell,         bg: colors.gray100, color: colors.gray500 },
-};
+/* ─── Tipo → icono + colores (theme-aware, semánticos) ─── */
+const makeTypeMeta = (c: ThemeColors): Record<string, { icon: LucideIcon; bg: string; color: string }> => ({
+  event_created:      { icon: FileText,     bg: c.infoSoft,     color: c.info },
+  health_reminder:    { icon: Stethoscope,  bg: c.dangerSoft,   color: c.danger },
+  billing:            { icon: Receipt,      bg: c.brandSoft,    color: c.brand },
+  bill_created:       { icon: Receipt,      bg: c.brandSoft,    color: c.brand },
+  bill_disputed:      { icon: AlertCircle,  bg: c.warningSoft,  color: c.warning },
+  contract:           { icon: File,         bg: c.infoSoft,     color: c.info },
+  contract_signed:    { icon: CheckCircle2, bg: c.successSoft,  color: c.success },
+  contract_rejected:  { icon: XCircle,      bg: c.dangerSoft,   color: c.danger },
+  invitation_received:{ icon: UserPlus,     bg: c.infoSoft,     color: c.info },
+  invitation_accepted:{ icon: Users,        bg: c.successSoft,  color: c.success },
+  boarding_request:   { icon: Home,         bg: c.warningSoft,  color: c.warning },
+  bid_placed:         { icon: Trophy,       bg: c.infoSoft,     color: c.info },
+  auction_won:        { icon: Award,        bg: c.successSoft,  color: c.success },
+  auction_closed:     { icon: Lock,         bg: c.surfaceAlt,   color: c.textMuted },
+  auction_outbid:     { icon: ArrowUp,      bg: c.dangerSoft,   color: c.danger },
+  default:            { icon: Bell,         bg: c.surfaceAlt,   color: c.textMuted },
+});
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -67,9 +67,10 @@ function NotifRow({
   c: ThemeColors;
   s: Styles;
 }) {
-  const meta = TYPE_META[item.type] ?? TYPE_META.default;
+  const typeMeta = makeTypeMeta(c);
+  const meta = typeMeta[item.type] ?? typeMeta.default;
   const MetaIcon = meta.icon;
-  const iconBg = c.isDark ? meta.color + '26' : meta.bg;
+  const iconBg = meta.bg;
 
   return (
     <TouchableOpacity
@@ -270,7 +271,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     letterSpacing: -0.3,
   },
   badge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: c.danger,
     borderRadius: radius.full,
     minWidth: 20,
     height: 20,
@@ -353,7 +354,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderBottomColor: c.border,
   },
   rowUnread: {
-    backgroundColor: c.isDark ? 'rgba(59,130,246,0.14)' : '#eff6ff',
+    backgroundColor: c.infoSoft,
   },
   iconWrap: {
     width: 40,

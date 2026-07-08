@@ -17,10 +17,6 @@ import { ReportSkeleton } from '../../components/Skeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { formatMoney } from '../../lib/currency';
 
-const RED = '#dc2626';
-const AMBER = '#d97706';
-const GREEN = '#059669';
-
 const CATEGORY_LABELS: Record<string, string> = {
   alimentacion: 'Alimentación',
   veterinario: 'Veterinario',
@@ -77,9 +73,9 @@ function HealthCard({ health, c, s }: { health: ReportSummary['health']; c: Them
   const total = Math.max(1, health.rojo + health.amarillo + verde);
 
   const cells = [
-    { value: health.rojo, label: 'Vencidos', color: RED, bg: 'rgba(239,68,68,0.12)', Icon: AlertTriangle },
-    { value: health.amarillo, label: 'Por vencer', color: AMBER, bg: 'rgba(245,158,11,0.12)', Icon: Clock },
-    { value: verde, label: 'Al día', color: GREEN, bg: 'rgba(16,185,129,0.12)', Icon: CheckCircle2 },
+    { value: health.rojo, label: 'Vencidos', color: c.danger, bg: c.dangerSoft, Icon: AlertTriangle },
+    { value: health.amarillo, label: 'Por vencer', color: c.warning, bg: c.warningSoft, Icon: Clock },
+    { value: verde, label: 'Al día', color: c.success, bg: c.successSoft, Icon: CheckCircle2 },
   ];
 
   return (
@@ -91,9 +87,9 @@ function HealthCard({ health, c, s }: { health: ReportSummary['health']; c: Them
 
       {/* Barra semáforo agregada */}
       <View style={s.semaforoTrack}>
-        {health.rojo > 0 && <View style={{ flex: health.rojo, backgroundColor: RED }} />}
-        {health.amarillo > 0 && <View style={{ flex: health.amarillo, backgroundColor: AMBER }} />}
-        {verde > 0 && <View style={{ flex: verde, backgroundColor: GREEN }} />}
+        {health.rojo > 0 && <View style={{ flex: health.rojo, backgroundColor: c.danger }} />}
+        {health.amarillo > 0 && <View style={{ flex: health.amarillo, backgroundColor: c.warning }} />}
+        {verde > 0 && <View style={{ flex: verde, backgroundColor: c.success }} />}
         {total === 1 && health.rojo + health.amarillo + verde === 0 && (
           <View style={{ flex: 1, backgroundColor: c.border }} />
         )}
@@ -226,8 +222,8 @@ function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming'];
 
       {upcoming.medical.map((m) => (
         <View key={m.id} style={s.upRow}>
-          <View style={[s.upIcon, { backgroundColor: 'rgba(16,185,129,0.14)' }]}>
-            <Stethoscope size={15} color={GREEN} strokeWidth={2} />
+          <View style={[s.upIcon, { backgroundColor: c.successSoft }]}>
+            <Stethoscope size={15} color={c.success} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.upTitle} numberOfLines={1}>{m.name}</Text>
@@ -280,7 +276,7 @@ export default function ReportesScreen() {
             icon="cloud-offline-outline"
             title="No pudimos cargar tus reportes"
             message="Revisá tu conexión e intentá de nuevo en un momento."
-            tint={colors.red500}
+            tint={c.danger}
           />
         ) : data ? (
           <>
