@@ -2,17 +2,19 @@ import { Tabs, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, ListPlus, QrCode } from 'lucide-react-native';
+import { Calendar, ListPlus, QrCode, CalendarClock } from 'lucide-react-native';
 import { useMemo, type ComponentType } from 'react';
 import { HorseHeadIcon, BrandIsotipo } from '../../components/icons/equine';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
+import { useAuth } from '../../lib/auth';
 
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
 const TABS: Record<string, { Icon: IconType; label: string }> = {
   muro:             { Icon: BrandIsotipo, label: 'Muro' },
   'caballos/index': { Icon: HorseHeadIcon, label: 'Caballos' },
+  eventos:          { Icon: CalendarClock, label: 'Eventos' },
   agenda:           { Icon: Calendar,     label: 'Agenda' },
   mas:              { Icon: ListPlus,     label: 'Más' },
 };
@@ -21,6 +23,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { c } = useTheme();
+  const { user } = useAuth();
+  const isProp = user?.role === 'propietario';
   const styles = useMemo(() => makeStyles(c), [c]);
   const activeName = state.routes[state.index]?.name;
 
@@ -48,21 +52,23 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.bar, { height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
-      {renderTab('muro')}
-      {renderTab('caballos/index')}
+      {isProp ? renderTab('caballos/index') : renderTab('muro')}
+      {isProp ? renderTab('eventos') : renderTab('caballos/index')}
       <View style={styles.qrSlot} />
       {renderTab('agenda')}
       {renderTab('mas')}
 
-      {/* Botón QR central que sobresale */}
+      {/* Botón central que sobresale: Home (logo) para propietario, QR para el resto */}
       <TouchableOpacity
         style={[styles.qrBtn, { bottom: insets.bottom + 24 }]}
         activeOpacity={0.85}
-        onPress={() => { haptic.light(); router.push('/buscar'); }}
+        onPress={() => { haptic.light(); router.push(isProp ? '/muro' : '/buscar'); }}
       >
-        <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />
+        {isProp
+          ? <BrandIsotipo size={26} color={c.isDark ? '#1a1207' : '#ffffff'} />
+          : <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />}
       </TouchableOpacity>
-      <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>QR</Text>
+      <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>{isProp ? 'Home' : 'QR'}</Text>
     </View>
   );
 }
