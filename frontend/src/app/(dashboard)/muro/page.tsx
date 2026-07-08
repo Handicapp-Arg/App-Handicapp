@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { avatarGradient } from '@/lib/avatar-color';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Avatar } from '@/components/ui/avatar';
+import { Container } from '@/components/ui/container';
 
 // ─── Admin stat card ───────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, color }: {
@@ -158,10 +159,11 @@ export default function MuroPage() {
   const posts = data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
-    <div className="space-y-6">
+    <Container width="content" className="space-y-6">
 
-      {/* 2-column layout */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 2-column layout — el feed queda legible (no se estira a 1600); en pantallas
+          grandes respira con más gap y un sidebar algo más ancho */}
+      <div className="grid gap-6 xl:gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]">
 
         {/* ── Feed column ── */}
         <div className="min-w-0 space-y-4">
@@ -224,6 +226,6 @@ export default function MuroPage() {
           </div>
         </aside>
       </div>
-    </div>
+    </Container>
   );
 }

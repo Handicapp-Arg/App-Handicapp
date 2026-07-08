@@ -443,7 +443,7 @@ export default function RematesPage() {
             </div>
 
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
                 {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : !list?.data?.length ? (
@@ -453,7 +453,7 @@ export default function RematesPage() {
                 message="Todavía no hay subastas activas. ¡Sé el primero en publicar!"
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
                 {list.data.map((a) => (
                   <AuctionCard
                     key={a.id}
@@ -469,7 +469,7 @@ export default function RematesPage() {
         {tab === 'mis_subastas' && (
           <>
             {loadingMine ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
                 {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : !myAuctions?.length ? (
@@ -480,7 +480,7 @@ export default function RematesPage() {
                 action={canSell ? { label: 'Crear subasta', onClick: () => setShowCreate(true) } : undefined}
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
                 {myAuctions.map((a) => (
                   <AuctionCard
                     key={a.id}

@@ -11,6 +11,7 @@ import api from '@/lib/api';
 import { formatMoney } from '@/lib/currency';
 import { Spinner } from '@/components/ui/skeleton';
 import { Modal } from '@/components/ui/modal';
+import { Container } from '@/components/ui/container';
 import { VetVerifiedBadge, isVetVerified } from '@/components/ui/verified-badge';
 import { Avatar } from '@/components/ui/avatar';
 import { RoleBadge } from '@/components/ui/role-badge';
@@ -979,11 +980,13 @@ export default function PerfilPage() {
   const plan = (user as { plan?: string } | null)?.plan;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="space-y-5">
 
       <input ref={avatarInput} type="file" accept="image/*" hidden onChange={(e) => handleImageUpload('avatar', e.target.files?.[0])} />
       <input ref={coverInput} type="file" accept="image/*" hidden onChange={(e) => handleImageUpload('cover', e.target.files?.[0])} />
 
+      {/* Hero + pestañas — lectura legible, ancho content (no estirado a 1600) */}
+      <Container width="content" className="space-y-5">
       {/* Hero del perfil */}
       <div className="overflow-hidden rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
         {/* Banner / portada */}
@@ -1060,15 +1063,17 @@ export default function PerfilPage() {
           </button>
         ))}
       </div>
+      </Container>
 
       {/* Contenido — fade al cambiar de pestaña (key fuerza el re-montaje) */}
       <div key={tab} className="animate-fade-in">
       {tab === 'posts' ? (
-        user && <MisPublicaciones userId={user.id} />
+        <Container width="content">{user && <MisPublicaciones userId={user.id} />}</Container>
       ) : tab === 'plan' ? (
-        <MiPlan role={user?.role} />
+        // Pricing: aprovecha el ancho para el grid de planes (grid intacto).
+        <Container width="wide"><MiPlan role={user?.role} /></Container>
       ) : (
-        <div className="space-y-5">
+        <Container width="content"><div className="space-y-5">
           {/* Datos personales */}
           <SectionCard title="Datos personales">
             <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -1194,7 +1199,7 @@ export default function PerfilPage() {
               </button>
             </form>
           </SectionCard>
-        </div>
+        </div></Container>
       )}
       </div>
     </div>

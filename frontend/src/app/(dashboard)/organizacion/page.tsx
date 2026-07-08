@@ -18,6 +18,7 @@ import {
   OrganizacionSkeleton, Avatar, RoleBadge,
 } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { Container } from '@/components/ui/container';
 
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
   { value: 'staff',      label: 'Staff',          desc: 'Cuidador / personal de la caballeriza — gestiona caballos y eventos' },
@@ -522,7 +523,7 @@ export default function OrganizacionPage() {
 
   if (orgsError || orgError) {
     return (
-      <div className="max-w-3xl space-y-6">
+      <Container width="narrow" className="space-y-6">
         <PageHeader title="Organización" />
         <Card>
           <p className="text-sm font-semibold text-danger-700">No pudimos cargar tu organización.</p>
@@ -533,13 +534,13 @@ export default function OrganizacionPage() {
             Reintentar
           </Button>
         </Card>
-      </div>
+      </Container>
     );
   }
 
   if (!org) {
     return (
-      <div className="max-w-3xl space-y-6">
+      <Container width="narrow" className="space-y-6">
         <PageHeader title="Organización" />
         <JoinOrgCard />
         <EmptyState
@@ -548,7 +549,7 @@ export default function OrganizacionPage() {
           title="Todavía no pertenecés a ninguna organización"
           message="Las organizaciones permiten al establecimiento centralizar el plan, los miembros y los caballos. Si te invitaron, abrí el link de invitación; si querés crear una, escribinos."
         />
-      </div>
+      </Container>
     );
   }
 
@@ -558,7 +559,7 @@ export default function OrganizacionPage() {
   const canInvite = isAdmin || isOwner;
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <Container width="content" className="space-y-6">
       <PageHeader
         title={org.name}
         subtitle="Tu organización en HandicApp"
@@ -708,6 +709,6 @@ export default function OrganizacionPage() {
           }
         }}
       />
-    </div>
+    </Container>
   );
 }

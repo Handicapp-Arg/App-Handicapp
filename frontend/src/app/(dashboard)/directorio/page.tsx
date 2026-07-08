@@ -193,7 +193,7 @@ export default function DirectorioPage() {
 
       {/* Lista */}
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2">{[1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}</div>
+        <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">{[1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}</div>
       ) : !items?.length ? (
         <EmptyState
           icon={search ? SearchIcon : Building2}
@@ -205,7 +205,7 @@ export default function DirectorioPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
           {items.map((item) => {
             const hasPending = pendingForEstab(item.id);
             return (

@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonRow } from '@/components/ui/skeleton';
 import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
+import { Container } from '@/components/ui/container';
 import { Receipt, X } from 'lucide-react';
 import { formatAmount, type Currency } from '@/lib/currency';
 
@@ -186,7 +187,7 @@ export default function FacturacionPage() {
   const isProp = user?.role === 'propietario';
 
   return (
-    <div className="space-y-5">
+    <Container width="content" className="space-y-5">
       <PageHeader
         title="Facturación"
         action={isEst ? (
@@ -362,6 +363,6 @@ export default function FacturacionPage() {
           onCancel={() => setDeletingId(null)}
         />
       )}
-    </div>
+    </Container>
   );
 }

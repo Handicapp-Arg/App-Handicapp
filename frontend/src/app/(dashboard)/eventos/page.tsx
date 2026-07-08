@@ -15,6 +15,7 @@ import { SkeletonRow, Spinner } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
+import { Container } from '@/components/ui/container';
 import type { Event } from '@/types';
 import { formatMoney } from '@/lib/currency';
 
@@ -679,7 +680,7 @@ export default function EventosPage() {
             }
           />
         ) : (
-          <div className="stagger-children space-y-3">
+          <Container width="content" className="stagger-children space-y-3">
             {displayEvents.map((event) => (
               <div key={event.id} className="rounded-xl border border-gray-200 bg-[var(--surface-card)] p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -753,7 +754,7 @@ export default function EventosPage() {
                 )}
               </div>
             ))}
-          </div>
+          </Container>
         )
       )}
 

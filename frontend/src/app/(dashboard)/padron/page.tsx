@@ -11,6 +11,7 @@ import {
   Globe, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Container } from '@/components/ui/container';
 import { HorseHead } from '@/components/icons/equine';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -682,7 +683,9 @@ export default function RegistroPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Lista de filas (constrain a `content`) hasta abrir el detalle, donde el
+          split maestro-detalle aprovecha el ancho (`wide`) sin estirar las filas */}
+      <Container width={selectedId ? 'wide' : 'content'} className="px-4 py-6">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Registro de Caballos</h1>
@@ -860,7 +863,7 @@ export default function RegistroPage() {
             <span>Fuente no disponible</span>
           </div>
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

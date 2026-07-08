@@ -8,6 +8,7 @@ import { useHorses } from '@/hooks/use-horses';
 import ConfirmDialog from '@/components/confirm-dialog';
 import AgendaCalendar, { appointmentDateKey } from '@/components/agenda-calendar';
 import { PageHeader } from '@/components/ui/page-header';
+import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonRow } from '@/components/ui/skeleton';
 
@@ -240,9 +241,9 @@ export default function AgendaPage() {
       />
 
       {isLoading ? (
-        <div className="space-y-2">{[1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)}</div>
+        <Container width="content" className="space-y-2">{[1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)}</Container>
       ) : viewMode === 'calendar' ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[1fr_380px]">
           <AgendaCalendar
             appointments={appointments ?? []}
             selectedDate={selectedDate}
@@ -302,7 +303,7 @@ export default function AgendaPage() {
           }
         />
       ) : (
-        <div className="space-y-6">
+        <Container width="content" className="space-y-6">
           {Object.entries(grouped).map(([day, items]) => (
             <div key={day} className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 px-1">{day}</p>
@@ -316,7 +317,7 @@ export default function AgendaPage() {
               ))}
             </div>
           ))}
-        </div>
+        </Container>
       )}
 
       {showCreate && horses && horses.length > 0 && (

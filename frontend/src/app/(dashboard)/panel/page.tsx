@@ -19,6 +19,7 @@ import { useSuperAdminMetrics } from '@/hooks/use-superadmin';
 import { PLAN_LABELS } from '@/hooks/use-organizations';
 import { PageLoader, SkeletonStat } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import { Container } from '@/components/ui/container';
 import {
   Check, AlertTriangle, Zap, Info, ArrowUpRight, Star, Syringe, Clock,
 } from 'lucide-react';
@@ -111,7 +112,7 @@ function AdminMetrics() {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
+    <div className="grid gap-2.5 sm:gap-3 grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
       {cards.map((c) => (
         <div key={c.label} className={`rounded-2xl border p-3.5 shadow-sm ${c.bg}`}>
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{c.label}</p>
@@ -1087,7 +1088,7 @@ export default function PanelPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-[1.375rem] font-extrabold tracking-tight text-gray-900">{title}</h1>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
           {[1,2,3,4,5,6].map(i => <SkeletonStat key={i} />)}
         </div>
         <PageLoader />
@@ -1113,15 +1114,15 @@ export default function PanelPage() {
       {isAdmin && <AdminPanel />}
 
       {dashboard?.role === 'propietario' && (
-        <PropietarioDashboardView data={dashboard} />
+        <Container width="content"><PropietarioDashboardView data={dashboard} /></Container>
       )}
 
       {dashboard?.role === 'establecimiento' && (
-        <EstablecimientoDashboardView data={dashboard} />
+        <Container width="content"><EstablecimientoDashboardView data={dashboard} /></Container>
       )}
 
       {dashboard?.role === 'veterinario' && (
-        <VeterinarioDashboardView data={dashboard} />
+        <Container width="content"><VeterinarioDashboardView data={dashboard} /></Container>
       )}
     </div>
   );

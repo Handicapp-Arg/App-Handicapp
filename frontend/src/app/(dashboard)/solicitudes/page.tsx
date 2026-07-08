@@ -184,7 +184,7 @@ export default function SolicitudesPage() {
           }
         />
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
           {filtered.map((req) => (
             <RequestCard
               key={req.id}
