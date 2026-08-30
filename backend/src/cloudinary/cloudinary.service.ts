@@ -1,15 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
 
 @Injectable()
 export class CloudinaryService {
+  private readonly logger = new Logger(CloudinaryService.name);
+  private readonly configurado: boolean;
+
   constructor() {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
+    const cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
+    const api_key = process.env.CLOUDINARY_API_KEY;
+    const api_secret = process.env.CLOUDINARY_API_SECRET;
+
+    this.configurado = Boolean(cloud_name && api_key && api_secret);
+
+    if (!this.configurado) {
+      // Sin estas variables, cualquier subida devolvía un 500 opaco y la app se
+      // lo tragaba en silencio: el usuario veía "guardado" y la foto nunca subía.
+      this.logger.error(
+        'Cloudinary sin configurar: faltan CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET. ' +
+          'Toda subida de imágenes y documentos va a fallar.',
+      );
+      return;
+    }
+
+    cloudinary.config({ cloud_name, api_key, api_secret });
   }
 
   async upload(
@@ -17,6 +32,12 @@ export class CloudinaryService {
     folder = 'handicapp/horses',
     opts: { isPdf?: boolean } = {},
   ): Promise<UploadApiResponse> {
+    if (!this.configurado) {
+      throw new ServiceUnavailableException(
+        'El servicio de imágenes no está configurado en el servidor.',
+      );
+    }
+
     return new Promise((resolve, reject) => {
       const uploadOpts: Record<string, unknown> = { folder };
 
@@ -47,6 +68,12 @@ export class CloudinaryService {
     file: Express.Multer.File,
     folder = 'handicapp/feed',
   ): Promise<UploadApiResponse> {
+    if (!this.configurado) {
+      throw new ServiceUnavailableException(
+        'El servicio de imágenes no está configurado en el servidor.',
+      );
+    }
+
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
         { folder, resource_type: 'video' },

@@ -718,6 +718,11 @@ export class HorsesService implements OnModuleInit {
   }
 
   async getPublicProfile(publicToken: string) {
+    // El token es un UUID. Sin este chequeo, cualquier basura en la URL llega a
+    // Postgres, que rechaza el tipo y devuelve un 500 en vez de un 404 limpio.
+    const ES_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!ES_UUID.test(publicToken)) throw new NotFoundException('Caballo no encontrado');
+
     const horse = await this.horseRepository.findOne({
       where: { public_token: publicToken },
       relations: ['owner', 'establishment', 'breed', 'activity'],

@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["B5PKJ4H5P4.com.handicapp.app"],
+        "components": [
+          { "/": "/invitacion/*", "comment": "Invitaciones a una organización" },
+          { "/": "/caballo/*", "comment": "Ficha pública del caballo (QR)" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["B5PKJ4H5P4.com.handicapp.app"]
+  }
+}

@@ -29,6 +29,8 @@ export class NotificationsGateway
   constructor(
     private readonly jwtService: JwtService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
     private readonly pushService: PushService,
   ) {}
 
@@ -79,11 +81,18 @@ export class NotificationsGateway
     if (!isOnline) {
       const user = await this.userRepo.findOne({ where: { id: userId }, select: ['push_token'] });
       if (user?.push_token) {
+        // El globito del ícono lleva el total sin leer, no un contador propio:
+        // así queda igual que el badge de la campana dentro de la app.
+        const sinLeer = await this.notificationRepo.count({
+          where: { recipient_id: userId, read: false },
+        });
+
         await this.pushService.sendToTokens(
           [user.push_token],
           notification.title,
           notification.message,
           { notificationId: notification.id },
+          sinLeer,
         ).catch(() => {});
       }
     }

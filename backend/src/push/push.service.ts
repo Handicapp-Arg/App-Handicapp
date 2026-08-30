@@ -11,6 +11,8 @@ export class PushService {
     title: string,
     body: string,
     data?: Record<string, unknown>,
+    /** Globito rojo del ícono. Sin esto iOS no muestra ningún número. */
+    badge?: number,
   ): Promise<void> {
     const validTokens = tokens.filter((t): t is string => !!t && Expo.isExpoPushToken(t));
     if (!validTokens.length) return;
@@ -22,6 +24,7 @@ export class PushService {
       data: data ?? {},
       sound: 'default',
       priority: 'high',
+      ...(badge === undefined ? {} : { badge }),
     }));
 
     const chunks = this.expo.chunkPushNotifications(messages);
