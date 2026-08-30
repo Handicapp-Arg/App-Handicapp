@@ -38,8 +38,10 @@ export function EventCard({ event, showHorse = true, canEditMetrics = false, onD
           {onDelete && (
             <TouchableOpacity
               onPress={() => onDelete(event.id)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               style={s.deleteBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Eliminar evento"
             >
               <Text style={s.deleteBtnText}>✕</Text>
             </TouchableOpacity>
@@ -77,9 +79,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   right: { flexDirection: 'row', alignItems: 'center', gap: space[2], flexShrink: 0 },
   horseName: { fontSize: text.xs, color: c.textFaint, fontWeight: weight.medium },
   date: { fontSize: text.xs, color: c.textFaint },
-  deleteBtn: { padding: 2 },
-  deleteBtnText: { fontSize: 13, color: c.textFaint },
-  amount: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
-  desc: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
+  deleteBtn: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  deleteBtnText: { fontSize: 14, color: c.textFaint },
+  amount: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  desc: { fontSize: text.base, color: c.textMuted, lineHeight: 22 },
   photoCount: { fontSize: text.xs, color: c.textFaint },
 });

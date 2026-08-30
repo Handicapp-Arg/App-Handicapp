@@ -13,7 +13,7 @@ import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { Routes } from '../lib/routes';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight, shadow } from '../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 import {
   useNotificationSettings, useUpdateNotificationSettings, useEventTypes,
@@ -179,7 +179,14 @@ export default function NotificacionesConfigScreen() {
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.navigate(Routes.mas as never)} style={s.backBtn} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => router.navigate(Routes.mas as never)}
+            style={s.backBtn}
+            activeOpacity={0.7}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+          >
             <ChevronLeft size={22} color={c.text} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Config. notificaciones</Text>
@@ -307,6 +314,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[3],
     paddingVertical: space[2],
     minWidth: 80,
+    minHeight: touch.min,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -336,7 +344,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   toggleLabel: {
-    fontSize: text.sm,
+    fontSize: text.base,
     fontFamily: fontFamily.medium,
     color: c.text,
   },

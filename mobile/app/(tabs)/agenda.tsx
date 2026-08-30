@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
-  Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Pressable,
+  ScrollView, TextInput, Platform, ActivityIndicator, Alert, Pressable,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
@@ -13,13 +13,16 @@ import { DatePicker } from '../../components/DatePicker';
 import { MonthCalendar } from '../../components/MonthCalendar';
 import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
 import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 import { EventRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight } from '../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { useCommonStyles } from '../../styles/common';
 import { useToast } from '../../components/Toast';
+import { ActionSheet } from '../../components/ActionSheet';
+import { FormSheet } from '../../components/FormSheet';
 
 const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES);
 
@@ -48,7 +51,12 @@ function AppointmentCard({
         <View style={[s.typeDot, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
           <Text style={[s.typeText, { color: meta.color }]}>{meta.label}</Text>
         </View>
-        <TouchableOpacity onPress={() => setMenuOpen(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          onPress={() => { haptic.selection(); setMenuOpen(true); }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Más opciones del turno"
+        >
           <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
         </TouchableOpacity>
       </View>
@@ -60,43 +68,33 @@ function AppointmentCard({
       </View>
       {appt.completed && (
         <View style={s.completedRow}>
-          <Check size={13} color="#16a34a" strokeWidth={2.5} />
+          <Check size={13} color={c.success} strokeWidth={2.5} />
           <Text style={s.completedText}>Completado</Text>
         </View>
       )}
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={s.apptMenuOverlay} onPress={() => setMenuOpen(false)}>
-          <View style={s.apptMenu}>
-            {!appt.completed && (
-              <>
-                <TouchableOpacity
-                  style={s.apptMenuItem}
-                  onPress={() => { setMenuOpen(false); onComplete(appt.id); }}
-                  activeOpacity={0.7}
-                >
-                  <Check size={18} color={c.text} strokeWidth={2.5} />
-                  <Text style={s.apptMenuText}>Marcar como completado</Text>
-                </TouchableOpacity>
-                <View style={s.apptMenuDivider} />
-              </>
-            )}
-            <TouchableOpacity
-              style={s.apptMenuItem}
-              onPress={() => { setMenuOpen(false); onDelete(appt.id); }}
-              activeOpacity={0.7}
-            >
-              <Trash2 size={18} color={colors.red500} strokeWidth={2} />
-              <Text style={[s.apptMenuText, { color: colors.red500 }]}>Eliminar turno</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+      <ActionSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        acciones={[
+          ...(appt.completed ? [] : [{
+            label: 'Marcar como completado',
+            Icon: Check,
+            onPress: () => onComplete(appt.id),
+          }]),
+          {
+            label: 'Eliminar turno',
+            Icon: Trash2,
+            destructiva: true,
+            onPress: () => onDelete(appt.id),
+          },
+        ]}
+      />
     </View>
   );
 }
 
-function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
+function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
   const { typography, modal: modalStyle, button, input: inputStyle } = useCommonStyles();
   const { data: horses } = useHorses();
   const create = useCreateAppointment();
@@ -112,24 +110,53 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
 
   const timeStr = timeDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
+  // La hoja ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setTitle(''); setDate(''); setNotes(''); setError('');
+    setType('veterinario');
+    setHorseId(horses?.[0]?.id ?? '');
+    const d = new Date(); d.setHours(9, 0, 0, 0); setTimeDate(d);
+  }, [visible]);
+
+
   const handleSubmit = async () => {
-    if (!horseId || !title.trim() || !date) { setError('Completá todos los campos obligatorios'); return; }
+    if (!horseId || !title.trim() || !date) { setError('Completá todos los campos obligatorios'); haptic.error(); return; }
     setError('');
     const dt = new Date(date + 'T12:00:00');
     dt.setHours(timeDate.getHours(), timeDate.getMinutes());
-    await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString(), notes: notes || undefined });
-    toast.success('Turno agendado');
-    onClose();
+    try {
+      await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString(), notes: notes || undefined });
+      haptic.success();
+      toast.success('Turno agendado');
+      onClose();
+    } catch {
+      haptic.error();
+      setError('No se pudo agendar el turno. Intentá de nuevo.');
+    }
   };
 
   return (
-    <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={[modalStyle.sheet, { maxHeight: '92%' }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-        <View style={modalStyle.header}>
-          <Text style={modalStyle.title}>Nuevo turno</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={8}><X size={22} color={c.textMuted} strokeWidth={2} /></TouchableOpacity>
-        </View>
-        <ScrollView contentContainerStyle={[modalStyle.body, { gap: space[4] }]}>
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Nuevo turno"
+      footer={
+        <>
+          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={() => { haptic.light(); onClose(); }}>
+            <Text style={button.secondaryText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[button.primary, { flex: 1 }, create.isPending && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={create.isPending}
+          >
+            {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={button.primaryText}>Crear turno</Text>}
+          </TouchableOpacity>
+        </>
+      }
+    >
+      <>
           {/* Caballo */}
           <View style={{ gap: space[2] }}>
             <Text style={typography.label}>Caballo *</Text>
@@ -137,7 +164,7 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
               {horses?.map((h) => (
                 <TouchableOpacity key={h.id}
                   style={[s.chip, horseId === h.id && s.chipActive]}
-                  onPress={() => setHorseId(h.id)}
+                  onPress={() => { haptic.selection(); setHorseId(h.id); }}
                 >
                   <Text style={[s.chipText, horseId === h.id && s.chipTextActive]}>{h.name}</Text>
                 </TouchableOpacity>
@@ -152,7 +179,7 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
               {TYPE_OPTIONS.map(([v, m]) => (
                 <TouchableOpacity key={v}
                   style={[s.typeBtn, type === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg }]}
-                  onPress={() => setType(v)}
+                  onPress={() => { haptic.selection(); setType(v); }}
                 >
                   <Text style={[s.typeBtnText, type === v && { color: m.color }]}>{m.label}</Text>
                 </TouchableOpacity>
@@ -171,10 +198,10 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
           <View style={{ gap: space[2] }}>
             <Text style={typography.label}>Hora</Text>
             <Pressable
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => { haptic.selection(); setShowTimePicker(true); }}
               style={[inputStyle.base, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
             >
-              <Text style={{ fontSize: 15, color: c.text }}>{timeStr}</Text>
+              <Text style={{ fontSize: text.base, color: c.text }}>{timeStr}</Text>
               <Clock size={18} color={c.textFaint} strokeWidth={2} />
             </Pressable>
             {showTimePicker && (
@@ -198,21 +225,8 @@ function CreateModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s
           </View>
 
           {error ? <Text style={s.errorText}>{error}</Text> : null}
-        </ScrollView>
-        <View style={modalStyle.footer}>
-          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={onClose}>
-            <Text style={button.secondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[button.primary, { flex: 1 }, create.isPending && { opacity: 0.6 }]}
-            onPress={handleSubmit}
-            disabled={create.isPending}
-          >
-            {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={button.primaryText}>Crear turno</Text>}
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </KeyboardAvoidingView>
+      </>
+    </FormSheet>
   );
 }
 
@@ -226,7 +240,7 @@ export default function AgendaScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
-  const { data: appointments, isLoading, refetch, isRefetching } = useAgenda(viewMode === 'list' ? upcoming : false);
+  const { data: appointments, isLoading, isError, refetch, isRefetching } = useAgenda(viewMode === 'list' ? upcoming : false);
   const complete = useCompleteAppointment();
   const deleteAppt = useDeleteAppointment();
 
@@ -246,7 +260,7 @@ export default function AgendaScreen() {
   const handleDelete = (id: string) => {
     Alert.alert('Eliminar turno', '¿Querés eliminar este turno?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => deleteAppt.mutate(id) },
+      { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteAppt.mutate(id); } },
     ]);
   };
 
@@ -304,7 +318,12 @@ export default function AgendaScreen() {
 
   return (
     <View style={[layout.screen, { paddingTop: insets.top }]}>
-      {viewMode === 'calendar' ? (
+      {viewMode === 'calendar' && isError ? (
+        <View style={{ flex: 1 }}>
+          {Header}
+          <ErrorState onRetry={() => refetch()} />
+        </View>
+      ) : viewMode === 'calendar' ? (
         <ScrollView
           contentContainerStyle={{ paddingBottom: space[8] }}
           showsVerticalScrollIndicator={false}
@@ -338,6 +357,11 @@ export default function AgendaScreen() {
           <View style={{ padding: space[4], gap: space[2] }}>
             {[1, 2, 3, 4, 5].map((i) => <EventRowSkeleton key={i} />)}
           </View>
+        </View>
+      ) : isError ? (
+        <View style={{ flex: 1 }}>
+          {Header}
+          <ErrorState onRetry={() => refetch()} />
         </View>
       ) : !Object.keys(grouped).length ? (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
@@ -373,9 +397,7 @@ export default function AgendaScreen() {
         />
       )}
 
-      <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
-        <CreateModal onClose={() => setShowCreate(false)} c={c} s={s} />
-      </Modal>
+      <CreateModal visible={showCreate} onClose={() => setShowCreate(false)} c={c} s={s} />
     </View>
   );
 }
@@ -385,12 +407,12 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingTop: space[1], paddingBottom: space[2], gap: space[2] },
   toggle: { flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.full, padding: 3 },
-  toggleBtn: { paddingVertical: space[1] + 1, paddingHorizontal: space[4], alignItems: 'center', borderRadius: radius.full },
+  toggleBtn: { paddingHorizontal: space[4], minHeight: touch.min, justifyContent: 'center', alignItems: 'center', borderRadius: radius.full },
   toggleBtnActive: { backgroundColor: c.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 },
   toggleText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   toggleTextActive: { color: c.text },
   viewToggle: { flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.full, padding: 3 },
-  viewBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[1] + 2, paddingHorizontal: space[4], borderRadius: radius.full },
+  viewBtn: { alignItems: 'center', justifyContent: 'center', minHeight: touch.min, paddingHorizontal: space[4], borderRadius: radius.full },
   viewBtnActive: { backgroundColor: c.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 },
   viewText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   viewTextActive: { color: c.text },
@@ -401,20 +423,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   typeDot: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   typeText: { fontSize: text.xs, fontWeight: weight.semibold },
   apptActions: { flexDirection: 'row', gap: space[3] },
-  completeBtn: { fontSize: 18, color: '#16a34a' },
+  completeBtn: { fontSize: 18, color: c.success },
   deleteBtn: { fontSize: 16, color: c.textFaint },
-  apptTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  apptTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   apptHorse: { fontSize: text.xs, color: c.textFaint },
   apptDateRow: { flexDirection: 'row', gap: space[2] },
   apptDate: { fontSize: text.xs, color: c.textMuted },
   apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold },
   completedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  completedText: { fontSize: text.xs, color: '#16a34a', fontWeight: weight.semibold },
-  apptMenuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space[8] },
-  apptMenu: { backgroundColor: c.surface, borderRadius: radius.xl, width: '100%', maxWidth: 340, paddingVertical: space[1], shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 12 },
-  apptMenuItem: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[4], paddingVertical: space[3] + 2 },
-  apptMenuText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  apptMenuDivider: { height: 1, backgroundColor: c.border, marginHorizontal: space[2] },
+  completedText: { fontSize: text.xs, color: c.success, fontWeight: weight.semibold },
   chip: { borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
   chipActive: { backgroundColor: c.brand },
   chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },

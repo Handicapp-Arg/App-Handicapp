@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 
 const WEEKDAYS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 const MONTHS = [
@@ -51,11 +51,25 @@ export function MonthCalendar({ monthCursor, onMonthChange, selectedDay, onSelec
   return (
     <View style={s.wrap}>
       <View style={s.header}>
-        <TouchableOpacity onPress={prevMonth} hitSlop={10} style={s.navBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={prevMonth}
+          hitSlop={10}
+          style={s.navBtn}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Mes anterior"
+        >
           <ChevronLeft size={20} color={c.textMuted} strokeWidth={2.2} />
         </TouchableOpacity>
-        <Text style={s.monthLabel}>{MONTHS[monthCursor.getMonth()]} {monthCursor.getFullYear()}</Text>
-        <TouchableOpacity onPress={nextMonth} hitSlop={10} style={s.navBtn} activeOpacity={0.7}>
+        <Text style={s.monthLabel} accessibilityRole="header">{MONTHS[monthCursor.getMonth()]} {monthCursor.getFullYear()}</Text>
+        <TouchableOpacity
+          onPress={nextMonth}
+          hitSlop={10}
+          style={s.navBtn}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Mes siguiente"
+        >
           <ChevronRight size={20} color={c.textMuted} strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
@@ -72,7 +86,15 @@ export function MonthCalendar({ monthCursor, onMonthChange, selectedDay, onSelec
           const isToday = key === today;
           const hasMark = markedDays.has(key);
           return (
-            <TouchableOpacity key={i} style={s.cell} onPress={() => onSelectDay(key)} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={i}
+              style={s.cell}
+              onPress={() => onSelectDay(key)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${d.getDate()} de ${MONTHS[d.getMonth()]}${hasMark ? ', con turnos' : ''}`}
+              accessibilityState={{ selected: isSelected }}
+            >
               <View style={[s.dayCircle, isSelected && s.daySelected]}>
                 <Text style={[
                   s.dayText,
@@ -101,7 +123,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   weekRow: { flexDirection: 'row', marginBottom: space[1] },
   weekDay: { flex: 1, textAlign: 'center', fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: space[1] },
+  cell: { width: `${100 / 7}%`, minHeight: touch.min, alignItems: 'center', justifyContent: 'center', paddingVertical: space[1] },
   dayCircle: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   daySelected: { backgroundColor: c.brand },
   dayText: { fontSize: text.sm, color: c.text, fontWeight: weight.medium },

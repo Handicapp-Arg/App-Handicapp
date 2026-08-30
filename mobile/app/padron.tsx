@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, ScrollView, Modal,
+  StyleSheet, ActivityIndicator, ScrollView, Modal, RefreshControl,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { X, CheckCircle2, Info, ChevronLeft, Search, Globe } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Routes } from '../lib/routes';
+import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { haptic } from '../lib/haptics';
@@ -172,7 +173,13 @@ function DetailModal({ id, onClose, c, d, tr }: { id: string; onClose: () => voi
               </View>
             )}
           </View>
-          <TouchableOpacity onPress={onClose} style={d.closeBtn} hitSlop={8}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={d.closeBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar detalle"
+          >
             <X size={22} color={c.textMuted} strokeWidth={2} />
           </TouchableOpacity>
         </View>
@@ -281,7 +288,7 @@ export default function PadronScreen() {
   const treeS = useMemo(() => makeTreeStyles(c), [c]);
   const detailS = useMemo(() => makeDetailStyles(c), [c]);
 
-  const { data, isLoading, isFetching } = useSearch(query);
+  const { data, isLoading, isFetching, refetch, isRefetching } = useSearch(query);
 
   // Búsqueda en vivo en el Stud Book Argentino (complemento explícito)
   const liveSearch = useSearchLiveStudbook();
@@ -318,12 +325,12 @@ export default function PadronScreen() {
         >
           {liveSearch.isPending ? (
             <>
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={colors.white} />
               <Text style={s.liveBtnText}>Buscando en el registro oficial…</Text>
             </>
           ) : (
             <>
-              <Globe size={18} color="#fff" strokeWidth={2} />
+              <Globe size={18} color={colors.white} strokeWidth={2} />
               <Text style={s.liveBtnText}>Buscar en el Stud Book Argentino</Text>
             </>
           )}
@@ -358,7 +365,13 @@ export default function PadronScreen() {
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.navigate(Routes.mas as never)} style={s.backBtn} hitSlop={8}>
+        <TouchableOpacity
+          onPress={() => router.navigate(Routes.mas as never)}
+          style={s.backBtn}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+        >
           <ChevronLeft size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -404,6 +417,9 @@ export default function PadronScreen() {
           )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
+          }
           ListFooterComponent={liveFooter}
           ListEmptyComponent={
             <View style={s.center}>
@@ -473,7 +489,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4],
     ...shadow.sm,
   },
-  liveBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: '#fff' },
+  liveBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
   liveHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[2] },
   liveError: { fontSize: text.xs, color: c.danger, textAlign: 'center', marginTop: space[2] },
   liveSectionTitle: {

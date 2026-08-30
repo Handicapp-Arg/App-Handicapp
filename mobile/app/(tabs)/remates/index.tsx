@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet,
+  StyleSheet, RefreshControl,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -11,9 +11,10 @@ import { useAuctions } from '../../../hooks/use-auctions';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
 import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
 import { haptic } from '../../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
 import { nav, Routes } from '../../../lib/routes';
 import type { Auction } from '../../../../packages/shared/src/types';
 import { formatMoney, type Currency } from '../../../lib/currency';
@@ -27,7 +28,13 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
   const price = isRemate ? (item.top_bid ?? item.starting_bid) : item.asking_price;
 
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={s.card}
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${isRemate ? 'remate' : 'venta directa'}`}
+    >
       <View style={s.cardHeader}>
         <View style={s.cardLeft}>
           <View style={{ flex: 1 }}>
@@ -48,7 +55,7 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
       <View style={s.cardFooter}>
         <View>
           <Text style={s.priceLabel}>{isRemate ? (item.top_bid ? 'Puja actual' : 'Base') : 'Precio'}</Text>
-          <Text style={s.price}>{price != null ? formatARS(Number(price), item.currency) : '–'}</Text>
+          <Text style={s.price} numberOfLines={1}>{price != null ? formatARS(Number(price), item.currency) : '–'}</Text>
         </View>
         <View style={s.metaRight}>
           {item.bid_count != null && item.bid_count > 0 && (
@@ -95,10 +102,11 @@ export default function RematesTab() {
   const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data, isLoading, refetch, isRefetching } = useAuctions({
+  const { data, isLoading, isError, refetch, isRefetching } = useAuctions({
     q: q || undefined,
     status: filterStatus || undefined,
   });
+  const items = data?.data ?? [];
 
   const Header = (
     <>
@@ -129,7 +137,13 @@ export default function RematesTab() {
             onChangeText={setQ}
           />
           {q.length > 0 && (
-            <TouchableOpacity onPress={() => setQ('')} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => setQ('')}
+              activeOpacity={0.7}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Borrar búsqueda"
+            >
               <XCircle size={16} color={c.textFaint} strokeWidth={2} />
             </TouchableOpacity>
           )}
@@ -158,7 +172,12 @@ export default function RematesTab() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      {isLoading ? (
+      {isError && items.length === 0 ? (
+        <View>
+          {Header}
+          <ErrorState onRetry={refetch} />
+        </View>
+      ) : isLoading ? (
         <View>
           {Header}
           <View style={{ padding: space[4], gap: space[3] }}>
@@ -167,13 +186,14 @@ export default function RematesTab() {
         </View>
       ) : (
         <FlatList
-          data={data?.data ?? []}
+          data={items}
           keyExtractor={(i) => i.id}
           ListHeaderComponent={Header}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isRefetching}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />
+          }
           ListEmptyComponent={
             <EmptyState
               icon="trophy-outline"
@@ -214,10 +234,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     backgroundColor: c.surface, borderRadius: radius.xl,
     borderWidth: 1, borderColor: c.borderStrong,
-    paddingHorizontal: space[3], paddingVertical: space[2] + 2,
+    paddingHorizontal: space[3], height: touch.min,
     ...shadow.sm,
   },
-  searchInput: { flex: 1, fontSize: text.sm, color: c.text },
+  searchInput: { flex: 1, fontSize: text.base, color: c.text },
 
   filterRow: {
     flexDirection: 'row', gap: 2, padding: 3,
@@ -225,7 +245,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt, borderRadius: radius.full,
   },
   filterBtn: {
-    flex: 1, paddingVertical: space[1] + 2, alignItems: 'center',
+    flex: 1, minHeight: touch.min, justifyContent: 'center', alignItems: 'center',
     borderRadius: radius.full,
   },
   filterBtnActive: {
@@ -246,8 +266,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: space[3] },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1 },
-  cardTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
-  cardSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
+  cardTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text, letterSpacing: -0.2 },
+  cardSub: { fontSize: text.sm, color: c.textFaint, marginTop: 1 },
 
   typeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -256,17 +276,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   typeBadgeRemate: { backgroundColor: c.infoSoft, borderColor: c.info },
   typeBadgeDirecto: { backgroundColor: c.surfaceAlt, borderColor: c.border },
-  typeBadgeText: { fontSize: 10, fontWeight: weight.semibold },
+  typeBadgeText: { fontSize: text.xs, fontWeight: weight.semibold },
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  priceLabel: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.3 },
+  priceLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  price: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.3, fontVariant: ['tabular-nums'] },
   metaRight: { alignItems: 'flex-end', gap: 3 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   metaText: { fontSize: text.xs, color: c.textFaint },
-  watchingBadge: { fontSize: 10, color: c.warning, fontWeight: weight.semibold },
+  watchingBadge: { fontSize: text.xs, color: c.warning, fontWeight: weight.semibold },
 
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },
   docTag: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: space[2], paddingVertical: 2, backgroundColor: c.successSoft, borderRadius: radius.full },
-  docTagText: { fontSize: 10, color: c.success, fontWeight: weight.semibold },
+  docTagText: { fontSize: text.xs, color: c.success, fontWeight: weight.semibold },
 });

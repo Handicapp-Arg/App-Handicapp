@@ -1,10 +1,11 @@
-import { useMemo, useState, type ComponentType } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import type { ComponentType } from 'react';
 import {
-  ScrollView, View, Text, StyleSheet, ActivityIndicator, Pressable, Linking, Modal,
+  ScrollView, View, Text, StyleSheet, ActivityIndicator, Pressable, Linking,
 } from 'react-native';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
-  Check, Rocket, Zap, Crown, Building2, Lock, Users, ArrowRight, X,
+  Check, Rocket, Zap, Crown, Building2, Lock, Users, ArrowRight,
   BarChart3, ClipboardPlus, Sprout,
 } from 'lucide-react-native';
 import { HorseIcon } from '../../components/icons/equine';
@@ -21,6 +22,7 @@ import { formatMoney } from '../../lib/currency';
 import {
   usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget,
 } from '../../hooks/use-plan';
+import { FormSheet } from '../../components/FormSheet';
 
 /** Extrae un mensaje de error legible de una respuesta de axios. */
 function errMessage(err: unknown, fallback: string): string {
@@ -336,23 +338,30 @@ function PlanCard({
  * ───────────────────────────────────────────────────────────── */
 
 function CheckoutSheet({
-  plan, onClose, c, s,
-}: { plan: Plan; onClose: () => void; c: ThemeColors; s: Styles }) {
+  visible, plan, onClose, c, s,
+}: { visible: boolean; plan: Plan | null; onClose: () => void; c: ThemeColors; s: Styles }) {
   const subscribe = useSubscribe();
   const [error, setError] = useState('');
 
-  const kind = tierKindOf(plan);
+  // El FormSheet ya no se destruye al cerrarse: limpiamos el error al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setError('');
+  }, [visible]);
+
+  const kind = plan ? tierKindOf(plan) : 'free';
   const m = tierMetaOf(kind, c);
   const Icon = m.Icon;
 
   // Bullets de "qué incluye" (2-3): caballos, equipo, features (con su clave para el ícono).
-  const bullets: { label: string; key?: string }[] = [
+  const bullets: { label: string; key?: string }[] = plan ? [
     { label: plan.horse_limit == null ? 'Caballos ilimitados' : `Hasta ${plan.horse_limit} caballos` },
-  ];
-  if (plan.staff_limit != null && plan.staff_limit > 0) bullets.push({ label: `Hasta ${plan.staff_limit} en el equipo` });
-  plan.features.slice(0, 2).forEach((f) => bullets.push({ label: featureLabel(f), key: f }));
+    ...(plan.staff_limit != null && plan.staff_limit > 0 ? [{ label: `Hasta ${plan.staff_limit} en el equipo` }] : []),
+    ...plan.features.slice(0, 2).map((f) => ({ label: featureLabel(f), key: f })),
+  ] : [];
 
   const handlePay = async () => {
+    if (!plan) return;
     setError('');
     try {
       const data = await subscribe.mutateAsync({ plan_id: plan.id });
@@ -364,87 +373,77 @@ function CheckoutSheet({
   };
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={s.sheetOverlay} onPress={onClose}>
-        <Animated.View entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          {/* swallow: los toques dentro del sheet no cierran */}
-          <Pressable style={s.sheet} onPress={() => {}}>
-            <View style={s.sheetGrabber} />
-
-            <View style={s.sheetHeadRow}>
-              <Text style={s.sheetTitle}>Confirmar suscripción</Text>
-              <Pressable onPress={onClose} hitSlop={10} style={s.sheetClose}>
-                <X size={18} color={c.textMuted} strokeWidth={2.4} />
-              </Pressable>
+    <FormSheet visible={visible} onClose={onClose} title="Confirmar suscripción">
+      {plan ? (
+        <>
+          {/* Resumen del plan */}
+          <View style={[s.summaryCard, { borderColor: m.accent + '55', backgroundColor: m.soft }]}>
+            <View style={[s.tierIcon, {
+              backgroundColor: c.surface, borderColor: m.accent + '44',
+            }]}>
+              <Icon size={20} color={m.accent} strokeWidth={2.2} />
             </View>
-
-            {/* Resumen del plan */}
-            <View style={[s.summaryCard, { borderColor: m.accent + '55', backgroundColor: m.soft }]}>
-              <View style={[s.tierIcon, {
-                backgroundColor: c.surface, borderColor: m.accent + '44',
-              }]}>
-                <Icon size={20} color={m.accent} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.summaryName}>{plan.name}</Text>
-                <Text style={[s.summaryTier, { color: m.accent }]}>
-                  {TIER_KIND_LABEL[kind].toUpperCase()}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={s.summaryPrice}>{formatMoney(plan.price_ars)}</Text>
-                <Text style={s.summaryUnit}>/mes</Text>
-              </View>
-            </View>
-
-            {/* Qué incluye */}
-            <View style={{ gap: space[2] + 2 }}>
-              {bullets.slice(0, 3).map((b) => (
-                <FeatureRow
-                  key={b.label} label={b.label} featureKey={b.key}
-                  accent={m.accent} soft={m.soft} textColor={c.textMuted} s={s}
-                />
-              ))}
-            </View>
-
-            {/* Medios de pago */}
-            <View style={{ gap: space[2] }}>
-              <Text style={s.sheetLabel}>Medios de pago</Text>
-              <PaymentMethods />
-            </View>
-
-            {/* Nota de seguridad */}
-            <View style={s.secureNote}>
-              <Lock size={15} color={c.brand} strokeWidth={2.4} />
-              <Text style={s.secureNoteText}>
-                Pago seguro procesado por MercadoPago. Tus datos de tarjeta
-                no se guardan en HandicApp.
+            <View style={{ flex: 1 }}>
+              <Text style={s.summaryName}>{plan.name}</Text>
+              <Text style={[s.summaryTier, { color: m.accent }]}>
+                {TIER_KIND_LABEL[kind].toUpperCase()}
               </Text>
             </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={s.summaryPrice}>{formatMoney(plan.price_ars)}</Text>
+              <Text style={s.summaryUnit}>/mes</Text>
+            </View>
+          </View>
 
-            {/* CTA pago */}
-            <Pressable
-              onPress={handlePay}
-              disabled={subscribe.isPending}
-              style={({ pressed }) => [s.payBtn, (pressed || subscribe.isPending) && { opacity: 0.7 }]}
-            >
-              {subscribe.isPending ? (
-                <>
-                  <ActivityIndicator size="small" color={colors.white} />
-                  <Text style={s.payBtnText}>Redirigiendo…</Text>
-                </>
-              ) : (
-                <>
-                  <Lock size={16} color={colors.white} strokeWidth={2.6} />
-                  <Text style={s.payBtnText}>Ir al pago seguro</Text>
-                </>
-              )}
-            </Pressable>
-            {error ? <Text style={s.subError}>{error}</Text> : null}
+          {/* Qué incluye */}
+          <View style={{ gap: space[2] + 2 }}>
+            {bullets.slice(0, 3).map((b) => (
+              <FeatureRow
+                key={b.label} label={b.label} featureKey={b.key}
+                accent={m.accent} soft={m.soft} textColor={c.textMuted} s={s}
+              />
+            ))}
+          </View>
+
+          {/* Medios de pago */}
+          <View style={{ gap: space[2] }}>
+            <Text style={s.sheetLabel}>Medios de pago</Text>
+            <PaymentMethods />
+          </View>
+
+          {/* Nota de seguridad */}
+          <View style={s.secureNote}>
+            <Lock size={15} color={c.brand} strokeWidth={2.4} />
+            <Text style={s.secureNoteText}>
+              Pago seguro procesado por MercadoPago. Tus datos de tarjeta
+              no se guardan en HandicApp.
+            </Text>
+          </View>
+
+          {/* CTA pago */}
+          <Pressable
+            onPress={handlePay}
+            disabled={subscribe.isPending}
+            style={({ pressed }) => [s.payBtn, (pressed || subscribe.isPending) && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel={subscribe.isPending ? 'Redirigiendo al pago' : 'Ir al pago seguro'}
+          >
+            {subscribe.isPending ? (
+              <>
+                <ActivityIndicator size="small" color={colors.white} />
+                <Text style={s.payBtnText}>Redirigiendo…</Text>
+              </>
+            ) : (
+              <>
+                <Lock size={16} color={colors.white} strokeWidth={2.6} />
+                <Text style={s.payBtnText}>Ir al pago seguro</Text>
+              </>
+            )}
           </Pressable>
-        </Animated.View>
-      </Pressable>
-    </Modal>
+          {error ? <Text style={s.subError}>{error}</Text> : null}
+        </>
+      ) : null}
+    </FormSheet>
   );
 }
 
@@ -573,9 +572,7 @@ export default function MiPlanScreen() {
         )}
       </ScrollView>
 
-      {checkoutPlan && (
-        <CheckoutSheet plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} c={c} s={s} />
-      )}
+      <CheckoutSheet visible={!!checkoutPlan} plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} c={c} s={s} />
     </View>
   );
 }
@@ -703,24 +700,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   trustSeal: { marginTop: space[5], alignItems: 'center', gap: space[2] },
   payHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center' },
 
-  /* ─── Checkout sheet ─── */
-  sheetOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: c.surface,
-    borderTopLeftRadius: radius['2xl'], borderTopRightRadius: radius['2xl'],
-    padding: space[5], paddingBottom: space[10], gap: space[4],
-    borderTopWidth: 1, borderColor: c.border,
-  },
-  sheetGrabber: {
-    alignSelf: 'center', width: 40, height: 4, borderRadius: radius.full,
-    backgroundColor: c.borderStrong, marginBottom: space[1],
-  },
-  sheetHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sheetTitle: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
-  sheetClose: {
-    width: 32, height: 32, borderRadius: radius.full,
-    backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
-  },
+  /* ─── Checkout sheet (FormSheet) ─── */
   sheetLabel: {
     fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
     textTransform: 'uppercase', letterSpacing: 0.8,

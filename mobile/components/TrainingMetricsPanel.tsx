@@ -7,7 +7,7 @@ import { useTrainingMetrics, useUpsertTrainingMetrics } from '../hooks/use-train
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { useTheme } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 
 const INTENSITY_LABELS = ['', 'Muy liviano', 'Liviano', 'Moderado', 'Intenso', 'Máximo'];
 
@@ -61,7 +61,13 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
       <View style={s.titleRow}>
         <Text style={s.title}>Métricas de entrenamiento</Text>
         {canEdit && !editing && (
-          <TouchableOpacity onPress={openEdit} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={openEdit}
+            activeOpacity={0.7}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={hasData ? 'Editar métricas de entrenamiento' : 'Agregar métricas de entrenamiento'}
+          >
             <Text style={s.editLink}>{hasData ? 'Editar' : '+ Agregar'}</Text>
           </TouchableOpacity>
         )}
@@ -137,6 +143,9 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
                   style={[s.intensityBtn, intensity === n && s.intensityBtnActive]}
                   onPress={() => setIntensity(n)}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={n === 0 ? 'Sin intensidad' : `Intensidad ${n} de 5, ${INTENSITY_LABELS[n]}`}
+                  accessibilityState={{ selected: intensity === n }}
                 >
                   <Text style={[s.intensityBtnText, intensity === n && s.intensityBtnTextActive]}>
                     {n === 0 ? '—' : String(n)}
@@ -166,7 +175,13 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
 
           {/* Acciones */}
           <View style={s.formActions}>
-            <TouchableOpacity onPress={() => setEditing(false)} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => setEditing(false)}
+              activeOpacity={0.7}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar edición de métricas"
+            >
               <Text style={s.cancelLink}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -174,6 +189,9 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
               onPress={save}
               disabled={upsert.isPending}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar métricas de entrenamiento"
+              accessibilityState={{ disabled: upsert.isPending }}
             >
               {upsert.isPending
                 ? <ActivityIndicator size="small" color={colors.white} />
@@ -244,8 +262,9 @@ const makeStyles = (p: typeof YELLOW) => StyleSheet.create({
   intensityRow: { gap: space[2], paddingVertical: 4 },
   intensityBtn: {
     borderRadius: radius.sm, borderWidth: 1, borderColor: p.inputBorder,
-    paddingHorizontal: space[3], paddingVertical: space[1] + 2,
-    backgroundColor: p.inputBg, alignItems: 'center', minWidth: 52,
+    paddingHorizontal: space[3], paddingVertical: space[2],
+    backgroundColor: p.inputBg, alignItems: 'center', justifyContent: 'center',
+    minWidth: 52, minHeight: touch.min,
   },
   intensityBtnActive: { backgroundColor: p.btnBg, borderColor: p.btnBg },
   intensityBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: p.value },
@@ -253,6 +272,10 @@ const makeStyles = (p: typeof YELLOW) => StyleSheet.create({
   intensitySubText: { fontSize: 9, color: p.label, marginTop: 1 },
   formActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space[4] },
   cancelLink: { fontSize: text.xs, color: colors.gray500 },
-  saveBtn: { borderRadius: radius.sm, backgroundColor: p.btnBg, paddingHorizontal: space[4], paddingVertical: space[2] },
+  saveBtn: {
+    borderRadius: radius.sm, backgroundColor: p.btnBg,
+    paddingHorizontal: space[4], minHeight: touch.min,
+    alignItems: 'center', justifyContent: 'center',
+  },
   saveBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
 });

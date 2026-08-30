@@ -61,3 +61,14 @@ export function HorseHeadOutline({ size = 24, color = '#000', strokeWidth = 26 }
     </Svg>
   );
 }
+
+/** Cabeza de caballo para el nav inferior — contorno, alineado como los íconos
+ *  lucide (llena su caja). Escala el trazo al viewBox 512 para que combine el grosor. */
+export function HorseHeadNav({ size = 24, color = '#000', strokeWidth = 2 }: Props) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 512 512" fill="none"
+      stroke={color} strokeWidth={strokeWidth * 20} strokeLinejoin="round" strokeLinecap="round">
+      <Path d={HORSE_HEAD_PATH} />
+    </Svg>
+  );
+}

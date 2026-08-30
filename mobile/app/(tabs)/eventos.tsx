@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal,
-  TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
-  Image,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
+  TextInput, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { AppImage } from '../../components/AppImage';
 import { X, Camera, Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package } from 'lucide-react-native';
 import { useAllEvents, useCreateEvent, useDeleteEvent } from '../../hooks/use-events';
 import { useHorses } from '../../hooks/use-horses';
@@ -16,6 +16,7 @@ import { EventCard } from '../../components/EventCard';
 import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
 import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 import { EventRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
 import { CURRENCY_OPTIONS, type Currency } from '../../lib/currency';
@@ -24,6 +25,7 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { useCommonStyles } from '../../styles/common';
 import { useToast } from '../../components/Toast';
+import { FormSheet } from '../../components/FormSheet';
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'tarea', 'carrera', 'gasto', 'nota'] as const;
 
@@ -54,7 +56,7 @@ const makeExpenseCategories = (c: ThemeColors) => [
 
 /* ─── Modal crear evento ─── */
 
-function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
+function CreateEventModal({ visible, onClose, c, s }: { visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
   const { typography, modal: modalStyle, input: inputStyle, button } = useCommonStyles();
   const { user } = useAuth();
   const eventTypeColors = makeEventTypeColors(c);
@@ -73,6 +75,16 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [error, setError] = useState('');
 
+  // La hoja ya no se destruye al cerrarse: limpiamos el formulario al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setDescription(''); setAmount(''); setExpenseCategory('');
+    setPhotoUris([]); setError('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setType(defaultTypeForRole(user?.role));
+    setHorseId(horses?.[0]?.id ?? '');
+  }, [visible]);
+
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { toast.error('Necesitamos acceso a tu galería.'); return; }
@@ -85,32 +97,50 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
   };
 
   const handleSubmit = async () => {
-    if (!horseId) { setError('Seleccioná un caballo'); return; }
-    if (!description.trim()) { setError('Escribí una descripción'); return; }
+    if (!horseId) { setError('Seleccioná un caballo'); haptic.error(); return; }
+    if (!description.trim()) { setError('Escribí una descripción'); haptic.error(); return; }
     setError('');
-    await createEvent.mutateAsync({
-      type, description, date, horse_id: horseId,
-      amount: type === 'gasto' && amount ? String(parseFloat(amount) || 0) : undefined,
-      expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
-      currency: type === 'gasto' ? currency : undefined,
-      photoUris: photoUris.length > 0 ? photoUris : undefined,
-    });
-    toast.success('Evento creado');
-    onClose();
+    try {
+      await createEvent.mutateAsync({
+        type, description, date, horse_id: horseId,
+        amount: type === 'gasto' && amount ? String(parseFloat(amount) || 0) : undefined,
+        expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
+        currency: type === 'gasto' ? currency : undefined,
+        photoUris: photoUris.length > 0 ? photoUris : undefined,
+      });
+      haptic.success();
+      toast.success('Evento creado');
+      onClose();
+    } catch {
+      haptic.error();
+      setError('No se pudo crear el evento. Intentá de nuevo.');
+    }
   };
 
   return (
-    <KeyboardAvoidingView style={modalStyle.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={modalStyle.sheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-        {/* Header */}
-        <View style={modalStyle.header}>
-          <Text style={modalStyle.title}>Nuevo evento</Text>
-          <TouchableOpacity onPress={onClose}>
-            <X size={22} color={c.textFaint} strokeWidth={2} />
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Nuevo evento"
+      footer={
+        <>
+          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={() => { haptic.light(); onClose(); }}>
+            <Text style={button.secondaryText}>Cancelar</Text>
           </TouchableOpacity>
-        </View>
-
-        <ScrollView contentContainerStyle={[modalStyle.body, { gap: space[4] }]}>
+          <TouchableOpacity
+            style={[button.primary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={createEvent.isPending}
+          >
+            {createEvent.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={button.primaryText}>Crear evento</Text>
+            }
+          </TouchableOpacity>
+        </>
+      }
+    >
+      <>
           {/* Caballo */}
           <View style={{ gap: space[2] }}>
             <Text style={typography.label}>Caballo</Text>
@@ -119,7 +149,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
                 <TouchableOpacity
                   key={h.id}
                   style={[s.chip, horseId === h.id && s.chipActive]}
-                  onPress={() => setHorseId(h.id)}
+                  onPress={() => { haptic.selection(); setHorseId(h.id); }}
                 >
                   <Text style={[s.chipText, horseId === h.id && s.chipTextActive]}>{h.name}</Text>
                 </TouchableOpacity>
@@ -138,7 +168,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
                   <TouchableOpacity
                     key={t}
                     style={[s.typeBtn, active && { backgroundColor: c.isDark ? ec.text + '26' : ec.bg }]}
-                    onPress={() => setType(t)}
+                    onPress={() => { haptic.selection(); setType(t); }}
                   >
                     <Text style={[s.typeBtnText, active && { color: ec.text }]}>{ec.label}</Text>
                   </TouchableOpacity>
@@ -160,7 +190,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
                     <TouchableOpacity
                       key={opt.value}
                       style={[s.currencyBtn, currency === opt.value && s.currencyBtnActive]}
-                      onPress={() => setCurrency(opt.value)}
+                      onPress={() => { haptic.selection(); setCurrency(opt.value); }}
                       activeOpacity={0.75}
                     >
                       <Text style={[s.currencyBtnText, currency === opt.value && s.currencyBtnTextActive]}>
@@ -185,7 +215,7 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
                     <TouchableOpacity
                       key={cat.value}
                       style={[s.categoryBtn, expenseCategory === cat.value && { backgroundColor: c.text, borderColor: c.text }]}
-                      onPress={() => setExpenseCategory(expenseCategory === cat.value ? '' : cat.value)}
+                      onPress={() => { haptic.selection(); setExpenseCategory(expenseCategory === cat.value ? '' : cat.value); }}
                       activeOpacity={0.75}
                     >
                       <cat.Icon size={14} color={expenseCategory === cat.value ? c.surface : cat.color} strokeWidth={2} />
@@ -203,13 +233,15 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
               {photoUris.map((uri, i) => (
                 <View key={uri} style={s.photoThumb}>
-                  <Image source={{ uri }} style={s.photoImg} />
+                  <AppImage source={{ uri }} style={s.photoImg} />
                   <TouchableOpacity
                     style={s.photoRemove}
-                    onPress={() => setPhotoUris((p) => p.filter((_, idx) => idx !== i))}
+                    onPress={() => { haptic.light(); setPhotoUris((p) => p.filter((_, idx) => idx !== i)); }}
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Quitar foto"
                   >
-                    <X size={12} color="#fff" strokeWidth={2.5} />
+                    <X size={12} color={colors.white} strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -236,26 +268,8 @@ function CreateEventModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
           </View>
 
           {error ? <Text style={s.errorText}>{error}</Text> : null}
-        </ScrollView>
-
-        {/* Footer */}
-        <View style={modalStyle.footer}>
-          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={onClose}>
-            <Text style={button.secondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[button.primary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
-            onPress={handleSubmit}
-            disabled={createEvent.isPending}
-          >
-            {createEvent.isPending
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={button.primaryText}>Crear evento</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </KeyboardAvoidingView>
+      </>
+    </FormSheet>
   );
 }
 
@@ -272,7 +286,7 @@ export default function EventosScreen() {
   const [filterType, setFilterType] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  const { events, isLoading, isFetchingMore, hasMore, loadMore, reset, refetch, total } = useAllEvents(
+  const { events, isLoading, isError, isFetchingMore, hasMore, loadMore, reset, refetch, total } = useAllEvents(
     filterType ? { type: filterType } : undefined,
   );
   const deleteEvent = useDeleteEvent();
@@ -304,7 +318,7 @@ export default function EventosScreen() {
           <TouchableOpacity
             key={t}
             style={[s.filterChip, filterType === t && s.filterChipActive]}
-            onPress={() => setFilterType(t)}
+            onPress={() => { haptic.selection(); setFilterType(t); }}
           >
             <Text style={[s.filterChipText, filterType === t && s.filterChipTextActive]}>
               {t === '' ? 'Todos' : eventTypeColors[t]?.label ?? t}
@@ -324,7 +338,15 @@ export default function EventosScreen() {
     <View style={[layout.screen, { paddingTop: insets.top }]}>
 
       {/* Lista */}
-      {isLoading ? (
+      {isError && events.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
+        >
+          {headerChrome}
+          <ErrorState onRetry={() => refetch()} />
+        </ScrollView>
+      ) : isLoading ? (
         <View>
           {headerChrome}
           <View style={{ paddingHorizontal: space[4], paddingTop: space[3], gap: space[2] }}>
@@ -332,7 +354,10 @@ export default function EventosScreen() {
           </View>
         </View>
       ) : !events.length ? (
-        <View>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
+        >
           {headerChrome}
           <EmptyState
             icon={filterType ? 'filter-outline' : 'document-text-outline'}
@@ -343,7 +368,7 @@ export default function EventosScreen() {
             actionLabel={canCreate && !filterType ? 'Crear primer evento' : undefined}
             onAction={() => { haptic.medium(); setShowCreate(true); }}
           />
-        </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={events}
@@ -379,9 +404,7 @@ export default function EventosScreen() {
         />
       )}
 
-      <Modal visible={showCreate} animationType="fade" transparent statusBarTranslucent>
-        <CreateEventModal onClose={() => setShowCreate(false)} c={c} s={s} />
-      </Modal>
+      <CreateEventModal visible={showCreate} onClose={() => setShowCreate(false)} c={c} s={s} />
     </View>
   );
 }

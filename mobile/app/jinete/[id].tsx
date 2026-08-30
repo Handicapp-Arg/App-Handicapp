@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, Image, ScrollView, TextInput,
+  View, Text, StyleSheet, ScrollView, TextInput,
   ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,9 +17,12 @@ import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { PressableScale } from '../../components/PressableScale';
 import { Avatar } from '../../components/Avatar';
+import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 import { useToast } from '../../components/Toast';
-import { space, radius, shadow } from '../../styles/tokens';
+import { space, text, weight, radius, shadow, touch } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
+import { AppImage } from '../../components/AppImage';
 
 const DISCIPLINES = ['Paso', 'Trote', 'Galope', 'Salto', 'Doma'] as const;
 const RESPONSES = ['Bien', 'Normal', 'Cansado'] as const;
@@ -86,7 +89,7 @@ export default function JineteHorse() {
   const { data: horse } = useHorse(horseId);
   const createEvent = useCreateEvent();
   const upsert = useUpsertTrainingMetrics(); // el id del evento (recién creado) se pasa en mutate
-  const { data: history, isLoading: histLoading } = useTrainingHistory(horseId);
+  const { data: history, isLoading: histLoading, isError: histError, refetch: refetchHistory } = useTrainingHistory(horseId);
 
   const [discipline, setDiscipline] = useState<string | null>(null);
   const [distance, setDistance] = useState('');
@@ -179,11 +182,18 @@ export default function JineteHorse() {
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
       <View style={[s.header, { paddingTop: insets.top + space[3] }]}>
-        <PressableScale style={s.backBtn} scaleTo={0.92} onPress={() => { haptic.light(); router.back(); }}>
+        <PressableScale
+          style={s.backBtn}
+          scaleTo={0.92}
+          onPress={() => { haptic.light(); router.back(); }}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+          hitSlop={8}
+        >
           <ChevronLeft size={28} color={c.text} strokeWidth={2.4} />
         </PressableScale>
         {horse?.image_url ? (
-          <Image source={{ uri: horse.image_url }} style={s.photo} resizeMode="cover" />
+          <AppImage source={{ uri: horse.image_url }} style={s.photo} />
         ) : (
           <Avatar name={horse?.name ?? '?'} size={44} />
         )}
@@ -208,6 +218,9 @@ export default function JineteHorse() {
                 style={[s.chip, active && s.chipActive]}
                 scaleTo={0.95}
                 onPress={() => { haptic.selection(); setDiscipline(d); }}
+                accessibilityRole="button"
+                accessibilityLabel={d}
+                accessibilityState={{ selected: active }}
               >
                 <Text style={[s.chipText, active && s.chipTextActive]}>{d}</Text>
               </PressableScale>
@@ -252,6 +265,9 @@ export default function JineteHorse() {
                 style={s.starTouch}
                 scaleTo={0.88}
                 onPress={() => { haptic.selection(); setIntensity(intensity === n ? 0 : n); }}
+                accessibilityRole="button"
+                accessibilityLabel={`${n} de 5 en esfuerzo`}
+                hitSlop={4}
               >
                 <Star
                   size={30}
@@ -274,6 +290,9 @@ export default function JineteHorse() {
                 style={[s.chip, active && s.chipActive]}
                 scaleTo={0.95}
                 onPress={() => { haptic.selection(); setResponse(active ? null : r); }}
+                accessibilityRole="button"
+                accessibilityLabel={r}
+                accessibilityState={{ selected: active }}
               >
                 <Text style={[s.chipText, active && s.chipTextActive]}>{r}</Text>
               </PressableScale>
@@ -292,7 +311,13 @@ export default function JineteHorse() {
 
         <Text style={s.label}>Fotos de la monta <Text style={s.labelOpt}>(opcional)</Text></Text>
         {photoUris.length === 0 ? (
-          <TouchableOpacity style={s.photoBtnFull} onPress={pickPhoto} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={s.photoBtnFull}
+            onPress={pickPhoto}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Sacar foto de la monta"
+          >
             <Camera size={22} color={c.brand} strokeWidth={2} />
             <Text style={s.photoBtnFullText}>Sacar foto</Text>
           </TouchableOpacity>
@@ -300,18 +325,26 @@ export default function JineteHorse() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
             {photoUris.map((uri, i) => (
               <View key={uri} style={s.photoThumb}>
-                <Image source={{ uri }} style={s.photoImg} />
+                <AppImage source={{ uri }} style={s.photoImg} />
                 <TouchableOpacity
                   style={s.photoRemove}
                   onPress={() => { haptic.light(); setPhotoUris((p) => p.filter((_, idx) => idx !== i)); }}
-                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Quitar foto"
                 >
-                  <X size={12} color="#fff" strokeWidth={2.5} />
+                  <X size={12} color={colors.white} strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
             ))}
             {photoUris.length < 5 && (
-              <TouchableOpacity style={s.photoAdd} onPress={pickPhoto} activeOpacity={0.75}>
+              <TouchableOpacity
+                style={s.photoAdd}
+                onPress={pickPhoto}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Agregar otra foto"
+              >
                 <Camera size={20} color={c.textMuted} strokeWidth={2} />
                 <Text style={s.photoAddText}>Otra</Text>
               </TouchableOpacity>
@@ -319,7 +352,14 @@ export default function JineteHorse() {
           </ScrollView>
         )}
 
-        <PressableScale style={s.saveBtn} scaleTo={0.97} onPress={save} disabled={saving}>
+        <PressableScale
+          style={s.saveBtn}
+          scaleTo={0.97}
+          onPress={save}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel="Guardar monta"
+        >
           {saving
             ? <ActivityIndicator color={colors.white} />
             : <Text style={s.saveText}>Guardar monta</Text>}
@@ -333,8 +373,14 @@ export default function JineteHorse() {
 
         {histLoading ? (
           <ActivityIndicator color={c.brand} style={{ marginTop: space[4] }} />
+        ) : histError && (!history || history.length === 0) ? (
+          <ErrorState onRetry={refetchHistory} />
         ) : !history || history.length === 0 ? (
-          <Text style={s.emptyHist}>Todavía no registraste montas para este caballo.</Text>
+          <EmptyState
+            icon="calendar-outline"
+            title="Sin montas registradas"
+            message="Todavía no registraste montas para este caballo."
+          />
         ) : (
           <View style={s.histList}>
             {history.map((item, index) => (
@@ -363,19 +409,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderBottomColor: c.border,
   },
   backBtn: {
-    width: 44,
-    height: 44,
+    width: touch.min,
+    height: touch.min,
     borderRadius: radius.full,
     backgroundColor: c.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  photo: { width: 44, height: 44, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
+  photo: { width: touch.min, height: touch.min, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
   horseName: {
     flex: 1,
-    fontSize: 22,
+    fontSize: text.lg,
     fontFamily: fontFamily.extrabold,
-    fontWeight: '800',
+    fontWeight: weight.extrabold,
     color: c.text,
   },
   content: {
@@ -383,17 +429,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingTop: space[4],
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: text.lg,
     fontFamily: fontFamily.extrabold,
-    fontWeight: '800',
+    fontWeight: weight.extrabold,
     color: c.text,
   },
   label: {
-    fontSize: 14,
+    fontSize: text.sm,
     marginTop: space[4],
     marginBottom: space[2],
     fontFamily: fontFamily.semibold,
-    fontWeight: '600',
+    fontWeight: weight.semibold,
     color: c.textMuted,
   },
   chipsWrap: {
@@ -421,9 +467,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderColor: c.brand,
   },
   chipText: {
-    fontSize: 15,
+    fontSize: text.base,
     fontFamily: fontFamily.semibold,
-    fontWeight: '600',
+    fontWeight: weight.semibold,
     color: c.text,
   },
   chipTextActive: { color: colors.white },
@@ -437,9 +483,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
     paddingHorizontal: space[4],
     paddingVertical: space[3] + 2,
-    fontSize: 18,
+    fontSize: text.md,
     fontFamily: fontFamily.semibold,
-    fontWeight: '600',
+    fontWeight: weight.semibold,
     color: c.text,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.borderStrong,
@@ -450,7 +496,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
     padding: space[4],
     minHeight: 80,
-    fontSize: 16,
+    fontSize: text.base,
     fontFamily: fontFamily.medium,
     color: c.text,
     borderWidth: StyleSheet.hairlineWidth,
@@ -467,8 +513,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderColor: c.borderStrong, borderStyle: 'dashed', justifyContent: 'center',
     alignItems: 'center', gap: 2, backgroundColor: c.surfaceAlt,
   },
-  photoAddText: { fontSize: 10, color: c.textFaint, fontFamily: fontFamily.semibold, fontWeight: '600' },
-  labelOpt: { color: c.textFaint, fontWeight: '400' },
+  photoAddText: { fontSize: text.xs, color: c.textFaint, fontFamily: fontFamily.semibold, fontWeight: weight.semibold },
+  labelOpt: { color: c.textFaint, fontWeight: weight.regular },
   photoBtnFull: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -481,7 +527,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderStyle: 'dashed',
     backgroundColor: c.surfaceAlt,
   },
-  photoBtnFullText: { fontSize: 15, color: c.brand, fontFamily: fontFamily.semibold, fontWeight: '600' },
+  photoBtnFullText: { fontSize: text.base, color: c.brand, fontFamily: fontFamily.semibold, fontWeight: weight.semibold },
   saveBtn: {
     marginTop: space[5],
     backgroundColor: c.brand,
@@ -491,9 +537,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     ...shadow.md,
   },
   saveText: {
-    fontSize: 18,
+    fontSize: text.md,
     fontFamily: fontFamily.bold,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     color: colors.white,
   },
   progressHead: {
@@ -504,17 +550,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     marginBottom: space[2],
   },
   summary: {
-    fontSize: 13,
+    fontSize: text.sm,
     fontFamily: fontFamily.semibold,
-    fontWeight: '600',
+    fontWeight: weight.semibold,
     color: c.brand,
-  },
-  emptyHist: {
-    marginTop: space[4],
-    fontSize: 14,
-    fontFamily: fontFamily.regular,
-    color: c.textFaint,
-    textAlign: 'center',
   },
   histList: {
     marginTop: space[2],
@@ -535,24 +574,24 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   histDate: {
-    fontSize: 13,
+    fontSize: text.sm,
     fontFamily: fontFamily.bold,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     color: c.textMuted,
     textTransform: 'capitalize',
   },
   histBody: { flex: 1 },
   histDiscipline: {
-    fontSize: 16,
+    fontSize: text.base,
     fontFamily: fontFamily.bold,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     color: c.text,
   },
   histMeta: {
-    fontSize: 13,
+    fontSize: text.sm,
     marginTop: 1,
     fontFamily: fontFamily.medium,
-    fontWeight: '500',
+    fontWeight: weight.medium,
     color: c.textMuted,
   },
 });

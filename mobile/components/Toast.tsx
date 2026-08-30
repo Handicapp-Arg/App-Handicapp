@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
+import Animated, { SlideInUp, SlideOutUp, Easing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react-native';
 import { useTheme, type ThemeColors } from '../lib/theme';
@@ -34,8 +34,8 @@ const ICONS = { success: CheckCircle2, error: AlertCircle, info: Info } as const
 const ToastContext = createContext<ToastApi | null>(null);
 
 function accentFor(variant: Variant, c: ThemeColors): string {
-  if (variant === 'success') return c.isDark ? '#22c55e' : '#16a34a';
-  if (variant === 'error') return c.isDark ? '#f87171' : '#dc2626';
+  if (variant === 'success') return c.success;
+  if (variant === 'error') return c.danger;
   return c.brand;
 }
 
@@ -83,9 +83,19 @@ function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: () => void
 
   return (
     <View style={[s.wrap, { top: insets.top + space[2] }]} pointerEvents="box-none">
-      <Animated.View entering={SlideInUp.springify().damping(22).stiffness(220)} exiting={SlideOutUp.duration(220)}>
-        <Pressable onPress={onDismiss} style={[s.card, { borderLeftColor: accent }]}>
-          <Icon size={20} color={accent} strokeWidth={2.4} />
+      <Animated.View
+        entering={SlideInUp.duration(280).easing(Easing.out(Easing.cubic))}
+        exiting={SlideOutUp.duration(200).easing(Easing.out(Easing.cubic))}
+      >
+        <Pressable
+          onPress={onDismiss}
+          style={[s.card, { borderLeftColor: accent }]}
+          accessibilityRole="alert"
+          accessibilityLabel={item.message}
+        >
+          <View style={[s.iconWrap, { backgroundColor: accent + (c.isDark ? '26' : '1a') }]}>
+            <Icon size={18} color={accent} strokeWidth={2.4} />
+          </View>
           <Text style={s.message} numberOfLines={3}>{item.message}</Text>
         </Pressable>
       </Animated.View>
@@ -117,7 +127,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     maxWidth: 460,
     width: '100%',
     backgroundColor: c.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderLeftWidth: 4,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.borderStrong,
@@ -125,12 +135,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4],
     ...shadow.lg,
   },
+  iconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   message: {
     flex: 1,
-    fontSize: text.sm,
+    fontSize: text.base,
     fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.text,
-    lineHeight: 19,
+    lineHeight: 21,
   },
 });

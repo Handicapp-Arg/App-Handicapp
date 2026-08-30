@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image as RNImage,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AlertTriangle } from 'lucide-react-native';
@@ -10,8 +10,9 @@ import { useInvitationByToken, useAcceptInvitation, ROLE_LABELS } from '../../ho
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight } from '../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
+import { AppImage } from '../../components/AppImage';
 
 export default function InvitationScreen() {
   const insets = useSafeAreaInsets();
@@ -26,7 +27,7 @@ export default function InvitationScreen() {
 
   if (authLoading || isLoading) {
     return (
-      <View style={[s.root, s.center]}>
+      <View style={[s.root, s.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={c.brand} />
       </View>
     );
@@ -34,13 +35,16 @@ export default function InvitationScreen() {
 
   if (error || !invitation) {
     return (
-      <View style={[s.root, s.center, { padding: space[5] }]}>
+      <View style={[s.root, s.center, { paddingTop: insets.top, padding: space[5] }]}>
         <View style={s.errorIcon}>
-          <AlertTriangle size={32} color="#f59e0b" strokeWidth={2} />
+          <AlertTriangle size={32} color={c.warning} strokeWidth={2} />
         </View>
         <Text style={s.errorTitle}>Invitación inválida</Text>
         <Text style={s.errorMsg}>El link que abriste no es válido, ya fue usado o expiró.</Text>
-        <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 16 }]} onPress={() => nav.replace(router, Routes.tabsHome)}>
+        <TouchableOpacity
+          style={[s.btn, s.btnPrimary, { marginTop: 16 }]}
+          onPress={() => { haptic.light(); nav.replace(router, Routes.tabsHome); }}
+        >
           <Text style={s.btnPrimaryText}>Ir al inicio</Text>
         </TouchableOpacity>
       </View>
@@ -52,10 +56,10 @@ export default function InvitationScreen() {
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
         <View style={s.heroBlock}>
-          <RNImage
+          <AppImage
             source={{ uri: 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png' }}
             style={s.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={s.heroLabel}>Invitación</Text>
           <Text style={s.heroOrgName}>{invitation.organization.name}</Text>
@@ -65,7 +69,7 @@ export default function InvitationScreen() {
           <Text style={s.copy}>
             <Text style={{ fontWeight: weight.bold }}>{invitation.inviter.name}</Text> te invita a unirte a{' '}
             <Text style={{ fontWeight: weight.bold }}>{invitation.organization.name}</Text> como{' '}
-            <Text style={{ fontWeight: weight.bold, color: '#c4922a' }}>{ROLE_LABELS[invitation.role_in_org]}</Text>.
+            <Text style={{ fontWeight: weight.bold, color: c.brand }}>{ROLE_LABELS[invitation.role_in_org]}</Text>.
           </Text>
 
           <View style={s.note}>
@@ -82,7 +86,7 @@ export default function InvitationScreen() {
             <Text style={s.btnPrimaryText}>Crear cuenta y unirme</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => nav.replace(router, Routes.authLogin)}>
+          <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => { haptic.light(); nav.replace(router, Routes.authLogin); }}>
             <Text style={s.btnSecondaryText}>Ya tengo cuenta</Text>
           </TouchableOpacity>
         </View>
@@ -94,9 +98,9 @@ export default function InvitationScreen() {
 
   if (!emailMatch) {
     return (
-      <View style={[s.root, s.center, { padding: space[5] }]}>
+      <View style={[s.root, s.center, { paddingTop: insets.top, padding: space[5] }]}>
         <View style={s.errorIcon}>
-          <AlertTriangle size={32} color="#f59e0b" strokeWidth={2} />
+          <AlertTriangle size={32} color={c.warning} strokeWidth={2} />
         </View>
         <Text style={s.errorTitle}>Email no coincide</Text>
         <Text style={s.errorMsg}>
@@ -117,10 +121,10 @@ export default function InvitationScreen() {
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.heroBlock}>
-        <RNImage
+        <AppImage
           source={{ uri: 'https://res.cloudinary.com/dh2m9ychv/image/upload/v1762370534/logo-full-white_suu2qt.png' }}
           style={s.logo}
-          resizeMode="contain"
+          contentFit="contain"
         />
         <Text style={s.heroLabel}>Invitación</Text>
         <Text style={s.heroOrgName}>{invitation.organization.name}</Text>
@@ -130,7 +134,7 @@ export default function InvitationScreen() {
         <Text style={s.copy}>
           <Text style={{ fontWeight: weight.bold }}>{invitation.inviter.name}</Text> te invita a unirte a{' '}
           <Text style={{ fontWeight: weight.bold }}>{invitation.organization.name}</Text> como{' '}
-          <Text style={{ fontWeight: weight.bold, color: '#c4922a' }}>{ROLE_LABELS[invitation.role_in_org]}</Text>.
+          <Text style={{ fontWeight: weight.bold, color: c.brand }}>{ROLE_LABELS[invitation.role_in_org]}</Text>.
         </Text>
 
         <View style={s.note}>
@@ -146,10 +150,10 @@ export default function InvitationScreen() {
           disabled={accept.isPending}
           activeOpacity={0.85}
         >
-          {accept.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.btnPrimaryText}>Aceptar invitación</Text>}
+          {accept.isPending ? <ActivityIndicator color={colors.white} /> : <Text style={s.btnPrimaryText}>Aceptar invitación</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => nav.replace(router, Routes.tabsHome)}>
+        <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => { haptic.light(); nav.replace(router, Routes.tabsHome); }}>
           <Text style={s.btnSecondaryText}>No gracias</Text>
         </TouchableOpacity>
       </View>
@@ -160,22 +164,23 @@ export default function InvitationScreen() {
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   center: { justifyContent: 'center', alignItems: 'center' },
-  heroBlock: { backgroundColor: '#0f1f3d', paddingHorizontal: space[5], paddingVertical: space[6], alignItems: 'center', gap: space[2] },
+  // Hero fijo oscuro a propósito (no sigue el tema claro/oscuro): igual que ScreenHeader "dark".
+  heroBlock: { backgroundColor: colors.primary, paddingHorizontal: space[5], paddingVertical: space[6], alignItems: 'center', gap: space[2] },
   logo: { width: 140, height: 32, marginBottom: 12 },
-  heroLabel: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: weight.medium, textTransform: 'uppercase', letterSpacing: 0.8 },
+  heroLabel: { fontSize: text.xs, color: 'rgba(255,255,255,0.4)', fontWeight: weight.medium, textTransform: 'uppercase', letterSpacing: 0.8 },
   heroOrgName: { fontSize: text.xl, fontWeight: weight.bold, color: colors.white, letterSpacing: -0.5 },
   body: { padding: space[5], gap: space[4] },
-  copy: { fontSize: text.sm, color: c.text, lineHeight: 22 },
+  copy: { fontSize: text.base, color: c.text, lineHeight: 23 },
   note: { backgroundColor: c.surfaceAlt, borderRadius: radius.lg, padding: space[3] },
-  noteText: { fontSize: text.xs, color: c.textMuted, lineHeight: 18 },
+  noteText: { fontSize: text.sm, color: c.textMuted, lineHeight: 19 },
 
-  errorIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  errorIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: c.warningSoft, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   errorTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
   errorMsg: { fontSize: text.sm, color: c.textMuted, textAlign: 'center', marginTop: 6, lineHeight: 20 },
 
-  btn: { borderRadius: radius.lg, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  btn: { borderRadius: radius.lg, height: touch.button, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  btnPrimaryText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
-  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
+  btnSecondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
 });

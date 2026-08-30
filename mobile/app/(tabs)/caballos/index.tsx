@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback, type ReactNode } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, TextInput, RefreshControl, Modal, KeyboardAvoidingView,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable,
+  TextInput, RefreshControl, KeyboardAvoidingView,
   Platform, ScrollView, ActivityIndicator, ActionSheetIOS, Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SlideInDown, Easing } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -22,15 +22,19 @@ import { formatMoney } from '../../../lib/currency';
 import { useDashboard } from '../../../hooks/use-dashboard';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
+import { FormSheet } from '../../../components/FormSheet';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
 import { PressableScale } from '../../../components/PressableScale';
 import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
 import { useToast } from '../../../components/Toast';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import type { Horse } from '../../../../packages/shared/src';
+import { AppImage } from '../../../components/AppImage';
+import { space, text, radius, weight, shadow } from '../../../styles/tokens';
 
 function HorseCard({ horse, monthlySpend, c, s }: {
   horse: Horse;
@@ -50,7 +54,7 @@ function HorseCard({ horse, monthlySpend, c, s }: {
       {/* Photo */}
       <View style={s.cardPhotoWrap}>
         {horse.image_url
-          ? <Image source={{ uri: horse.image_url }} style={s.cardPhoto} resizeMode="cover" />
+          ? <AppImage source={{ uri: horse.image_url }} style={s.cardPhoto} />
           : (
             <View style={s.cardPhotoPlaceholder}>
               <Text style={s.cardPhotoInitial}>{horse.name[0]?.toUpperCase()}</Text>
@@ -59,7 +63,7 @@ function HorseCard({ horse, monthlySpend, c, s }: {
         }
         {horse.horse_record_id && (
           <View style={s.cardVerifiedDot}>
-            <ShieldCheck size={9} color="#fff" strokeWidth={2} />
+            <ShieldCheck size={9} color={colors.white} strokeWidth={2} />
           </View>
         )}
       </View>
@@ -83,7 +87,7 @@ function HorseCard({ horse, monthlySpend, c, s }: {
         )}
         {monthlySpend != null && monthlySpend > 0 && (
           <View style={s.cardSpendRow}>
-            <TrendingUp size={12} color="#059669" strokeWidth={2} />
+            <TrendingUp size={12} color={c.success} strokeWidth={2} />
             <Text style={s.cardSpend}>{formatMoney(monthlySpend)} este mes</Text>
           </View>
         )}
@@ -153,19 +157,22 @@ function QuickGastoModal({
       toast.success('Gasto registrado');
       onClose();
     } catch {
+      haptic.error();
       setError('No se pudo registrar. Intentá de nuevo.');
     }
   };
 
   return (
     <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
+      <Animated.View style={s.modalCard} entering={SlideInDown.duration(280).easing(Easing.out(Easing.cubic))}>
         <View style={s.modalHeader}>
           <View>
             <Text style={s.modalTitle}>Registrar gasto</Text>
             {selectedHorse && <Text style={s.quickModalSub}>{selectedHorse.name}</Text>}
           </View>
-          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => { haptic.light(); onClose(); }} accessibilityRole="button" accessibilityLabel="Cerrar" hitSlop={8}>
+            <X size={22} color={c.textFaint} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={s.quickModalBody} keyboardShouldPersistTaps="handled">
@@ -241,7 +248,7 @@ function QuickGastoModal({
         </ScrollView>
 
         <View style={s.modalFooter}>
-          <TouchableOpacity style={s.cancelBtn} onPress={onClose}>
+          <TouchableOpacity style={s.cancelBtn} onPress={() => { haptic.light(); onClose(); }}>
             <Text style={s.cancelBtnText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -275,6 +282,7 @@ function RecordMatchModal({
   birthDate,
   horseId,
   onClose,
+  onChrome,
   c,
   s,
 }: {
@@ -283,6 +291,7 @@ function RecordMatchModal({
   birthDate: string;
   horseId: string;
   onClose: () => void;
+  onChrome: (chrome: { title: string; footer: ReactNode }) => void;
   c: ThemeColors;
   s: Styles;
 }) {
@@ -355,81 +364,32 @@ function RecordMatchModal({
 
   const isBusy = uploadDoc.isPending || submitClaim.isPending;
 
-  if (step === 'done') {
-    return (
-      <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-        <View style={s.matchDoneWrap}>
-          <CheckCircle2 size={52} color="#047857" strokeWidth={2} />
-          <Text style={s.matchDoneTitle}>¡Reclamo aprobado!</Text>
-          <Text style={s.matchDoneSub}>Tu caballo quedó vinculado al registro oficial del padrón.</Text>
-          <TouchableOpacity style={s.submitBtn} onPress={onClose}>
+  // El chrome (título + footer) lo dibuja el FormSheet del padre: acá sólo
+  // avisamos qué corresponde mostrar según el paso en el que estamos.
+  useEffect(() => {
+    if (step === 'done') {
+      onChrome({
+        title: '¡Reclamo aprobado!',
+        footer: (
+          <Pressable style={s.submitBtn} onPress={onClose}>
             <Text style={s.submitBtnText}>Listo</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    );
-  }
-
-  if (step === 'form' && selectedRecord) {
-    return (
-      <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.modalHeader}>
-            <View>
-              <Text style={s.modalTitle}>Validar posesión</Text>
-              <Text style={s.matchSubtitle}>{selectedRecord.name}</Text>
-            </View>
-            <TouchableOpacity onPress={() => { setStep('list'); setDocUri(null); setRegistrationNumber(''); setError(''); }}>
-              <X size={22} color={c.textFaint} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
-            <View style={s.claimInfoBox}>
-              <Info size={16} color={c.textMuted} strokeWidth={2} />
-              <Text style={s.claimInfoText}>
-                Necesitamos al menos un documento oficial o el número de registro para validar la posesión.
-              </Text>
-            </View>
-
-            {/* Número de registro */}
-            <Text style={s.fieldLabel}>Número de registro (opcional)</Text>
-            <TextInput
-              style={s.input}
-              value={registrationNumber}
-              onChangeText={setRegistrationNumber}
-              placeholder="Ej: STB-2018-00142"
-              placeholderTextColor={c.textFaint}
-              autoCapitalize="characters"
-            />
-
-            {/* Upload documento */}
-            <Text style={s.fieldLabel}>Documento de propiedad</Text>
-            <TouchableOpacity style={s.docPickerBtn} onPress={handlePickDoc} activeOpacity={0.8}>
-              {docUri ? (
-                <View style={s.docPreviewRow}>
-                  <Image source={{ uri: docUri }} style={s.docThumb} resizeMode="cover" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.docPickedText}>Documento adjunto</Text>
-                    <Text style={s.docPickedSub}>Tocá para cambiar</Text>
-                  </View>
-                  <CheckCircle2 size={20} color="#047857" strokeWidth={2} />
-                </View>
-              ) : (
-                <View style={s.docPlaceholder}>
-                  <Paperclip size={28} color={c.textFaint} strokeWidth={2} />
-                  <Text style={s.photoPlaceholderText}>Adjuntar certificado</Text>
-                  <Text style={s.photoPlaceholderSub}>Foto del certificado del Studbook, DNE u otro</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {error ? <Text style={s.errorText}>{error}</Text> : null}
-          </ScrollView>
-          <View style={s.modalFooter}>
-            <TouchableOpacity style={s.cancelBtn} onPress={() => { setStep('list'); setDocUri(null); setRegistrationNumber(''); }}>
+          </Pressable>
+        ),
+      });
+      return;
+    }
+    if (step === 'form' && selectedRecord) {
+      onChrome({
+        title: 'Validar posesión',
+        footer: (
+          <>
+            <Pressable
+              style={s.cancelBtn}
+              onPress={() => { haptic.selection(); setStep('list'); setDocUri(null); setRegistrationNumber(''); setError(''); }}
+            >
               <Text style={s.cancelBtnText}>Volver</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={[s.submitBtn, isBusy && { opacity: 0.6 }]}
               onPress={handleSendClaim}
               disabled={isBusy}
@@ -438,60 +398,122 @@ function RecordMatchModal({
                 ? <ActivityIndicator color={colors.white} size="small" />
                 : <Text style={s.submitBtnText}>Enviar reclamo</Text>
               }
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </KeyboardAvoidingView>
+            </Pressable>
+          </>
+        ),
+      });
+      return;
+    }
+    onChrome({
+      title: 'Posibles coincidencias',
+      footer: (
+        <Pressable style={s.submitBtn} onPress={onClose}>
+          <Text style={s.submitBtnText}>Omitir por ahora</Text>
+        </Pressable>
+      ),
+    });
+  }, [step, selectedRecord, isBusy, docUri, registrationNumber]);
+
+  if (step === 'done') {
+    return (
+      <View style={s.matchDoneWrap}>
+        <CheckCircle2 size={52} color={c.success} strokeWidth={2} />
+        <Text style={s.matchDoneTitle}>¡Reclamo aprobado!</Text>
+        <Text style={s.matchDoneSub}>Tu caballo quedó vinculado al registro oficial del padrón.</Text>
+      </View>
+    );
+  }
+
+  if (step === 'form' && selectedRecord) {
+    return (
+      <>
+        <Text style={s.matchSubtitle}>{selectedRecord.name}</Text>
+        <View style={s.claimInfoBox}>
+          <Info size={16} color={c.textMuted} strokeWidth={2} />
+          <Text style={s.claimInfoText}>
+            Necesitamos al menos un documento oficial o el número de registro para validar la posesión.
+          </Text>
+        </View>
+
+        {/* Número de registro */}
+        <Text style={s.fieldLabel}>Número de registro (opcional)</Text>
+        <TextInput
+          style={s.input}
+          value={registrationNumber}
+          onChangeText={setRegistrationNumber}
+          placeholder="Ej: STB-2018-00142"
+          placeholderTextColor={c.textFaint}
+          autoCapitalize="characters"
+        />
+
+        {/* Upload documento */}
+        <Text style={s.fieldLabel}>Documento de propiedad</Text>
+        <TouchableOpacity style={s.docPickerBtn} onPress={handlePickDoc} activeOpacity={0.8}>
+          {docUri ? (
+            <View style={s.docPreviewRow}>
+              <AppImage source={{ uri: docUri }} style={s.docThumb} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.docPickedText}>Documento adjunto</Text>
+                <Text style={s.docPickedSub}>Tocá para cambiar</Text>
+              </View>
+              <CheckCircle2 size={20} color={c.success} strokeWidth={2} />
+            </View>
+          ) : (
+            <View style={s.docPlaceholder}>
+              <Paperclip size={28} color={c.textFaint} strokeWidth={2} />
+              <Text style={s.photoPlaceholderText}>Adjuntar certificado</Text>
+              <Text style={s.photoPlaceholderSub}>Foto del certificado del Studbook, DNE u otro</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {error ? <Text style={s.errorText}>{error}</Text> : null}
+      </>
     );
   }
 
   return (
-    <Animated.View style={s.matchCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-      <View style={s.modalHeader}>
-        <View>
-          <Text style={s.modalTitle}>Posibles coincidencias</Text>
-          <Text style={s.matchSubtitle}>Encontramos este caballo en el padrón</Text>
-        </View>
-        <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-      </View>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        {matches.map((r) => (
-          <View key={r.id} style={s.matchRow}>
-            <View style={s.matchInfo}>
-              <Text style={s.matchName}>{r.name}</Text>
-              <View style={s.matchMeta}>
-                {r.birth_year && <Text style={s.matchDetail}>{r.birth_year}</Text>}
-                {r.sex && <Text style={s.matchDetail}>{r.sex}</Text>}
-                {r.breed && <Text style={s.matchDetail}>{r.breed}</Text>}
-                {r.color && <Text style={s.matchDetail}>{r.color}</Text>}
-              </View>
-              <View style={s.matchSourceRow}>
-                <FileText size={11} color={c.textFaint} strokeWidth={2} />
-                <Text style={s.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
-                {r.ownership_status === 'pending_claim' && (
-                  <Text style={s.matchPending}>· Reclamo pendiente</Text>
-                )}
-              </View>
+    <>
+      <Text style={s.matchSubtitle}>Encontramos este caballo en el padrón</Text>
+      {matches.map((r) => (
+        <View key={r.id} style={s.matchRow}>
+          <View style={s.matchInfo}>
+            <Text style={s.matchName}>{r.name}</Text>
+            <View style={s.matchMeta}>
+              {r.birth_year && <Text style={s.matchDetail}>{r.birth_year}</Text>}
+              {r.sex && <Text style={s.matchDetail}>{r.sex}</Text>}
+              {r.breed && <Text style={s.matchDetail}>{r.breed}</Text>}
+              {r.color && <Text style={s.matchDetail}>{r.color}</Text>}
             </View>
-            <TouchableOpacity
-              style={s.claimBtn}
-              onPress={() => { setSelectedRecord(r); setStep('form'); }}
-            >
-              <Text style={s.claimBtnText}>Reclamar</Text>
-            </TouchableOpacity>
+            <View style={s.matchSourceRow}>
+              <FileText size={11} color={c.textFaint} strokeWidth={2} />
+              <Text style={s.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
+              {r.ownership_status === 'pending_claim' && (
+                <Text style={s.matchPending}>· Reclamo pendiente</Text>
+              )}
+            </View>
           </View>
-        ))}
-      </ScrollView>
-      <View style={s.modalFooter}>
-        <TouchableOpacity style={s.cancelBtn} onPress={onClose}>
-          <Text style={s.cancelBtnText}>Omitir por ahora</Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
+          <TouchableOpacity
+            style={s.claimBtn}
+            onPress={() => { haptic.selection(); setSelectedRecord(r); setStep('form'); }}
+          >
+            <Text style={s.claimBtnText}>Reclamar</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </>
   );
 }
 
-function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColors; s: Styles }) {
+function CreateHorseModal({
+  visible, onClose, c, s, onChrome,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  c: ThemeColors;
+  s: Styles;
+  onChrome: (chrome: { title: string; footer: ReactNode }) => void;
+}) {
   const createHorse = useCreateHorse();
   const uploadImage = useUploadHorseImage();
   const toast = useToast();
@@ -501,6 +523,13 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [matches, setMatches] = useState<{ records: HorseRecord[]; horseId: string } | null>(null);
+
+  // El FormSheet no destruye el formulario al cerrarse: hay que limpiarlo
+  // manualmente cuando se vuelve a abrir, o el usuario ve lo que tipeó antes.
+  useEffect(() => {
+    if (!visible) return;
+    setName(''); setBirthDate(''); setMicrochip(''); setPhotoUri(null); setError(''); setMatches(null);
+  }, [visible]);
 
   const pickPhoto = async (source: 'camera' | 'gallery') => {
     if (source === 'camera') {
@@ -541,20 +570,30 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
         birth_date: birthDate || undefined,
         microchip: microchip || undefined,
       });
+      let fotoFallo = false;
       if (photoUri) {
         try {
           await uploadImage.mutateAsync({ id: result.horse.id, uri: photoUri });
         } catch {
-          // El caballo ya se creó; si la foto falla, no bloqueamos el alta.
+          // El caballo ya se creó, así que no bloqueamos el alta — pero se avisa:
+          // tragarse este error hacía que el usuario viera "guardado" y la foto
+          // nunca apareciera, sin ninguna pista de por qué.
+          fotoFallo = true;
         }
       }
-      toast.success('Caballo guardado');
+      if (fotoFallo) {
+        toast.error('Caballo guardado, pero no pudimos subir la foto. Probá cargarla desde su ficha.');
+      } else {
+        toast.success('Caballo guardado');
+      }
+      haptic.success();
       if (result.record_matches.length > 0) {
         setMatches({ records: result.record_matches, horseId: result.horse.id });
       } else {
         onClose();
       }
     } catch (err) {
+      haptic.error();
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'No se pudo crear el caballo. Intentá de nuevo.');
     }
@@ -562,80 +601,16 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
 
   const isBusy = createHorse.isPending || uploadImage.isPending;
 
-  if (matches !== null) {
-    return (
-      <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <RecordMatchModal
-          matches={matches.records}
-          microchip={microchip}
-          birthDate={birthDate}
-          horseId={matches.horseId}
-          onClose={onClose}
-          c={c}
-          s={s}
-        />
-      </KeyboardAvoidingView>
-    );
-  }
-
-  return (
-    <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.View style={s.modalCard} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-        <View style={s.modalHeader}>
-          <Text style={s.modalTitle}>Nuevo caballo</Text>
-          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-        </View>
-        <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-
-          {/* Foto */}
-          <TouchableOpacity style={s.photoPickerBtn} onPress={handlePickPhoto} activeOpacity={0.8}>
-            {photoUri ? (
-              <Image source={{ uri: photoUri }} style={s.photoPreview} resizeMode="cover" />
-            ) : (
-              <View style={s.photoPlaceholder}>
-                <Camera size={28} color={c.textFaint} strokeWidth={2} />
-                <Text style={s.photoPlaceholderText}>Agregar foto</Text>
-                <Text style={s.photoPlaceholderSub}>Cámara o galería</Text>
-              </View>
-            )}
-            {photoUri && (
-              <View style={s.photoEditBadge}>
-                <Camera size={13} color="#fff" strokeWidth={2} />
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <Text style={s.fieldLabel}>Nombre *</Text>
-          <TextInput
-            style={s.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Nombre del caballo"
-            placeholderTextColor={c.textFaint}
-            autoCapitalize="words"
-          />
-          <DatePicker
-            label="Fecha de nacimiento (opcional)"
-            value={birthDate}
-            onChange={setBirthDate}
-            maxDate={new Date()}
-          />
-          <Text style={s.fieldLabel}>Microchip (15 dígitos, opcional)</Text>
-          <TextInput
-            style={s.input}
-            value={microchip}
-            onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))}
-            placeholder="123456789012345"
-            placeholderTextColor={c.textFaint}
-            keyboardType="numeric"
-          />
-          {error ? <Text style={s.errorText}>{error}</Text> : null}
-        </ScrollView>
-        <View style={s.modalFooter}>
-          <TouchableOpacity style={s.cancelBtn} onPress={onClose}>
+  useEffect(() => {
+    if (matches !== null) return; // el chrome de este paso lo maneja RecordMatchModal
+    onChrome({
+      title: 'Nuevo caballo',
+      footer: (
+        <>
+          <Pressable style={s.cancelBtn} onPress={() => { haptic.light(); onClose(); }}>
             <Text style={s.cancelBtnText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             style={[s.submitBtn, isBusy && { opacity: 0.6 }]}
             onPress={handleSubmit}
             disabled={isBusy}
@@ -644,10 +619,79 @@ function CreateHorseModal({ onClose, c, s }: { onClose: () => void; c: ThemeColo
               ? <ActivityIndicator color={colors.white} size="small" />
               : <Text style={s.submitBtnText}>Crear</Text>
             }
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </KeyboardAvoidingView>
+          </Pressable>
+        </>
+      ),
+    });
+  }, [matches, isBusy, name, birthDate, microchip, photoUri]);
+
+  if (matches !== null) {
+    return (
+      <RecordMatchModal
+        matches={matches.records}
+        microchip={microchip}
+        birthDate={birthDate}
+        horseId={matches.horseId}
+        onClose={onClose}
+        onChrome={onChrome}
+        c={c}
+        s={s}
+      />
+    );
+  }
+
+  return (
+    <>
+      {/* Foto */}
+      <TouchableOpacity
+        style={s.photoPickerBtn}
+        onPress={handlePickPhoto}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={photoUri ? 'Cambiar foto del caballo' : 'Agregar foto del caballo'}
+      >
+        {photoUri ? (
+          <AppImage source={{ uri: photoUri }} style={s.photoPreview} />
+        ) : (
+          <View style={s.photoPlaceholder}>
+            <Camera size={28} color={c.textFaint} strokeWidth={2} />
+            <Text style={s.photoPlaceholderText}>Agregar foto</Text>
+            <Text style={s.photoPlaceholderSub}>Cámara o galería</Text>
+          </View>
+        )}
+        {photoUri && (
+          <View style={s.photoEditBadge}>
+            <Camera size={13} color={colors.white} strokeWidth={2} />
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <Text style={s.fieldLabel}>Nombre *</Text>
+      <TextInput
+        style={s.input}
+        value={name}
+        onChangeText={setName}
+        placeholder="Nombre del caballo"
+        placeholderTextColor={c.textFaint}
+        autoCapitalize="words"
+      />
+      <DatePicker
+        label="Fecha de nacimiento (opcional)"
+        value={birthDate}
+        onChange={setBirthDate}
+        maxDate={new Date()}
+      />
+      <Text style={s.fieldLabel}>Microchip (15 dígitos, opcional)</Text>
+      <TextInput
+        style={s.input}
+        value={microchip}
+        onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))}
+        placeholder="123456789012345"
+        placeholderTextColor={c.textFaint}
+        keyboardType="numeric"
+      />
+      {error ? <Text style={s.errorText}>{error}</Text> : null}
+    </>
   );
 }
 
@@ -655,12 +699,16 @@ export default function CaballosScreen() {
   const { can } = useAuth();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const { data: horses, isLoading, refetch, isRefetching } = useHorses();
+  const { data: horses, isLoading, isError, refetch, isRefetching } = useHorses();
   const { data: dashboard } = useDashboard();
   const [search, setSearch] = useState('');
   const [filterActivity, setFilterActivity] = useState('');
   const [filterEstab, setFilterEstab] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [createChrome, setCreateChrome] = useState<{ title: string; footer: ReactNode }>({
+    title: 'Nuevo caballo', footer: null,
+  });
+  const handleCreateChrome = useCallback((chrome: { title: string; footer: ReactNode }) => setCreateChrome(chrome), []);
   const insets = useSafeAreaInsets();
 
   const spendMap = useMemo(() => {
@@ -728,7 +776,13 @@ export default function CaballosScreen() {
                 clearButtonMode="while-editing"
               />
               {search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+                <TouchableOpacity
+                  onPress={() => setSearch('')}
+                  activeOpacity={0.7}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Limpiar búsqueda"
+                >
                   <XCircle size={16} color={c.textFaint} strokeWidth={2} />
                 </TouchableOpacity>
               )}
@@ -768,6 +822,9 @@ export default function CaballosScreen() {
           </>
         }
         ListEmptyComponent={
+          isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : (
           <EmptyState
             icon={search ? 'search-outline' : 'paw-outline'}
             title={search ? 'Sin resultados' : 'No hay caballos registrados'}
@@ -775,6 +832,7 @@ export default function CaballosScreen() {
             actionLabel={!search && can('horses', 'create') ? 'Registrar caballo' : undefined}
             onAction={() => { haptic.medium(); setShowCreate(true); }}
           />
+          )
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ paddingHorizontal: 12 }}>
@@ -792,12 +850,21 @@ export default function CaballosScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Modal: crear caballo */}
-      <Modal visible={showCreate} animationType="fade" transparent onRequestClose={() => setShowCreate(false)}>
-        <View style={s.modalOverlay}>
-          <CreateHorseModal onClose={() => setShowCreate(false)} c={c} s={s} />
-        </View>
-      </Modal>
+      {/* Formulario: crear caballo */}
+      <FormSheet
+        visible={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={createChrome.title}
+        footer={createChrome.footer}
+      >
+        <CreateHorseModal
+          visible={showCreate}
+          onClose={() => setShowCreate(false)}
+          c={c}
+          s={s}
+          onChrome={handleCreateChrome}
+        />
+      </FormSheet>
 
     </View>
   );
@@ -812,16 +879,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     marginHorizontal: 12, marginVertical: 10,
     backgroundColor: c.surface, borderRadius: 14,
     paddingHorizontal: 12, paddingVertical: 2, gap: 8,
-    shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    minHeight: 48, ...shadow.sm,
   },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: c.text },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: text.base, color: c.text },
   list: { paddingBottom: 100, gap: 10 },
   // ─── Horse Card (list style) ───────────────────────────────────────────────
   card: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: c.surface, borderRadius: 16,
     padding: 12, gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+    ...shadow.sm,
   },
   cardPhotoWrap: { position: 'relative' },
   cardPhoto: { width: 68, height: 68, borderRadius: 12 },
@@ -833,12 +900,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cardVerifiedDot: {
     position: 'absolute', bottom: -3, right: -3,
     width: 18, height: 18, borderRadius: 9,
-    backgroundColor: '#059669', borderWidth: 2, borderColor: colors.white,
+    backgroundColor: c.success, borderWidth: 2, borderColor: colors.white,
     justifyContent: 'center', alignItems: 'center',
   },
   cardBody: { flex: 1, gap: 3 },
   cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cardName: { fontSize: 15, fontWeight: '700', color: c.text, flex: 1 },
+  cardName: { fontSize: text.base, fontWeight: '700', color: c.text, flex: 1 },
   cardActivityPill: {
     backgroundColor: c.brandSoft, borderRadius: 6,
     paddingHorizontal: 7, paddingVertical: 2, flexShrink: 0,
@@ -848,7 +915,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cardEstabRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardEstab: { fontSize: 12, color: c.textFaint, flex: 1 },
   cardSpendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  cardSpend: { fontSize: 12, fontWeight: '600', color: '#059669' },
+  cardSpend: { fontSize: 12, fontWeight: '600', color: c.success },
   cardActions: { alignItems: 'center', gap: 6 },
   cardQuickBtn: { padding: 2 },
   // ─── FAB ──────────────────────────────────────────────────────────────────
@@ -859,7 +926,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingVertical: 12, paddingHorizontal: 18,
     shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
   },
-  fabLabel: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  fabLabel: { fontSize: 14, fontWeight: '700', color: colors.white },
   // ─── Quick gasto modal ─────────────────────────────────────────────────────
   quickModalBody: { padding: 20, gap: 14, paddingBottom: 8 },
   quickModalSub: { fontSize: 12, color: c.textFaint, marginTop: 1 },
@@ -904,7 +971,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   modalBody: { padding: 20, gap: 10 },
   modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: c.border },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: c.text },
-  input: { borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
+  input: { borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   errorText: { fontSize: 13, color: colors.red500 },
   cancelBtn: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingVertical: 13, alignItems: 'center' },
   cancelBtnText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
@@ -915,7 +982,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoPlaceholder: { width: 110, height: 110, borderRadius: 55, backgroundColor: c.surfaceAlt, borderWidth: 2, borderColor: c.border, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 4 },
   photoPlaceholderText: { fontSize: 12, fontWeight: '700', color: c.textMuted },
   photoPlaceholderSub: { fontSize: 10, color: c.textFaint },
-  photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
   // Match modal
   matchCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
   matchSubtitle: { fontSize: 12, color: c.textFaint, marginTop: 1 },
@@ -927,7 +994,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   matchSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   matchSource: { fontSize: 11, color: c.textFaint },
   matchPending: { fontSize: 11, color: colors.amber600 },
-  claimBtn: { backgroundColor: c.brand, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, minWidth: 80, alignItems: 'center' },
+  claimBtn: { backgroundColor: c.brand, borderRadius: 10, paddingHorizontal: 14, minHeight: 44, minWidth: 80, alignItems: 'center', justifyContent: 'center' },
   claimBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
   matchDoneWrap: { alignItems: 'center', padding: 32, gap: 12 },
   matchDoneTitle: { fontSize: 18, fontWeight: '700', color: c.text },

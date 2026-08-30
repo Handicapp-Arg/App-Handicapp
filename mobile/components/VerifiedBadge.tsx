@@ -1,6 +1,7 @@
 import { Text, View, StyleSheet } from 'react-native';
 import { BadgeCheck, ShieldCheck } from 'lucide-react-native';
 import { useTheme } from '../lib/theme';
+import { space, text, radius, weight } from '../styles/tokens';
 
 /**
  * Badges de verificación de HandicApp.
@@ -41,7 +42,7 @@ export function VetVerifiedBadge({ size = 'sm' }: { size?: BadgeSize }) {
   const iconSize = size === 'md' ? 18 : 14;
   const color = c.isDark ? VET_BLUE_DARK : VET_BLUE;
   return (
-    <View style={styles.inlineIcon} accessibilityLabel="Veterinario verificado">
+    <View style={styles.inlineIcon} accessibilityRole="image" accessibilityLabel="Veterinario verificado">
       <BadgeCheck size={iconSize} color={color} strokeWidth={2.2} />
     </View>
   );
@@ -67,6 +68,7 @@ export function HorseVerifiedBadge({
     return (
       <View
         style={styles.inlineIcon}
+        accessibilityRole="image"
         accessibilityLabel="Caballo verificado en padrón"
       >
         <ShieldCheck size={iconSize} color={green} strokeWidth={2} />
@@ -79,10 +81,11 @@ export function HorseVerifiedBadge({
       style={[
         styles.pill,
         {
-          backgroundColor: c.isDark ? green + '26' : '#ecfdf5',
+          backgroundColor: c.isDark ? green + '26' : c.successSoft,
           borderColor: c.isDark ? green + '40' : '#a7f3d0',
         },
       ]}
+      accessibilityRole="image"
       accessibilityLabel="Caballo verificado en padrón"
     >
       <ShieldCheck size={iconSize} color={green} strokeWidth={2} />
@@ -97,11 +100,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: 999,
+    borderRadius: radius.full,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: space[2] + 2,
+    paddingVertical: 4,
     alignSelf: 'flex-start',
   },
-  pillText: { fontSize: 11, fontWeight: '600' },
+  pillText: { fontSize: text.xs, fontWeight: weight.bold },
 });

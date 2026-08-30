@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Routes } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
@@ -25,16 +26,17 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'rejected', label: 'Rechazadas' },
 ];
 
-const STATUS_META: Record<Filter, { bg: string; text: string; label: string }> = {
-  pending:  { bg: colors.amber50,   text: colors.amber600,   label: 'Pendiente' },
-  accepted: { bg: colors.emerald50, text: colors.emerald700, label: 'Aceptada' },
-  rejected: { bg: colors.red50,     text: colors.red700,     label: 'Rechazada' },
-};
+// Estados de la solicitud -> semánticos del theme (dark-safe), igual que en contratos.tsx.
+const makeStatusMeta = (c: ThemeColors): Record<Filter, { bg: string; text: string; label: string }> => ({
+  pending:  { bg: c.warningSoft, text: c.warning, label: 'Pendiente' },
+  accepted: { bg: c.successSoft, text: c.success, label: 'Aceptada' },
+  rejected: { bg: c.dangerSoft,  text: c.danger,  label: 'Rechazada' },
+});
 
 function RequestRow({
   req, onAccept, onReject, pending, s, c,
 }: { req: BoardingRequest; onAccept: () => void; onReject: () => void; pending: boolean; s: Styles; c: ThemeColors }) {
-  const status = STATUS_META[req.status];
+  const status = makeStatusMeta(c)[req.status];
   const isPending = req.status === 'pending';
 
   return (
@@ -43,7 +45,7 @@ function RequestRow({
         <Text style={s.horseName} numberOfLines={1}>
           {req.horse?.name ?? 'Caballo'}
         </Text>
-        <View style={[s.statusPill, { backgroundColor: c.isDark ? status.text + '26' : status.bg }]}>
+        <View style={[s.statusPill, { backgroundColor: status.bg }]}>
           <Text style={[s.statusText, { color: status.text }]}>{status.label}</Text>
         </View>
       </View>
@@ -122,7 +124,7 @@ export default function SolicitudesScreen() {
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.value}
-            onPress={() => setFilter(f.value)}
+            onPress={() => { haptic.selection(); setFilter(f.value); }}
             style={[s.tab, filter === f.value && s.tabActive]}
             activeOpacity={0.7}
           >
@@ -136,18 +138,11 @@ export default function SolicitudesScreen() {
           {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : isError ? (
-        <EmptyState
-          icon="cloud-offline-outline"
-          title="No pudimos cargar las solicitudes"
-          message="Tocá para reintentar."
-          actionLabel="Reintentar"
-          onAction={() => refetch()}
-          tint={colors.red500}
-        />
+        <ErrorState onRetry={refetch} />
       ) : !filtered.length ? (
         <EmptyState
           icon="document-text-outline"
-          title={`Sin solicitudes ${STATUS_META[filter].label.toLowerCase()}s`}
+          title={`Sin solicitudes ${makeStatusMeta(c)[filter].label.toLowerCase()}s`}
           message={filter === 'pending' ? 'Cuando alguien pida alojar a un caballo, aparecerá acá.' : 'Esta sección está vacía por ahora.'}
         />
       ) : (
@@ -186,6 +181,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   tab: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: space[2],
     borderRadius: radius.md,
     backgroundColor: c.surface,
@@ -236,6 +233,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: space[3],
     borderRadius: radius.md,
     alignItems: 'center',

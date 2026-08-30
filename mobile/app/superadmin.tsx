@@ -7,12 +7,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Routes } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 import { useAuth } from '../lib/auth';
 import { formatMoney } from '../lib/currency';
+import { haptic } from '../lib/haptics';
 import {
   useSuperAdminMetrics, useSuperAdminOrgs, useSetOrgStatus,
   type SuperAdminOrg, type OrgPlan,
@@ -28,23 +30,24 @@ const PLAN_LABEL: Record<OrgPlan, string> = {
   enterprise: 'Enterprise',
 };
 
-const PLAN_META: Record<OrgPlan, { bg: string; text: string }> = {
-  free:       { bg: colors.gray100,    text: colors.gray700 },
-  basic:      { bg: colors.violet50,   text: colors.violet700 },
-  pro:        { bg: colors.amber50,    text: colors.amber600 },
-  enterprise: { bg: colors.emerald50,  text: colors.emerald700 },
-};
+// Colores por plan/estado -> semánticos del theme (dark-safe), igual que en contratos.tsx.
+const makePlanMeta = (c: ThemeColors): Record<OrgPlan, { bg: string; text: string }> => ({
+  free:       { bg: c.surfaceAlt, text: c.textMuted },
+  basic:      { bg: c.infoSoft,   text: c.info },
+  pro:        { bg: c.warningSoft, text: c.warning },
+  enterprise: { bg: c.successSoft, text: c.success },
+});
 
-const STATUS_META: Record<SuperAdminOrg['status'], { bg: string; text: string; label: string }> = {
-  active:    { bg: colors.emerald50, text: colors.emerald700, label: 'Activa' },
-  suspended: { bg: colors.red50,     text: colors.red700,     label: 'Suspendida' },
-  trial:     { bg: colors.amber50,   text: colors.amber600,   label: 'Trial' },
-};
+const makeStatusMeta = (c: ThemeColors): Record<SuperAdminOrg['status'], { bg: string; text: string; label: string }> => ({
+  active:    { bg: c.successSoft, text: c.success, label: 'Activa' },
+  suspended: { bg: c.dangerSoft,  text: c.danger,  label: 'Suspendida' },
+  trial:     { bg: c.warningSoft, text: c.warning, label: 'Trial' },
+});
 
 function MetricBox({ label, value, sub, tone = 'navy', c, s }: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'gray'; c: ThemeColors; s: Styles }) {
-  const bg = tone === 'navy' ? colors.brand : tone === 'gold' ? colors.amber50 : c.surface;
-  const fg = tone === 'navy' ? colors.white : tone === 'gold' ? colors.amber600 : c.text;
-  const labelColor = tone === 'navy' ? 'rgba(255,255,255,0.6)' : tone === 'gold' ? colors.amber600 : c.textFaint;
+  const bg = tone === 'navy' ? c.brand : tone === 'gold' ? c.warningSoft : c.surface;
+  const fg = tone === 'navy' ? colors.white : tone === 'gold' ? c.warning : c.text;
+  const labelColor = tone === 'navy' ? 'rgba(255,255,255,0.6)' : tone === 'gold' ? c.warning : c.textFaint;
   return (
     <View style={[s.metric, { backgroundColor: bg }]}>
       <Text style={[s.metricLabel, { color: labelColor }]}>{label}</Text>
@@ -55,15 +58,15 @@ function MetricBox({ label, value, sub, tone = 'navy', c, s }: { label: string; 
 }
 
 function OrgRow({ org, onToggle, pending, s, c }: { org: SuperAdminOrg; onToggle: () => void; pending: boolean; s: Styles; c: ThemeColors }) {
-  const planMeta = PLAN_META[org.plan];
-  const statusMeta = STATUS_META[org.status];
+  const planMeta = makePlanMeta(c)[org.plan];
+  const statusMeta = makeStatusMeta(c)[org.status];
   const expired = org.plan_expires_at && new Date(org.plan_expires_at) < new Date();
 
   return (
     <View style={s.orgRow}>
       <View style={s.orgHead}>
         <Text style={s.orgName} numberOfLines={1}>{org.name}</Text>
-        <View style={[s.pill, { backgroundColor: c.isDark ? statusMeta.text + '26' : statusMeta.bg }]}>
+        <View style={[s.pill, { backgroundColor: statusMeta.bg }]}>
           <Text style={[s.pillText, { color: statusMeta.text }]}>{statusMeta.label}</Text>
         </View>
       </View>
@@ -71,7 +74,7 @@ function OrgRow({ org, onToggle, pending, s, c }: { org: SuperAdminOrg; onToggle
         <Text style={s.orgOwner} numberOfLines={1}>{org.owner.email}</Text>
       )}
       <View style={s.orgMeta}>
-        <View style={[s.pill, { backgroundColor: c.isDark ? planMeta.text + '26' : planMeta.bg }]}>
+        <View style={[s.pill, { backgroundColor: planMeta.bg }]}>
           <Text style={[s.pillText, { color: planMeta.text }]}>{PLAN_LABEL[org.plan]}</Text>
         </View>
         <Text style={s.orgCount}>{org.horse_count} caballos · {org.member_count} miembros</Text>
@@ -79,13 +82,15 @@ function OrgRow({ org, onToggle, pending, s, c }: { org: SuperAdminOrg; onToggle
       <View style={s.orgFooter}>
         <Text style={s.orgRevenue}>
           {org.monthly_revenue_ars > 0 ? `${formatARS(org.monthly_revenue_ars)}/mes` : '—'}
-          {expired && <Text style={s.expiredText}>  · vencido</Text>}
+          {expired && <Text style={[s.expiredText, { color: c.danger }]}>  · vencido</Text>}
         </Text>
         <TouchableOpacity
-          onPress={onToggle}
+          onPress={() => { haptic.medium(); onToggle(); }}
           disabled={pending}
           style={[s.toggleBtn, pending && s.disabled]}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={org.status === 'active' ? `Suspender ${org.name}` : `Reactivar ${org.name}`}
         >
           <Text style={s.toggleText}>
             {org.status === 'active' ? 'Suspender' : 'Reactivar'}
@@ -114,7 +119,7 @@ export default function SuperAdminScreen() {
           icon="lock-closed-outline"
           title="Acceso restringido"
           message="Solo el administrador de HandicApp puede ver esta pantalla."
-          tint={colors.red500}
+          tint={c.danger}
         />
       </View>
     );
@@ -203,7 +208,7 @@ export default function SuperAdminScreen() {
               {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
             </View>
           ) : isError ? (
-            <EmptyState icon="cloud-offline-outline" title="No pudimos cargar las orgs" actionLabel="Reintentar" onAction={() => refetch()} tint={colors.red500} />
+            <ErrorState onRetry={refetch} />
           ) : (
             <EmptyState icon="business-outline" title={search ? 'Sin resultados' : 'Aún no hay orgs'} message={search ? 'Probá con otro término.' : undefined} />
           )
@@ -265,7 +270,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     marginTop: space[1],
   },
   orgRevenue: { fontSize: text.sm, color: c.text, fontWeight: weight.semibold },
-  expiredText: { color: colors.red500, fontWeight: weight.bold },
+  expiredText: { fontWeight: weight.bold },
   pill: { paddingHorizontal: space[2], paddingVertical: 3, borderRadius: radius.full, alignSelf: 'flex-start' },
   pillText: { fontSize: text.xs, fontWeight: weight.bold },
   toggleBtn: {
@@ -273,7 +278,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.borderStrong,
     paddingHorizontal: space[3],
-    paddingVertical: space[2],
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: radius.md,
   },
   toggleText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },

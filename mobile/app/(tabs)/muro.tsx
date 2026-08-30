@@ -1,13 +1,13 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, Modal, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, Image,
+  StyleSheet, ActivityIndicator, ScrollView,
+  KeyboardAvoidingView, Platform, Alert, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '../../lib/auth';
@@ -28,12 +28,34 @@ import {
   Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
   Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check, Megaphone, Tag,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { HorseIcon } from '../../components/icons/equine';
+import { AppImage } from '../../components/AppImage';
 import { PostSkeleton } from '../../components/Skeleton';
 import { InlineSearch } from '../../components/InlineSearch';
 import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge';
 import type { FeedPost, FeedComment } from '../../../packages/shared/src/types';
+import { ActionSheet } from '../../components/ActionSheet';
+import { ErrorState } from '../../components/ErrorState';
+import { FormSheet } from '../../components/FormSheet';
+import { BottomSheet } from '../../components/BottomSheet';
+
+/** Reproductor de un video del feed, con expo-video (expo-av está deprecado). */
+function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
+  uri: string; style: import('react-native').StyleProp<import('react-native').ViewStyle>;
+  contentFit?: 'contain' | 'cover';
+  controls?: boolean;
+}) {
+  const player = useVideoPlayer(uri, (p) => { p.loop = false; });
+  return (
+    <VideoView
+      player={player}
+      style={style}
+      contentFit={contentFit}
+      nativeControls={controls}
+    />
+  );
+}
 
 function Avatar({ name, colorId, size = 38, s }: { name: string; colorId?: string | null; size?: number; s: Styles }) {
   return <UserAvatar name={name} avatarColor={colorId} size={size} />;
@@ -48,18 +70,28 @@ function timeAgo(date: string) {
 }
 
 // ─── Comments Sheet ──────────────────────────────────────────────────────────
-function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
-  post: FeedPost;
+// Usa el FormSheet del sistema (header + cuerpo scrolleable + footer fijo) en
+// vez de un <Modal> a mano. Guardamos el último post no nulo para que el
+// contenido no desaparezca mientras la hoja anima su cierre.
+function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }: {
+  visible: boolean;
+  post: FeedPost | null;
   onClose: () => void;
   currentUserId: string;
   isAdmin: boolean;
   c: ThemeColors;
   s: Styles;
 }) {
-  const { data: comments = [], isLoading } = useFeedComments(post.id);
-  const addComment = useAddComment(post.id);
-  const deleteComment = useDeleteComment(post.id);
+  const [activePost, setActivePost] = useState<FeedPost | null>(post);
+  useEffect(() => { if (post) setActivePost(post); }, [post]);
+
+  const postId = activePost?.id ?? '';
+  const { data: comments = [], isLoading } = useFeedComments(postId);
+  const addComment = useAddComment(postId);
+  const deleteComment = useDeleteComment(postId);
   const [text, setText] = useState('');
+
+  useEffect(() => { if (visible) setText(''); }, [visible]);
 
   const handleSend = async () => {
     if (!text.trim()) return;
@@ -69,21 +101,39 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <View style={s.sheetHeader}>
-        <Text style={s.sheetTitle}>Comentarios</Text>
-        <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-          <X size={22} color={c.textMuted} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Comentarios"
+      footer={
+        <View style={s.commentInput}>
+          <TextInput
+            style={s.commentInputField}
+            placeholder="Escribí un comentario…"
+            placeholderTextColor={c.textFaint}
+            value={text}
+            onChangeText={setText}
+            multiline
+          />
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!text.trim() || addComment.isPending}
+            activeOpacity={0.75}
+            style={[s.sendBtn, (!text.trim() || addComment.isPending) && { opacity: 0.4 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar comentario"
+          >
+            <Send size={16} color={colors.white} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      }
+    >
       {isLoading ? (
         <ActivityIndicator color={c.brand} style={{ margin: space[6] }} />
+      ) : comments.length === 0 ? (
+        <Text style={s.emptyComments}>Todavía no hay comentarios. ¡Sé el primero!</Text>
       ) : (
-        <ScrollView contentContainerStyle={s.commentsList} showsVerticalScrollIndicator={false}>
-          {comments.length === 0 && (
-            <Text style={s.emptyComments}>Todavía no hay comentarios. ¡Sé el primero!</Text>
-          )}
+        <>
           {(comments as FeedComment[]).map((cm) => (
             <View key={cm.id} style={s.commentRow}>
               <Avatar name={cm.user?.name ?? 'U'} colorId={cm.user?.avatar_color} size={30} s={s} />
@@ -99,34 +149,18 @@ function CommentsSheet({ post, onClose, currentUserId, isAdmin, c, s }: {
                   onPress={() => { haptic.light(); deleteComment.mutate(cm.id); }}
                   activeOpacity={0.7}
                   style={s.commentDelete}
+                  accessibilityRole="button"
+                  accessibilityLabel="Eliminar comentario"
+                  hitSlop={8}
                 >
                   <Trash2 size={14} color={c.textFaint} strokeWidth={2} />
                 </TouchableOpacity>
               )}
             </View>
           ))}
-        </ScrollView>
+        </>
       )}
-
-      <View style={s.commentInput}>
-        <TextInput
-          style={s.commentInputField}
-          placeholder="Escribí un comentario…"
-          placeholderTextColor={c.textFaint}
-          value={text}
-          onChangeText={setText}
-          multiline
-        />
-        <TouchableOpacity
-          onPress={handleSend}
-          disabled={!text.trim() || addComment.isPending}
-          activeOpacity={0.75}
-          style={[s.sendBtn, (!text.trim() || addComment.isPending) && { opacity: 0.4 }]}
-        >
-          <Send size={16} color={colors.white} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    </FormSheet>
   );
 }
 
@@ -147,9 +181,19 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
 
   const isOwner = post.author_id === currentUserId;
 
+  // El corazón responde al toque, no a la red: si el servidor rechaza, vuelve atrás.
+  const [likeLocal, setLikeLocal] = useState<{ liked: boolean; total: number } | null>(null);
+  const liked = likeLocal?.liked ?? Boolean(post.liked_by_me);
+  const totalLikes = likeLocal?.total ?? post.likes_count;
+
   const handleLike = () => {
     haptic.selection();
-    toggleLike.mutate(post.id);
+    const previo = { liked: Boolean(post.liked_by_me), total: post.likes_count };
+    const proximo = { liked: !liked, total: totalLikes + (liked ? -1 : 1) };
+    setLikeLocal(proximo);
+    toggleLike.mutate(post.id, {
+      onError: () => { setLikeLocal(previo); haptic.error(); },
+    });
   };
 
   const handleDelete = () => {
@@ -193,7 +237,14 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
         </View>
 
         {(isOwner || isAdmin) && (
-          <TouchableOpacity onPress={() => setMenuOpen(true)} activeOpacity={0.7} style={s.menuBtn}>
+          <TouchableOpacity
+            onPress={() => { haptic.selection(); setMenuOpen(true); }}
+            activeOpacity={0.7}
+            style={s.menuBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Más opciones de la publicación"
+            hitSlop={8}
+          >
             <MoreHorizontal size={18} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         )}
@@ -209,14 +260,14 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
           post.image_urls.length === 1 ? s.imageGrid1 : s.imageGrid2,
         ]}>
           {post.image_urls.slice(0, 4).map((url, i) => (
-            <Image
+            <AppImage
               key={i}
               source={{ uri: url }}
               style={[
                 s.imageItem,
                 post.image_urls!.length === 1 ? s.imageItem1 : s.imageItem2,
               ]}
-              resizeMode="cover"
+              contentFit="cover"
             />
           ))}
         </View>
@@ -226,30 +277,29 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
       {post.video_urls && post.video_urls.length > 0 && (
         <View style={{ marginHorizontal: space[4], marginBottom: space[3], gap: space[2] }}>
           {post.video_urls.map((url, i) => (
-            <Video
-              key={i}
-              source={{ uri: url }}
-              style={s.videoPlayer}
-              resizeMode={ResizeMode.CONTAIN}
-              useNativeControls
-              isLooping={false}
-            />
+            <FeedVideo key={i} uri={url} style={s.videoPlayer} contentFit="contain" />
           ))}
         </View>
       )}
 
       {/* Actions */}
       <View style={s.actions}>
-        <TouchableOpacity onPress={handleLike} activeOpacity={0.7} style={s.actionBtn}>
+        <TouchableOpacity
+          onPress={handleLike}
+          activeOpacity={0.7}
+          style={s.actionBtn}
+          accessibilityRole="button"
+          accessibilityLabel={liked ? 'Quitar me gusta' : 'Me gusta'}
+        >
           <Heart
             size={20}
-            color={post.liked_by_me ? c.danger : c.textFaint}
-            fill={post.liked_by_me ? c.danger : 'none'}
+            color={liked ? c.danger : c.textFaint}
+            fill={liked ? c.danger : 'none'}
             strokeWidth={2}
           />
-          {post.likes_count > 0 && (
-            <Text style={[s.actionCount, post.liked_by_me && { color: c.danger }]}>
-              {post.likes_count}
+          {totalLikes > 0 && (
+            <Text style={[s.actionCount, liked && { color: c.danger }]}>
+              {totalLikes}
             </Text>
           )}
         </TouchableOpacity>
@@ -258,6 +308,8 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
           onPress={() => { haptic.light(); onComment(post); }}
           activeOpacity={0.7}
           style={s.actionBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Ver comentarios"
         >
           <MessageCircle size={19} color={c.textFaint} strokeWidth={2} />
           {post.comments_count > 0 && (
@@ -266,42 +318,30 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
         </TouchableOpacity>
       </View>
 
-      {/* Context menu modal */}
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <TouchableOpacity style={s.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
-          <View style={s.menuSheet}>
-            {isAdmin && (
-              <>
-                <TouchableOpacity
-                  style={s.menuItem}
-                  onPress={() => { haptic.light(); togglePin.mutate(post.id); setMenuOpen(false); }}
-                  activeOpacity={0.75}
-                >
-                  <Pin size={18} color={c.text} strokeWidth={2} />
-                  <Text style={s.menuItemText}>{post.is_pinned ? 'Desfijar' : 'Fijar post'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={s.menuItem}
-                  onPress={() => { haptic.light(); toggleHide.mutate(post.id); setMenuOpen(false); }}
-                  activeOpacity={0.75}
-                >
-                  {post.is_hidden
-                    ? <Eye size={18} color={c.text} strokeWidth={2} />
-                    : <EyeOff size={18} color={c.text} strokeWidth={2} />}
-                  <Text style={s.menuItemText}>{post.is_hidden ? 'Mostrar' : 'Ocultar'}</Text>
-                </TouchableOpacity>
-                <View style={s.menuDivider} />
-              </>
-            )}
-            {(isOwner || isAdmin) && (
-              <TouchableOpacity style={s.menuItem} onPress={handleDelete} activeOpacity={0.75}>
-                <Trash2 size={18} color={c.danger} strokeWidth={2} />
-                <Text style={[s.menuItemText, { color: c.danger }]}>Eliminar</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <ActionSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        acciones={[
+          ...(isAdmin ? [
+            {
+              label: post.is_pinned ? 'Desfijar' : 'Fijar post',
+              Icon: Pin,
+              onPress: () => togglePin.mutate(post.id),
+            },
+            {
+              label: post.is_hidden ? 'Mostrar' : 'Ocultar',
+              Icon: post.is_hidden ? Eye : EyeOff,
+              onPress: () => toggleHide.mutate(post.id),
+            },
+          ] : []),
+          ...((isOwner || isAdmin) ? [{
+            label: 'Eliminar',
+            Icon: Trash2,
+            destructiva: true,
+            onPress: handleDelete,
+          }] : []),
+        ]}
+      />
     </View>
   );
 }
@@ -311,7 +351,6 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
   const createPost = useCreatePost();
   const toast = useToast();
   const { data: myHorses } = useHorses();
-  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [media, setMedia] = useState<{ uri: string; isVideo: boolean }[]>([]);
@@ -367,10 +406,6 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
         photoUris: media.filter((m) => !m.isVideo).map((m) => m.uri),
         videoUris: media.filter((m) => m.isVideo).map((m) => m.uri),
       });
-      setText('');
-      setMedia([]);
-      setSelectedHorseId(undefined);
-      setType('general');
       setOpen(false);
       toast.success('Publicado');
     } catch {
@@ -378,116 +413,141 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
     }
   };
 
-  if (!open) {
-    return (
-      <TouchableOpacity style={s.composerClosed} onPress={() => setOpen(true)} activeOpacity={0.8}>
+  // El FormSheet ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
+  useEffect(() => {
+    if (!open) return;
+    setText(''); setMedia([]); setSelectedHorseId(undefined); setType('general');
+  }, [open]);
+
+  return (
+    <>
+      <TouchableOpacity
+        style={s.composerClosed}
+        onPress={() => { haptic.selection(); setOpen(true); }}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Crear publicación"
+      >
         <Avatar name={user.name} colorId={user.avatar_color} size={34} s={s} />
         <Text style={s.composerPlaceholder}>¿Qué querés compartir?</Text>
         <Images size={20} color={c.textFaint} strokeWidth={2} />
       </TouchableOpacity>
-    );
-  }
 
-  return (
-    <>
-    <Modal visible animationType="slide" onRequestClose={() => setOpen(false)}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <View style={[s.composerModal, { paddingTop: insets.top }]}>
-          <View style={s.composerModalHeader}>
-            <TouchableOpacity onPress={() => setOpen(false)} activeOpacity={0.7}>
+      <FormSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        title="Nueva publicación"
+        footer={
+          <>
+            <TouchableOpacity style={[s.composerCancelBtn, { flex: 1 }]} onPress={() => setOpen(false)} activeOpacity={0.8}>
               <Text style={s.composerCancel}>Cancelar</Text>
             </TouchableOpacity>
-            <Text style={s.composerModalTitle}>Nueva publicación</Text>
             <TouchableOpacity
               onPress={handlePost}
               disabled={(!text.trim() && !media.length) || createPost.isPending}
               activeOpacity={0.75}
-              style={[s.postBtn, (!text.trim() && !media.length) && { opacity: 0.4 }]}
+              style={[s.postBtn, { flex: 1 }, (!text.trim() && !media.length) && { opacity: 0.4 }]}
             >
-              <Text style={s.postBtnText}>{createPost.isPending ? '…' : 'Publicar'}</Text>
+              {createPost.isPending
+                ? <ActivityIndicator color={colors.white} size="small" />
+                : <Text style={s.postBtnText}>Publicar</Text>}
             </TouchableOpacity>
+          </>
+        }
+      >
+        <>
+          {isAdmin && (
+            <View style={[s.typeRow, { paddingHorizontal: 0, paddingVertical: 0 }]}>
+              {(['general', 'horse_update', 'announcement'] as const).map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[s.typeBtn, type === t && s.typeBtnActive]}
+                  onPress={() => setType(t)}
+                  activeOpacity={0.8}
+                >
+                  {t === 'horse_update' && <Tag size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
+                  {t === 'announcement' && <Megaphone size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
+                  <Text style={[s.typeBtnText, type === t && s.typeBtnTextActive]}>
+                    {t === 'general' ? 'General' : t === 'horse_update' ? 'Actualización' : 'Anuncio'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <View style={[s.composerRow, { paddingHorizontal: 0, paddingVertical: 0 }]}>
+            <Avatar name={user.name} colorId={user.avatar_color} s={s} />
+            <TextInput
+              style={s.composerInput}
+              placeholder="¿Qué querés compartir?"
+              placeholderTextColor={c.textFaint}
+              value={text}
+              onChangeText={setText}
+              multiline
+            />
           </View>
 
-          <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
-            {isAdmin && (
-              <View style={s.typeRow}>
-                {(['general', 'horse_update', 'announcement'] as const).map((t) => (
+          {media.length > 0 && (
+            <View style={[s.imageGrid, media.length === 1 ? s.imageGrid1 : s.imageGrid2, { marginHorizontal: 0 }]}>
+              {media.map((item, i) => (
+                <View key={i} style={media.length === 1 ? s.imageItem1 : s.imageItem2}>
+                  {item.isVideo ? (
+                    <FeedVideo uri={item.uri} style={StyleSheet.absoluteFill} contentFit="cover" controls={false} />
+                  ) : (
+                    <AppImage source={{ uri: item.uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  )}
+                  {item.isVideo && (
+                    <View style={s.videoIndicator}>
+                      <PlayCircle size={28} color="rgba(255,255,255,0.9)" strokeWidth={2} />
+                    </View>
+                  )}
                   <TouchableOpacity
-                    key={t}
-                    style={[s.typeBtn, type === t && s.typeBtnActive]}
-                    onPress={() => setType(t)}
+                    style={s.removePhoto}
+                    onPress={() => setMedia((p) => p.filter((_, idx) => idx !== i))}
                     activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Quitar archivo adjunto"
                   >
-                    {t === 'horse_update' && <Tag size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
-                    {t === 'announcement' && <Megaphone size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
-                    <Text style={[s.typeBtnText, type === t && s.typeBtnTextActive]}>
-                      {t === 'general' ? 'General' : t === 'horse_update' ? 'Actualización' : 'Anuncio'}
-                    </Text>
+                    <X size={14} color={colors.white} strokeWidth={2} />
                   </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            <View style={s.composerRow}>
-              <Avatar name={user.name} colorId={user.avatar_color} s={s} />
-              <TextInput
-                style={s.composerInput}
-                placeholder="¿Qué querés compartir?"
-                placeholderTextColor={c.textFaint}
-                value={text}
-                onChangeText={setText}
-                multiline
-                autoFocus
-              />
+                </View>
+              ))}
             </View>
+          )}
 
-            {media.length > 0 && (
-              <View style={[s.imageGrid, media.length === 1 ? s.imageGrid1 : s.imageGrid2, { marginHorizontal: space[4] }]}>
-                {media.map((item, i) => (
-                  <View key={i} style={media.length === 1 ? s.imageItem1 : s.imageItem2}>
-                    {item.isVideo ? (
-                      <Video
-                        source={{ uri: item.uri }}
-                        style={StyleSheet.absoluteFill}
-                        resizeMode={ResizeMode.COVER}
-                        useNativeControls={false}
-                        isLooping={false}
-                      />
-                    ) : (
-                      <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                    )}
-                    {item.isVideo && (
-                      <View style={s.videoIndicator}>
-                        <PlayCircle size={28} color="rgba(255,255,255,0.9)" strokeWidth={2} />
-                      </View>
-                    )}
-                    <TouchableOpacity
-                      style={s.removePhoto}
-                      onPress={() => setMedia((p) => p.filter((_, idx) => idx !== i))}
-                      activeOpacity={0.8}
-                    >
-                      <X size={14} color={colors.white} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
-          </ScrollView>
-
-
-          <View style={s.composerFooter}>
+          <View style={[s.composerFooter, { paddingHorizontal: 0, borderTopWidth: 0, paddingVertical: space[2] }]}>
             <View style={s.footerLeft}>
-              <TouchableOpacity onPress={pickFromLibrary} disabled={media.length >= 4} activeOpacity={0.7} style={s.photoBtn}>
+              <TouchableOpacity
+                onPress={pickFromLibrary}
+                disabled={media.length >= 4}
+                activeOpacity={0.7}
+                style={s.photoBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Adjuntar foto o video desde la galería"
+              >
                 <Images size={20} strokeWidth={2} color={media.length >= 4 ? c.textFaint : c.textMuted} />
                 <Text style={[s.photoBtnText, media.length >= 4 && { color: c.textFaint }]}>Galería</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={openCamera} disabled={media.length >= 4} activeOpacity={0.7} style={[s.photoBtn, { marginLeft: space[5] }]}>
+              <TouchableOpacity
+                onPress={openCamera}
+                disabled={media.length >= 4}
+                activeOpacity={0.7}
+                style={[s.photoBtn, { marginLeft: space[5] }]}
+                accessibilityRole="button"
+                accessibilityLabel="Sacar foto o video con la cámara"
+              >
                 <Camera size={20} strokeWidth={2} color={media.length >= 4 ? c.textFaint : c.textMuted} />
                 <Text style={[s.photoBtnText, media.length >= 4 && { color: c.textFaint }]}>Cámara</Text>
               </TouchableOpacity>
             </View>
             {(myHorses?.length ?? 0) > 0 && (
-              <TouchableOpacity onPress={() => setShowHorseSelect(true)} activeOpacity={0.7} style={s.tagBtn}>
+              <TouchableOpacity
+                onPress={() => setShowHorseSelect(true)}
+                activeOpacity={0.7}
+                style={s.tagBtn}
+                accessibilityRole="button"
+                accessibilityLabel={selectedHorse ? `Caballo etiquetado: ${selectedHorse.name}` : 'Etiquetar un caballo'}
+              >
                 <HorseIcon size={16} color={c.textMuted} />
                 <Text style={[s.tagBtnText, selectedHorse && { color: c.text }]} numberOfLines={1}>
                   {selectedHorse ? selectedHorse.name : 'Etiquetar caballo'}
@@ -495,38 +555,44 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
               </TouchableOpacity>
             )}
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </>
+      </FormSheet>
 
-    <Modal visible={showHorseSelect} transparent animationType="fade" onRequestClose={() => setShowHorseSelect(false)} statusBarTranslucent>
-      <TouchableOpacity style={s.selectOverlay} activeOpacity={1} onPress={() => setShowHorseSelect(false)}>
-        <Animated.View style={s.selectSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.selectHandle} />
-          <Text style={s.selectTitle}>Etiquetar un caballo</Text>
-          <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity style={s.selectRow} activeOpacity={0.7} onPress={() => { setSelectedHorseId(undefined); setShowHorseSelect(false); }}>
-              <View style={[s.selectThumb, s.selectThumbNone]}>
-                <X size={18} color={c.textFaint} strokeWidth={2} />
+      <BottomSheet
+        visible={showHorseSelect}
+        onClose={() => setShowHorseSelect(false)}
+        title="Etiquetar un caballo"
+      >
+        <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity
+            style={s.selectRow}
+            activeOpacity={0.7}
+            onPress={() => { haptic.selection(); setSelectedHorseId(undefined); setShowHorseSelect(false); }}
+          >
+            <View style={[s.selectThumb, s.selectThumbNone]}>
+              <X size={18} color={c.textFaint} strokeWidth={2} />
+            </View>
+            <Text style={[s.selectRowText, !selectedHorseId && s.selectRowTextActive]}>Ninguno</Text>
+            {!selectedHorseId && <Check size={20} color={c.brand} strokeWidth={2} />}
+          </TouchableOpacity>
+          {(myHorses ?? []).map((h) => (
+            <TouchableOpacity
+              key={h.id}
+              style={s.selectRow}
+              activeOpacity={0.7}
+              onPress={() => { haptic.selection(); setSelectedHorseId(h.id); setShowHorseSelect(false); }}
+            >
+              <View style={s.selectThumb}>
+                {h.image_url
+                  ? <AppImage source={{ uri: h.image_url }} style={s.selectThumbImg} contentFit="cover" />
+                  : <Text style={s.selectThumbInitial}>{h.name[0]?.toUpperCase()}</Text>}
               </View>
-              <Text style={[s.selectRowText, !selectedHorseId && s.selectRowTextActive]}>Ninguno</Text>
-              {!selectedHorseId && <Check size={20} color={c.brand} strokeWidth={2} />}
+              <Text style={[s.selectRowText, selectedHorseId === h.id && s.selectRowTextActive]} numberOfLines={1}>{h.name}</Text>
+              {selectedHorseId === h.id && <Check size={20} color={c.brand} strokeWidth={2} />}
             </TouchableOpacity>
-            {(myHorses ?? []).map((h) => (
-              <TouchableOpacity key={h.id} style={s.selectRow} activeOpacity={0.7} onPress={() => { setSelectedHorseId(h.id); setShowHorseSelect(false); }}>
-                <View style={s.selectThumb}>
-                  {h.image_url
-                    ? <Image source={{ uri: h.image_url }} style={s.selectThumbImg} resizeMode="cover" />
-                    : <Text style={s.selectThumbInitial}>{h.name[0]?.toUpperCase()}</Text>}
-                </View>
-                <Text style={[s.selectRowText, selectedHorseId === h.id && s.selectRowTextActive]} numberOfLines={1}>{h.name}</Text>
-                {selectedHorseId === h.id && <Check size={20} color={c.brand} strokeWidth={2} />}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      </TouchableOpacity>
-    </Modal>
+          ))}
+        </ScrollView>
+      </BottomSheet>
     </>
   );
 }
@@ -539,7 +605,7 @@ export default function MuroTab() {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const isAdmin = user?.role === 'admin';
-  const { posts, isLoading, isFetchingMore, isRefreshing, loadMore, refresh } = useFeedPosts(
+  const { posts, isLoading, isError, isFetchingMore, isRefreshing, loadMore, refresh } = useFeedPosts(
     isAdmin ? { include_hidden: true } : undefined,
   );
   const [commentPost, setCommentPost] = useState<FeedPost | null>(null);
@@ -562,10 +628,22 @@ export default function MuroTab() {
     <View style={s.navbar}>
       <Text style={s.navTitle}>HandicApp</Text>
       <View style={s.navActions}>
-        <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={8} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={() => { haptic.selection(); setSearchOpen(true); }}
+          hitSlop={8}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar"
+        >
           <Search size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/notificaciones')} hitSlop={8} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={() => { haptic.selection(); router.push('/notificaciones'); }}
+          hitSlop={8}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Notificaciones"
+        >
           <Bell size={24} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
       </View>
@@ -583,7 +661,9 @@ export default function MuroTab() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      {isLoading ? (
+      {isError && posts.length === 0 ? (
+        <ErrorState onRetry={() => refresh()} />
+      ) : isLoading ? (
         <View>
           {Navbar}
           <View style={{ paddingTop: space[2] }}>
@@ -602,8 +682,9 @@ export default function MuroTab() {
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
-          onRefresh={refresh}
-          refreshing={isRefreshing}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={c.brand} />
+          }
           ListFooterComponent={
             isFetchingMore
               ? <ActivityIndicator color={c.textFaint} style={{ marginVertical: space[4] }} />
@@ -622,23 +703,15 @@ export default function MuroTab() {
       )}
 
       {/* Comments sheet */}
-      <Modal
+      <CommentsSheet
         visible={!!commentPost}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setCommentPost(null)}
-      >
-        {commentPost && (
-          <CommentsSheet
-            post={commentPost}
-            onClose={() => setCommentPost(null)}
-            currentUserId={user?.id ?? ''}
-            isAdmin={isAdmin}
-            c={c}
-            s={s}
-          />
-        )}
-      </Modal>
+        post={commentPost}
+        onClose={() => setCommentPost(null)}
+        currentUserId={user?.id ?? ''}
+        isAdmin={isAdmin}
+        c={c}
+        s={s}
+      />
 
       {searchOpen && (
         <InlineSearch topInset={insets.top} onClose={() => setSearchOpen(false)} />
@@ -678,7 +751,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   timeAgoHorse: { flexDirection: 'row', alignItems: 'center' },
   menuBtn: { padding: 4, marginTop: -2 },
 
-  content: { fontSize: text.sm, color: c.text, lineHeight: 20, paddingHorizontal: space[4], paddingVertical: space[3] },
+  content: { fontSize: text.base, color: c.text, lineHeight: 22, paddingHorizontal: space[4], paddingVertical: space[3] },
 
   imageGrid: { overflow: 'hidden', marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.lg, gap: 2 },
   imageGrid1: {},
@@ -692,22 +765,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   actionCount: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
 
   // Menu
-  menuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  menuSheet: { backgroundColor: c.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingBottom: space[8], paddingTop: space[2] },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[5], paddingVertical: space[4] },
-  menuItemText: { fontSize: text.base, color: c.text },
-  menuDivider: { height: 1, backgroundColor: c.border, marginVertical: space[1] },
 
   // Composer closed
   composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.borderStrong, padding: space[3], ...shadow.sm },
   composerPlaceholder: { flex: 1, fontSize: text.sm, color: c.textFaint },
 
-  // Composer modal
-  composerModal: { flex: 1, backgroundColor: c.surface },
-  composerModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: c.border },
-  composerModalTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  composerCancel: { fontSize: text.sm, color: c.textMuted },
-  postBtn: { backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.full },
+  // Composer (FormSheet)
+  composerCancelBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[3], borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt },
+  composerCancel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
+  postBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.lg },
   postBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   typeRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
   typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
@@ -725,13 +791,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   footerLeft: { flexDirection: 'row', alignItems: 'center' },
   tagBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: 160, backgroundColor: c.surfaceAlt, borderRadius: 20, paddingHorizontal: space[3], paddingVertical: space[2] },
   tagBtnText: { fontSize: text.sm, color: c.textMuted, fontWeight: weight.medium, fontFamily: fontFamily.medium },
-  selectOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  selectSheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: space[4], paddingBottom: 36, paddingHorizontal: space[4] },
-  selectTitle: { fontSize: text.base, fontWeight: weight.bold, fontFamily: fontFamily.semibold, color: c.text, marginBottom: space[2], paddingHorizontal: space[2] },
   selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: 1, borderBottomColor: c.border },
   selectRowText: { fontSize: text.base, color: c.textMuted, fontFamily: fontFamily.medium, flex: 1 },
   selectRowTextActive: { color: c.text, fontFamily: fontFamily.semibold },
-  selectHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong, marginBottom: space[3] },
   selectThumb: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.surfaceAlt, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', marginRight: space[3] },
   selectThumbNone: { backgroundColor: c.surfaceAlt },
   selectThumbImg: { width: '100%', height: '100%' },
@@ -758,7 +820,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sendBtn: { backgroundColor: c.brand, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
 
   // Empty
-  emptyBox: { alignItems: 'center', paddingTop: 60, paddingHorizontal: space[6], gap: space[3] },
+  emptyBox: { alignItems: 'center', paddingTop: space[16], paddingHorizontal: space[6], gap: space[3] },
   emptyIcon: { width: 84, height: 84, borderRadius: radius.full, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: space[1] },
   emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
   emptySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },

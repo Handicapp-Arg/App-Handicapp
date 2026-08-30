@@ -1,12 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
-  RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  RefreshControl, ScrollView, ActivityIndicator,
 } from 'react-native';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Search, XCircle, X } from 'lucide-react-native';
+import { Clock, Search, XCircle } from 'lucide-react-native';
 import api from '../../lib/api';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
@@ -14,6 +14,7 @@ import { useBoardingRequests, useCreateBoardingRequest } from '../../hooks/use-b
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Routes } from '../../lib/routes';
 import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 import { useToast } from '../../components/Toast';
 import { ListRowSkeleton } from '../../components/Skeleton';
 import { haptic } from '../../lib/haptics';
@@ -21,6 +22,7 @@ import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { Avatar } from '../../components/Avatar';
 import { space, text, radius, weight } from '../../styles/tokens';
+import { FormSheet } from '../../components/FormSheet';
 
 interface DirectorioItem {
   id: string;
@@ -40,12 +42,14 @@ function useDirectorio(search: string) {
 }
 
 function RequestModal({
+  visible,
   establishment,
   onClose,
   c,
   s,
 }: {
-  establishment: DirectorioItem;
+  visible: boolean;
+  establishment: DirectorioItem | null;
   onClose: () => void;
   c: ThemeColors;
   s: Styles;
@@ -57,13 +61,19 @@ function RequestModal({
   const [horseId, setHorseId] = useState('');
   const [message, setMessage] = useState('');
 
-  const alreadyRequested = (hId: string) =>
-    requests?.some((r) => r.horse_id === hId && r.establishment_id === establishment.id && r.status === 'pending');
+  // El FormSheet ya no se destruye al cerrarse: limpiamos el formulario al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setHorseId(''); setMessage('');
+  }, [visible]);
 
-  const available = (horses ?? []).filter((h) => h.establishment_id !== establishment.id);
+  const alreadyRequested = (hId: string) =>
+    establishment && requests?.some((r) => r.horse_id === hId && r.establishment_id === establishment.id && r.status === 'pending');
+
+  const available = (horses ?? []).filter((h) => h.establishment_id !== establishment?.id);
 
   const handleSubmit = async () => {
-    if (!horseId) return;
+    if (!horseId || !establishment) return;
     await create.mutateAsync({
       horse_id: horseId,
       establishment_id: establishment.id,
@@ -75,75 +85,73 @@ function RequestModal({
   };
 
   return (
-    <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Solicitar alojamiento</Text>
-            <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Solicitar alojamiento"
+      footer={
+        <>
+          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose} activeOpacity={0.8}>
+            <Text style={s.btnSecondaryText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { flex: 1 }, (!horseId || !available.length || create.isPending) && { opacity: 0.5 }]}
+            disabled={!horseId || !available.length || create.isPending}
+            onPress={handleSubmit}
+            activeOpacity={0.85}
+          >
+            {create.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={s.btnPrimaryText}>Enviar solicitud</Text>
+            }
+          </TouchableOpacity>
+        </>
+      }
+    >
+      <>
+        {establishment && (
+          <Text style={s.modalDesc}>
+            Enviás una solicitud a{' '}
+            <Text style={{ fontWeight: weight.bold }}>{establishment.name}</Text>{' '}
+            para alojar uno de tus caballos.
+          </Text>
+        )}
+
+        <Text style={s.fieldLabel}>Caballo *</Text>
+        {!available.length ? (
+          <Text style={s.emptyText}>No tenés caballos disponibles para alojar en este establecimiento.</Text>
+        ) : (
+          <View style={s.horseList}>
+            {available.map((h) => {
+              const pending = alreadyRequested(h.id);
+              return (
+                <TouchableOpacity
+                  key={h.id}
+                  style={[s.horseItem, horseId === h.id && s.horseItemActive, pending && { opacity: 0.5 }]}
+                  onPress={() => { if (!pending) { haptic.selection(); setHorseId(h.id); } }}
+                  activeOpacity={0.75}
+                  disabled={!!pending}
+                >
+                  <Text style={[s.horseItemText, horseId === h.id && s.horseItemTextActive]}>
+                    {h.name}{pending ? ' (pendiente)' : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
+        )}
 
-          <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
-            <Text style={s.modalDesc}>
-              Enviás una solicitud a{' '}
-              <Text style={{ fontWeight: weight.bold }}>{establishment.name}</Text>{' '}
-              para alojar uno de tus caballos.
-            </Text>
-
-            <Text style={s.fieldLabel}>Caballo *</Text>
-            {!available.length ? (
-              <Text style={s.emptyText}>No tenés caballos disponibles para alojar en este establecimiento.</Text>
-            ) : (
-              <View style={s.horseList}>
-                {available.map((h) => {
-                  const pending = alreadyRequested(h.id);
-                  return (
-                    <TouchableOpacity
-                      key={h.id}
-                      style={[s.horseItem, horseId === h.id && s.horseItemActive, pending && { opacity: 0.5 }]}
-                      onPress={() => { if (!pending) { haptic.selection(); setHorseId(h.id); } }}
-                      activeOpacity={0.75}
-                      disabled={!!pending}
-                    >
-                      <Text style={[s.horseItemText, horseId === h.id && s.horseItemTextActive]}>
-                        {h.name}{pending ? ' (pendiente)' : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-
-            <Text style={[s.fieldLabel, { marginTop: 14 }]}>Mensaje (opcional)</Text>
-            <TextInput
-              style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Presentate brevemente..."
-              placeholderTextColor={c.textFaint}
-              multiline
-            />
-          </ScrollView>
-
-          <View style={s.modalFooter}>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, (!horseId || !available.length || create.isPending) && { opacity: 0.5 }]}
-              disabled={!horseId || !available.length || create.isPending}
-              onPress={handleSubmit}
-              activeOpacity={0.85}
-            >
-              {create.isPending
-                ? <ActivityIndicator color={colors.white} size="small" />
-                : <Text style={s.btnPrimaryText}>Enviar solicitud</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+        <Text style={[s.fieldLabel, { marginTop: 14 }]}>Mensaje (opcional)</Text>
+        <TextInput
+          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+          value={message}
+          onChangeText={setMessage}
+          placeholder="Presentate brevemente..."
+          placeholderTextColor={c.textFaint}
+          multiline
+        />
+      </>
+    </FormSheet>
   );
 }
 
@@ -155,7 +163,7 @@ export default function DirectorioScreen() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [requesting, setRequesting] = useState<DirectorioItem | null>(null);
-  const { data, isLoading, refetch, isRefetching } = useDirectorio(debouncedSearch);
+  const { data, isLoading, isError, refetch, isRefetching } = useDirectorio(debouncedSearch);
   const { data: myRequests } = useBoardingRequests();
 
   const isPropietario = user?.role === 'propietario';
@@ -200,7 +208,12 @@ export default function DirectorioScreen() {
           autoCapitalize="none"
         />
         {search.length > 0 && (
-          <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); haptic.selection(); }}>
+          <TouchableOpacity
+            onPress={() => { setSearch(''); setDebouncedSearch(''); haptic.selection(); }}
+            accessibilityRole="button"
+            accessibilityLabel="Limpiar búsqueda"
+            hitSlop={8}
+          >
             <XCircle size={16} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         )}
@@ -210,7 +223,12 @@ export default function DirectorioScreen() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      {isLoading ? (
+      {isError && !data ? (
+        <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+          {ListHeader}
+          <ErrorState onRetry={() => refetch()} />
+        </ScrollView>
+      ) : isLoading ? (
         <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
           {ListHeader}
           <View style={s.itemWrap}>
@@ -267,7 +285,7 @@ export default function DirectorioScreen() {
         />
       )}
 
-      {requesting && <RequestModal establishment={requesting} onClose={() => setRequesting(null)} c={c} s={s} />}
+      <RequestModal visible={!!requesting} establishment={requesting} onClose={() => setRequesting(null)} c={c} s={s} />
     </View>
   );
 }
@@ -293,15 +311,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
   pendingChip: { borderRadius: radius.full, backgroundColor: c.goldSoft, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: c.goldBorder },
   pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: c.goldText },
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border },
-  modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  modalClose: { fontSize: 18, color: c.textFaint },
-  modalBody: { padding: space[5], gap: space[3] },
+  // Sheet de solicitud (FormSheet)
   modalDesc: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
-  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: c.border },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   emptyText: { fontSize: text.xs, color: c.textFaint },
   horseList: { gap: 8 },

@@ -1,15 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
+import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
+import { AuthBackground } from '../../components/auth-ui';
+import { BottomSheet } from '../../components/BottomSheet';
 import { HorseshoeH } from '../../components/icons/equine';
 import { fontFamily } from '../../styles/fonts';
 
@@ -24,7 +27,7 @@ const DEV_USERS = [
   { email: 'peon@handicapp.com',            password: 'handicapp2026', name: 'Ramón Peón',            role: 'Peón' },
 ];
 
-function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password: string) => void; c: ThemeColors; s: Styles }) {
+function DevUserPicker({ onSelect, s }: { onSelect: (email: string, password: string) => void; s: Styles }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -32,23 +35,21 @@ function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password:
         <Text style={s.devBtnText}>Acceso rápido · dev</Text>
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={s.picker}>
-            {DEV_USERS.map((u) => (
-              <TouchableOpacity
-                key={u.email}
-                style={s.pickerRow}
-                activeOpacity={0.7}
-                onPress={() => { onSelect(u.email, u.password); setOpen(false); }}
-              >
-                <Text style={s.pickerRole}>{u.role}</Text>
-                <Text style={s.pickerEmail}>{u.email}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <BottomSheet visible={open} onClose={() => setOpen(false)} title="Acceso rápido · dev">
+        <View style={s.picker}>
+          {DEV_USERS.map((u, i) => (
+            <TouchableOpacity
+              key={u.email}
+              style={[s.pickerRow, i === 0 && s.pickerRowFirst]}
+              activeOpacity={0.7}
+              onPress={() => { onSelect(u.email, u.password); setOpen(false); }}
+            >
+              <Text style={s.pickerRole}>{u.role}</Text>
+              <Text style={s.pickerEmail}>{u.email}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </BottomSheet>
     </>
   );
 }
@@ -56,120 +57,154 @@ function DevUserPicker({ onSelect, c, s }: { onSelect: (email: string, password:
 export default function LoginScreen() {
   const { login } = useAuth();
   const { c } = useTheme();
+  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
+  const passwordRef = useRef<TextInput>(null);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState<'email' | 'password' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    if (!email || !password) { setError('Completá todos los campos'); return; }
+    Keyboard.dismiss();
+    if (!email || !password) { setError('Completá todos los campos'); haptic.error(); return; }
     setError('');
     setLoading(true);
+    haptic.light();
     try {
       await login(email.trim().toLowerCase(), password);
+      haptic.success();
     } catch {
       setError('Credenciales inválidas. Verificá tu email y contraseña.');
+      haptic.error();
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <View style={s.root}>
       <AuthBackground c={c} />
-      <AuthThemeSwitch />
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={s.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            s.scroll,
+            { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 28 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Marca */}
+          <Animated.View style={s.header} entering={FadeIn.duration(500)}>
+            <HorseshoeH size={52} color={c.brand} />
+          </Animated.View>
 
-        {/* Marca — isotipo + wordmark */}
-        <Animated.View style={s.header} entering={FadeIn.duration(600)}>
-          <HorseshoeH size={64} color={c.brand} />
-          <Text style={s.wordmark}>HandicApp</Text>
-        </Animated.View>
+          {/* Título */}
+          <Animated.View style={s.intro} entering={FadeInDown.duration(450).delay(80)}>
+            <Text style={s.title}>Bienvenido</Text>
+            <Text style={s.subtitle}>Ingresá a tu cuenta para continuar</Text>
+          </Animated.View>
 
-        {/* Card */}
-        <Animated.View style={s.card} entering={FadeInDown.duration(500).delay(150)}>
-          <Text style={s.cardTitle}>Iniciá sesión</Text>
-          <Text style={s.cardSub}>Ingresá a tu cuenta para continuar</Text>
+          {/* Formulario */}
+          <Animated.View style={s.form} entering={FadeInDown.duration(450).delay(160)}>
+            {error ? (
+              <Animated.View style={s.errorBox} entering={FadeIn.duration(200)}>
+                <Text style={s.errorText}>{error}</Text>
+              </Animated.View>
+            ) : null}
 
-          {error ? (
-            <View style={s.errorBox}>
-              <Text style={s.errorText}>{error}</Text>
-            </View>
-          ) : null}
-
-          <View style={s.field}>
-            <Text style={s.label}>Correo electrónico</Text>
-            <TextInput
-              style={s.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="tu@email.com"
-              placeholderTextColor={c.textFaint}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
-          </View>
-
-          <View style={s.field}>
-            <Text style={s.label}>Contraseña</Text>
-            <View style={s.inputRow}>
+            <View style={[s.inputWrap, focused === 'email' && s.inputWrapFocused]}>
               <TextInput
-                style={s.inputFlex}
+                style={s.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Correo electrónico"
+                placeholderTextColor={c.textFaint}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                autoComplete="email"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                onFocus={() => setFocused('email')}
+                onBlur={() => setFocused(null)}
+                submitBehavior="submit"
+              />
+            </View>
+
+            <View style={[s.inputWrap, s.inputRow, focused === 'password' && s.inputWrapFocused]}>
+              <TextInput
+                ref={passwordRef}
+                style={[s.input, s.inputFlex]}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="••••••••"
+                placeholder="Contraseña"
                 placeholderTextColor={c.textFaint}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="password"
                 autoComplete="password"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
+                onFocus={() => setFocused('password')}
+                onBlur={() => setFocused(null)}
               />
-              <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={s.eyeBtn}>
+              <Pressable
+                onPress={() => { haptic.selection(); setShowPassword(v => !v); }}
+                style={s.eyeBtn}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
                 {showPassword
-                  ? <EyeOff size={18} color={c.textFaint} />
-                  : <Eye size={18} color={c.textFaint} />
+                  ? <EyeOff size={19} color={c.textFaint} />
+                  : <Eye size={19} color={c.textFaint} />
                 }
-              </TouchableOpacity>
+              </Pressable>
             </View>
-          </View>
 
-          <View style={{ alignItems: 'flex-end' }}>
             <Link href="/(auth)/olvide-contrasena" asChild>
-              <TouchableOpacity>
-                <Text style={s.linkMuted}>¿Olvidaste tu contraseña?</Text>
+              <TouchableOpacity style={s.forgotBtn} hitSlop={6}>
+                <Text style={s.forgotText}>¿Olvidaste tu contraseña?</Text>
               </TouchableOpacity>
             </Link>
-          </View>
 
-          <TouchableOpacity
-            style={[s.btn, loading && s.btnDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={s.btnText}>Ingresar</Text>
-            }
-          </TouchableOpacity>
+            <Pressable
+              style={({ pressed }) => [s.btn, pressed && s.btnPressed, loading && s.btnDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading
+                ? <ActivityIndicator color={colors.white} />
+                : <Text style={s.btnText}>Ingresar</Text>
+              }
+            </Pressable>
 
-          <View style={s.footer}>
+            {__DEV__ && <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} s={s} />}
+          </Animated.View>
+
+          {/* Registro */}
+          <Animated.View style={s.footer} entering={FadeIn.duration(400).delay(280)}>
             <Text style={s.footerText}>¿No tenés cuenta? </Text>
             <Link href="/(auth)/registro" asChild>
-              <TouchableOpacity>
+              <TouchableOpacity hitSlop={6}>
                 <Text style={s.link}>Registrate</Text>
               </TouchableOpacity>
             </Link>
-          </View>
-
-          {__DEV__ && <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} c={c} s={s} />}
-        </Animated.View>
-
-        <Text style={s.tagline}>PLATAFORMA DE GESTIÓN ECUESTRE</Text>
-
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -177,80 +212,74 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 26 },
 
-  header: { alignItems: 'center', marginBottom: 26, gap: 10 },
-  wordmark: { fontSize: 30, fontWeight: '700', fontFamily: fontFamily.semibold, letterSpacing: -0.3, color: c.text, marginTop: 2 },
+  header: { alignItems: 'center', marginBottom: 28 },
 
-  card: {
-    backgroundColor: c.surface, borderRadius: 24, padding: 22, gap: 14,
-    borderWidth: 1, borderColor: c.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 3,
+  intro: { marginBottom: 26 },
+  title: {
+    fontSize: 32, fontWeight: '700', fontFamily: fontFamily.semibold,
+    letterSpacing: -0.8, color: c.text,
   },
-  cardTitle: { fontSize: 19, fontWeight: '800', letterSpacing: -0.4, color: c.text },
-  cardSub: { fontSize: 13, color: c.textFaint, marginTop: -8 },
+  subtitle: { fontSize: 15, color: c.textMuted, marginTop: 6, letterSpacing: -0.1 },
+
+  form: { gap: 12 },
 
   errorBox: {
-    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 12, padding: 12,
+    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 12, padding: 13,
     borderWidth: 1, borderColor: c.isDark ? 'rgba(239,68,68,0.3)' : '#fecaca',
   },
-  errorText: { fontSize: 13, color: c.isDark ? '#fca5a5' : '#b91c1c' },
+  errorText: { fontSize: 13.5, color: c.isDark ? '#fca5a5' : '#b91c1c' },
 
-  field: { gap: 6 },
-  label: { fontSize: 12.5, fontWeight: '600', color: c.textMuted },
-  input: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 13,
-    fontSize: 15, color: c.text, backgroundColor: c.surfaceAlt,
-  },
-  inputRow: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 12,
+  inputWrap: {
+    height: 56, borderRadius: 14,
+    borderWidth: 1.5, borderColor: c.border,
     backgroundColor: c.surfaceAlt,
+    justifyContent: 'center',
   },
-  inputFlex: {
-    flex: 1, paddingHorizontal: 14, paddingVertical: 13,
-    fontSize: 15, color: c.text,
+  inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },
+  inputRow: { flexDirection: 'row', alignItems: 'center' },
+  input: {
+    height: '100%', paddingHorizontal: 16,
+    fontSize: 16.5, color: c.text, letterSpacing: -0.2,
   },
-  eyeBtn: { paddingHorizontal: 12 },
+  inputFlex: { flex: 1 },
+  eyeBtn: { paddingHorizontal: 16, height: '100%', justifyContent: 'center' },
+
+  forgotBtn: { alignSelf: 'flex-end', paddingVertical: 2 },
+  forgotText: { fontSize: 13.5, color: c.textMuted, fontWeight: '500' },
+
+  btn: {
+    backgroundColor: c.brand, borderRadius: 14, height: 56,
+    alignItems: 'center', justifyContent: 'center', marginTop: 6,
+  },
+  btnPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  btnDisabled: { opacity: 0.6 },
+  btnText: { color: colors.white, fontSize: 16.5, fontWeight: '700', letterSpacing: -0.2 },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
+  footerText: { fontSize: 14.5, color: c.textMuted },
+  link: { fontSize: 14.5, fontWeight: '700', color: c.brand },
 
   devBtn: {
     alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 9, marginTop: 2,
-    borderRadius: 10, borderWidth: 1,
+    paddingVertical: 11, marginTop: 4,
+    borderRadius: 12, borderWidth: 1,
     borderColor: c.border, backgroundColor: c.surfaceAlt,
   },
   devBtnText: { fontSize: 12.5, fontWeight: '600', color: c.textMuted },
 
-  btn: {
-    backgroundColor: c.brand, borderRadius: 14,
-    paddingVertical: 15, alignItems: 'center', marginTop: 2,
-  },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
-
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 2 },
-  footerText: { fontSize: 13, color: c.textFaint },
-  link: { fontSize: 13, fontWeight: '700', color: c.brand },
-  linkMuted: { fontSize: 12, color: c.textFaint },
-  tagline: {
-    textAlign: 'center', marginTop: 24, fontSize: 11,
-    letterSpacing: 1.5, color: c.textFaint,
-  },
-
-  overlay: {
-    flex: 1, backgroundColor: c.overlay,
-    justifyContent: 'center', paddingHorizontal: 32,
-  },
   picker: {
-    backgroundColor: c.surface, borderRadius: 16, overflow: 'hidden',
-    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.surfaceAlt, borderRadius: 16, overflow: 'hidden',
+    borderWidth: 1, borderColor: c.border, marginBottom: 8,
   },
   pickerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 14,
     borderTopWidth: 1, borderTopColor: c.border,
   },
+  pickerRowFirst: { borderTopWidth: 0 },
   pickerRole: { fontSize: 13.5, fontWeight: '600', color: c.text },
   pickerEmail: { fontSize: 11, color: c.textFaint },
 });

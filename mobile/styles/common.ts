@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from './tokens';
+import { space, text, radius, weight, touch } from './tokens';
 
 /**
  * Estilos compartidos entre pantallas, sensibles al tema (claro / oscuro).
@@ -54,25 +54,30 @@ export const makeCard = (c: ThemeColors) => StyleSheet.create({
 
 export const makeInput = (c: ThemeColors) => StyleSheet.create({
   base: {
-    borderWidth: 1,
-    borderColor: c.borderStrong,
-    borderRadius: radius.md,
+    height: touch.field,
+    borderWidth: 1.5,
+    borderColor: c.border,
+    borderRadius: radius.lg,
     paddingHorizontal: space[4],
-    paddingVertical: space[3],
-    fontSize: text.sm,
+    fontSize: text.md,
     color: c.text,
     backgroundColor: c.surfaceAlt,
   },
+  /** Igual que `base` pero para el campo enfocado. */
+  focused: {
+    borderColor: c.brand,
+    backgroundColor: c.surface,
+  },
   multiline: {
-    borderWidth: 1,
-    borderColor: c.borderStrong,
-    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: c.border,
+    borderRadius: radius.lg,
     paddingHorizontal: space[4],
-    paddingVertical: space[3],
-    fontSize: text.sm,
+    paddingVertical: space[4],
+    fontSize: text.md,
     color: c.text,
     backgroundColor: c.surfaceAlt,
-    height: 88,
+    minHeight: 104,
     textAlignVertical: 'top' as const,
   },
 });
@@ -80,29 +85,32 @@ export const makeInput = (c: ThemeColors) => StyleSheet.create({
 export const makeButton = (c: ThemeColors) => StyleSheet.create({
   primary: {
     backgroundColor: c.brand,
-    borderRadius: radius.md,
-    paddingVertical: space[3],
+    borderRadius: radius.lg,
+    height: touch.button,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   secondary: {
-    borderWidth: 1,
-    borderColor: c.borderStrong,
-    borderRadius: radius.md,
-    paddingVertical: space[3],
+    borderWidth: 1.5,
+    borderColor: c.border,
+    borderRadius: radius.lg,
+    height: touch.button,
     alignItems: 'center' as const,
-    backgroundColor: c.surface,
+    justifyContent: 'center' as const,
+    backgroundColor: c.surfaceAlt,
   },
   danger: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: c.isDark ? 'rgba(239,68,68,0.4)' : '#fecaca',
-    borderRadius: radius.md,
-    paddingVertical: space[3],
+    borderRadius: radius.lg,
+    height: touch.button,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2',
   },
-  primaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  secondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
-  dangerText: { fontSize: text.sm, fontWeight: weight.bold, color: c.isDark ? '#f87171' : colors.red700 },
+  primaryText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white, letterSpacing: -0.2 },
+  secondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted, letterSpacing: -0.2 },
+  dangerText: { fontSize: text.md, fontWeight: weight.bold, color: c.isDark ? '#f87171' : colors.red700 },
 });
 
 export const makeModal = (c: ThemeColors) => StyleSheet.create({

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { AxiosError } from 'axios';
 import { useRouter } from 'expo-router';
@@ -260,13 +260,19 @@ function NoPlanState({ c, s }: { c: ThemeColors; s: Styles }) {
 export default function ReportesScreen() {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const { data, isLoading, error } = useReportSummary();
+  const { data, isLoading, error, refetch, isRefetching } = useReportSummary();
   const status = (error as AxiosError | null)?.response?.status;
 
   return (
     <View style={s.root}>
       <ScreenHeader title="Reportes" showBack backTo={Routes.mas} />
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />
+        }
+      >
         {isLoading ? (
           <ReportSkeleton />
         ) : status === 403 ? (
@@ -327,9 +333,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.border, padding: space[3], gap: 2, ...shadow.sm,
   },
   statIcon: { marginBottom: space[1] },
-  statLabel: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
   statValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
-  statHint: { fontSize: 10, color: c.textFaint },
+  statHint: { fontSize: text.xs, color: c.textFaint },
 
   /* Cards */
   card: {
@@ -354,7 +360,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Expenses */
   expenseTotals: { flexDirection: 'row', gap: space[3], marginBottom: space[4] },
   expenseBox: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
-  expenseBoxLbl: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  expenseBoxLbl: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
   expenseBoxVal: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text, marginTop: 2 },
 
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 104 },

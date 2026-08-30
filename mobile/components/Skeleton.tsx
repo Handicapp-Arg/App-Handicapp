@@ -28,11 +28,13 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = radius.sm
     transform: [{ translateX: interpolate(progress.value, [0, 1], [-180, 180]) }],
   }));
 
+  const shimmerColor = c.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)';
+
   return (
     <View style={[s.base, { width: width as any, height, borderRadius }, style]}>
       <Animated.View style={[StyleSheet.absoluteFill, shimmer]}>
         <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.6)', 'transparent']}
+          colors={['transparent', shimmerColor, 'transparent']}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}

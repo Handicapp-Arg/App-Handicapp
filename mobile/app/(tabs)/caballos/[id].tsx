@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, RefreshControl,
-  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS, Share,
+  Platform, TextInput, ActivityIndicator, Alert, Linking, ActionSheetIOS, Share,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import Animated, { SlideInDown } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useHorseDocuments, useWeightRecords, useAddWeightRecord, useHorseVets, useAssignVet, useRemoveVet, useVeterinarios, useHorseAssignees, useHorseOrgMembers, useAssignMember, useRemoveMember, useTransferHorse, usePropietarios, useHorseMovements, useUploadDocument, useDeleteDocument } from '../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS } from '../../../hooks/use-routines';
@@ -46,10 +46,17 @@ import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
+import { ActionSheet } from '../../../components/ActionSheet';
+import { FormSheet } from '../../../components/FormSheet';
+import { BottomSheet } from '../../../components/BottomSheet';
+import { AppImage } from '../../../components/AppImage';
 
 // Base URL para el enlace público del caballo (QR). Configurable via EXPO_PUBLIC_APP_URL
 // (ej. IP LAN http://192.168.x.x:3005) para que el QR sea accesible desde otros dispositivos.
-const PUBLIC_BASE = process.env.EXPO_PUBLIC_APP_URL ?? 'https://app.handicapp.com';
+const PUBLIC_BASE = process.env.EXPO_PUBLIC_APP_URL ?? 'https://app.handicapp.com.ar';
+
+// Grid de fotos: entrada animada escalonada requiere una versión animatable del touchable.
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 type Tab = 'info' | 'historial' | 'medico' | 'fotos' | 'pedigree' | 'finanzas';
 
@@ -63,11 +70,15 @@ const TABS: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: 'finanzas',  label: 'Finanzas',  icon: Banknote },
 ];
 
-const HEALTH_STATUS_META: Record<HealthStatus, { dot: string; bg: string; text: string; label: string; Icon: LucideIcon }> = {
-  verde:    { dot: '#22c55e', bg: '#f0fdf4', text: '#15803d', label: 'Vigente',    Icon: ShieldCheck },
-  amarillo: { dot: '#f59e0b', bg: '#fffbeb', text: '#b45309', label: 'Por vencer', Icon: AlertTriangle },
-  rojo:     { dot: '#ef4444', bg: '#fef2f2', text: '#b91c1c', label: 'Vencido',    Icon: XCircle },
-};
+// Theme-aware: los 3 estados de la libreta sanitaria usan los semánticos del
+// theme (igual que makeEventTypeColors) para que se vean bien en claro y oscuro.
+function makeHealthStatusMeta(c: ThemeColors): Record<HealthStatus, { dot: string; bg: string; text: string; label: string; Icon: LucideIcon }> {
+  return {
+    verde:    { dot: c.success, bg: c.successSoft, text: c.success, label: 'Vigente',    Icon: ShieldCheck },
+    amarillo: { dot: c.warning, bg: c.warningSoft, text: c.warning, label: 'Por vencer', Icon: AlertTriangle },
+    rojo:     { dot: c.danger,  bg: c.dangerSoft,  text: c.danger,  label: 'Vencido',    Icon: XCircle },
+  };
+}
 
 const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string }> = {
   alimentacion:  { Icon: Wheat,    color: '#16a34a' },
@@ -80,7 +91,7 @@ const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string }>
 };
 
 /* ─── EditHorseModal ─── */
-function EditHorseModal({ horse, onClose, c, s }: { horse: Horse; onClose: () => void; c: ThemeColors; s: Styles }) {
+function EditHorseModal({ horse, visible, onClose, c, s }: { horse: Horse; visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
   const updateHorse = useUpdateHorse();
   const toast = useToast();
   const [name, setName] = useState(horse.name);
@@ -88,37 +99,78 @@ function EditHorseModal({ horse, onClose, c, s }: { horse: Horse; onClose: () =>
   const [microchip, setMicrochip] = useState(horse.microchip ?? '');
   const [error, setError] = useState('');
 
-  const handleSave = async () => {
-    if (!name.trim()) { setError('El nombre es obligatorio'); return; }
+  // La hoja ya no se destruye al cerrarse: limpiamos el formulario al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setName(horse.name);
+    setBirthDate(horse.birth_date ?? '');
+    setMicrochip(horse.microchip ?? '');
     setError('');
-    await updateHorse.mutateAsync({ id: horse.id, name: name.trim(), birth_date: birthDate || null, microchip: microchip || null });
-    toast.success('Cambios guardados');
-    onClose();
+  }, [visible, horse]);
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError('El nombre es obligatorio'); haptic.error(); return; }
+    setError('');
+    try {
+      await updateHorse.mutateAsync({ id: horse.id, name: name.trim(), birth_date: birthDate || null, microchip: microchip || null });
+      haptic.success();
+      toast.success('Cambios guardados');
+      onClose();
+    } catch {
+      haptic.error();
+      setError('No se pudieron guardar los cambios. Intentá de nuevo.');
+    }
   };
 
   return (
-    <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={s.modalCard}>
-        <View style={s.modalHeader}>
-          <Text style={s.modalTitle}>Editar {horse.name}</Text>
-          <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-        </View>
-        <View style={s.modalBody}>
-          <Text style={s.fieldLabel}>Nombre *</Text>
-          <TextInput style={s.input} value={name} onChangeText={setName} placeholder="Nombre del caballo" placeholderTextColor={c.textFaint} autoCapitalize="words" />
-          <DatePicker label="Fecha de nacimiento" value={birthDate} onChange={setBirthDate} maxDate={new Date()} />
-          <Text style={s.fieldLabel}>Microchip (15 dígitos)</Text>
-          <TextInput style={s.input} value={microchip} onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))} placeholder="123456789012345" placeholderTextColor={c.textFaint} keyboardType="numeric" />
-          {error ? <Text style={s.fieldError}>{error}</Text> : null}
-        </View>
-        <View style={s.modalFooter}>
-          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}><Text style={s.btnSecondaryText}>Cancelar</Text></TouchableOpacity>
-          <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1 }, updateHorse.isPending && { opacity: 0.6 }]} onPress={handleSave} disabled={updateHorse.isPending}>
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title={`Editar ${horse.name}`}
+      footer={
+        <>
+          <TouchableOpacity
+            style={[s.btn, s.btnSecondary, { flex: 1 }]}
+            onPress={() => { haptic.light(); onClose(); }}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar edición"
+          >
+            <Text style={s.btnSecondaryText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { flex: 1 }, updateHorse.isPending && { opacity: 0.6 }]}
+            onPress={handleSave}
+            disabled={updateHorse.isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Guardar cambios del caballo"
+          >
             {updateHorse.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
           </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+        </>
+      }
+    >
+      <TextInput
+        style={s.input}
+        value={name}
+        onChangeText={setName}
+        placeholder="Nombre del caballo"
+        placeholderTextColor={c.textFaint}
+        autoCapitalize="words"
+        textContentType="name"
+        returnKeyType="next"
+      />
+      <DatePicker label="Fecha de nacimiento" value={birthDate} onChange={setBirthDate} maxDate={new Date()} />
+      <TextInput
+        style={s.input}
+        value={microchip}
+        onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))}
+        placeholder="Microchip (15 dígitos)"
+        placeholderTextColor={c.textFaint}
+        keyboardType="numeric"
+        returnKeyType="done"
+      />
+      {error ? <Text style={s.fieldError}>{error}</Text> : null}
+    </FormSheet>
   );
 }
 
@@ -153,7 +205,7 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
 
   return (
     <View style={s.commentRoot}>
-      <TouchableOpacity style={s.commentToggle} onPress={() => setOpen((p) => !p)} activeOpacity={0.7}>
+      <TouchableOpacity style={s.commentToggle} onPress={() => { haptic.selection(); setOpen((p) => !p); }} activeOpacity={0.7}>
         <MessageCircle size={12} color={c.textFaint} strokeWidth={2} />
         <Text style={s.commentToggleText}>
           {open ? 'Ocultar' : 'Comentarios'}{comments && comments.length > 0 ? ` (${comments.length})` : ''}
@@ -172,7 +224,13 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
                 <Text style={s.commentText}>{c.text}</Text>
               </View>
               {c.user_id === currentUserId && (
-                <TouchableOpacity onPress={() => del.mutate(c.id)} style={{ paddingLeft: 6 }}>
+                <TouchableOpacity
+                  onPress={() => { haptic.light(); del.mutate(c.id); }}
+                  style={{ paddingLeft: 6 }}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Eliminar comentario"
+                >
                   <X size={14} color={colors.gray300} strokeWidth={2} />
                 </TouchableOpacity>
               )}
@@ -183,8 +241,10 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
             <TouchableOpacity
               style={[s.commentSend, (!text.trim() || add.isPending) && { opacity: 0.4 }]}
               disabled={!text.trim() || add.isPending}
-              onPress={async () => { await add.mutateAsync(text.trim()); setText(''); }}
+              onPress={async () => { haptic.light(); await add.mutateAsync(text.trim()); setText(''); }}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Enviar comentario"
             >
               <ArrowUp size={16} color={colors.white} strokeWidth={2} />
             </TouchableOpacity>
@@ -228,6 +288,7 @@ export default function HorseDetailScreen() {
   const { c } = useTheme();
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
+  const healthStatusMeta = useMemo(() => makeHealthStatusMeta(c), [c]);
 
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
@@ -319,8 +380,43 @@ export default function HorseDetailScreen() {
   const [newEventDate, setNewEventDate] = useState(todayISO);
   const [newEventError, setNewEventError] = useState('');
 
+  // Las hojas ya no se destruyen al cerrarse: limpiamos cada formulario al abrir.
+  useEffect(() => {
+    if (!showAddWeight) return;
+    setNewWeight('');
+    setNewWeightDate(todayISO);
+  }, [showAddWeight]);
+
+  useEffect(() => {
+    if (!showAssignVet) return;
+    setSelectedVetId('');
+  }, [showAssignVet]);
+
+  useEffect(() => {
+    if (!showAssignTeam) return;
+    setSelectedMemberId('');
+  }, [showAssignTeam]);
+
+  useEffect(() => {
+    if (!showTransfer) return;
+    setTransferOwnerId('');
+  }, [showTransfer]);
+
+  useEffect(() => {
+    if (!showUploadDoc) return;
+    setDocName('');
+  }, [showUploadDoc]);
+
+  useEffect(() => {
+    if (!showAddEvent) return;
+    setNewEventType('nota');
+    setNewEventDesc('');
+    setNewEventDate(todayISO);
+    setNewEventError('');
+  }, [showAddEvent]);
+
   const handleAddEvent = async () => {
-    if (!newEventDesc.trim()) { setNewEventError('La descripción es obligatoria'); return; }
+    if (!newEventDesc.trim()) { setNewEventError('La descripción es obligatoria'); haptic.error(); return; }
     setNewEventError('');
     try {
       await createEvent.mutateAsync({
@@ -336,6 +432,7 @@ export default function HorseDetailScreen() {
       setNewEventType('nota');
       setNewEventDate(todayISO);
     } catch {
+      haptic.error();
       setNewEventError('No se pudo guardar el evento.');
     }
   };
@@ -455,8 +552,14 @@ export default function HorseDetailScreen() {
   if (!horse) {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={{ fontSize: 15, color: c.textMuted }}>Caballo no encontrado</Text>
-        <TouchableOpacity onPress={() => router.navigate(Routes.tabsCaballos as never)}><Text style={{ fontSize: 14, fontWeight: '600', color: c.brand }}>← Volver</Text></TouchableOpacity>
+        <Text style={{ fontSize: text.base, color: c.textMuted }}>Caballo no encontrado</Text>
+        <TouchableOpacity
+          onPress={() => { haptic.light(); router.navigate(Routes.tabsCaballos as never); }}
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la lista de caballos"
+        >
+          <Text style={{ fontSize: text.sm, fontWeight: '600', color: c.brand }}>← Volver</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -484,7 +587,7 @@ export default function HorseDetailScreen() {
       {/* ─── Hero: aspect ratio, Dynamic Island safe ─── */}
       <View style={s.heroWrap}>
         {horse.image_url
-          ? <Image source={{ uri: horse.image_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ? <AppImage source={{ uri: horse.image_url }} style={StyleSheet.absoluteFill} />
           : (
             <View style={[StyleSheet.absoluteFill, s.heroPlaceholder]}>
               <Text style={s.heroPlaceholderInitial}>{horse.name[0]?.toUpperCase()}</Text>
@@ -499,14 +602,26 @@ export default function HorseDetailScreen() {
         />
 
         {/* Back */}
-        <TouchableOpacity style={[s.heroPill, { top: insets.top + 10, left: 14 }]} onPress={() => { haptic.light(); router.navigate(Routes.tabsCaballos as never); }} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[s.heroPill, { top: insets.top + 10, left: 14 }]}
+          onPress={() => { haptic.light(); router.navigate(Routes.tabsCaballos as never); }}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la lista de caballos"
+        >
           <ChevronLeft size={20} color={colors.white} strokeWidth={2} />
         </TouchableOpacity>
 
         {/* Acciones — menú de 3 puntitos */}
         {(can('horses', 'update') || can('horses', 'delete')) && (
           <View style={[s.heroActions, { top: insets.top + 10 }]}>
-            <TouchableOpacity style={[s.heroPill, s.heroPillStatic]} onPress={() => { haptic.light(); setShowMenu(true); }} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[s.heroPill, s.heroPillStatic]}
+              onPress={() => { haptic.light(); setShowMenu(true); }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Más opciones del caballo"
+            >
               <MoreHorizontal size={20} color={colors.white} strokeWidth={2} />
             </TouchableOpacity>
           </View>
@@ -520,6 +635,8 @@ export default function HorseDetailScreen() {
               <TouchableOpacity
                 style={[s.heroPill, s.heroPillStatic, s.heroPillQr]}
                 onPress={() => { haptic.light(); setShowQR(true); }} activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Ver código QR del caballo"
               >
                 <QrCode size={18} color={c.isDark ? '#1a1207' : colors.white} strokeWidth={2.2} />
               </TouchableOpacity>
@@ -528,7 +645,7 @@ export default function HorseDetailScreen() {
           <View style={s.heroBadges}>
             {horse.horse_record_id && (
               <View style={[s.heroBadge, s.heroBadgeVerified]}>
-                <ShieldCheck size={11} color="#fff" strokeWidth={2} />
+                <ShieldCheck size={11} color={colors.white} strokeWidth={2} />
                 <Text style={s.heroBadgeText}>Verificado en padrón</Text>
               </View>
             )}
@@ -578,7 +695,7 @@ export default function HorseDetailScreen() {
             <View style={s.section}>
               <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
                 <Text style={s.sectionTitle}>Finanzas</Text>
-                <TouchableOpacity onPress={() => setActiveTab('finanzas')}>
+                <TouchableOpacity onPress={() => { haptic.selection(); setActiveTab('finanzas'); }}>
                   <Text style={{ fontSize: 12, color: c.brand, fontWeight: '600' }}>Ver detalle →</Text>
                 </TouchableOpacity>
               </View>
@@ -620,7 +737,7 @@ export default function HorseDetailScreen() {
               <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
                 <Text style={s.sectionTitle}>Veterinarios</Text>
                 {can('horses', 'update') && (
-                  <TouchableOpacity onPress={() => setShowAssignVet(true)} style={s.smallBtn}>
+                  <TouchableOpacity onPress={() => { haptic.light(); setShowAssignVet(true); }} style={s.smallBtn}>
                     <Text style={s.smallBtnText}>+ Asignar</Text>
                   </TouchableOpacity>
                 )}
@@ -639,7 +756,12 @@ export default function HorseDetailScreen() {
                           <Text style={{ fontSize: 11, color: c.textFaint }}>{v.user.email}</Text>
                         </View>
                         {can('horses', 'update') && (
-                          <TouchableOpacity onPress={() => handleRemoveVet(v.user_id, v.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <TouchableOpacity
+                            onPress={() => handleRemoveVet(v.user_id, v.user.name)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Quitar a ${v.user.name}`}
+                          >
                             <XCircle size={20} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
@@ -657,7 +779,7 @@ export default function HorseDetailScreen() {
               <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
                 <Text style={s.sectionTitle}>Equipo</Text>
                 {canManageTeam && (
-                  <TouchableOpacity onPress={() => { setSelectedMemberId(''); setShowAssignTeam(true); }} style={s.smallBtn}>
+                  <TouchableOpacity onPress={() => { haptic.light(); setSelectedMemberId(''); setShowAssignTeam(true); }} style={s.smallBtn}>
                     <Text style={s.smallBtnText}>+ Asignar</Text>
                   </TouchableOpacity>
                 )}
@@ -676,7 +798,12 @@ export default function HorseDetailScreen() {
                           <Text style={{ fontSize: 11, color: c.textFaint }}>{m.user.email}</Text>
                         </View>
                         {canManageTeam && (
-                          <TouchableOpacity onPress={() => handleRemoveMember(m.user_id, m.user.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <TouchableOpacity
+                            onPress={() => handleRemoveMember(m.user_id, m.user.name)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Quitar a ${m.user.name}`}
+                          >
                             <XCircle size={20} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
@@ -720,7 +847,7 @@ export default function HorseDetailScreen() {
             <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
               <Text style={s.sectionTitle}>Documentos</Text>
               {can('horses', 'update') && (
-                <TouchableOpacity onPress={() => setShowUploadDoc(true)} style={s.smallBtn}>
+                <TouchableOpacity onPress={() => { haptic.light(); setShowUploadDoc(true); }} style={s.smallBtn}>
                   <Text style={s.smallBtnText}>+ Subir</Text>
                 </TouchableOpacity>
               )}
@@ -733,12 +860,17 @@ export default function HorseDetailScreen() {
                   <View key={doc.id}>
                     {i > 0 && <View style={s.docDivider} />}
                     <View style={s.docRow}>
-                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => Linking.openURL(doc.url)} activeOpacity={0.7}>
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => { haptic.light(); Linking.openURL(doc.url); }} activeOpacity={0.7}>
                         <View style={s.docIcon}><FileText size={18} color={colors.red500} strokeWidth={2} /></View>
                         <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
                       </TouchableOpacity>
                       {can('horses', 'update') && (
-                        <TouchableOpacity onPress={() => handleDeleteDoc(doc.id, doc.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteDoc(doc.id, doc.name)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Eliminar documento ${doc.name}`}
+                        >
                           <Trash2 size={16} color={c.textFaint} strokeWidth={2} />
                         </TouchableOpacity>
                       )}
@@ -754,7 +886,7 @@ export default function HorseDetailScreen() {
             <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
               <Text style={s.sectionTitle}>Peso y condición</Text>
               {can('horses', 'update') && (
-                <TouchableOpacity onPress={() => setShowAddWeight(true)} style={s.smallBtn}>
+                <TouchableOpacity onPress={() => { haptic.light(); setShowAddWeight(true); }} style={s.smallBtn}>
                   <Text style={s.smallBtnText}>+ Registrar</Text>
                 </TouchableOpacity>
               )}
@@ -790,7 +922,7 @@ export default function HorseDetailScreen() {
                 const pct = maxChecks > 0 ? Math.round((totalChecks / maxChecks) * 100) : 0;
                 return (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontSize: text.xs, color: pct >= 70 ? '#16a34a' : pct >= 40 ? colors.amber600 : colors.red500, fontWeight: weight.bold }}>
+                    <Text style={{ fontSize: text.xs, color: pct >= 70 ? c.success : pct >= 40 ? c.warning : c.danger, fontWeight: weight.bold }}>
                       {pct}%
                     </Text>
                     <Text style={{ fontSize: 10, color: c.textFaint }}>últimos {routines.length}d</Text>
@@ -813,7 +945,7 @@ export default function HorseDetailScreen() {
                   >
                     <RIcon size={16} color={ri?.color ?? c.textFaint} strokeWidth={2} />
                     <Text style={[s.routineLabel, checked && s.routineLabelChecked]} numberOfLines={1}>{label}</Text>
-                    {checked && <CheckCircle2 size={16} color="#16a34a" strokeWidth={2} />}
+                    {checked && <CheckCircle2 size={16} color={c.success} strokeWidth={2} />}
                   </TouchableOpacity>
                 );
               })}
@@ -846,7 +978,7 @@ export default function HorseDetailScreen() {
                       <View key={r.date} style={s.routineTrendDay}>
                         <View style={[s.routineTrendBar, {
                           height: Math.max(4, pct * 36),
-                          backgroundColor: pct >= 0.7 ? '#16a34a' : pct >= 0.4 ? colors.amber600 : pct > 0 ? colors.red500 : c.borderStrong,
+                          backgroundColor: pct >= 0.7 ? c.success : pct >= 0.4 ? c.warning : pct > 0 ? c.danger : c.borderStrong,
                         }]} />
                         <Text style={[s.routineTrendLabel, isToday && { color: c.brand, fontWeight: weight.bold }]}>{dayLabel}</Text>
                       </View>
@@ -879,7 +1011,11 @@ export default function HorseDetailScreen() {
             <View style={s.empty}><Text style={s.emptyText}>Sin eventos registrados</Text></View>
           ) : (
             <View style={s.eventsList}>
-              {sortedEvents.map((ev) => <EventCard key={ev.id} event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} c={c} s={s} />)}
+              {sortedEvents.map((ev, index) => (
+                <Animated.View key={ev.id} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
+                  <EventCard event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} c={c} s={s} />
+                </Animated.View>
+              ))}
             </View>
           )}
         </View>
@@ -910,7 +1046,10 @@ export default function HorseDetailScreen() {
                 </TouchableOpacity>
               )}
               {can('horses', 'update') && (
-                <TouchableOpacity onPress={() => setShowAddMedical(true)} style={s.smallBtn}>
+                <TouchableOpacity
+                  onPress={() => { haptic.light(); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); setShowAddMedical(true); }}
+                  style={s.smallBtn}
+                >
                   <Text style={s.smallBtnText}>+ Agregar</Text>
                 </TouchableOpacity>
               )}
@@ -929,7 +1068,7 @@ export default function HorseDetailScreen() {
               const last = medicalRecords?.filter((r) => r.type === 'sanidad').find((r) => d.match.test(r.name)) ?? null;
               const nextDue = last?.next_due ?? null;
               const status = healthStatusFromNextDue(nextDue);
-              const meta = HEALTH_STATUS_META[status];
+              const meta = healthStatusMeta[status];
               const StatusIcon = meta.Icon;
               return (
                 <View key={d.key} style={s.healthRow}>
@@ -981,7 +1120,7 @@ export default function HorseDetailScreen() {
                 activeOpacity={0.85}
               >
                 {canCertify
-                  ? <ShieldCheck size={15} color="#fff" strokeWidth={2.2} />
+                  ? <ShieldCheck size={15} color={colors.white} strokeWidth={2.2} />
                   : <Lock size={14} color={c.textMuted} strokeWidth={2.2} />}
                 <Text style={[s.certifyBtnText, !canCertify && { color: c.textMuted }]}>
                   {certLoading ? 'Emitiendo...' : 'Emitir certificado'}
@@ -994,10 +1133,10 @@ export default function HorseDetailScreen() {
             <Text style={s.emptyText}>Sin registros médicos. Agregá vacunas, desparasitaciones y tratamientos.</Text>
           ) : (
             <View style={{ gap: 8 }}>
-              {medicalRecords.map((rec) => {
+              {medicalRecords.map((rec, index) => {
                 const mc = MEDICAL_TYPE_COLORS[rec.type] ?? MEDICAL_TYPE_COLORS.tratamiento;
                 return (
-                  <View key={rec.id} style={s.medCard}>
+                  <Animated.View key={rec.id} style={s.medCard} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
                     <View style={s.medCardTop}>
                       <View style={[s.medTypeBadge, { backgroundColor: mc.bg }]}>
                         <Text style={[s.medTypeText, { color: mc.text }]}>{MEDICAL_TYPE_LABELS[rec.type] ?? rec.type}</Text>
@@ -1006,10 +1145,15 @@ export default function HorseDetailScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text style={s.medDate}>{new Date(rec.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
                         {can('horses', 'update') && (
-                          <TouchableOpacity onPress={() => Alert.alert('Eliminar', `¿Eliminás "${rec.name}"?`, [
-                            { text: 'Cancelar', style: 'cancel' },
-                            { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteMedical.mutate(rec.id); } },
-                          ])}>
+                          <TouchableOpacity
+                            onPress={() => Alert.alert('Eliminar', `¿Eliminás "${rec.name}"?`, [
+                              { text: 'Cancelar', style: 'cancel' },
+                              { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteMedical.mutate(rec.id); } },
+                            ])}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Más opciones de ${rec.name}`}
+                          >
                             <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
@@ -1022,7 +1166,7 @@ export default function HorseDetailScreen() {
                         {rec.notes && <Text style={s.medNotes}>{rec.notes}</Text>}
                       </View>
                     )}
-                  </View>
+                  </Animated.View>
                 );
               })}
             </View>
@@ -1061,12 +1205,12 @@ export default function HorseDetailScreen() {
           >
             <TouchableOpacity
               style={[s.activityChip, activityType === 'all' && { backgroundColor: c.surfaceAlt, borderColor: c.text }]}
-              onPress={() => setActivityType('all')}
+              onPress={() => { haptic.selection(); setActivityType('all'); }}
             >
               <Text style={[s.activityChipText, activityType === 'all' && { color: c.text }]}>Todas</Text>
             </TouchableOpacity>
             {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
-              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg, borderColor: m.color }]} onPress={() => setActivityType(v)}>
+              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg, borderColor: m.color }]} onPress={() => { haptic.selection(); setActivityType(v); }}>
                 <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
               </TouchableOpacity>
             ))}
@@ -1075,14 +1219,22 @@ export default function HorseDetailScreen() {
             <Text style={s.emptyText}>Las fotos tomadas incluyen sello de fecha y autor verificado.</Text>
           ) : (
             <View style={s.photosGrid}>
-              {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).slice(0, 9).map((p) => {
+              {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).slice(0, 9).map((p, index) => {
                 const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
                 const stamp = p.taken_at
                   ? new Date(p.taken_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
                   : '';
                 return (
-                  <TouchableOpacity key={p.id} style={s.photoWrap} onPress={() => Linking.openURL(p.url)} activeOpacity={0.85}>
-                    <Image source={{ uri: p.url }} style={s.photoThumb} />
+                  <AnimatedTouchable
+                    key={p.id}
+                    style={s.photoWrap}
+                    onPress={() => { haptic.light(); Linking.openURL(p.url); }}
+                    activeOpacity={0.85}
+                    entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver foto${p.photographer?.name ? ` de ${p.photographer.name}` : ''}`}
+                  >
+                    <AppImage source={{ uri: p.url }} style={s.photoThumb} />
                     <View style={[s.photoBadge, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
                       <Text style={[s.photoBadgeText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
@@ -1094,7 +1246,7 @@ export default function HorseDetailScreen() {
                         {!!stamp && <Text style={s.photoStampTime} numberOfLines={1}>{stamp}</Text>}
                       </View>
                     )}
-                  </TouchableOpacity>
+                  </AnimatedTouchable>
                 );
               })}
             </View>
@@ -1105,453 +1257,419 @@ export default function HorseDetailScreen() {
       </View>
 
       {/* ─── Menú de acciones ─── */}
-      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
-        <TouchableOpacity style={s.menuOverlay} activeOpacity={1} onPress={() => setShowMenu(false)}>
-          <View style={[s.menuSheet, { paddingBottom: insets.bottom + 16 }]}>
-            {can('horses', 'update') && (
-              <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); handlePickImage(); }} activeOpacity={0.7}>
-                <Camera size={20} color={c.text} strokeWidth={2} />
-                <Text style={s.menuItemText}>Cambiar foto</Text>
+      <ActionSheet
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        acciones={[
+          ...(can('horses', 'update') ? [
+            { label: 'Cambiar foto', Icon: Camera, onPress: handlePickImage },
+            { label: 'Editar caballo', Icon: Pencil, onPress: () => setShowEdit(true) },
+          ] : []),
+          ...((user?.role === 'propietario' || can('auctions', 'create')) ? [{
+            label: 'Publicar en venta',
+            Icon: Megaphone,
+            onPress: () => { haptic.medium(); nav.push(router, `${Routes.remateCrear}?horse=${horse.id}` as never); },
+          }] : []),
+          ...(can('horses', 'delete') ? [{
+            label: 'Eliminar caballo',
+            Icon: Trash2,
+            destructiva: true,
+            onPress: handleDelete,
+          }] : []),
+        ]}
+      />
+
+      {/* ─── Hoja QR ─── */}
+      <BottomSheet visible={showQR} onClose={() => setShowQR(false)} title="Código QR">
+        <View style={{ paddingBottom: insets.bottom + 8 }}>
+          <Text style={s.qrTitle} numberOfLines={1}>{horse.name}</Text>
+          <View style={s.qrWrap}>
+            <View style={s.qrInner}>
+              {horse.public_token && (
+                <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={200} color="#9d6c35" backgroundColor="#ffffff" />
+              )}
+            </View>
+          </View>
+          <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
+          <View style={s.qrActions}>
+            <TouchableOpacity
+              style={s.qrLinkBtn}
+              onPress={async () => {
+                if (!horse.public_token) return;
+                await Clipboard.setStringAsync(`${PUBLIC_BASE}/caballo/${horse.public_token}`);
+                haptic.light();
+                toast.success('Enlace copiado');
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Copiar enlace público del caballo"
+            >
+              <Copy size={15} color={c.brand} strokeWidth={2.2} />
+              <Text style={s.qrLinkBtnText}>Copiar enlace</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.qrShareBtn}
+              onPress={async () => {
+                if (!horse.public_token) return;
+                const url = `${PUBLIC_BASE}/caballo/${horse.public_token}`;
+                try {
+                  await Share.share({ message: `Mirá el perfil de ${horse.name} en HandicApp: ${url}`, url });
+                } catch {
+                  // usuario canceló
+                }
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Compartir enlace público del caballo"
+            >
+              <Share2 size={15} color={colors.white} strokeWidth={2.2} />
+              <Text style={s.qrShareBtnText}>Compartir</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </BottomSheet>
+
+      {/* ─── Hoja agregar peso ─── */}
+      <FormSheet
+        visible={showAddWeight}
+        onClose={() => setShowAddWeight(false)}
+        title="Registrar peso"
+        footer={
+          <>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddWeight(false)} accessibilityRole="button" accessibilityLabel="Cancelar registro de peso">
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, s.btnPrimary, { flex: 1 }, (!newWeight || addWeight.isPending) && { opacity: 0.6 }]}
+              disabled={!newWeight || addWeight.isPending}
+              onPress={async () => { await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate }); setShowAddWeight(false); haptic.success(); toast.success('Peso registrado'); }}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar peso registrado"
+            >
+              {addWeight.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
+            </TouchableOpacity>
+          </>
+        }
+      >
+        <TextInput
+          style={s.input}
+          value={newWeight}
+          onChangeText={setNewWeight}
+          placeholder="Peso en kg, ej: 450.0"
+          placeholderTextColor={c.textFaint}
+          keyboardType="decimal-pad"
+          returnKeyType="done"
+        />
+        <DatePicker label="Fecha" value={newWeightDate} onChange={setNewWeightDate} maxDate={new Date()} />
+      </FormSheet>
+
+      {/* ─── Hoja agregar registro médico ─── */}
+      <FormSheet
+        visible={showAddMedical}
+        onClose={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}
+        title="Nuevo registro médico"
+        footer={
+          <>
+            <TouchableOpacity
+              style={[s.btn, s.btnSecondary, { flex: 1 }]}
+              onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar registro médico"
+            >
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, s.btnPrimary, { flex: 1 }, (!medicalForm.name.trim() || addMedical.isPending) && { opacity: 0.5 }]}
+              disabled={!medicalForm.name.trim() || addMedical.isPending}
+              onPress={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); haptic.success(); toast.success('Registro médico agregado'); }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar registro médico"
+            >
+              {addMedical.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
+            </TouchableOpacity>
+          </>
+        }
+      >
+        <Text style={s.fieldLabel}>Tipo</Text>
+        <View style={s.medTypeGrid}>
+          {(['vacuna', 'desparasitacion', 'analisis', 'tratamiento', 'sanidad'] as const).map((t) => {
+            const mc = MEDICAL_TYPE_COLORS[t];
+            const active = medicalForm.type === t;
+            return (
+              <TouchableOpacity key={t} style={[s.medTypeOption, active && { backgroundColor: mc.bg, borderColor: mc.text }]} onPress={() => { haptic.selection(); setMedicalForm((p) => ({ ...p, type: t })); }} activeOpacity={0.7}>
+                <Text style={[s.medTypeOptionText, active && { color: mc.text, fontWeight: '700' }]}>{MEDICAL_TYPE_LABELS[t]}</Text>
               </TouchableOpacity>
-            )}
-            {can('horses', 'update') && (
-              <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); setShowEdit(true); }} activeOpacity={0.7}>
-                <Pencil size={20} color={c.text} strokeWidth={2} />
-                <Text style={s.menuItemText}>Editar caballo</Text>
-              </TouchableOpacity>
-            )}
-            {(user?.role === 'propietario' || can('auctions', 'create')) && (
+            );
+          })}
+        </View>
+        <TextInput style={s.input} value={medicalForm.name} onChangeText={(v) => setMedicalForm((p) => ({ ...p, name: v }))} placeholder="Nombre / producto, ej: Triple viral" placeholderTextColor={c.textFaint} returnKeyType="next" />
+        <DatePicker label="Fecha *" value={medicalForm.date} onChange={(v) => setMedicalForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
+        <DatePicker label="Próxima dosis" value={medicalForm.next_due ?? ''} onChange={(v) => setMedicalForm((p) => ({ ...p, next_due: v || undefined }))} />
+        <TextInput style={s.input} value={medicalForm.brand ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))} placeholder="Marca / laboratorio (opcional)" placeholderTextColor={c.textFaint} returnKeyType="next" />
+        <TextInput style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]} value={medicalForm.notes ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))} placeholder="Notas / observaciones adicionales" placeholderTextColor={c.textFaint} multiline returnKeyType="done" />
+      </FormSheet>
+
+      {/* ─── Hoja editar caballo ─── */}
+      <EditHorseModal horse={horse} visible={showEdit} onClose={() => setShowEdit(false)} c={c} s={s} />
+
+      {/* ─── Hoja asignar veterinario ─── */}
+      <FormSheet
+        visible={showAssignVet}
+        onClose={() => setShowAssignVet(false)}
+        title="Asignar veterinario"
+        footer={
+          <>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignVet(false)} accessibilityRole="button" accessibilityLabel="Cancelar asignación de veterinario">
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedVetId || assignVet.isPending) && { opacity: 0.5 }]}
+              disabled={!selectedVetId || assignVet.isPending}
+              onPress={async () => {
+                await assignVet.mutateAsync(selectedVetId);
+                haptic.success();
+                toast.success('Veterinario asignado');
+                setShowAssignVet(false);
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmar asignación de veterinario"
+            >
+              {assignVet.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
+            </TouchableOpacity>
+          </>
+        }
+      >
+        {!veterinarios?.length ? (
+          <Text style={s.emptyText}>No hay veterinarios registrados en el sistema.</Text>
+        ) : (
+          <View style={{ gap: 6 }}>
+            {veterinarios
+              .filter((v) => !horseVets?.some((a) => a.user_id === v.id))
+              .map((v) => (
+                <TouchableOpacity
+                  key={v.id}
+                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: c.brand, borderColor: c.brand }]}
+                  onPress={() => { haptic.selection(); setSelectedVetId(v.id); }}
+                  activeOpacity={0.75}
+                >
+                  <User size={16} color={selectedVetId === v.id ? colors.white : c.brand} strokeWidth={2} />
+                  <Text style={[s.smallBtnText, selectedVetId === v.id && { color: colors.white }]}>{v.name}</Text>
+                </TouchableOpacity>
+              ))}
+          </View>
+        )}
+      </FormSheet>
+
+      {/* ─── Hoja asignar equipo ─── */}
+      <FormSheet
+        visible={showAssignTeam}
+        onClose={() => setShowAssignTeam(false)}
+        title="Asignar equipo"
+        footer={
+          <>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignTeam(false)} accessibilityRole="button" accessibilityLabel="Cancelar asignación de equipo">
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedMemberId || assignMember.isPending) && { opacity: 0.5 }]}
+              disabled={!selectedMemberId || assignMember.isPending}
+              onPress={async () => {
+                await assignMember.mutateAsync(selectedMemberId);
+                haptic.success();
+                toast.success('Miembro asignado');
+                setShowAssignTeam(false);
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmar asignación de equipo"
+            >
+              {assignMember.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
+            </TouchableOpacity>
+          </>
+        }
+      >
+        <Text style={{ fontSize: 12, color: c.textMuted, marginBottom: 4 }}>
+          Jinetes y peones solo ven los caballos que les asignes.
+        </Text>
+        {!orgMembers?.length ? (
+          <Text style={s.emptyText}>No hay miembros (jinete / peón / encargado) en la organización de este caballo.</Text>
+        ) : (
+          <View style={{ gap: 6 }}>
+            {orgMembers
+              .filter((m) => !assignees?.some((a) => a.user_id === m.user_id))
+              .map((m) => (
+                <TouchableOpacity
+                  key={m.user_id}
+                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedMemberId === m.user_id && { backgroundColor: c.brand, borderColor: c.brand }]}
+                  onPress={() => { haptic.selection(); setSelectedMemberId(m.user_id); }}
+                  activeOpacity={0.75}
+                >
+                  <Users size={16} color={selectedMemberId === m.user_id ? colors.white : c.brand} strokeWidth={2} />
+                  <Text style={[s.smallBtnText, selectedMemberId === m.user_id && { color: colors.white }]}>
+                    {m.name} · {orgRoleLabel[m.role_in_org] ?? m.role_in_org}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+          </View>
+        )}
+      </FormSheet>
+
+      {/* ─── Hoja transferir propiedad ─── */}
+      <FormSheet
+        visible={showTransfer}
+        onClose={() => setShowTransfer(false)}
+        title="Transferir propiedad"
+        footer={
+          <>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowTransfer(false)} accessibilityRole="button" accessibilityLabel="Cancelar transferencia">
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, { flex: 1, backgroundColor: colors.red500, borderRadius: radius.md, paddingVertical: 12, alignItems: 'center' }, (!transferOwnerId || transferHorse.isPending) && { opacity: 0.5 }]}
+              disabled={!transferOwnerId || transferHorse.isPending}
+              onPress={handleTransfer}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmar transferencia de propiedad"
+            >
+              {transferHorse.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={[s.btnPrimaryText]}>Confirmar</Text>}
+            </TouchableOpacity>
+          </>
+        }
+      >
+        <Text style={{ fontSize: 12, color: c.textMuted }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
+        {!propietarios?.length ? (
+          <Text style={s.emptyText}>No hay otros propietarios en el sistema.</Text>
+        ) : (
+          <View style={{ gap: 6 }}>
+            {propietarios
+              .filter((p) => p.id !== user?.id)
+              .map((p) => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[s.smallBtn, { alignSelf: 'stretch', paddingVertical: 12 }, transferOwnerId === p.id && { backgroundColor: colors.red500, borderColor: colors.red500 }]}
+                  onPress={() => { haptic.selection(); setTransferOwnerId(p.id); }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.smallBtnText, transferOwnerId === p.id && { color: colors.white }]}>{p.name}</Text>
+                </TouchableOpacity>
+              ))}
+          </View>
+        )}
+      </FormSheet>
+
+      {/* ─── Hoja subir documento ─── */}
+      <FormSheet
+        visible={showUploadDoc}
+        onClose={() => setShowUploadDoc(false)}
+        title="Subir documento"
+        footer={
+          <>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowUploadDoc(false)} accessibilityRole="button" accessibilityLabel="Cancelar subida de documento">
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, s.btnPrimary, { flex: 1 }, uploadDoc.isPending && { opacity: 0.5 }]}
+              disabled={uploadDoc.isPending}
+              onPress={handlePickDocument}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Seleccionar archivo para subir"
+            >
+              {uploadDoc.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Seleccionar</Text>}
+            </TouchableOpacity>
+          </>
+        }
+      >
+        <TextInput
+          style={s.input}
+          value={docName}
+          onChangeText={setDocName}
+          placeholder="Nombre del documento, ej: Pedigree, Certificado..."
+          placeholderTextColor={c.textFaint}
+          autoCapitalize="sentences"
+          returnKeyType="done"
+        />
+        <Text style={{ fontSize: 11, color: c.textFaint }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
+      </FormSheet>
+
+      {/* ─── Hoja agregar evento ─── */}
+      <FormSheet
+        visible={showAddEvent}
+        onClose={() => setShowAddEvent(false)}
+        title="Registrar evento"
+        footer={
+          <>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddEvent(false)} accessibilityRole="button" accessibilityLabel="Cancelar registro de evento">
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btn, s.btnPrimary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
+              onPress={handleAddEvent}
+              disabled={createEvent.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar evento"
+            >
+              {createEvent.isPending
+                ? <ActivityIndicator color={colors.white} size="small" />
+                : <Text style={s.btnPrimaryText}>Guardar</Text>
+              }
+            </TouchableOpacity>
+          </>
+        }
+      >
+        {/* Tipo */}
+        <Text style={s.fieldLabel}>Tipo de evento</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {([
+            { key: 'nota', label: 'Nota', color: '#374151', Icon: FileText },
+            { key: 'entrenamiento', label: 'Entrenamiento', color: '#a16207', Icon: Dumbbell },
+            { key: 'salud', label: 'Salud', color: '#b91c1c', Icon: Syringe },
+            { key: 'carrera', label: 'Carrera', color: '#92400e', Icon: Flag },
+          ] as const).map((t) => {
+            const active = newEventType === t.key;
+            const iconColor = active ? t.color : c.textMuted;
+            return (
               <TouchableOpacity
-                style={s.menuItem}
-                onPress={() => { setShowMenu(false); haptic.medium(); nav.push(router, `${Routes.remateCrear}?horse=${horse.id}` as never); }}
+                key={t.key}
+                style={[
+                  s.typeChip,
+                  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+                  active && { backgroundColor: c.isDark ? t.color + '26' : t.color + '18', borderColor: t.color },
+                ]}
+                onPress={() => { haptic.selection(); setNewEventType(t.key); }}
                 activeOpacity={0.7}
               >
-                <Megaphone size={20} color={c.text} strokeWidth={2} />
-                <Text style={s.menuItemText}>Publicar en venta</Text>
+                <t.Icon size={14} color={iconColor} strokeWidth={2} />
+                <Text style={[s.typeChipText, active && { color: t.color }]}>{t.label}</Text>
               </TouchableOpacity>
-            )}
-            {can('horses', 'delete') && (
-              <TouchableOpacity style={s.menuItem} onPress={() => { setShowMenu(false); handleDelete(); }} activeOpacity={0.7}>
-                <Trash2 size={20} color={colors.red500} strokeWidth={2} />
-                <Text style={[s.menuItemText, { color: colors.red500 }]}>Eliminar caballo</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* ─── Modal QR ─── */}
-      <Modal visible={showQR} animationType="fade" transparent>
-        <View style={s.qrOverlay}>
-          <Animated.View style={[s.qrCard, { paddingBottom: insets.bottom + 8 }]} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-            <View style={s.qrGrabber} />
-            <View style={s.qrHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.qrSub}>Código QR</Text>
-                <Text style={s.qrTitle} numberOfLines={1}>{horse.name}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowQR(false)} style={s.qrClose} activeOpacity={0.7}>
-                <X size={18} color={c.textFaint} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <View style={s.qrWrap}>
-              <View style={s.qrInner}>
-                {horse.public_token && (
-                  <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={200} color="#9d6c35" backgroundColor="#ffffff" />
-                )}
-              </View>
-            </View>
-            <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
-            <View style={s.qrActions}>
-              <TouchableOpacity
-                style={s.qrLinkBtn}
-                onPress={async () => {
-                  if (!horse.public_token) return;
-                  await Clipboard.setStringAsync(`${PUBLIC_BASE}/caballo/${horse.public_token}`);
-                  haptic.light();
-                  toast.success('Enlace copiado');
-                }}
-                activeOpacity={0.85}
-              >
-                <Copy size={15} color={c.brand} strokeWidth={2.2} />
-                <Text style={s.qrLinkBtnText}>Copiar enlace</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.qrShareBtn}
-                onPress={async () => {
-                  if (!horse.public_token) return;
-                  const url = `${PUBLIC_BASE}/caballo/${horse.public_token}`;
-                  try {
-                    await Share.share({ message: `Mirá el perfil de ${horse.name} en HandicApp: ${url}`, url });
-                  } catch {
-                    // usuario canceló
-                  }
-                }}
-                activeOpacity={0.85}
-              >
-                <Share2 size={15} color={colors.white} strokeWidth={2.2} />
-                <Text style={s.qrShareBtnText}>Compartir</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
+            );
+          })}
         </View>
-      </Modal>
 
-      {/* ─── Modal agregar peso ─── */}
-      <Modal visible={showAddWeight} animationType="fade" transparent>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={s.modalCard}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Registrar peso</Text>
-              <TouchableOpacity onPress={() => setShowAddWeight(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-            </View>
-            <View style={s.modalBody}>
-              <Text style={s.fieldLabel}>Peso (kg) *</Text>
-              <TextInput style={s.input} value={newWeight} onChangeText={setNewWeight} placeholder="450.0" placeholderTextColor={c.textFaint} keyboardType="decimal-pad" />
-              <DatePicker label="Fecha" value={newWeightDate} onChange={setNewWeightDate} maxDate={new Date()} />
-            </View>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddWeight(false)}><Text style={s.btnSecondaryText}>Cancelar</Text></TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { flex: 1 }, (!newWeight || addWeight.isPending) && { opacity: 0.6 }]}
-                disabled={!newWeight || addWeight.isPending}
-                onPress={async () => { await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate }); setNewWeight(''); setShowAddWeight(false); haptic.success(); toast.success('Peso registrado'); }}
-              >
-                {addWeight.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        {/* Fecha */}
+        <DatePicker label="Fecha" value={newEventDate} onChange={setNewEventDate} maxDate={new Date()} />
 
-      {/* ─── Modal agregar registro médico ─── */}
-      <Modal visible={showAddMedical} animationType="fade" transparent>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={[s.modalCard, { maxHeight: '85%' }]}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Nuevo registro médico</Text>
-              <TouchableOpacity onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}>
-                <X size={22} color={c.textFaint} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.modalBody, { paddingBottom: 8 }]}>
-              <Text style={s.fieldLabel}>Tipo</Text>
-              <View style={s.medTypeGrid}>
-                {(['vacuna', 'desparasitacion', 'analisis', 'tratamiento', 'sanidad'] as const).map((t) => {
-                  const c = MEDICAL_TYPE_COLORS[t];
-                  const active = medicalForm.type === t;
-                  return (
-                    <TouchableOpacity key={t} style={[s.medTypeOption, active && { backgroundColor: c.bg, borderColor: c.text }]} onPress={() => setMedicalForm((p) => ({ ...p, type: t }))} activeOpacity={0.7}>
-                      <Text style={[s.medTypeOptionText, active && { color: c.text, fontWeight: '700' }]}>{MEDICAL_TYPE_LABELS[t]}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={[s.fieldLabel, { marginTop: 10 }]}>Nombre / producto *</Text>
-              <TextInput style={s.input} value={medicalForm.name} onChangeText={(v) => setMedicalForm((p) => ({ ...p, name: v }))} placeholder="Ej: Triple viral, Ivermectina..." placeholderTextColor={c.textFaint} />
-              <DatePicker label="Fecha *" value={medicalForm.date} onChange={(v) => setMedicalForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
-              <DatePicker label="Próxima dosis" value={medicalForm.next_due ?? ''} onChange={(v) => setMedicalForm((p) => ({ ...p, next_due: v || undefined }))} />
-              <Text style={[s.fieldLabel, { marginTop: 10 }]}>Marca / laboratorio</Text>
-              <TextInput style={s.input} value={medicalForm.brand ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))} placeholder="Opcional" placeholderTextColor={c.textFaint} />
-              <Text style={[s.fieldLabel, { marginTop: 10 }]}>Notas</Text>
-              <TextInput style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]} value={medicalForm.notes ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))} placeholder="Observaciones adicionales" placeholderTextColor={c.textFaint} multiline />
-            </ScrollView>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); }}><Text style={s.btnSecondaryText}>Cancelar</Text></TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { flex: 1 }, (!medicalForm.name.trim() || addMedical.isPending) && { opacity: 0.5 }]}
-                disabled={!medicalForm.name.trim() || addMedical.isPending}
-                onPress={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: todayISO }); haptic.success(); toast.success('Registro médico agregado'); }}
-                activeOpacity={0.85}
-              >
-                {addMedical.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ─── Modal editar ─── */}
-      <Modal visible={showEdit} animationType="fade" transparent>
-        <View style={s.modalOverlay}>
-          <EditHorseModal horse={horse} onClose={() => setShowEdit(false)} c={c} s={s} />
-        </View>
-      </Modal>
-
-      {/* ─── Modal asignar veterinario ─── */}
-      <Modal visible={showAssignVet} animationType="fade" transparent onRequestClose={() => setShowAssignVet(false)}>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={s.modalSheet}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Asignar veterinario</Text>
-              <TouchableOpacity onPress={() => setShowAssignVet(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-            </View>
-            <View style={s.modalBody}>
-              <Text style={s.fieldLabel}>Veterinario</Text>
-              {!veterinarios?.length ? (
-                <Text style={s.emptyText}>No hay veterinarios registrados en el sistema.</Text>
-              ) : (
-                <View style={{ gap: 6 }}>
-                  {veterinarios
-                    .filter((v) => !horseVets?.some((a) => a.user_id === v.id))
-                    .map((v) => (
-                      <TouchableOpacity
-                        key={v.id}
-                        style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: colors.brand, borderColor: colors.brand }]}
-                        onPress={() => setSelectedVetId(v.id)}
-                        activeOpacity={0.75}
-                      >
-                        <User size={16} color={selectedVetId === v.id ? colors.white : c.brand} strokeWidth={2} />
-                        <Text style={[s.smallBtnText, selectedVetId === v.id && { color: colors.white }]}>{v.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              )}
-            </View>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignVet(false)}>
-                <Text style={s.btnSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedVetId || assignVet.isPending) && { opacity: 0.5 }]}
-                disabled={!selectedVetId || assignVet.isPending}
-                onPress={async () => {
-                  await assignVet.mutateAsync(selectedVetId);
-                  haptic.success();
-                  toast.success('Veterinario asignado');
-                  setShowAssignVet(false);
-                  setSelectedVetId('');
-                }}
-                activeOpacity={0.85}
-              >
-                {assignVet.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ─── Modal asignar equipo ─── */}
-      <Modal visible={showAssignTeam} animationType="fade" transparent onRequestClose={() => setShowAssignTeam(false)}>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={s.modalSheet}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Asignar equipo</Text>
-              <TouchableOpacity onPress={() => setShowAssignTeam(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-            </View>
-            <View style={s.modalBody}>
-              <Text style={{ fontSize: 12, color: c.textMuted, marginBottom: 12 }}>
-                Jinetes y peones solo ven los caballos que les asignes.
-              </Text>
-              <Text style={s.fieldLabel}>Persona</Text>
-              {!orgMembers?.length ? (
-                <Text style={s.emptyText}>No hay miembros (jinete / peón / encargado) en la organización de este caballo.</Text>
-              ) : (
-                <View style={{ gap: 6 }}>
-                  {orgMembers
-                    .filter((m) => !assignees?.some((a) => a.user_id === m.user_id))
-                    .map((m) => (
-                      <TouchableOpacity
-                        key={m.user_id}
-                        style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedMemberId === m.user_id && { backgroundColor: colors.brand, borderColor: colors.brand }]}
-                        onPress={() => setSelectedMemberId(m.user_id)}
-                        activeOpacity={0.75}
-                      >
-                        <Users size={16} color={selectedMemberId === m.user_id ? colors.white : c.brand} strokeWidth={2} />
-                        <Text style={[s.smallBtnText, selectedMemberId === m.user_id && { color: colors.white }]}>
-                          {m.name} · {orgRoleLabel[m.role_in_org] ?? m.role_in_org}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              )}
-            </View>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignTeam(false)}>
-                <Text style={s.btnSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedMemberId || assignMember.isPending) && { opacity: 0.5 }]}
-                disabled={!selectedMemberId || assignMember.isPending}
-                onPress={async () => {
-                  await assignMember.mutateAsync(selectedMemberId);
-                  haptic.success();
-                  toast.success('Miembro asignado');
-                  setShowAssignTeam(false);
-                  setSelectedMemberId('');
-                }}
-                activeOpacity={0.85}
-              >
-                {assignMember.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ─── Modal transferir ─── */}
-      <Modal visible={showTransfer} animationType="fade" transparent onRequestClose={() => setShowTransfer(false)}>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={s.modalSheet}>
-            <View style={[s.modalHeader, { backgroundColor: colors.red500 }]}>
-              <Text style={[s.modalTitle, { color: colors.white }]}>Transferir propiedad</Text>
-              <TouchableOpacity onPress={() => setShowTransfer(false)}><X size={22} color="rgba(255,255,255,0.7)" strokeWidth={2} /></TouchableOpacity>
-            </View>
-            <View style={s.modalBody}>
-              <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Nuevo propietario</Text>
-              <Text style={{ fontSize: 12, color: c.textMuted, marginBottom: 12 }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
-              {!propietarios?.length ? (
-                <Text style={s.emptyText}>No hay otros propietarios en el sistema.</Text>
-              ) : (
-                <View style={{ gap: 6 }}>
-                  {propietarios
-                    .filter((p) => p.id !== user?.id)
-                    .map((p) => (
-                      <TouchableOpacity
-                        key={p.id}
-                        style={[s.smallBtn, { alignSelf: 'stretch', paddingVertical: 12 }, transferOwnerId === p.id && { backgroundColor: colors.red500, borderColor: colors.red500 }]}
-                        onPress={() => setTransferOwnerId(p.id)}
-                        activeOpacity={0.75}
-                      >
-                        <Text style={[s.smallBtnText, transferOwnerId === p.id && { color: colors.white }]}>{p.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              )}
-            </View>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowTransfer(false)}>
-                <Text style={s.btnSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, { flex: 1, backgroundColor: colors.red500, borderRadius: radius.md, paddingVertical: 12, alignItems: 'center' }, (!transferOwnerId || transferHorse.isPending) && { opacity: 0.5 }]}
-                disabled={!transferOwnerId || transferHorse.isPending}
-                onPress={handleTransfer}
-                activeOpacity={0.85}
-              >
-                {transferHorse.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[s.btnPrimaryText]}>Confirmar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ─── Modal subir documento ─── */}
-      <Modal visible={showUploadDoc} animationType="fade" transparent onRequestClose={() => setShowUploadDoc(false)}>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={[s.modalSheet, { maxHeight: '45%' }]}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Subir documento</Text>
-              <TouchableOpacity onPress={() => setShowUploadDoc(false)}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-            </View>
-            <View style={s.modalBody}>
-              <Text style={s.fieldLabel}>Nombre del documento</Text>
-              <TextInput
-                style={s.input}
-                value={docName}
-                onChangeText={setDocName}
-                placeholder="Ej: Pedigree, Certificado..."
-                placeholderTextColor={c.textFaint}
-                autoCapitalize="sentences"
-              />
-              <Text style={{ fontSize: 11, color: c.textFaint, marginTop: 8 }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
-            </View>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowUploadDoc(false)}>
-                <Text style={s.btnSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { flex: 1 }, uploadDoc.isPending && { opacity: 0.5 }]}
-                disabled={uploadDoc.isPending}
-                onPress={handlePickDocument}
-                activeOpacity={0.85}
-              >
-                {uploadDoc.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Seleccionar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ════════════════ MODAL: AGREGAR EVENTO ════════════════ */}
-      <Modal visible={showAddEvent} animationType="fade" transparent onRequestClose={() => setShowAddEvent(false)}>
-        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={s.modalCard}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Registrar evento</Text>
-              <TouchableOpacity onPress={() => setShowAddEvent(false)}>
-                <X size={22} color={c.textFaint} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView contentContainerStyle={s.modalBody}>
-              {/* Tipo */}
-              <Text style={s.fieldLabel}>Tipo de evento</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-                {([
-                  { key: 'nota', label: 'Nota', color: '#374151', Icon: FileText },
-                  { key: 'entrenamiento', label: 'Entrenamiento', color: '#a16207', Icon: Dumbbell },
-                  { key: 'salud', label: 'Salud', color: '#b91c1c', Icon: Syringe },
-                  { key: 'carrera', label: 'Carrera', color: '#92400e', Icon: Flag },
-                ] as const).map((t) => {
-                  const active = newEventType === t.key;
-                  const iconColor = active ? t.color : c.textMuted;
-                  return (
-                    <TouchableOpacity
-                      key={t.key}
-                      style={[
-                        s.typeChip,
-                        { flexDirection: 'row', alignItems: 'center', gap: 6 },
-                        active && { backgroundColor: t.color + '18', borderColor: t.color },
-                      ]}
-                      onPress={() => { haptic.selection(); setNewEventType(t.key); }}
-                      activeOpacity={0.7}
-                    >
-                      <t.Icon size={14} color={iconColor} strokeWidth={2} />
-                      <Text style={[s.typeChipText, active && { color: t.color }]}>{t.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Fecha */}
-              <DatePicker label="Fecha" value={newEventDate} onChange={setNewEventDate} maxDate={new Date()} />
-
-              {/* Descripción */}
-              <Text style={s.fieldLabel}>Descripción *</Text>
-              <TextInput
-                style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
-                value={newEventDesc}
-                onChangeText={setNewEventDesc}
-                placeholder={
-                  newEventType === 'nota' ? 'Ej: El caballo come bien, buen estado general' :
-                  newEventType === 'entrenamiento' ? 'Ej: Galope 1200m, tiempo 1:14, buena respuesta' :
-                  newEventType === 'salud' ? 'Ej: Vacunación influenza equina Dr. García' :
-                  'Ej: Gran Premio Palermo 1200m - 3° puesto'
-                }
-                placeholderTextColor={c.textFaint}
-                multiline
-                autoCapitalize="sentences"
-              />
-              {newEventError ? <Text style={s.fieldError}>{newEventError}</Text> : null}
-            </ScrollView>
-            <View style={s.modalFooter}>
-              <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddEvent(false)}>
-                <Text style={s.btnSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
-                onPress={handleAddEvent}
-                disabled={createEvent.isPending}
-              >
-                {createEvent.isPending
-                  ? <ActivityIndicator color={colors.white} size="small" />
-                  : <Text style={s.btnPrimaryText}>Guardar</Text>
-                }
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        {/* Descripción */}
+        <TextInput
+          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+          value={newEventDesc}
+          onChangeText={setNewEventDesc}
+          placeholder={
+            newEventType === 'nota' ? 'Ej: El caballo come bien, buen estado general' :
+            newEventType === 'entrenamiento' ? 'Ej: Galope 1200m, tiempo 1:14, buena respuesta' :
+            newEventType === 'salud' ? 'Ej: Vacunación influenza equina Dr. García' :
+            'Ej: Gran Premio Palermo 1200m - 3° puesto'
+          }
+          placeholderTextColor={c.textFaint}
+          multiline
+          autoCapitalize="sentences"
+          returnKeyType="done"
+        />
+        {newEventError ? <Text style={s.fieldError}>{newEventError}</Text> : null}
+      </FormSheet>
 
       {/* ════════════════ TAB: PEDIGRÍ ════════════════ */}
       {activeTab === 'pedigree' && (
@@ -1684,14 +1802,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center', alignItems: 'center',
   },
-  heroPillDanger: { backgroundColor: 'rgba(220,38,38,0.55)' },
   heroPillQr: { backgroundColor: c.brand, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)' },
   heroPillStatic: { position: 'relative', top: undefined, left: undefined },
   heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
-  menuOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  menuSheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 8 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 22, paddingVertical: 15 },
-  menuItemText: { fontSize: 15, fontWeight: '600', color: c.text },
   heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 20 },
   heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   horseName: { fontSize: 24, fontWeight: '800', color: colors.white, lineHeight: 30, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
@@ -1722,7 +1835,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Sections */
   section: { margin: 16, gap: 10 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: c.text },
+  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
   countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   countText: { fontSize: 11, fontWeight: '700', color: c.textMuted },
   emptyText: { fontSize: 13, color: c.textFaint },
@@ -1758,10 +1871,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Peso */
   weightCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
-  weightLatest: { backgroundColor: '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
-  weightValue: { fontSize: 28, fontWeight: '800', color: '#c2410c' },
-  weightCC: { fontSize: 12, color: '#ea580c', marginTop: 2 },
-  weightDate: { fontSize: 11, color: '#9a3412', marginTop: 2 },
+  weightLatest: { backgroundColor: c.isDark ? 'rgba(234,88,12,0.14)' : '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
+  weightValue: { fontSize: 28, fontWeight: '800', color: c.isDark ? '#fb923c' : '#c2410c' },
+  weightCC: { fontSize: 12, color: c.isDark ? '#fdba74' : '#ea580c', marginTop: 2 },
+  weightDate: { fontSize: 11, color: c.isDark ? '#fdba74' : '#9a3412', marginTop: 2 },
   weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: c.border },
   weightRowValue: { fontSize: 14, fontWeight: '600', color: c.text },
   weightRowDate: { fontSize: 12, color: c.textFaint },
@@ -1786,7 +1899,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   eventCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 14, gap: 6 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: 11, color: c.textFaint },
-  eventDesc: { fontSize: 14, color: c.text, lineHeight: 20 },
+  eventDesc: { fontSize: text.base, color: c.text, lineHeight: 22 },
   eventAmount: { fontSize: 14, fontWeight: '700', color: c.text },
 
   /* Comentarios */
@@ -1822,7 +1935,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
   certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: 11, marginTop: 2 },
   certifyBtnLocked: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
-  certifyBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  certifyBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
   medCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
@@ -1848,7 +1961,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoBadge: { position: 'absolute', top: 3, left: 3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
   photoBadgeText: { fontSize: 8, fontWeight: '700' },
   photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', borderBottomLeftRadius: 10, borderBottomRightRadius: 10, paddingHorizontal: 4, paddingVertical: 3 },
-  photoStampAuthor: { fontSize: 8, fontWeight: '700', color: '#fff' },
+  photoStampAuthor: { fontSize: 8, fontWeight: '700', color: colors.white },
   photoStampTime: { fontSize: 8, fontWeight: '500', color: 'rgba(255,255,255,0.85)' },
 
   /* Botones pequeños */
@@ -1859,33 +1972,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.isDark ? 'rgba(239,68,68,0.16)' : '#fef2f2', minWidth: 44, justifyContent: 'center' },
   pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.isDark ? '#fca5a5' : '#dc2626' },
 
-  /* QR Modal */
-  qrOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  qrCard: { backgroundColor: c.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', overflow: 'hidden', borderTopWidth: 1, borderColor: c.border },
-  qrGrabber: { width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong, alignSelf: 'center', marginTop: 10 },
-  qrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 },
-  qrSub: { fontSize: 11, fontWeight: '700', color: c.brand, textTransform: 'uppercase', letterSpacing: 0.8 },
-  qrTitle: { fontSize: 20, fontWeight: '800', color: c.text, marginTop: 2 },
-  qrClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  /* Hoja QR */
+  qrTitle: { fontSize: 20, fontWeight: '800', color: c.text, marginBottom: 4 },
   qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
   qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
-  qrActions: { flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 14 },
+  qrActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   qrLinkBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.surfaceAlt, paddingVertical: 13 },
   qrLinkBtnText: { fontSize: 14, fontWeight: '700', color: c.brand },
   qrShareBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.brand, paddingVertical: 13 },
   qrShareBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 
-  /* Modales generales */
-  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' },
-  modalCloseText: { fontSize: 18, color: c.textFaint },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: c.border },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: c.text },
-  modalBody: { padding: 20, gap: 10 },
-  modalFooter: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: c.border },
+  /* Formularios (dentro de FormSheet) */
   fieldLabel: { fontSize: 13, fontWeight: '600', color: c.text },
   fieldError: { fontSize: 13, color: colors.red500 },
   input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },

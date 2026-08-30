@@ -9,7 +9,7 @@ import {
 import { HorseIcon } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, weight, radius } from '../styles/tokens';
+import { space, text, weight, radius, touch } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 
 type IconComp = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
@@ -86,31 +86,34 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     marginBottom: space[2],
   },
   title: {
-    fontSize: text.base,
+    fontSize: text.lg,
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
     color: c.text,
     textAlign: 'center',
   },
   message: {
-    fontSize: text.sm,
+    fontSize: text.md,
     fontFamily: fontFamily.regular,
     color: c.textFaint,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
+    maxWidth: 300,
   },
   btn: {
     marginTop: space[3],
+    minHeight: touch.button,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: radius.full,
     paddingHorizontal: space[6] + 2,
-    paddingVertical: space[3] + 1,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.28,
     shadowRadius: 14,
     elevation: 4,
   },
   btnText: {
-    fontSize: text.sm,
+    fontSize: text.base,
     fontWeight: weight.bold,
     fontFamily: fontFamily.bold,
     color: colors.white,

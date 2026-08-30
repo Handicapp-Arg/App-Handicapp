@@ -57,6 +57,7 @@ export function useFeedPosts(params?: { horse_id?: string; include_hidden?: bool
   return {
     posts,
     isLoading: query.isLoading && posts.length === 0,
+    isError: query.isError,
     isFetchingMore: query.isFetching && posts.length > 0,
     isRefreshing: query.isFetching && page === 1 && posts.length > 0,
     hasMore,

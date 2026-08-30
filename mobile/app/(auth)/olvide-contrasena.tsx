@@ -1,109 +1,141 @@
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Check, ArrowLeft } from 'lucide-react-native';
 import api from '../../lib/api';
 import { colors } from '../../lib/colors';
+import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { HorseshoeH } from '../../components/icons/equine';
-import { AuthBackground, AuthThemeSwitch } from '../../components/auth-ui';
+import { AuthBackground } from '../../components/auth-ui';
+import { fontFamily } from '../../styles/fonts';
 
 export default function OlvideContrasenaScreen() {
   const router = useRouter();
   const { c } = useTheme();
+  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
   const [email, setEmail] = useState('');
+  const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if (!email.trim()) { setError('Ingresá tu email'); return; }
-    if (!/\S+@\S+\.\S+/.test(email)) { setError('Email inválido'); return; }
+    Keyboard.dismiss();
+    if (!email.trim()) { setError('Ingresá tu email'); haptic.error(); return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Email inválido'); haptic.error(); return; }
     setError('');
     setLoading(true);
+    haptic.light();
     try {
       await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
       setSent(true);
+      haptic.success();
     } catch {
       setError('No se pudo procesar la solicitud. Intentá de nuevo.');
+      haptic.error();
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <View style={s.root}>
       <AuthBackground c={c} />
-      <AuthThemeSwitch />
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={s.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            s.scroll,
+            { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 28 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View style={s.header} entering={FadeIn.duration(500)}>
+            <HorseshoeH size={52} color={c.brand} />
+          </Animated.View>
 
-        {/* Marca — isotipo + wordmark (igual que el login) */}
-        <View style={s.header}>
-          <HorseshoeH size={64} color={c.brand} />
-          <Text style={s.wordmark}>HandicApp</Text>
-        </View>
-
-        <View style={s.card}>
           {sent ? (
-            <View style={{ alignItems: 'center', gap: 12 }}>
+            <Animated.View style={s.sentBox} entering={FadeInDown.duration(450)}>
               <View style={s.checkCircle}>
-                <Check size={28} color={c.isDark ? '#86efac' : '#15803d'} strokeWidth={2.5} />
+                <Check size={30} color={c.isDark ? '#86efac' : '#15803d'} strokeWidth={2.5} />
               </View>
-              <Text style={[s.title, { textAlign: 'center' }]}>Revisá tu email</Text>
-              <Text style={[s.subtitle, { textAlign: 'center' }]}>
+              <Text style={s.titleCenter}>Revisá tu email</Text>
+              <Text style={s.subtitleCenter}>
                 Si existe una cuenta con {email}, vas a recibir un enlace para restablecer tu contraseña.
               </Text>
-            </View>
+            </Animated.View>
           ) : (
             <>
-              <Text style={s.title}>Recuperar contraseña</Text>
-              <Text style={s.subtitle}>
-                Ingresá tu email y te enviamos un enlace para restablecer tu contraseña.
-              </Text>
+              <Animated.View style={s.intro} entering={FadeInDown.duration(450).delay(80)}>
+                <Text style={s.title}>Recuperar contraseña</Text>
+                <Text style={s.subtitle}>
+                  Ingresá tu email y te enviamos un enlace para restablecerla.
+                </Text>
+              </Animated.View>
 
-              {error ? (
-                <View style={s.errorBox}><Text style={s.errorText}>{error}</Text></View>
-              ) : null}
+              <Animated.View style={s.form} entering={FadeInDown.duration(450).delay(160)}>
+                {error ? (
+                  <Animated.View style={s.errorBox} entering={FadeIn.duration(200)}>
+                    <Text style={s.errorText}>{error}</Text>
+                  </Animated.View>
+                ) : null}
 
-              <View style={s.field}>
-                <Text style={s.label}>Correo electrónico</Text>
-                <TextInput
-                  style={s.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="tu@email.com"
-                  placeholderTextColor={c.textFaint}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoComplete="email"
-                />
-              </View>
+                <View style={[s.inputWrap, focused && s.inputWrapFocused]}>
+                  <TextInput
+                    style={s.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Correo electrónico"
+                    placeholderTextColor={c.textFaint}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                    autoComplete="email"
+                    returnKeyType="go"
+                    onSubmitEditing={handleSubmit}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                  />
+                </View>
 
-              <TouchableOpacity
-                style={[s.btn, loading && { opacity: 0.6 }]}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading
-                  ? <ActivityIndicator color={colors.white} />
-                  : <Text style={s.btnText}>Enviar enlace</Text>}
-              </TouchableOpacity>
+                <Pressable
+                  style={({ pressed }) => [s.btn, pressed && s.btnPressed, loading && s.btnDisabled]}
+                  onPress={handleSubmit}
+                  disabled={loading}
+                >
+                  {loading
+                    ? <ActivityIndicator color={colors.white} />
+                    : <Text style={s.btnText}>Enviar enlace</Text>}
+                </Pressable>
+              </Animated.View>
             </>
           )}
 
-          <TouchableOpacity onPress={() => router.replace('/(auth)/login')} style={s.linkWrap} activeOpacity={0.7}>
-            <ArrowLeft size={15} color={c.brand} strokeWidth={2} />
+          <TouchableOpacity
+            onPress={() => router.replace('/(auth)/login')}
+            style={s.linkWrap}
+            activeOpacity={0.7}
+            hitSlop={6}
+          >
+            <ArrowLeft size={16} color={c.brand} strokeWidth={2} />
             <Text style={s.link}>Volver al inicio de sesión</Text>
           </TouchableOpacity>
-        </View>
-
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -111,40 +143,61 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 26 },
 
-  header: { alignItems: 'center', marginBottom: 26, gap: 10 },
-  wordmark: { fontSize: 30, fontWeight: '700', letterSpacing: -0.3, color: c.text, marginTop: 2 },
+  header: { alignItems: 'center', marginBottom: 28 },
 
-  card: {
-    backgroundColor: c.surface, borderRadius: 24, padding: 22, gap: 14,
-    borderWidth: 1, borderColor: c.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 3,
+  intro: { marginBottom: 26 },
+  title: {
+    fontSize: 32, fontWeight: '700', fontFamily: fontFamily.semibold,
+    letterSpacing: -0.8, color: c.text,
   },
-  title: { fontSize: 19, fontWeight: '800', letterSpacing: -0.4, color: c.text },
-  subtitle: { fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  subtitle: { fontSize: 15, color: c.textMuted, marginTop: 6, lineHeight: 21, letterSpacing: -0.1 },
 
+  sentBox: { alignItems: 'center', gap: 14 },
   checkCircle: {
-    width: 60, height: 60, borderRadius: 999,
+    width: 64, height: 64, borderRadius: 999,
     backgroundColor: c.isDark ? 'rgba(34,197,94,0.16)' : '#f0fdf4',
     justifyContent: 'center', alignItems: 'center',
   },
+  titleCenter: {
+    fontSize: 28, fontWeight: '700', fontFamily: fontFamily.semibold,
+    letterSpacing: -0.7, color: c.text, textAlign: 'center',
+  },
+  subtitleCenter: { fontSize: 15, color: c.textMuted, textAlign: 'center', lineHeight: 21 },
 
-  errorBox: { backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 10, padding: 12 },
-  errorText: { fontSize: 13, color: c.isDark ? '#fca5a5' : colors.red700 },
+  form: { gap: 12 },
 
-  field: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: c.textMuted },
+  errorBox: {
+    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 12, padding: 13,
+    borderWidth: 1, borderColor: c.isDark ? 'rgba(239,68,68,0.3)' : '#fecaca',
+  },
+  errorText: { fontSize: 13.5, color: c.isDark ? '#fca5a5' : '#b91c1c' },
+
+  inputWrap: {
+    height: 56, borderRadius: 14,
+    borderWidth: 1.5, borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
+    justifyContent: 'center',
+  },
+  inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },
   input: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
+    height: '100%', paddingHorizontal: 16,
+    fontSize: 16.5, color: c.text, letterSpacing: -0.2,
   },
+
   btn: {
-    backgroundColor: c.brand, borderRadius: 14,
-    paddingVertical: 14, alignItems: 'center', marginTop: 2,
+    backgroundColor: c.brand, borderRadius: 14, height: 56,
+    alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
-  btnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
-  linkWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 },
-  link: { fontSize: 13, fontWeight: '700', color: c.brand },
+  btnPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  btnDisabled: { opacity: 0.6 },
+  btnText: { color: colors.white, fontSize: 16.5, fontWeight: '700', letterSpacing: -0.2 },
+
+  linkWrap: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, marginTop: 30,
+  },
+  link: { fontSize: 14.5, fontWeight: '700', color: c.brand },
 });

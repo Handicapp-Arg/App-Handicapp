@@ -1,11 +1,8 @@
 import { useMemo, useState } from 'react';
-import {
-  View, Text, StyleSheet, Image, ScrollView, Modal, TextInput,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Check, X, Camera } from 'lucide-react-native';
+import { ChevronLeft, Check, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useHorse } from '../../hooks/use-horses';
 import { useRoutine, useUpsertRoutine, todayISO, type Routine } from '../../hooks/use-routines';
@@ -16,8 +13,10 @@ import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { PressableScale } from '../../components/PressableScale';
 import { useToast } from '../../components/Toast';
-import { space, radius, shadow } from '../../styles/tokens';
+import { space, weight, radius, shadow } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
+import { BottomSheet } from '../../components/BottomSheet';
+import { AppImage } from '../../components/AppImage';
 
 /** Campo de comida según la hora del día. */
 function feedFieldForNow(): 'morning_feed' | 'afternoon_feed' | 'evening_feed' {
@@ -30,8 +29,6 @@ function feedFieldForNow(): 'morning_feed' | 'afternoon_feed' | 'evening_feed' {
 type RoutineField = keyof Pick<Routine, 'morning_feed' | 'afternoon_feed' | 'evening_feed' | 'water_ok' | 'box_cleaned' | 'paddock' | 'groomed'>;
 
 const RAZONES = ['Está rengo', 'Tiene una herida', 'No comió', 'Otra cosa'];
-
-function greenFor(c: ThemeColors) { return c.isDark ? '#22c55e' : '#16a34a'; }
 
 export default function PeonHorse() {
   const { c } = useTheme();
@@ -54,7 +51,6 @@ export default function PeonHorse() {
   const [noteText, setNoteText] = useState('');
 
   const feedField = feedFieldForNow();
-  const green = greenFor(c);
 
   const markRoutine = (field: RoutineField, doneLabel: string) => {
     // Ya está hecho: no re-disparar el mutate ni el toast (evita re-tap accidental).
@@ -127,11 +123,18 @@ export default function PeonHorse() {
     <View style={[s.screen, { paddingTop: insets.top + space[3] }]}>
       {/* Header */}
       <View style={s.header}>
-        <PressableScale style={s.backBtn} scaleTo={0.92} onPress={() => { haptic.light(); router.back(); }}>
+        <PressableScale
+          style={s.backBtn}
+          scaleTo={0.92}
+          onPress={() => { haptic.light(); router.back(); }}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+          hitSlop={8}
+        >
           <ChevronLeft size={34} color={c.text} strokeWidth={2.6} />
         </PressableScale>
         {horse?.image_url ? (
-          <Image source={{ uri: horse.image_url }} style={s.photo} resizeMode="cover" />
+          <AppImage source={{ uri: horse.image_url }} style={s.photo} />
         ) : (
           <View style={[s.photo, s.photoPlaceholder]}>
             <Text style={s.photoInitial} allowFontScaling={false}>{horse?.name?.[0]?.toUpperCase() ?? '?'}</Text>
@@ -144,7 +147,14 @@ export default function PeonHorse() {
         contentContainerStyle={[s.grid, { paddingBottom: insets.bottom + space[6] }]}
         showsVerticalScrollIndicator={false}
       >
-        <PressableScale style={s.photoBtn} scaleTo={0.96} onPress={takePhoto} disabled={uploadPhoto.isPending}>
+        <PressableScale
+          style={s.photoBtn}
+          scaleTo={0.96}
+          onPress={takePhoto}
+          disabled={uploadPhoto.isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Sacar foto de la tarea"
+        >
           {uploadPhoto.isPending ? (
             <ActivityIndicator color={colors.white} />
           ) : (
@@ -157,13 +167,15 @@ export default function PeonHorse() {
         {buttons.map((b) => (
           <PressableScale
             key={b.label}
-            style={[s.btn, b.done && { backgroundColor: green, borderColor: green }]}
+            style={[s.btn, b.done && { backgroundColor: c.success, borderColor: c.success }]}
             scaleTo={0.95}
             onPress={b.onPress}
+            accessibilityRole="button"
+            accessibilityLabel={b.done ? `${b.label}, hecho` : b.label}
           >
             {b.done && (
               <View style={s.checkBadge}>
-                <Check size={20} color={green} strokeWidth={3.5} />
+                <Check size={20} color={c.success} strokeWidth={3.5} />
               </View>
             )}
             <Text style={s.btnEmoji} allowFontScaling={false}>{b.emoji}</Text>
@@ -172,53 +184,45 @@ export default function PeonHorse() {
         ))}
       </ScrollView>
 
-      {/* Modal "Algo raro" */}
-      <Modal visible={rareOpen} transparent animationType="fade" onRequestClose={() => setRareOpen(false)}>
-        <View style={s.overlay}>
-          <View style={[s.sheet, { paddingBottom: insets.bottom + space[4] }]}>
-            <View style={s.sheetHead}>
-              <Text style={s.sheetTitle}>¿Qué pasó?</Text>
-              <PressableScale style={s.closeBtn} scaleTo={0.9} onPress={() => { haptic.light(); setRareOpen(false); }}>
-                <X size={28} color={c.textMuted} strokeWidth={2.6} />
-              </PressableScale>
-            </View>
-            {RAZONES.map((r) => (
-              <PressableScale key={r} style={s.reasonBtn} scaleTo={0.97} onPress={() => reportRare(r)}>
-                <Text style={s.reasonText}>{r}</Text>
-              </PressableScale>
-            ))}
-          </View>
-        </View>
-      </Modal>
+      <BottomSheet visible={rareOpen} onClose={() => setRareOpen(false)} title="¿Qué pasó?">
+        {RAZONES.map((r) => (
+          <PressableScale
+            key={r}
+            style={s.reasonBtn}
+            scaleTo={0.97}
+            onPress={() => reportRare(r)}
+            accessibilityRole="button"
+            accessibilityLabel={r}
+          >
+            <Text style={s.reasonText}>{r}</Text>
+          </PressableScale>
+        ))}
+      </BottomSheet>
 
-      {/* Modal "Nota" */}
-      <Modal visible={noteOpen} transparent animationType="fade" onRequestClose={() => setNoteOpen(false)}>
-        <KeyboardAvoidingView style={s.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[s.sheet, { paddingBottom: insets.bottom + space[4] }]}>
-            <View style={s.sheetHead}>
-              <Text style={s.sheetTitle}>Escribí una nota</Text>
-              <PressableScale style={s.closeBtn} scaleTo={0.9} onPress={() => { haptic.light(); setNoteOpen(false); }}>
-                <X size={28} color={c.textMuted} strokeWidth={2.6} />
-              </PressableScale>
-            </View>
-            <TextInput
-              style={s.noteInput}
-              value={noteText}
-              onChangeText={setNoteText}
-              placeholder="Escribí acá..."
-              placeholderTextColor={c.textFaint}
-              multiline
-              autoFocus
-              textAlignVertical="top"
-            />
-            <PressableScale style={s.saveBtn} scaleTo={0.97} onPress={saveNote} disabled={upsert.isPending}>
-              {upsert.isPending
-                ? <ActivityIndicator color={colors.white} />
-                : <Text style={s.saveText}>Guardar</Text>}
-            </PressableScale>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <BottomSheet visible={noteOpen} onClose={() => setNoteOpen(false)} title="Escribí una nota" avoidKeyboard>
+        <TextInput
+          style={s.noteInput}
+          value={noteText}
+          onChangeText={setNoteText}
+          placeholder="Escribí acá..."
+          placeholderTextColor={c.textFaint}
+          multiline
+          autoFocus
+          textAlignVertical="top"
+        />
+        <PressableScale
+          style={s.saveBtn}
+          scaleTo={0.97}
+          onPress={saveNote}
+          disabled={upsert.isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Guardar nota"
+        >
+          {upsert.isPending
+            ? <ActivityIndicator color={colors.white} />
+            : <Text style={s.saveText}>Guardar</Text>}
+        </PressableScale>
+      </BottomSheet>
     </View>
   );
 }
@@ -242,12 +246,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   photo: { width: 110, height: 110, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
   photoPlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: c.brand },
-  photoInitial: { fontSize: 52, fontFamily: fontFamily.extrabold, fontWeight: '800', color: colors.white },
+  photoInitial: { fontSize: 52, fontFamily: fontFamily.extrabold, fontWeight: weight.extrabold, color: colors.white },
   horseName: {
     marginTop: space[3],
     fontSize: 32,
     fontFamily: fontFamily.extrabold,
-    fontWeight: '800',
+    fontWeight: weight.extrabold,
     color: c.text,
   },
   grid: {
@@ -296,32 +300,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoBtnText: {
     fontSize: 21,
     fontFamily: fontFamily.extrabold,
-    fontWeight: '800',
+    fontWeight: weight.extrabold,
     color: colors.white,
   },
   btnEmoji: { fontSize: 42, marginBottom: space[2] },
   btnLabel: {
     fontSize: 19,
     fontFamily: fontFamily.bold,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     color: c.text,
     textAlign: 'center',
-  },
-  // Modals
-  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: c.surface,
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
-    paddingHorizontal: space[5],
-    paddingTop: space[5],
-    gap: space[3],
-  },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[2] },
-  sheetTitle: { fontSize: 26, fontFamily: fontFamily.extrabold, fontWeight: '800', color: c.text },
-  closeBtn: {
-    width: 48, height: 48, borderRadius: radius.full,
-    backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center',
   },
   reasonBtn: {
     backgroundColor: c.surfaceAlt,
@@ -330,7 +318,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4],
     alignItems: 'center',
   },
-  reasonText: { fontSize: 22, fontFamily: fontFamily.bold, fontWeight: '700', color: c.text },
+  reasonText: { fontSize: 22, fontFamily: fontFamily.bold, fontWeight: weight.bold, color: c.text },
   noteInput: {
     backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
@@ -347,5 +335,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginTop: space[1],
   },
-  saveText: { fontSize: 22, fontFamily: fontFamily.bold, fontWeight: '700', color: colors.white },
+  saveText: { fontSize: 22, fontFamily: fontFamily.bold, fontWeight: weight.bold, color: colors.white },
 });

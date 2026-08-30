@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import { useRouter } from 'expo-router';
-// expo-notifications removido de Expo Go en SDK 53 — se usa no-op
+
 import api, { getToken } from './api';
-import { clearBadge, usePushNotificationListeners, type PushPayload } from './push-notifications';
+import { clearBadge, setBadgeCount, usePushNotificationListeners, type PushPayload } from './push-notifications';
 
 const WS_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.100:3001/api').replace('/api', '');
 
@@ -111,8 +112,19 @@ export function NotificationsProvider({ children, userId }: { children: React.Re
       socketRef.current = s;
     })();
 
+    // El backend solo manda push si te ve desconectado del socket. Si la app
+    // queda en segundo plano con el socket vivo, el servidor cree que estás
+    // mirando y no manda nada: la notificación no llega nunca. Por eso soltamos
+    // la conexión al salir de primer plano y la recuperamos al volver.
+    const onAppState = (estado: AppStateStatus) => {
+      if (estado === 'active') socketRef.current?.connect();
+      else socketRef.current?.disconnect();
+    };
+    const sub = AppState.addEventListener('change', onAppState);
+
     return () => {
       active = false;
+      sub.remove();
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
@@ -160,10 +172,12 @@ export function NotificationsProvider({ children, userId }: { children: React.Re
     }
   }, [refresh]);
 
-  // ─── Badge sync: refleja el unread real en el ícono nativo ───
+  // ─── Badge: el número del ícono sigue al total sin leer ───
+  // El backend lo manda con cada push (para cuando la app está cerrada); acá lo
+  // mantenemos al día mientras está abierta, para que baje al leer.
   useEffect(() => {
-    const unread = notifications.filter((n) => !n.read).length;
-    // Badge sync deshabilitado en Expo Go
+    const sinLeer = notifications.filter((n) => !n.read).length;
+    void setBadgeCount(sinLeer);
   }, [notifications]);
 
   const unread = notifications.filter((n) => !n.read).length;

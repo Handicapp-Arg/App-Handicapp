@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Modal,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { SlideInDown } from 'react-native-reanimated';
 import { Check, Tag, Gavel, Calendar, ChevronRight, Clock, AlertCircle } from 'lucide-react-native';
 import { HorseIcon } from '../../../components/icons/equine';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { BottomSheet } from '../../../components/BottomSheet';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { useHorses } from '../../../hooks/use-horses';
 import { useCreateAuction } from '../../../hooks/use-auctions';
@@ -64,16 +64,18 @@ function TypeOption({ type, selected, onSelect, c, s }: {
 }) {
   const isSelected = type === selected;
   const config = type === 'venta_directa'
-    ? { Icon: Tag, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: c.brand }
-    : { Icon: Gavel, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: '#d9a94e' };
+    ? { Icon: Tag, title: 'Venta directa', desc: 'Precio fijo, trato directo con el comprador', color: c.brand, soft: c.brandSoft }
+    : { Icon: Gavel, title: 'Remate', desc: 'Subasta por tiempo limitado, mayor al mejor postor', color: c.info, soft: c.infoSoft };
 
   return (
     <TouchableOpacity
-      style={[s.typeOption, isSelected && { borderColor: config.color, backgroundColor: isSelected ? `${config.color}0d` : c.surface }]}
+      style={[s.typeOption, isSelected && { borderColor: config.color, backgroundColor: config.soft }]}
       onPress={() => { haptic.selection(); onSelect(type); }}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`Tipo de publicación: ${config.title}`}
     >
-      <View style={[s.typeIcon, { backgroundColor: `${config.color}18` }]}>
+      <View style={[s.typeIcon, { backgroundColor: config.soft }]}>
         <config.Icon size={24} color={config.color} strokeWidth={2} />
       </View>
       <View style={s.typeBody}>
@@ -286,32 +288,36 @@ export default function CrearRemateScreen() {
                 />
               )}
 
-              {/* iOS: modal con spinner */}
+              {/* iOS: hoja con spinner */}
               {Platform.OS === 'ios' && (
-                <Modal visible={showDatePicker} transparent animationType="fade" statusBarTranslucent>
-                  <View style={s.pickerOverlay}>
-                    <Animated.View style={s.pickerSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-                      <View style={s.pickerHeader}>
-                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                          <Text style={s.pickerCancel}>Cancelar</Text>
-                        </TouchableOpacity>
-                        <Text style={s.pickerTitle}>Fecha de cierre</Text>
-                        <TouchableOpacity onPress={() => { setEndDate(tempDate); setShowDatePicker(false); haptic.selection(); }}>
-                          <Text style={s.pickerConfirm}>Listo</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <RNDateTimePicker
-                        value={tempDate}
-                        mode="date"
-                        display="spinner"
-                        minimumDate={new Date()}
-                        onChange={(_, selected) => { if (selected) setTempDate(selected); }}
-                        locale="es-AR"
-                        style={{ height: 200 }}
-                      />
-                    </Animated.View>
+                <BottomSheet visible={showDatePicker} onClose={() => setShowDatePicker(false)}>
+                  <View style={s.pickerHeader}>
+                    <TouchableOpacity
+                      onPress={() => setShowDatePicker(false)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancelar selección de fecha"
+                    >
+                      <Text style={s.pickerCancel}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <Text style={s.pickerTitle}>Fecha de cierre</Text>
+                    <TouchableOpacity
+                      onPress={() => { setEndDate(tempDate); setShowDatePicker(false); haptic.selection(); }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Confirmar fecha de cierre"
+                    >
+                      <Text style={s.pickerConfirm}>Listo</Text>
+                    </TouchableOpacity>
                   </View>
-                </Modal>
+                  <RNDateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display="spinner"
+                    minimumDate={new Date()}
+                    onChange={(_, selected) => { if (selected) setTempDate(selected); }}
+                    locale="es-AR"
+                    style={{ height: 200 }}
+                  />
+                </BottomSheet>
               )}
 
               {/* Horario de cierre — chips predefinidos */}
@@ -376,6 +382,9 @@ export default function CrearRemateScreen() {
               style={[s.checkRow, hasHealthCert && s.checkRowActive]}
               onPress={() => { haptic.selection(); setHasHealthCert(!hasHealthCert); }}
               activeOpacity={0.8}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: hasHealthCert }}
+              accessibilityLabel="Certificado sanitario SENASA"
             >
               <View style={[s.checkbox, hasHealthCert && s.checkboxActive]}>
                 {hasHealthCert && <Check size={14} color={colors.white} strokeWidth={2} />}
@@ -386,6 +395,9 @@ export default function CrearRemateScreen() {
               style={[s.checkRow, hasOwnershipDocs && s.checkRowActive]}
               onPress={() => { haptic.selection(); setHasOwnershipDocs(!hasOwnershipDocs); }}
               activeOpacity={0.8}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: hasOwnershipDocs }}
+              accessibilityLabel="Documentos de propiedad"
             >
               <View style={[s.checkbox, hasOwnershipDocs && s.checkboxActive]}>
                 {hasOwnershipDocs && <Check size={14} color={colors.white} strokeWidth={2} />}
@@ -396,7 +408,7 @@ export default function CrearRemateScreen() {
 
           {error ? (
             <View style={s.errorBox}>
-              <AlertCircle size={16} color={colors.red500} strokeWidth={2} />
+              <AlertCircle size={16} color={c.danger} strokeWidth={2} />
               <Text style={s.errorText}>{error}</Text>
             </View>
           ) : null}
@@ -499,11 +511,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   currencyBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   currencyBtnTextActive: { color: colors.white },
   priceInput: {
-    flex: 1, fontSize: 28, fontWeight: weight.extrabold, color: c.text,
+    flex: 1, fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text,
     backgroundColor: c.surface, borderRadius: radius.xl,
     borderWidth: 1, borderColor: c.borderStrong,
     paddingHorizontal: space[4], paddingVertical: space[3],
-    textAlign: 'right',
+    textAlign: 'right', fontVariant: ['tabular-nums'],
     ...shadow.sm,
   },
 
@@ -529,8 +541,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   dateTriggerSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
-  pickerOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  pickerSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   pickerHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: space[5], paddingVertical: space[4],
@@ -566,22 +576,22 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4],
   },
-  checkRowActive: { borderColor: c.isDark ? 'rgba(16,185,129,0.4)' : '#10b981', backgroundColor: c.isDark ? 'rgba(16,185,129,0.14)' : '#f0fdf4' },
+  checkRowActive: { borderColor: c.success, backgroundColor: c.successSoft },
   checkbox: {
     width: 24, height: 24, borderRadius: 6,
     borderWidth: 2, borderColor: c.borderStrong,
     justifyContent: 'center', alignItems: 'center',
   },
-  checkboxActive: { backgroundColor: '#10b981', borderColor: '#10b981' },
+  checkboxActive: { backgroundColor: c.success, borderColor: c.success },
   checkLabel: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, flex: 1 },
 
   /* Error */
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : colors.red50, borderRadius: radius.lg,
-    padding: space[3], borderWidth: 1, borderColor: c.isDark ? 'rgba(239,68,68,0.3)' : '#fca5a5',
+    backgroundColor: c.dangerSoft, borderRadius: radius.lg,
+    padding: space[3], borderWidth: 1, borderColor: c.danger,
   },
-  errorText: { fontSize: text.sm, color: c.isDark ? '#fca5a5' : colors.red500, flex: 1 },
+  errorText: { fontSize: text.sm, color: c.danger, flex: 1 },
 
   /* Footer */
   footer: {

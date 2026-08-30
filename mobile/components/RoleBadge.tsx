@@ -15,6 +15,7 @@ import {
 } from 'lucide-react-native';
 import { HorseIcon } from './icons/equine';
 import { useTheme } from '../lib/theme';
+import { space, text, radius, weight } from '../styles/tokens';
 
 type RoleMeta = { label: string; Icon: LucideIcon | typeof HorseIcon };
 
@@ -75,6 +76,8 @@ export function RoleBadge({ role, iconOnly = false, size = 'md', style }: RoleBa
           },
           style,
         ]}
+        accessibilityRole="text"
+        accessibilityLabel={`Rol: ${label}`}
       >
         <Icon size={iconSize} color={c.textMuted} strokeWidth={2.2} />
       </View>
@@ -89,6 +92,8 @@ export function RoleBadge({ role, iconOnly = false, size = 'md', style }: RoleBa
         { backgroundColor: c.surfaceAlt, borderColor: c.border },
         style,
       ]}
+      accessibilityRole="text"
+      accessibilityLabel={`Rol: ${label}`}
     >
       <Icon size={iconSize} color={c.textMuted} strokeWidth={2.2} />
       <Text
@@ -108,20 +113,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     alignSelf: 'flex-start',
-    borderRadius: 999,
+    borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    paddingHorizontal: space[2] + 2,
+    paddingVertical: 4,
   },
-  badgeSm: { paddingHorizontal: 7, paddingVertical: 2, gap: 3 },
+  badgeSm: { paddingHorizontal: space[2], paddingVertical: 3, gap: 3 },
   iconOnly: {
-    borderRadius: 999,
+    borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { fontSize: 11, fontWeight: '700' },
-  textSm: { fontSize: 10 },
+  text: { fontSize: text.xs, fontWeight: weight.bold },
+  textSm: { fontSize: 11 },
 });
 
 export default RoleBadge;

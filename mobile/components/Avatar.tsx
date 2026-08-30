@@ -14,6 +14,7 @@ import { View, Text, Image, StyleSheet, type StyleProp, type ViewStyle, type Ima
 import { avatarColor, initialsOf } from '../lib/avatar-color';
 import { useTheme } from '../lib/theme';
 import { colors } from '../lib/colors';
+import { AppImage } from './AppImage';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -55,15 +56,19 @@ export function Avatar({
     ? { borderWidth: Math.max(1, Math.round(px * 0.035)), borderColor: c.surface }
     : {};
 
+  const label = name ? `Foto de perfil de ${name}` : 'Foto de perfil';
+
   if (avatarUrl) {
     return (
-      <Image
+      <AppImage
         source={{ uri: avatarUrl }}
         style={[
           { width: px, height: px, borderRadius: radius, backgroundColor: c.surfaceAlt },
           ringStyle,
           style,
         ] as StyleProp<ImageStyle>}
+        accessibilityRole="image"
+        accessibilityLabel={label}
       />
     );
   }
@@ -81,6 +86,8 @@ export function Avatar({
         ringStyle,
         style,
       ]}
+      accessibilityRole="image"
+      accessibilityLabel={label}
     >
       <Text
         style={[styles.text, { fontSize: Math.round(px * 0.4) }]}

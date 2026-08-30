@@ -4,16 +4,18 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, ListPlus, QrCode, CalendarClock } from 'lucide-react-native';
 import { useMemo, type ComponentType } from 'react';
-import { HorseHeadIcon, BrandIsotipo } from '../../components/icons/equine';
+import { HorseHeadNav, BrandIsotipo } from '../../components/icons/equine';
+import { LinearGradient } from 'expo-linear-gradient';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
+import { weight } from '../../styles/tokens';
 
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
 const TABS: Record<string, { Icon: IconType; label: string }> = {
   muro:             { Icon: BrandIsotipo, label: 'Muro' },
-  'caballos/index': { Icon: HorseHeadIcon, label: 'Caballos' },
+  'caballos/index': { Icon: HorseHeadNav, label: 'Caballos' },
   eventos:          { Icon: CalendarClock, label: 'Eventos' },
   agenda:           { Icon: Calendar,     label: 'Agenda' },
   mas:              { Icon: ListPlus,     label: 'Más' },
@@ -35,17 +37,25 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     const Icon = meta.Icon;
     const color = focused ? c.brand : c.textMuted;
     const onPress = () => {
-      haptic.light();
+      haptic.selection();
       const route = state.routes.find((r) => r.name === name);
       if (!route) return;
       const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
       if (!focused && !event.defaultPrevented) navigation.navigate(name as never);
     };
     return (
-      <TouchableOpacity key={name} style={styles.tab} onPress={onPress} activeOpacity={0.7}>
+      <TouchableOpacity
+        key={name}
+        style={styles.tab}
+        onPress={onPress}
+        activeOpacity={0.7}
+        accessibilityRole="tab"
+        accessibilityLabel={meta.label}
+        accessibilityState={{ selected: focused }}
+      >
         {focused && <View style={styles.activeBar} />}
         <Icon size={23} color={color} strokeWidth={focused ? 2.6 : 2} />
-        <Text style={[styles.label, { color }]}>{meta.label}</Text>
+        <Text style={[styles.label, { color, fontWeight: focused ? weight.bold : weight.semibold }]}>{meta.label}</Text>
       </TouchableOpacity>
     );
   };
@@ -60,15 +70,31 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
       {/* Botón central que sobresale: Home (logo) para propietario, QR para el resto */}
       <TouchableOpacity
-        style={[isProp ? styles.homeBtn : styles.qrBtn, { bottom: insets.bottom + (isProp ? 22 : 24) }]}
+        style={[styles.qrBtn, { bottom: insets.bottom + 24 }, isProp && { borderWidth: 0, backgroundColor: 'transparent', overflow: 'hidden' }]}
         activeOpacity={0.85}
         onPress={() => { haptic.light(); router.push(isProp ? '/muro' : '/buscar'); }}
+        accessibilityRole="button"
+        accessibilityLabel={isProp ? 'Ir al inicio' : 'Escanear código QR'}
       >
+        {isProp && (
+          <LinearGradient
+            colors={c.isDark ? ['#e6c599', '#c2955a'] : ['#b8894a', '#875626']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         {isProp
-          ? <BrandIsotipo size={54} color={c.brand} />
+          ? <BrandIsotipo size={40} color={c.isDark ? '#1a1207' : '#ffffff'} />
           : <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />}
       </TouchableOpacity>
-      <Text style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}>{isProp ? 'Home' : 'QR'}</Text>
+      <Text
+        style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        {isProp ? 'Home' : 'QR'}
+      </Text>
     </View>
   );
 }
@@ -113,7 +139,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 10,
     elevation: 14,
-    shadowColor: '#0f1f3d',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -133,7 +159,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: 2,
     backgroundColor: c.brand,
   },
-  label: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
+  label: { fontSize: 11, letterSpacing: 0.1 },
   qrSlot: { width: 70 },
   qrBtn: {
     position: 'absolute',
@@ -158,28 +184,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: c.brand,
-  },
-  // Botón Home: círculo del color de la barra (blanco en claro) con el logo cuero.
-  // El círculo "recorta" la parte que sobresale y le da un fondo limpio al logo.
-  homeBtn: {
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -35,
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: c.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2.5,
-    borderColor: c.brand,
-    elevation: 9,
-    shadowColor: '#0f1f3d',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: c.isDark ? 0.32 : 0.16,
-    shadowRadius: 10,
   },
 });

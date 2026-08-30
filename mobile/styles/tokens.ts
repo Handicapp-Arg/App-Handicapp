@@ -20,14 +20,27 @@ export const space = {
   20: 80,
 } as const;
 
+/**
+ * Escala tipográfica alineada a iOS: el cuerpo de texto vive en 16–17, no en
+ * 13–15 como en escritorio. El teléfono se lee a una mano y en movimiento, así
+ * que subir la base es lo que saca a la app de la sensación "apretada".
+ */
 export const text = {
-  xs: 11,
-  sm: 13,
-  base: 15,
+  xs: 12,
+  sm: 14,
+  base: 16,
   md: 17,
-  lg: 20,
-  xl: 24,
-  '2xl': 28,
+  lg: 22,
+  xl: 26,
+  '2xl': 30,
+  display: 34,
+} as const;
+
+/** Alturas táctiles. 44 es el mínimo de Apple; 56 es la medida cómoda. */
+export const touch = {
+  min: 44,
+  field: 56,
+  button: 56,
 } as const;
 
 export const radius = {

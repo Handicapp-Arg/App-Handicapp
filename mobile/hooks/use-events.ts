@@ -58,6 +58,7 @@ export function useAllEvents(params?: { type?: string; horse_id?: string }) {
   return {
     events: allItems,
     isLoading: query.isLoading && allItems.length === 0,
+    isError: query.isError,
     isFetchingMore: query.isFetching && allItems.length > 0,
     hasMore,
     loadMore,

@@ -11,7 +11,10 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   });
 }
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { configurarRed } from '../lib/network';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
   Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
@@ -35,7 +38,15 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 }
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+  defaultOptions: {
+    queries: {
+      // Con señal intermitente, un solo reintento inmediato casi nunca alcanza.
+      retry: 2,
+      retryDelay: (intento) => Math.min(1000 * 2 ** intento, 8000),
+      staleTime: 30_000,
+      refetchOnReconnect: true,
+    },
+  },
 });
 
 function InnerLayout() {
@@ -44,7 +55,18 @@ function InnerLayout() {
   return (
     <ToastProvider>
       <NotificationsProvider userId={user?.id}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: c.bg },
+            // Transición nativa de iOS: la pantalla entra desde la derecha y la
+            // anterior se desplaza detrás. Habilita además el gesto de volver
+            // deslizando desde el borde, que en iOS se espera que exista.
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            animationDuration: 280,
+          }}
+        >
           <Stack.Screen name="peon" />
           <Stack.Screen name="jinete" />
           <Stack.Screen name="supervision" />
@@ -91,19 +113,24 @@ export default function RootLayout() {
   });
   const [showSplash, setShowSplash] = useState(true);
 
+  useEffect(() => configurarRed(), []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <SafeAreaProvider>
-          <ThemedStatusBar />
-          {fontsLoaded && (
-            <AuthProvider>
-              <InnerLayout />
-            </AuthProvider>
-          )}
-          {showSplash && <AnimatedSplash onDone={() => setShowSplash(false)} />}
-        </SafeAreaProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <SafeAreaProvider>
+            <ThemedStatusBar />
+            {fontsLoaded && (
+              <AuthProvider>
+                <InnerLayout />
+              </AuthProvider>
+            )}
+            {fontsLoaded && <OfflineBanner />}
+            {showSplash && <AnimatedSplash onDone={() => setShowSplash(false)} />}
+          </SafeAreaProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

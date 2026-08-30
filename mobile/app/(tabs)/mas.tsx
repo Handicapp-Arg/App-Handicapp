@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Gavel, GitBranch, BookOpen, FileText, Receipt, CalendarClock,
   Inbox, Building2, Settings, ShieldCheck, ChevronRight,
-  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, type LucideIcon,
+  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, QrCode, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
@@ -14,7 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { Avatar } from '../../components/Avatar';
 import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
 
 interface MenuItem {
@@ -112,6 +112,12 @@ export default function MasScreen() {
   const push = (path: string) => nav.push(router, path);
 
   const principal: MenuItem[] = [
+    {
+      icon: QrCode,
+      label: 'Escanear QR',
+      desc: 'Leé el código de un caballo para ver su ficha',
+      path: '/escanear',
+    },
     ...(isEncargado ? [{
       icon: ClipboardList,
       label: 'Supervisión',
@@ -252,13 +258,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
   },
-  profileAvatar: {
-    width: 50, height: 50, borderRadius: radius.full,
-    backgroundColor: colors.gray900, alignItems: 'center', justifyContent: 'center',
-  },
-  profileAvatarText: { color: colors.white, fontSize: text.base, fontWeight: weight.bold },
   profileName: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  profileRole: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
   section: { marginBottom: space[4], paddingHorizontal: space[4] },
   sectionTitle: {
@@ -292,11 +292,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   rowBody: { flex: 1 },
-  rowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  rowLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   rowDesc: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   badge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: c.danger,
     borderRadius: radius.full,
     minWidth: 20,
     height: 20,
@@ -318,7 +318,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: space[1] + 2,
+    paddingVertical: space[2] + 2,
+    minHeight: touch.min,
+    justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.full,
   },
@@ -329,20 +331,4 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   segmentText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   segmentTextActive: { color: c.text },
-
-  sellBanner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#faf3e9', borderRadius: radius.xl,
-    borderWidth: 1.5, borderColor: '#f3e3cc',
-    padding: space[4], marginBottom: space[4], marginHorizontal: space[4],
-  },
-  sellBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: space[3], flex: 1 },
-  sellBannerTitle: { fontSize: text.sm, fontWeight: weight.bold, color: '#5f3f18' },
-  sellBannerSub: { fontSize: text.xs, color: '#9d6c35', marginTop: 2 },
-  sellBannerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#f3e3cc', borderRadius: radius.full,
-    paddingHorizontal: space[3], paddingVertical: space[2],
-  },
-  sellBannerBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: '#9d6c35' },
 });

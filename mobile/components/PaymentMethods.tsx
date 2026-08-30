@@ -188,7 +188,11 @@ export function PaymentMethods({
   };
 
   return (
-    <View style={[{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, style]}>
+    <View
+      style={[{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, style]}
+      accessibilityRole="image"
+      accessibilityLabel="Medios de pago aceptados: Visa, Mastercard, American Express, Cabal, Naranja X, MercadoPago"
+    >
       <View style={chip}><VisaLogo h={logoH * 0.62} /></View>
       <View style={chip}><MastercardLogo h={logoH + 3} /></View>
       <View style={chip}><AmexLogo h={chipH - 8} /></View>

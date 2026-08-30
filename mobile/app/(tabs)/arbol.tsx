@@ -123,10 +123,13 @@ function NodeCard({
     <TouchableOpacity
       activeOpacity={node.id ? 0.7 : 1}
       onPress={() => node.id && onPress(node.id)}
+      disabled={!node.id}
       style={[
         s.node,
         { left: placed.x, top: placed.y, borderColor: own.border, backgroundColor: own.bg },
       ]}
+      accessibilityRole={node.id ? 'button' : undefined}
+      accessibilityLabel={node.id ? `Ver árbol de ${node.name}` : undefined}
     >
       <Text style={s.nodeName} numberOfLines={2}>{node.name}</Text>
       {!!subtitle && <Text style={s.nodeSub}>{subtitle}</Text>}
@@ -249,6 +252,10 @@ function DepthToggle({ value, onChange, s }: { value: number; onChange: (v: numb
           key={d}
           style={[s.depthBtn, value === d && s.depthBtnActive]}
           onPress={() => onChange(d)}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={`Mostrar ${d} generaciones`}
+          accessibilityState={{ selected: value === d }}
         >
           <Text style={[s.depthLabel, value === d && s.depthLabelActive]}>
             {d} gen
@@ -343,7 +350,13 @@ export default function ArbolScreen() {
 
         {/* Breadcrumb */}
         {history.length > 1 && (
-          <TouchableOpacity style={s.backBtn} onPress={handleBack}>
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={handleBack}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Volver a ${history[history.length - 2]?.name}`}
+          >
             <ChevronLeft size={14} color={c.textMuted} strokeWidth={2} />
             <Text style={s.backText}>
               Volver a <Text style={{ fontWeight: '700' }}>{history[history.length - 2]?.name}</Text>
@@ -499,7 +512,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   depthBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 10,
     borderRadius: 7,
   },
   depthBtnActive: {
@@ -522,7 +535,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: -2,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
   },
   backText: {
     fontSize: 12,

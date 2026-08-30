@@ -8,7 +8,7 @@ import { Search, ChevronRight, Calendar, Stethoscope, type LucideIcon } from 'lu
 import { HorseIcon } from './icons/equine';
 import { useSearch } from '../hooks/use-search';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 import { Routes, nav } from '../lib/routes';
 
 function ResultRow({ icon: Icon, title, subtitle, onPress, c, s }: {
@@ -20,7 +20,13 @@ function ResultRow({ icon: Icon, title, subtitle, onPress, c, s }: {
   s: Styles;
 }) {
   return (
-    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={s.row}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={subtitle ? `${title}, ${subtitle}` : title}
+    >
       <View style={s.rowIcon}>
         <Icon size={18} color={c.textMuted} />
       </View>
@@ -67,7 +73,14 @@ export function InlineSearch({ topInset, onClose }: { topInset: number; onClose:
           />
           {isFetching && <ActivityIndicator size="small" color={c.textFaint} />}
         </View>
-        <TouchableOpacity onPress={onClose} style={s.cancelBtn} activeOpacity={0.8}>
+        <TouchableOpacity
+          onPress={onClose}
+          style={s.cancelBtn}
+          activeOpacity={0.8}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar búsqueda"
+        >
           <Text style={s.cancelText}>Cancelar</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -153,16 +166,16 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.bg, zIndex: 50 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: 40 },
-  input: { flex: 1, fontSize: text.sm, color: c.text, height: 40 },
-  cancelBtn: { paddingVertical: space[2] },
-  cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.min },
+  input: { flex: 1, fontSize: text.base, color: c.text, height: touch.min },
+  cancelBtn: { paddingVertical: space[2], minHeight: touch.min, justifyContent: 'center' },
+  cancelText: { fontSize: text.base, fontWeight: weight.semibold, color: c.brand },
   results: { padding: space[4], gap: space[4], paddingBottom: space[10] },
   sectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: space[2] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], minHeight: touch.min, borderBottomWidth: 1, borderBottomColor: c.border },
   rowIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
-  rowTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
+  rowTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  rowSub: { fontSize: text.sm, color: c.textFaint, marginTop: 1 },
   hint: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
   hintText: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },
 });

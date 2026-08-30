@@ -8,6 +8,7 @@ import {
 } from 'lucide-react-native';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { Avatar } from '../components/Avatar';
 import { useEncargadoDashboard, type EncargadoFeedItem } from '../hooks/use-dashboard';
 import { useTheme, type ThemeColors } from '../lib/theme';
@@ -15,8 +16,8 @@ import { haptic } from '../lib/haptics';
 import { Routes, nav } from '../lib/routes';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
+import { AppImage } from '../components/AppImage';
 
-const ALERT_COLOR = '#ef4444';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -57,19 +58,19 @@ function StatCard({ value, label, s, alert }: { value: number; label: string; s:
 function FeedRow({ item, c, s, onPress }: { item: EncargadoFeedItem; c: ThemeColors; s: Styles; onPress: () => void }) {
   const meta = KIND_META[item.kind] ?? KIND_META.aviso;
   const Icon = item.is_alert ? AlertTriangle : meta.Icon;
-  const tint = item.is_alert ? ALERT_COLOR : c.brand;
+  const tint = item.is_alert ? c.danger : c.brand;
   return (
     <TouchableOpacity
       style={[s.feedRow, item.is_alert && s.feedRowAlert]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[s.feedIcon, { backgroundColor: item.is_alert ? `${ALERT_COLOR}18` : c.brandSoft }]}>
+      <View style={[s.feedIcon, { backgroundColor: item.is_alert ? `${c.danger}18` : c.brandSoft }]}>
         <Icon size={20} color={tint} strokeWidth={2} />
       </View>
 
       <View style={s.feedBody}>
-        <Text style={[s.feedTitle, item.is_alert && { color: ALERT_COLOR }]} numberOfLines={2}>
+        <Text style={[s.feedTitle, item.is_alert && { color: c.danger }]} numberOfLines={2}>
           {item.title}
         </Text>
         {item.detail ? <Text style={s.feedDetail} numberOfLines={2}>{item.detail}</Text> : null}
@@ -88,7 +89,7 @@ function FeedRow({ item, c, s, onPress }: { item: EncargadoFeedItem; c: ThemeCol
       </View>
 
       {item.photo_url ? (
-        <Image source={{ uri: item.photo_url }} style={s.thumb} resizeMode="cover" />
+        <AppImage source={{ uri: item.photo_url }} style={s.thumb} />
       ) : (
         <ChevronRight size={18} color={c.textFaint} strokeWidth={2} />
       )}
@@ -118,7 +119,7 @@ export default function SupervisionScreen() {
       {alerts.length > 0 && (
         <View style={s.section}>
           <View style={s.alertHeader}>
-            <AlertTriangle size={16} color={ALERT_COLOR} strokeWidth={2.4} />
+            <AlertTriangle size={16} color={c.danger} strokeWidth={2.4} />
             <Text style={s.alertTitle}>Alertas</Text>
           </View>
           <View style={s.group}>
@@ -145,13 +146,7 @@ export default function SupervisionScreen() {
       {isLoading ? (
         <View style={s.center}><ActivityIndicator size="large" color={c.brand} /></View>
       ) : isError ? (
-        <EmptyState
-          icon="cloud-offline-outline"
-          title="No se pudo cargar"
-          message="Revisá tu conexión e intentá de nuevo."
-          actionLabel="Reintentar"
-          onAction={() => refetch()}
-        />
+        <ErrorState onRetry={refetch} />
       ) : (data?.feed?.length ?? 0) === 0 ? (
         <>
           {header}
@@ -206,14 +201,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     ...shadow.sm,
   },
   statValue: { fontSize: text['2xl'], fontFamily: fontFamily.extrabold, fontWeight: weight.extrabold, color: c.text },
-  statValueAlert: { color: ALERT_COLOR },
+  statValueAlert: { color: c.danger },
   statLabel: { fontSize: text.xs, fontFamily: fontFamily.medium, color: c.textFaint, marginTop: 2 },
 
   section: { paddingHorizontal: space[4], marginBottom: space[4] },
   alertHeader: { flexDirection: 'row', alignItems: 'center', gap: space[1] + 2, marginBottom: space[2], paddingHorizontal: space[1] },
   alertTitle: {
     fontSize: text.xs, fontFamily: fontFamily.bold, fontWeight: weight.bold,
-    color: ALERT_COLOR, textTransform: 'uppercase', letterSpacing: 1,
+    color: c.danger, textTransform: 'uppercase', letterSpacing: 1,
   },
 
   feedHeading: {
@@ -239,7 +234,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingVertical: space[3],
     paddingHorizontal: space[3] + 1,
   },
-  feedRowAlert: { backgroundColor: `${ALERT_COLOR}0d` },
+  feedRowAlert: { backgroundColor: `${c.danger}0d` },
   feedIcon: {
     width: 40, height: 40, borderRadius: radius.md,
     justifyContent: 'center', alignItems: 'center', flexShrink: 0,

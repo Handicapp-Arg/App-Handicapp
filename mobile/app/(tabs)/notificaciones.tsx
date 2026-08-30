@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Modal,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,7 @@ import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
+import { ActionSheet } from '../../components/ActionSheet';
 
 /* ─── Tipo → icono + colores (theme-aware, semánticos) ─── */
 const makeTypeMeta = (c: ThemeColors): Record<string, { icon: LucideIcon; bg: string; color: string }> => ({
@@ -153,6 +154,8 @@ export default function NotificacionesScreen() {
           style={s.backBtn}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
         >
           <ChevronLeft size={22} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
@@ -171,6 +174,8 @@ export default function NotificacionesScreen() {
           style={s.menuBtn}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Más opciones"
         >
           <MoreVertical size={22} color={c.text} strokeWidth={2} />
         </TouchableOpacity>
@@ -195,8 +200,9 @@ export default function NotificacionesScreen() {
           keyExtractor={(r) => r.key}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
-          onRefresh={refresh}
-          refreshing={loading}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={c.brand} />
+          }
           renderItem={({ item: row, index }) => {
             if (row.kind === 'section') return <SectionLabel label={row.label} s={s} />;
             return (
@@ -213,21 +219,15 @@ export default function NotificacionesScreen() {
         />
       )}
 
-      {/* Menú de 3 puntos */}
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <TouchableOpacity style={s.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
-          <View style={[s.menu, { top: insets.top + 50 }]}>
-            <TouchableOpacity
-              style={s.menuItem}
-              activeOpacity={0.7}
-              onPress={() => { setMenuOpen(false); haptic.medium(); void markAllRead(); }}
-            >
-              <CheckCheck size={18} color={c.text} strokeWidth={2} />
-              <Text style={s.menuItemText}>Marcar todas como leídas</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <ActionSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        acciones={[{
+          label: 'Marcar todas como leídas',
+          Icon: CheckCheck,
+          onPress: () => { haptic.medium(); void markAllRead(); },
+        }]}
+      />
     </View>
   );
 }
@@ -292,10 +292,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  menuOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
   menu: {
     position: 'absolute',
     right: space[4],
@@ -310,19 +306,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space[3],
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
-  },
-  menuItemText: {
-    fontSize: text.sm,
-    fontWeight: weight.semibold,
-    fontFamily: fontFamily.semibold,
-    color: c.text,
   },
 
   /* Lista */
@@ -375,7 +358,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   rowTitle: {
     flex: 1,
-    fontSize: text.sm,
+    fontSize: text.base,
     fontWeight: weight.semibold,
     fontFamily: fontFamily.semibold,
     color: c.textMuted,
@@ -391,7 +374,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     lineHeight: 18,
   },
   rowTime: {
-    fontSize: text.xs,
+    fontSize: text.sm,
     fontFamily: fontFamily.regular,
     color: c.textFaint,
     marginTop: 2,

@@ -77,7 +77,14 @@ export default function BuscarScreen() {
           />
           {isFetching && <ActivityIndicator size="small" color={c.textFaint} />}
         </View>
-        <TouchableOpacity onPress={() => router.back()} style={s.cancelBtn} activeOpacity={0.8}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={s.cancelBtn}
+          activeOpacity={0.8}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar búsqueda"
+        >
           <Text style={s.cancelText}>Cancelar</Text>
         </TouchableOpacity>
       </View>
@@ -171,7 +178,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: space[2] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
   rowIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
-  rowTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  rowTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
   hint: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
   hintText: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },

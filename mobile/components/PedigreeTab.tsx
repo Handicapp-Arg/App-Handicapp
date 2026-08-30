@@ -11,6 +11,7 @@ import {
 import { HorseHeadIcon } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 import {
   usePedigree, usePedigreeValidations, useUpsertPedigree,
   useValidatePedigree, useSearchHorsesForPedigree, type CreatePedigreeDto,
@@ -399,7 +400,12 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>Editar pedigrí</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar"
+          >
             <X size={22} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         </View>
@@ -611,7 +617,12 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
           Registrá el padre y la madre para construir el árbol genealógico y verificarlo automáticamente contra registros oficiales.
         </Text>
         {canEdit && (
-          <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 8 }]} onPress={() => setShowForm(true)}>
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { marginTop: 8 }]}
+            onPress={() => setShowForm(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Agregar pedigrí"
+          >
             <Plus size={18} color={colors.white} strokeWidth={2} />
             <Text style={s.btnPrimaryText}>Agregar pedigrí</Text>
           </TouchableOpacity>
@@ -632,7 +643,12 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
         <Text style={s.headerTitle}>Árbol genealógico</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {canEdit && (
-            <TouchableOpacity style={s.actionBtn} onPress={() => setShowForm(true)}>
+            <TouchableOpacity
+              style={s.actionBtn}
+              onPress={() => setShowForm(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Editar pedigrí"
+            >
               <Pencil size={15} color={c.brand} strokeWidth={2} />
               <Text style={s.actionBtnText}>Editar</Text>
             </TouchableOpacity>
@@ -642,6 +658,9 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
               style={[s.actionBtn, s.actionBtnPrimary, validate.isPending && { opacity: 0.6 }]}
               onPress={() => validate.mutate()}
               disabled={validate.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="Verificar pedigrí contra registros oficiales"
+              accessibilityState={{ disabled: validate.isPending, busy: validate.isPending }}
             >
               {validate.isPending
                 ? <ActivityIndicator size="small" color={colors.white} />
@@ -729,9 +748,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '800', color: c.text },
 
   actionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 8, borderWidth: 1, borderColor: c.borderStrong,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+    paddingHorizontal: space[3], minHeight: touch.min,
+    borderRadius: radius.sm, borderWidth: 1, borderColor: c.borderStrong,
     backgroundColor: c.surface,
   },
   actionBtnPrimary: { backgroundColor: c.brand, borderColor: c.brand },
@@ -772,47 +791,47 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   // Modal
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, borderBottomWidth: 1, borderBottomColor: c.border,
+    padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: c.text },
-  modalBody: { padding: 20, gap: 4, paddingBottom: 40 },
+  modalTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text },
+  modalBody: { padding: space[5], gap: 4, paddingBottom: space[10] },
   modalFooter: {
-    flexDirection: 'row', gap: 8, padding: 16,
+    flexDirection: 'row', gap: space[2], padding: space[4],
     borderTopWidth: 1, borderTopColor: c.border,
   },
 
-  fieldset: { backgroundColor: c.surfaceAlt, borderRadius: 12, padding: 14, gap: 4, marginBottom: 12 },
-  fieldsetHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
-  fieldsetTitle: { fontSize: 11, fontWeight: '800', color: c.textMuted, letterSpacing: 0.8, textTransform: 'uppercase' },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: c.textMuted, marginBottom: 4, marginTop: 8 },
+  fieldset: { backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[4] - 2, gap: 4, marginBottom: space[3] },
+  fieldsetHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: space[2] },
+  fieldsetTitle: { fontSize: text.xs, fontWeight: weight.extrabold, color: c.textMuted, letterSpacing: 0.8, textTransform: 'uppercase' },
+  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, marginBottom: 4, marginTop: space[2] },
   input: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 14, color: c.text, backgroundColor: c.surface,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    paddingHorizontal: space[3], paddingVertical: space[2] + 2, minHeight: touch.min,
+    fontSize: text.base, color: c.text, backgroundColor: c.surface,
   },
-  grandRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  grandLabel: { fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 4 },
+  grandRow: { flexDirection: 'row', gap: space[2] + 2, marginBottom: space[2] + 2 },
+  grandLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, marginBottom: 4 },
   inputSm: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 8,
-    fontSize: 13, color: c.text, backgroundColor: c.surface,
+    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.sm,
+    paddingHorizontal: space[2] + 2, paddingVertical: space[2], minHeight: touch.min,
+    fontSize: text.sm, color: c.text, backgroundColor: c.surface,
   },
   dropdown: {
-    backgroundColor: c.surface, borderRadius: 10, borderWidth: 1,
+    backgroundColor: c.surface, borderRadius: radius.md, borderWidth: 1,
     borderColor: c.borderStrong, overflow: 'hidden', marginTop: 4,
   },
-  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: c.border },
-  dropdownName: { fontSize: 14, color: c.text, fontWeight: '500' },
-  dropdownReg: { fontSize: 12, color: c.textFaint },
-  errorText: { fontSize: 13, color: colors.red500, marginTop: 8 },
-  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 12 },
-  hint: { flex: 1, fontSize: 12, color: c.textFaint, lineHeight: 18 },
+  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: space[3], minHeight: touch.min, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: c.border },
+  dropdownName: { fontSize: text.base, color: c.text, fontWeight: weight.medium },
+  dropdownReg: { fontSize: text.sm, color: c.textFaint },
+  errorText: { fontSize: text.sm, color: c.danger, marginTop: space[2] },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] - 2, marginTop: space[3] },
+  hint: { flex: 1, fontSize: text.sm, color: c.textFaint, lineHeight: 18 },
 
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 12, gap: 6 },
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, minHeight: touch.min, gap: space[2] - 2 },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  btnPrimaryText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnSecondaryText: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted },
   btnOutline: { borderWidth: 1.5, borderColor: c.brand },
-  btnOutlineText: { fontSize: 14, fontWeight: '600', color: c.brand },
+  btnOutlineText: { fontSize: text.base, fontWeight: weight.semibold, color: c.brand },
 });

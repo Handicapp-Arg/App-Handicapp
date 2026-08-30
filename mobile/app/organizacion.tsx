@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
+  Platform, TextInput, ActivityIndicator,
   Alert, Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { CheckCircle2, Share2, X, XCircle } from 'lucide-react-native';
 import {
   useMyOrganizations, useOrganization, useOrgInvitations,
@@ -18,7 +18,9 @@ import { useToast } from '../components/Toast';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Routes, nav } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { ListRowSkeleton } from '../components/Skeleton';
+import { FormSheet } from '../components/FormSheet';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { Avatar } from '../components/Avatar';
@@ -50,11 +52,19 @@ function getInviteUrl(token: string): string {
   return `${base}/invitacion/${token}`;
 }
 
-function InviteModal({ orgId, onClose, c, s }: { orgId: string; onClose: () => void; c: ThemeColors; s: Styles }) {
+function InviteModal({ visible, orgId, onClose, c, s }: { visible: boolean; orgId: string; onClose: () => void; c: ThemeColors; s: Styles }) {
   const create = useCreateInvitation(orgId);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<OrgRole>('staff');
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+
+  // La hoja ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setEmail('');
+    setRole('staff');
+    setCreatedLink(null);
+  }, [visible]);
 
   const handleSubmit = async () => {
     if (!email.trim()) return;
@@ -69,141 +79,139 @@ function InviteModal({ orgId, onClose, c, s }: { orgId: string; onClose: () => v
   };
 
   return (
-    <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{createdLink ? 'Invitación lista' : 'Invitar miembro'}</Text>
-            <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-          </View>
-
-          {!createdLink ? (
-            <>
-              <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
-                <Text style={s.fieldLabel}>Email *</Text>
-                <TextInput
-                  style={s.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="ejemplo@email.com"
-                  placeholderTextColor={c.textFaint}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoFocus
-                />
-
-                <Text style={[s.fieldLabel, { marginTop: 12 }]}>Rol</Text>
-                <View style={{ gap: 8 }}>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <TouchableOpacity
-                      key={opt.value}
-                      style={[s.roleCard, role === opt.value && s.roleCardActive]}
-                      onPress={() => { haptic.selection(); setRole(opt.value); }}
-                      activeOpacity={0.75}
-                    >
-                      <View style={[s.radio, role === opt.value && s.radioActive]}>
-                        {role === opt.value && <View style={s.radioDot} />}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.roleCardTitle, role === opt.value && s.roleCardTitleActive]}>{opt.label}</Text>
-                        <Text style={s.roleCardDesc}>{opt.desc}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-              <View style={s.modalFooter}>
-                <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
-                  <Text style={s.btnSecondaryText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.btn, s.btnPrimary, { flex: 1 }, (!email.trim() || create.isPending) && { opacity: 0.5 }]}
-                  disabled={!email.trim() || create.isPending}
-                  onPress={handleSubmit}
-                  activeOpacity={0.85}
-                >
-                  {create.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Generar</Text>}
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={s.modalBody}>
-                <View style={s.successIcon}>
-                  <CheckCircle2 size={48} color="#16a34a" strokeWidth={2} />
-                </View>
-                <Text style={{ fontSize: text.sm, color: c.textMuted, textAlign: 'center', marginBottom: 12 }}>
-                  Compartí este link con la persona invitada. Válido por 7 días.
-                </Text>
-                <View style={s.linkBox}>
-                  <Text style={s.linkText} numberOfLines={2}>{createdLink}</Text>
-                </View>
-              </View>
-              <View style={s.modalFooter}>
-                <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1 }]} onPress={shareLink}>
-                  <Text style={s.btnPrimaryText}>Compartir link</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-}
-
-function ApproveJoinModal({
-  request, onClose, onConfirm, pending, c, s,
-}: { request: JoinRequest; onClose: () => void; onConfirm: (role: OrgRole) => void; pending: boolean; c: ThemeColors; s: Styles }) {
-  const [role, setRole] = useState<OrgRole>('jinete');
-
-  return (
-    <Modal visible animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={s.modalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Aprobar ingreso</Text>
-            <TouchableOpacity onPress={onClose}><X size={22} color={c.textFaint} strokeWidth={2} /></TouchableOpacity>
-          </View>
-          <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
-            <Text style={{ fontSize: text.sm, color: c.textMuted, marginBottom: 4 }}>
-              Asigná un rol a <Text style={{ fontWeight: weight.bold, color: c.text }}>{request.requester.name}</Text>
-            </Text>
-            <View style={{ gap: 8 }}>
-              {JOIN_ROLE_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[s.roleCard, role === opt.value && s.roleCardActive]}
-                  onPress={() => { haptic.selection(); setRole(opt.value); }}
-                  activeOpacity={0.75}
-                >
-                  <View style={[s.radio, role === opt.value && s.radioActive]}>
-                    {role === opt.value && <View style={s.radioDot} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.roleCardTitle, role === opt.value && s.roleCardTitleActive]}>{opt.label}</Text>
-                    <Text style={s.roleCardDesc}>{opt.desc}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-          <View style={s.modalFooter}>
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title={createdLink ? 'Invitación lista' : 'Invitar miembro'}
+      footer={
+        !createdLink ? (
+          <>
             <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
               <Text style={s.btnSecondaryText}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, pending && { opacity: 0.5 }]}
-              disabled={pending}
-              onPress={() => onConfirm(role)}
+              style={[s.btn, s.btnPrimary, { flex: 1 }, (!email.trim() || create.isPending) && { opacity: 0.5 }]}
+              disabled={!email.trim() || create.isPending}
+              onPress={handleSubmit}
               activeOpacity={0.85}
             >
-              {pending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnPrimaryText}>Aprobar</Text>}
+              {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Generar</Text>}
             </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1 }]} onPress={shareLink}>
+            <Text style={s.btnPrimaryText}>Compartir link</Text>
+          </TouchableOpacity>
+        )
+      }
+    >
+      {!createdLink ? (
+        <>
+          <Text style={s.fieldLabel}>Email *</Text>
+          <TextInput
+            style={s.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="ejemplo@email.com"
+            placeholderTextColor={c.textFaint}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Text style={[s.fieldLabel, { marginTop: 12 }]}>Rol</Text>
+          <View style={{ gap: 8 }}>
+            {ROLE_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[s.roleCard, role === opt.value && s.roleCardActive]}
+                onPress={() => { haptic.selection(); setRole(opt.value); }}
+                activeOpacity={0.75}
+              >
+                <View style={[s.radio, role === opt.value && s.radioActive]}>
+                  {role === opt.value && <View style={s.radioDot} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.roleCardTitle, role === opt.value && s.roleCardTitleActive]}>{opt.label}</Text>
+                  <Text style={s.roleCardDesc}>{opt.desc}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </>
+      ) : (
+        <>
+          <View style={s.successIcon}>
+            <CheckCircle2 size={48} color={c.success} strokeWidth={2} />
+          </View>
+          <Text style={{ fontSize: text.sm, color: c.textMuted, textAlign: 'center', marginBottom: 12 }}>
+            Compartí este link con la persona invitada. Válido por 7 días.
+          </Text>
+          <View style={s.linkBox}>
+            <Text style={s.linkText} numberOfLines={2}>{createdLink}</Text>
+          </View>
+        </>
+      )}
+    </FormSheet>
+  );
+}
+
+function ApproveJoinModal({
+  visible, request, onClose, onConfirm, pending, c, s,
+}: { visible: boolean; request: JoinRequest | null; onClose: () => void; onConfirm: (role: OrgRole) => void; pending: boolean; c: ThemeColors; s: Styles }) {
+  const [role, setRole] = useState<OrgRole>('jinete');
+  // La hoja no se destruye al cerrarse: durante la animación de salida seguimos
+  // mostrando la última solicitud (evita que el texto desaparezca de golpe).
+  const [displayRequest, setDisplayRequest] = useState<JoinRequest | null>(request);
+
+  useEffect(() => {
+    if (!visible) return;
+    setRole('jinete');
+    setDisplayRequest(request);
+  }, [visible, request]);
+
+  return (
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Aprobar ingreso"
+      footer={
+        <>
+          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
+            <Text style={s.btnSecondaryText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { flex: 1 }, pending && { opacity: 0.5 }]}
+            disabled={pending}
+            onPress={() => onConfirm(role)}
+            activeOpacity={0.85}
+          >
+            {pending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Aprobar</Text>}
+          </TouchableOpacity>
+        </>
+      }
+    >
+      <Text style={{ fontSize: text.sm, color: c.textMuted, marginBottom: 4 }}>
+        Asigná un rol a <Text style={{ fontWeight: weight.bold, color: c.text }}>{displayRequest?.requester.name}</Text>
+      </Text>
+      <View style={{ gap: 8 }}>
+        {JOIN_ROLE_OPTIONS.map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[s.roleCard, role === opt.value && s.roleCardActive]}
+            onPress={() => { haptic.selection(); setRole(opt.value); }}
+            activeOpacity={0.75}
+          >
+            <View style={[s.radio, role === opt.value && s.radioActive]}>
+              {role === opt.value && <View style={s.radioDot} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.roleCardTitle, role === opt.value && s.roleCardTitleActive]}>{opt.label}</Text>
+              <Text style={s.roleCardDesc}>{opt.desc}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </FormSheet>
   );
 }
 
@@ -213,9 +221,9 @@ export default function OrganizacionScreen() {
   const { c } = useTheme();
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
-  const { data: myOrgs, isLoading: loadingOrgs } = useMyOrganizations();
+  const { data: myOrgs, isLoading: loadingOrgs, isError: errorOrgs, refetch: refetchOrgs } = useMyOrganizations();
   const orgId = myOrgs?.[0]?.id ?? null;
-  const { data: org, isLoading: loadingOrg } = useOrganization(orgId);
+  const { data: org, isLoading: loadingOrg, isError: errorOrg, refetch: refetchOrg } = useOrganization(orgId);
   const { data: invitations } = useOrgInvitations(orgId);
   const cancelInv = useCancelInvitation(orgId ?? '');
   const removeMember = useRemoveMember(orgId ?? '');
@@ -236,6 +244,15 @@ export default function OrganizacionScreen() {
         <View style={{ padding: space[4], gap: space[2] }}>
           {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
+      </View>
+    );
+  }
+
+  if (errorOrgs || errorOrg) {
+    return (
+      <View style={s.root}>
+        <ScreenHeader title="Caballeriza" showBack backTo={Routes.mas} />
+        <ErrorState onRetry={() => { refetchOrgs(); refetchOrg(); }} />
       </View>
     );
   }
@@ -325,11 +342,20 @@ export default function OrganizacionScreen() {
                   <TouchableOpacity
                     onPress={() => Share.share({ message: `Te invito a HandicApp: ${getInviteUrl(inv.token)}` })}
                     style={s.invBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Compartir invitación"
+                    hitSlop={8}
                   >
                     <Share2 size={14} color={c.brand} strokeWidth={2} />
                   </TouchableOpacity>
                   {isAdmin && (
-                    <TouchableOpacity onPress={() => cancelInv.mutate(inv.id)} style={s.invBtn}>
+                    <TouchableOpacity
+                      onPress={() => cancelInv.mutate(inv.id)}
+                      style={s.invBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancelar invitación"
+                      hitSlop={8}
+                    >
                       <X size={14} color={colors.red500} strokeWidth={2} />
                     </TouchableOpacity>
                   )}
@@ -427,6 +453,9 @@ export default function OrganizacionScreen() {
                           { text: 'Quitar', style: 'destructive', onPress: () => removeMember.mutate(m.id) },
                         ]);
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Quitar a ${m.user.name}`}
+                      hitSlop={8}
                     >
                       <XCircle size={18} color={c.textFaint} strokeWidth={2} />
                     </TouchableOpacity>
@@ -438,26 +467,26 @@ export default function OrganizacionScreen() {
         </View>
       </ScrollView>
 
-      {showInvite && orgId && <InviteModal orgId={orgId} onClose={() => setShowInvite(false)} c={c} s={s} />}
-      {approveTarget && (
-        <ApproveJoinModal
-          request={approveTarget}
-          pending={approveJoin.isPending}
-          onClose={() => setApproveTarget(null)}
-          onConfirm={(role) => {
-            haptic.success();
-            approveJoin.mutate(
-              { id: approveTarget.id, role_in_org: role },
-              {
-                onSuccess: () => { toast.success('Solicitud aprobada'); setApproveTarget(null); },
-                onError: () => toast.error('No se pudo aprobar'),
-              },
-            );
-          }}
-          c={c}
-          s={s}
-        />
-      )}
+      <InviteModal visible={showInvite} orgId={orgId ?? ''} onClose={() => setShowInvite(false)} c={c} s={s} />
+      <ApproveJoinModal
+        visible={!!approveTarget}
+        request={approveTarget}
+        pending={approveJoin.isPending}
+        onClose={() => setApproveTarget(null)}
+        onConfirm={(role) => {
+          if (!approveTarget) return;
+          haptic.success();
+          approveJoin.mutate(
+            { id: approveTarget.id, role_in_org: role },
+            {
+              onSuccess: () => { toast.success('Solicitud aprobada'); setApproveTarget(null); },
+              onError: () => toast.error('No se pudo aprobar'),
+            },
+          );
+        }}
+        c={c}
+        s={s}
+      />
     </View>
   );
 }
@@ -498,8 +527,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inviteBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
 
   memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: c.borderStrong },
-  memberAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
-  memberAvatarText: { fontSize: 14, fontWeight: weight.bold, color: colors.white },
   memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   memberEmail: { fontSize: 11, color: c.textFaint, marginTop: 1 },
   roleBadge: { borderRadius: radius.full, backgroundColor: c.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4 },
@@ -507,14 +534,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   roleBadgeText: { fontSize: 10, fontWeight: weight.semibold, color: c.textMuted },
   roleBadgeTextOwner: { color: c.goldText },
 
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border },
-  modalTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  modalClose: { fontSize: 18, color: c.textFaint },
-  modalBody: { padding: space[5], gap: space[2] },
-  modalFooter: { flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: c.border },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
 

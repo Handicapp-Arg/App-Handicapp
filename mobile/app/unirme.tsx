@@ -12,7 +12,7 @@ import { useRequestJoin } from '../hooks/use-organizations';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 
 export default function UnirmeScreen() {
   const router = useRouter();
@@ -27,6 +27,7 @@ export default function UnirmeScreen() {
 
   const handleSubmit = () => {
     if (!canSubmit) return;
+    haptic.light();
     requestJoin.mutate(
       { join_code: code.trim(), message: message.trim() || undefined },
       {
@@ -47,7 +48,12 @@ export default function UnirmeScreen() {
     <View style={s.root}>
       <ScreenHeader title="Unirme a una caballeriza" showBack backTo={Routes.mas} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+        >
           <View style={s.iconWrap}>
             <KeyRound size={30} color={c.brand} strokeWidth={2} />
           </View>
@@ -101,15 +107,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center',
     marginTop: space[4], marginBottom: space[4],
   },
-  lead: { fontSize: text.sm, color: c.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: space[5] },
+  lead: { fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: space[5] },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, marginBottom: space[2] },
   input: {
+    height: touch.field,
     borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
-    paddingHorizontal: space[4], paddingVertical: space[3],
+    paddingHorizontal: space[4],
     fontSize: text.base, color: c.text, backgroundColor: c.surface,
   },
-  inputMultiline: { minHeight: 88, textAlignVertical: 'top' },
-  btn: { borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: space[6] },
+  inputMultiline: { height: undefined, minHeight: 88, paddingVertical: space[3], textAlignVertical: 'top' },
+  btn: { borderRadius: radius.md, height: touch.button, alignItems: 'center', justifyContent: 'center', marginTop: space[6] },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  btnPrimaryText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
 });

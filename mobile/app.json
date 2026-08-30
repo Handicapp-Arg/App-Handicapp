@@ -21,12 +21,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.handicapp.app",
       "associatedDomains": [
-        "applinks:app.handicapp.com"
+        "applinks:app.handicapp.com.ar"
       ],
       "infoPlist": {
         "NSCameraUsageDescription": "HandicApp necesita acceso a la cámara para sacar fotos de los caballos y las tareas.",
         "NSPhotoLibraryUsageDescription": "HandicApp necesita acceso a tu galería para subir fotos de caballos.",
-        "NSPhotoLibraryAddUsageDescription": "HandicApp guarda en tu galería los certificados y fotos que descargues."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -34,7 +34,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#9D6C35"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -45,7 +45,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "app.handicapp.com",
+              "host": "app.handicapp.com.ar",
               "pathPrefix": "/invitacion"
             }
           ],
@@ -54,6 +54,12 @@
             "DEFAULT"
           ]
         }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -83,8 +89,21 @@
           "sounds": []
         }
       ],
-      "@sentry/react-native",
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-video"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "100113bd-7d35-49a8-90c9-0b93f5bc49aa"
+      }
+    },
+    "owner": "alejomaros",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/100113bd-7d35-49a8-90c9-0b93f5bc49aa"
+    }
   }
 }

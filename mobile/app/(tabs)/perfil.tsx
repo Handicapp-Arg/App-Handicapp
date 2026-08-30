@@ -1,12 +1,12 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Switch, Image,
+  ActivityIndicator, TextInput, Platform, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   User, ChevronRight, Lock, LogOut, Crown, Check, ShieldCheck, Camera,
   Phone,
@@ -23,10 +23,12 @@ import { Routes } from '../../lib/routes';
 import { Avatar } from '../../components/Avatar';
 import { RoleBadge } from '../../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
 import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge';
 import { useToast } from '../../components/Toast';
+import { FormSheet } from '../../components/FormSheet';
+import { AppImage } from '../../components/AppImage';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -191,6 +193,12 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // El FormSheet ya no se destruye al cerrarse: limpiamos el formulario al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setName(user.name); setEmail(user.email); setError('');
+  }, [visible, user.name, user.email]);
+
   const handleSave = async () => {
     if (!name.trim()) { setError('El nombre no puede estar vacío'); return; }
     if (!/\S+@\S+\.\S+/.test(email)) { setError('Email inválido'); return; }
@@ -207,41 +215,17 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
-        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.editModalHandle} />
-          <Text style={s.editModalTitle}>Editar perfil</Text>
-          {error ? <Text style={s.editModalError}>{error}</Text> : null}
-          <View style={s.editField}>
-            <Text style={s.editLabel}>Nombre</Text>
-            <TextInput
-              style={s.editInput}
-              value={name}
-              onChangeText={setName}
-              placeholder="Tu nombre"
-              placeholderTextColor={c.textFaint}
-              autoCapitalize="words"
-            />
-          </View>
-          <View style={s.editField}>
-            <Text style={s.editLabel}>Email</Text>
-            <TextInput
-              style={s.editInput}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="tu@email.com"
-              placeholderTextColor={c.textFaint}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Editar perfil"
+      footer={
+        <>
+          <TouchableOpacity style={[s.editCancelBtn, { flex: 1 }]} onPress={onClose} activeOpacity={0.8}>
+            <Text style={s.editCancelText}>Cancelar</Text>
+          </TouchableOpacity>
           <TouchableOpacity
-            style={[s.editSaveBtn, saving && s.editSaveBtnDisabled]}
+            style={[s.editSaveBtn, { flex: 1 }, saving && s.editSaveBtnDisabled]}
             onPress={handleSave}
             disabled={saving}
             activeOpacity={0.85}
@@ -251,12 +235,41 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
               : <Text style={s.editSaveBtnText}>Guardar cambios</Text>
             }
           </TouchableOpacity>
-          <TouchableOpacity style={s.editCancelBtn} onPress={onClose} activeOpacity={0.8}>
-            <Text style={s.editCancelText}>Cancelar</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </>
+      }
+    >
+      <>
+        {error ? <Text style={s.editModalError}>{error}</Text> : null}
+        <View style={s.editField}>
+          <Text style={s.editLabel}>Nombre</Text>
+          <TextInput
+            style={s.editInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Tu nombre"
+            placeholderTextColor={c.textFaint}
+            autoCapitalize="words"
+            textContentType="name"
+            returnKeyType="next"
+          />
+        </View>
+        <View style={s.editField}>
+          <Text style={s.editLabel}>Email</Text>
+          <TextInput
+            style={s.editInput}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="tu@email.com"
+            placeholderTextColor={c.textFaint}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            textContentType="emailAddress"
+            returnKeyType="go"
+            onSubmitEditing={handleSave}
+          />
+        </View>
+      </>
+    </FormSheet>
   );
 }
 
@@ -269,6 +282,12 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // El FormSheet ya no se destruye al cerrarse: limpiamos el formulario al abrir.
+  useEffect(() => {
+    if (!visible) return;
+    setCurrent(''); setNewPass(''); setConfirm(''); setError('');
+  }, [visible]);
+
   const handleSave = async () => {
     if (!current || !newPass || !confirm) { setError('Completá todos los campos'); return; }
     if (newPass.length < 6) { setError('La nueva contraseña debe tener al menos 6 caracteres'); return; }
@@ -278,7 +297,6 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
     try {
       await changePassword(current, newPass);
       toast.success('Contraseña actualizada');
-      setCurrent(''); setNewPass(''); setConfirm('');
       onClose();
     } catch {
       setError('Contraseña actual incorrecta o error del servidor.');
@@ -288,37 +306,17 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
-        <Animated.View style={s.editModalSheet} entering={SlideInDown.springify().damping(26).stiffness(190)}>
-          <View style={s.editModalHandle} />
-          <Text style={s.editModalTitle}>Cambiar contraseña</Text>
-          {error ? <Text style={s.editModalError}>{error}</Text> : null}
-          {[
-            { label: 'Contraseña actual', value: current, setter: setCurrent },
-            { label: 'Nueva contraseña', value: newPass, setter: setNewPass },
-            { label: 'Confirmar nueva contraseña', value: confirm, setter: setConfirm },
-          ].map((f) => (
-            <View key={f.label} style={s.editField}>
-              <Text style={s.editLabel}>{f.label}</Text>
-              <TextInput
-                style={s.editInput}
-                value={f.value}
-                onChangeText={f.setter}
-                secureTextEntry
-                placeholderTextColor={c.textFaint}
-                placeholder="••••••••"
-                autoComplete="off"
-                textContentType="oneTimeCode"
-              />
-            </View>
-          ))}
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Cambiar contraseña"
+      footer={
+        <>
+          <TouchableOpacity style={[s.editCancelBtn, { flex: 1 }]} onPress={onClose} activeOpacity={0.8}>
+            <Text style={s.editCancelText}>Cancelar</Text>
+          </TouchableOpacity>
           <TouchableOpacity
-            style={[s.editSaveBtn, saving && s.editSaveBtnDisabled]}
+            style={[s.editSaveBtn, { flex: 1 }, saving && s.editSaveBtnDisabled]}
             onPress={handleSave}
             disabled={saving}
             activeOpacity={0.85}
@@ -328,12 +326,32 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
               : <Text style={s.editSaveBtnText}>Guardar contraseña</Text>
             }
           </TouchableOpacity>
-          <TouchableOpacity style={s.editCancelBtn} onPress={onClose} activeOpacity={0.8}>
-            <Text style={s.editCancelText}>Cancelar</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </>
+      }
+    >
+      <>
+        {error ? <Text style={s.editModalError}>{error}</Text> : null}
+        {[
+          { label: 'Contraseña actual', value: current, setter: setCurrent, textContentType: 'password' as const },
+          { label: 'Nueva contraseña', value: newPass, setter: setNewPass, textContentType: 'newPassword' as const },
+          { label: 'Confirmar nueva contraseña', value: confirm, setter: setConfirm, textContentType: 'newPassword' as const },
+        ].map((f) => (
+          <View key={f.label} style={s.editField}>
+            <Text style={s.editLabel}>{f.label}</Text>
+            <TextInput
+              style={s.editInput}
+              value={f.value}
+              onChangeText={f.setter}
+              secureTextEntry
+              placeholderTextColor={c.textFaint}
+              placeholder="••••••••"
+              autoComplete="off"
+              textContentType={f.textContentType}
+            />
+          </View>
+        ))}
+      </>
+    </FormSheet>
   );
 }
 
@@ -379,6 +397,8 @@ function AvatarColorSection({ user, c, s }: {
             onPress={() => choose(null)}
             activeOpacity={0.8}
             style={[s.colorDotWrap, current === null && s.colorDotWrapActive]}
+            accessibilityRole="button"
+            accessibilityLabel={current === null ? 'Color automático, seleccionado' : 'Elegir color automático'}
           >
             <View style={[s.colorDot, s.colorDotAuto]}>
               {saving === 'auto'
@@ -394,6 +414,8 @@ function AvatarColorSection({ user, c, s }: {
                 onPress={() => choose(p.id)}
                 activeOpacity={0.8}
                 style={[s.colorDotWrap, active && s.colorDotWrapActive]}
+                accessibilityRole="button"
+                accessibilityLabel={active ? `Color ${p.id}, seleccionado` : `Elegir color ${p.id}`}
               >
                 <View style={[s.colorDot, { backgroundColor: p.to }]}>
                   {saving === p.id
@@ -606,7 +628,7 @@ function VetLicenseSection({ user, c, s }: {
 
         {(photoUri || user.vet_license_url) && (
           <View style={s.vetPreviewRow}>
-            <Image source={{ uri: photoUri ?? user.vet_license_url ?? undefined }} style={s.vetPreviewImg} />
+            <AppImage source={{ uri: photoUri ?? user.vet_license_url ?? undefined }} style={s.vetPreviewImg} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={s.accountRowLabel}>{photoUri ? 'Nueva foto seleccionada' : 'Foto cargada'}</Text>
               <Text style={s.accountRowSub}>{photoUri ? 'Se enviará al validar.' : 'Ya guardada en tu perfil.'}</Text>
@@ -837,60 +859,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  avatar: {
-    width: 68, height: 68, borderRadius: 34,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  avatarText: { fontSize: text.xl, fontWeight: weight.extrabold, color: colors.white },
   userNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   userName: { fontSize: text.base, fontWeight: weight.extrabold, color: colors.white },
   userEmail: { fontSize: text.sm, color: 'rgba(255,255,255,0.55)' },
-  roleBadge: {
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
-    paddingHorizontal: space[3], paddingVertical: space[1],
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
-  },
-  roleText: { fontSize: 10, fontWeight: weight.bold, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5 },
-
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: c.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-  },
-  tabBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: space[1] + 2, paddingVertical: space[3],
-    borderBottomWidth: 2, borderBottomColor: 'transparent',
-  },
-  tabBtnActive: { borderBottomColor: c.brand },
-  tabLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
-  tabLabelActive: { color: c.brand },
-
-  /* My posts */
-  postsList: { padding: space[4], gap: space[3] },
-  postCard: {
-    backgroundColor: c.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.border,
-    overflow: 'hidden',
-    ...shadow.sm,
-  },
-  postThumb: { width: '100%', height: 160 },
-  postBody: { padding: space[3], gap: space[1] + 2 },
-  postContent: { fontSize: text.sm, color: c.text, lineHeight: 20 },
-  postHorse: { fontSize: text.xs, color: c.textMuted },
-  postMeta: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[1] },
-  postStat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  postStatText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  postTime: { fontSize: text.xs, color: c.textFaint, marginLeft: 'auto' },
-
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyActivity: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[2], paddingHorizontal: space[8], paddingTop: 60 },
-  emptyActivityTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  emptyActivitySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', lineHeight: 20 },
 
   section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
   sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
@@ -942,13 +913,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   planPillTextPro: { color: c.goldText },
   monthsToggle: {
     borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
-    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt,
+    paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
+    justifyContent: 'center', backgroundColor: c.surfaceAlt,
   },
   monthsToggleText: { fontSize: text.sm, color: c.text },
   monthsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   monthsOption: {
     borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
-    paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surface,
+    paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
+    justifyContent: 'center', backgroundColor: c.surface,
   },
   monthsOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
   monthsOptionText: { fontSize: text.sm, color: c.textMuted },
@@ -964,7 +937,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
     backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong,
-    paddingVertical: space[3] + 2, marginHorizontal: space[4], marginTop: space[5],
+    paddingVertical: space[3] + 2, minHeight: touch.min,
+    marginHorizontal: space[4], marginTop: space[5],
   },
   logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.danger },
 
@@ -976,7 +950,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     paddingHorizontal: space[4], paddingVertical: space[4],
   },
-  accountRowLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  accountRowLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   accountRowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   accountDivider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
 
@@ -1019,7 +993,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: 36, height: 36, borderRadius: radius.md,
     backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
   },
-  vetStatusLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  vetStatusLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   vetStatusSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   vetBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -1057,22 +1031,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.successSoft, alignItems: 'center', justifyContent: 'center',
   },
 
-  modalOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: c.overlay,
-  },
-  editModalSheet: {
-    backgroundColor: c.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: space[6], paddingBottom: space[8],
-    gap: space[3],
-    marginTop: 'auto',
-  },
-  editModalHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: c.borderStrong,
-    alignSelf: 'center', marginBottom: space[2],
-  },
-  editModalTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
   editModalError: { fontSize: text.sm, color: c.danger, backgroundColor: c.dangerSoft, padding: space[3], borderRadius: radius.md },
   editField: { gap: space[1] + 2 },
   editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
@@ -1083,10 +1041,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   editSaveBtn: {
     backgroundColor: c.brand, borderRadius: radius.lg,
-    paddingVertical: space[4], alignItems: 'center', marginTop: space[2],
+    paddingVertical: space[4], alignItems: 'center', justifyContent: 'center',
   },
   editSaveBtnDisabled: { opacity: 0.6 },
   editSaveBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
-  editCancelBtn: { alignItems: 'center', paddingVertical: space[2] },
-  editCancelText: { fontSize: text.sm, color: c.textFaint, fontWeight: weight.medium },
+  editCancelBtn: {
+    alignItems: 'center', justifyContent: 'center', paddingVertical: space[4],
+    borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt,
+  },
+  editCancelText: { fontSize: text.base, color: c.textMuted, fontWeight: weight.semibold },
 });
