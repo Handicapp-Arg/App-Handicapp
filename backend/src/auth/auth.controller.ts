@@ -183,8 +183,10 @@ export class AuthController {
   @Post('push-token')
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.NO_CONTENT)
-  savePushToken(@Body('token') token: string, @GetUser() user: User) {
-    return this.authService.savePushToken(user.id, token);
+  savePushToken(@Body('token') token: string | null, @GetUser() user: User) {
+    // token null = el usuario apagó las notificaciones desde Configuración:
+    // sin token guardado, el gateway no le envía más push.
+    return this.authService.savePushToken(user.id, token ?? null);
   }
 
   @Patch('profile')

@@ -320,7 +320,7 @@ export class AuthService {
     });
   }
 
-  async savePushToken(userId: string, token: string): Promise<void> {
+  async savePushToken(userId: string, token: string | null): Promise<void> {
     await this.userRepository.update(userId, { push_token: token });
   }
 

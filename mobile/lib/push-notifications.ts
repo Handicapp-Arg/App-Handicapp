@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import api from './api';
+import * as SecureStore from './secure-storage';
 
 /**
  * Notificaciones push.
@@ -36,6 +37,11 @@ function obtenerProjectId(): string | undefined {
 export async function registerForPushNotifications(): Promise<string | null> {
   // El simulador no puede recibir push: no tiene con qué registrarse en APNs.
   if (!Device.isDevice) return null;
+
+  // Si el usuario las apagó desde Configuración, el re-registro automático del
+  // arranque no debe volver a prenderlas a sus espaldas.
+  const pref = await SecureStore.getItemAsync('push_enabled').catch(() => null);
+  if (pref === 'off') return null;
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {

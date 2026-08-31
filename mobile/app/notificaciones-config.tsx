@@ -5,9 +5,13 @@ import {
 import { useRouter } from 'expo-router';
 import {
   Receipt, FileText, AlertCircle, ChevronLeft, Lock, Stethoscope, Dumbbell,
-  type LucideIcon,
-} from 'lucide-react-native';
+  type LucideIcon, Bell } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Linking } from 'react-native';
+import * as SecureStore from '../lib/secure-storage';
+import * as Notifications from 'expo-notifications';
+import api from '../lib/api';
+import { registerForPushNotifications } from '../lib/push-notifications';
 import { useAuth } from '../lib/auth';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
@@ -152,6 +156,83 @@ function ToggleRowItem({
 }
 
 /* ─── Screen ─── */
+
+/* ─── Interruptor personal de push (visible para TODOS los usuarios) ───
+ * Apagarlo borra el token en el servidor: se deja de recibir de verdad, no es
+ * un mute local. Prenderlo vuelve a pedir permiso y re-registra. */
+function PushMasterSwitch({ c, s }: { c: ThemeColors; s: Styles }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const pref = await SecureStore.getItemAsync('push_enabled');
+      const perm = await Notifications.getPermissionsAsync();
+      setEnabled(pref !== 'off' && perm.status === 'granted');
+    })();
+  }, []);
+
+  const onToggle = async () => {
+    if (busy || enabled === null) return;
+    setBusy(true);
+    haptic.selection();
+    try {
+      if (enabled) {
+        await api.post('/auth/push-token', { token: null });
+        await SecureStore.setItemAsync('push_enabled', 'off');
+        setEnabled(false);
+      } else {
+        const token = await registerForPushNotifications();
+        if (token) {
+          await api.post('/auth/push-token', { token });
+          await SecureStore.setItemAsync('push_enabled', 'on');
+          setEnabled(true);
+        } else {
+          // Permiso denegado a nivel sistema: solo se revierte desde Ajustes.
+          Linking.openSettings();
+        }
+      }
+    } catch {
+      haptic.error();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={s.card}>
+      <View style={s.masterRow}>
+        <View style={s.masterLeft}>
+          <View style={s.masterIcon}>
+            <Bell size={19} color={c.brand} strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.masterTitle}>Notificaciones push</Text>
+            <Text style={s.masterDesc}>
+              {enabled === false
+                ? 'No vas a recibir avisos en este teléfono.'
+                : 'Avisos de eventos, turnos y actividad en este teléfono.'}
+            </Text>
+          </View>
+        </View>
+        {enabled === null || busy ? (
+          <ActivityIndicator size="small" color={c.brand} />
+        ) : (
+          <Switch
+            value={enabled}
+            onValueChange={onToggle}
+            trackColor={{ true: c.brand, false: c.borderStrong }}
+            thumbColor={colors.white}
+            accessibilityRole="switch"
+            accessibilityLabel="Notificaciones push"
+            accessibilityState={{ checked: enabled }}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function NotificacionesConfigScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -189,15 +270,15 @@ export default function NotificacionesConfigScreen() {
           >
             <ChevronLeft size={22} color={c.text} strokeWidth={2} />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Config. notificaciones</Text>
+          <Text style={s.headerTitle}>Notificaciones</Text>
         </View>
-        <View style={s.restricted}>
-          <Lock size={32} color={c.textFaint} strokeWidth={2} />
-          <Text style={s.restrictedText}>Solo el administrador puede acceder a esta pantalla.</Text>
-        </View>
+        <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+          <PushMasterSwitch c={c} s={s} />
+        </ScrollView>
       </View>
     );
   }
+
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -221,6 +302,7 @@ export default function NotificacionesConfigScreen() {
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
         >
+          <PushMasterSwitch c={c} s={s} />
           {roleNames.map((role) => (
             <RoleCard
               key={role}
@@ -327,6 +409,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontFamily: fontFamily.bold,
   },
 
+  masterRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    padding: space[4],
+  },
+  masterLeft: { flexDirection: 'row', alignItems: 'center', gap: space[3], flex: 1 },
+  masterIcon: {
+    width: 40, height: 40, borderRadius: radius.full,
+    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
+  },
+  masterTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text, letterSpacing: -0.2 },
+  masterDesc: { fontSize: text.sm, color: c.textMuted, marginTop: 2, lineHeight: 19 },
   toggleList: { paddingHorizontal: space[4] },
   toggleRow: {
     flexDirection: 'row',

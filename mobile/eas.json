@@ -33,6 +33,11 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "alejo_maros@hotmail.com",
+        "appleTeamId": "B5PKJ4H5P4"
+      }
+    }
   }
 }

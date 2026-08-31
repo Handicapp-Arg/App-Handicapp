@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withTiming, withSpring, withDelay, runOnJS, Easing,
+  useSharedValue, useAnimatedStyle, withTiming, withDelay, runOnJS, Easing,
 } from 'react-native-reanimated';
 import { useTheme } from '../lib/theme';
 import { HorseshoeH } from './icons/equine';
@@ -13,16 +13,19 @@ import { HorseshoeH } from './icons/equine';
  */
 export function AnimatedSplash({ onDone }: { onDone: () => void }) {
   const { c } = useTheme();
-  const brandOpacity = useSharedValue(0);
-  const brandScale = useSharedValue(0.82);
+  // La marca arranca VISIBLE: este overlay reemplaza al splash nativo, y si el
+  // logo empezara en opacidad 0 se vería un flash en blanco entre uno y otro
+  // (logo → vacío → logo de nuevo). También va sin spring: el rebote quedó
+  // prohibido en toda la app y acá era lo primero que se veía al abrir.
+  const brandOpacity = useSharedValue(1);
+  const brandScale = useSharedValue(1);
   const rootOpacity = useSharedValue(1);
 
   useEffect(() => {
-    brandOpacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
-    brandScale.value = withSpring(1, { damping: 11, stiffness: 90, mass: 0.7 });
+    // Un respiro corto y se desvanece; la app ya está lista detrás.
     rootOpacity.value = withDelay(
-      1250,
-      withTiming(0, { duration: 420, easing: Easing.in(Easing.cubic) }, (finished) => {
+      450,
+      withTiming(0, { duration: 320, easing: Easing.in(Easing.cubic) }, (finished) => {
         if (finished) runOnJS(onDone)();
       }),
     );
