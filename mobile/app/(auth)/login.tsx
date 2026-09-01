@@ -1,10 +1,13 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn, FadeInDown, useSharedValue, useAnimatedStyle,
+  withRepeat, withSequence, withTiming, Easing,
+} from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../lib/auth';
@@ -54,6 +57,39 @@ function DevUserPicker({ onSelect, s }: { onSelect: (email: string, password: st
   );
 }
 
+
+/** Overlay de ingreso: el isotipo late y gira suave mientras la sesión abre. */
+function LoginOverlay({ c }: { c: ThemeColors }) {
+  const scale = useSharedValue(1);
+  const spin = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.12, { duration: 620, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: 620, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+    );
+    spin.value = withRepeat(withTiming(360, { duration: 2600, easing: Easing.linear }), -1);
+  }, []);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { rotate: `${spin.value}deg` }],
+  }));
+
+  return (
+    <Animated.View
+      style={[StyleSheet.absoluteFill, { backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', zIndex: 100 }]}
+      entering={FadeIn.duration(220)}
+    >
+      <Animated.View style={logoStyle}>
+        <HorseshoeH size={64} color={c.brand} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 export default function LoginScreen() {
   const { login } = useAuth();
   const { c } = useTheme();
@@ -88,6 +124,7 @@ export default function LoginScreen() {
   return (
     <View style={s.root}>
       <AuthBackground c={c} />
+      {loading && <LoginOverlay c={c} />}
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

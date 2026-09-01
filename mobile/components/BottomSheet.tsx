@@ -30,20 +30,25 @@ export function useDragToExpand(onClose: () => void) {
 
   const naturalHeight = useSharedValue(0);
   const height = useSharedValue(0);
-  const measured = useSharedValue(false);
+  // La altura solo se fuerza mientras el usuario arrastra o dejó la hoja
+  // expandida. En reposo la hoja fluye con su layout natural: así el teclado
+  // puede comprimirla (KeyboardAvoidingView) y el contenido que cambia de paso
+  // (p. ej. crear caballo) se re-mide solo. Fijarla siempre era lo que rompía
+  // el formulario al abrir el teclado.
+  const engaged = useSharedValue(false);
   const startHeight = useSharedValue(0);
   const overlayBoost = useSharedValue(0);
 
   const onLayoutSheet = (e: { nativeEvent: { layout: { height: number } } }) => {
-    if (measured.value) return;
+    if (engaged.value) return;
     const h = e.nativeEvent.layout.height;
     naturalHeight.value = h;
     height.value = h;
-    measured.value = true;
   };
 
   const pan = Gesture.Pan()
     .onStart(() => {
+      engaged.value = true;
       startHeight.value = height.value;
     })
     .onUpdate((e) => {
@@ -68,12 +73,16 @@ export function useDragToExpand(onClose: () => void) {
       const mid = (naturalHeight.value + max) / 2;
       const expand = fastUp || height.value > mid;
       const target = expand ? max : naturalHeight.value;
-      height.value = withTiming(target, { duration, easing: Easing.out(Easing.cubic) });
+      height.value = withTiming(target, { duration, easing: Easing.out(Easing.cubic) }, (finished) => {
+        // Al volver al tamaño natural, soltamos el control de la altura para
+        // que la hoja recupere su layout fluido (teclado, contenido dinámico).
+        if (finished && !expand) engaged.value = false;
+      });
       overlayBoost.value = withTiming(expand ? 1 : 0, { duration });
     });
 
   const animatedSheetStyle = useAnimatedStyle(() => ({
-    height: measured.value ? height.value : undefined,
+    height: engaged.value ? height.value : undefined,
   }));
 
   const animatedOverlayBoostStyle = useAnimatedStyle(() => ({
