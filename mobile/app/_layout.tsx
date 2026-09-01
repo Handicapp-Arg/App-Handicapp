@@ -11,7 +11,14 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   });
 }
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as SplashScreen from 'expo-splash-screen';
 import { configurarRed } from '../lib/network';
+
+// El splash nativo se queda hasta que la app está lista (fuentes cargadas).
+// Antes había DOS pantallas de marca —la nativa y un overlay animado con otro
+// dibujo del logo— y el salto entre ambas se veía como una transición rara.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.setOptions({ duration: 320, fade: true });
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -22,7 +29,6 @@ import {
 import { AuthProvider, useAuth } from '../lib/auth';
 import { NotificationsProvider } from '../lib/notifications';
 import { StatusBar } from 'expo-status-bar';
-import { AnimatedSplash } from '../components/AnimatedSplash';
 import { ThemeProvider, useTheme } from '../lib/theme';
 import { ToastProvider } from '../components/Toast';
 
@@ -111,9 +117,11 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
-  const [showSplash, setShowSplash] = useState(true);
-
   useEffect(() => configurarRed(), []);
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -127,7 +135,6 @@ export default function RootLayout() {
               </AuthProvider>
             )}
             {fontsLoaded && <OfflineBanner />}
-            {showSplash && <AnimatedSplash onDone={() => setShowSplash(false)} />}
           </SafeAreaProvider>
         </ThemeProvider>
       </QueryClientProvider>

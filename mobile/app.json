@@ -9,11 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-logo.png",
+      "image": "./assets/splash-icon-solo.png",
       "resizeMode": "contain",
       "backgroundColor": "#f9fafb",
       "dark": {
-        "image": "./assets/splash-logo.png",
+        "image": "./assets/splash-icon-solo.png",
         "backgroundColor": "#0b0b0c"
       }
     },
@@ -90,7 +90,19 @@
         }
       ],
       "expo-font",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon-solo.png",
+          "imageWidth": 150,
+          "backgroundColor": "#f9fafb",
+          "dark": {
+            "image": "./assets/splash-icon-solo.png",
+            "backgroundColor": "#0b0b0c"
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {},
