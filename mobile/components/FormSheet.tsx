@@ -133,7 +133,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     paddingTop: 10,
-    borderTopWidth: 1, borderColor: c.border,
     overflow: 'hidden',
   },
   grabber: {

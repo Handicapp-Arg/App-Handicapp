@@ -868,9 +868,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionSubtitle: { fontSize: text.sm, color: c.textMuted },
   emptyText: { fontSize: text.sm, color: c.textFaint },
   searchInput: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10,
+    borderWidth: 1, borderColor: 'transparent', borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
+    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
 
   // Plan Pro (gradiente premium)
@@ -881,7 +881,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   planProTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
   planProSub: { fontSize: text.xs, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
   // Plan Free
-  planFree: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2], borderWidth: 1, borderColor: c.border },
+  planFree: {
+    backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2],
+    ...(c.isDark ? {} : shadow.sm),
+  },
   planFreeBadge: { backgroundColor: c.surfaceAlt, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
   planFreeBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
   planFreeUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
@@ -897,8 +900,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   adminRow: {
     backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], gap: space[2] + 2,
+    ...(c.isDark ? {} : shadow.sm),
   },
   adminRowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
   adminRowName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
@@ -912,39 +915,41 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   planPillTextFree: { color: c.textMuted },
   planPillTextPro: { color: c.goldText },
   monthsToggle: {
-    borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
+    borderRadius: radius.md,
     paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
     justifyContent: 'center', backgroundColor: c.surfaceAlt,
   },
   monthsToggleText: { fontSize: text.sm, color: c.text },
   monthsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   monthsOption: {
-    borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong,
+    borderRadius: radius.md,
     paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
-    justifyContent: 'center', backgroundColor: c.surface,
+    justifyContent: 'center', backgroundColor: c.surfaceAlt,
   },
-  monthsOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
+  monthsOptionActive: { backgroundColor: c.brandSoft },
   monthsOptionText: { fontSize: text.sm, color: c.textMuted },
   monthsOptionTextActive: { color: c.brand, fontWeight: weight.semibold },
   activateBtn: { backgroundColor: c.brand, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
   activateBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   revokeBtn: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    borderRadius: radius.md,
     paddingVertical: space[3], alignItems: 'center', backgroundColor: c.surfaceAlt,
   },
   revokeBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
 
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
-    backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.surface, borderRadius: radius.lg,
     paddingVertical: space[3] + 2, minHeight: touch.min,
     marginHorizontal: space[4], marginTop: space[5],
+    ...(c.isDark ? {} : shadow.sm),
   },
   logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.danger },
 
   accountCard: {
     backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.borderStrong, overflow: 'hidden',
+    overflow: 'hidden',
+    ...(c.isDark ? {} : shadow.sm),
   },
   accountRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
@@ -956,8 +961,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   colorCard: {
     backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], gap: space[4],
+    ...(c.isDark ? {} : shadow.sm),
   },
   colorPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   colorPreview: {
@@ -977,13 +982,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     justifyContent: 'center', alignItems: 'center',
   },
-  colorDotAuto: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  colorDotAuto: { backgroundColor: c.surfaceAlt },
   colorDotAutoText: { fontSize: 10, fontWeight: weight.bold, color: c.textMuted },
 
   vetCard: {
     backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], gap: space[3],
+    ...(c.isDark ? {} : shadow.sm),
   },
   vetStatusRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
@@ -1008,7 +1013,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   vetPreviewImg: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: c.border },
   vetPhotoBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    borderRadius: radius.md,
     paddingVertical: space[3], backgroundColor: c.surfaceAlt,
   },
   vetPhotoBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.text },
@@ -1016,8 +1021,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Input con ícono (teléfono) */
   inputWithIcon: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.lg,
-    paddingHorizontal: 14, backgroundColor: c.surfaceAlt,
+    borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
+    paddingHorizontal: 14, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   inputWithIconField: { flex: 1, paddingVertical: 12, fontSize: 14, color: c.text },
   fieldHint: { fontSize: text.xs, color: c.textFaint },
@@ -1035,9 +1040,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   editField: { gap: space[1] + 2 },
   editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   editInput: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt,
+    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   editSaveBtn: {
     backgroundColor: c.brand, borderRadius: radius.lg,
@@ -1047,7 +1052,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   editSaveBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
   editCancelBtn: {
     alignItems: 'center', justifyContent: 'center', paddingVertical: space[4],
-    borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt,
+    borderRadius: radius.lg, backgroundColor: c.surfaceAlt,
   },
   editCancelText: { fontSize: text.base, color: c.textMuted, fontWeight: weight.semibold },
 });

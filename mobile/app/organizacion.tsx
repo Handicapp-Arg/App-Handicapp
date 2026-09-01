@@ -497,7 +497,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   sectionLabel: { fontSize: 11, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  heroCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], borderWidth: 1, borderColor: c.borderStrong, shadowColor: '#0f1f3d', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  heroCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   orgName: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: -0.5 },
   badge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
   badgeGray: { backgroundColor: c.surfaceAlt },
@@ -512,10 +512,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   codeRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: c.border },
   codeLabel: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
   codeValue: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: 2, marginTop: 2, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
-  codeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8 },
+  codeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.md, backgroundColor: c.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8 },
   codeBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: c.brand },
 
-  joinCard: { gap: 8, backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: c.borderStrong },
+  joinCard: { gap: 8, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, padding: space[3] },
   joinMessage: { fontSize: text.sm, color: c.textMuted, fontStyle: 'italic' },
 
   invCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.goldSoft, borderRadius: radius.md, padding: space[3], borderWidth: 1, borderColor: c.goldBorder },
@@ -526,7 +526,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inviteBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 6 },
   inviteBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
 
-  memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], borderWidth: 1, borderColor: c.borderStrong },
+  memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   memberEmail: { fontSize: 11, color: c.textFaint, marginTop: 1 },
   roleBadge: { borderRadius: radius.full, backgroundColor: c.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4 },
@@ -535,10 +535,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   roleBadgeTextOwner: { color: c.goldText },
 
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
+  input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
 
-  roleCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, padding: 12 },
-  roleCardActive: { borderColor: c.brand, backgroundColor: 'rgba(15,31,61,0.04)' },
+  roleCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: radius.md, backgroundColor: c.surfaceAlt, padding: 12 },
+  roleCardActive: { backgroundColor: c.brandSoft },
   radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: c.borderStrong, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
   radioActive: { borderColor: c.brand },
   radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: c.brand },
@@ -553,6 +553,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  btnSecondary: { backgroundColor: c.surfaceAlt },
   btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
 });

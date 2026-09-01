@@ -532,12 +532,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   group: { gap: space[3] },
   groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8 },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
+  input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
   signHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space[3] },
   clearLink: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
-  signPad: { height: 200, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
-  cancelBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, alignItems: 'center' },
+  signPad: { height: 200, borderRadius: radius.md, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
+  cancelBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.surfaceAlt, alignItems: 'center' },
   cancelBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
   submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
@@ -555,7 +555,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 type CStyles = ReturnType<typeof makeCStyles>;
 
 const makeCStyles = (c: ThemeColors) => StyleSheet.create({
-  card: { backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.border, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  card: { backgroundColor: c.surface, borderRadius: radius.xl, overflow: 'hidden', ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3] },
   docIcon: { width: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
@@ -586,8 +586,8 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   actions: { flexDirection: 'row', gap: space[3], padding: space[4], paddingTop: space[3] },
   signBtn: { flex: 1, height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.success, alignItems: 'center' },
   signBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
-  rejectBtn: { flex: 1, height: touch.button, justifyContent: 'center', borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, alignItems: 'center' },
+  rejectBtn: { flex: 1, height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.surfaceAlt, alignItems: 'center' },
   rejectBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
-  deleteBtn: { margin: space[4], marginTop: 0, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderStrong, paddingVertical: space[3], alignItems: 'center' },
+  deleteBtn: { margin: space[4], marginTop: 0, borderRadius: radius.md, backgroundColor: c.surfaceAlt, paddingVertical: space[3], alignItems: 'center' },
   deleteBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
 });

@@ -111,9 +111,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, marginBottom: space[2] },
   input: {
     height: touch.field,
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    borderRadius: radius.md,
     paddingHorizontal: space[4],
-    fontSize: text.base, color: c.text, backgroundColor: c.surface,
+    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   inputMultiline: { height: undefined, minHeight: 88, paddingVertical: space[3], textAlignVertical: 'top' },
   btn: { borderRadius: radius.md, height: touch.button, alignItems: 'center', justifyContent: 'center', marginTop: space[6] },

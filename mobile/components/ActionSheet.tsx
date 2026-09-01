@@ -68,7 +68,6 @@ export function ActionSheet({
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   lista: {
     backgroundColor: c.surfaceAlt, borderRadius: 16, overflow: 'hidden',
-    borderWidth: 1, borderColor: c.border,
   },
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 16 },
   itemBorde: { borderTopWidth: 1, borderTopColor: c.border },
@@ -80,7 +79,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cancelar: {
     marginTop: 4, height: 54, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   cancelarText: { fontSize: 16, fontWeight: '700', color: c.textMuted, letterSpacing: -0.2 },
 });

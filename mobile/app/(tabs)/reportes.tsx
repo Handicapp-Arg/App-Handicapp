@@ -330,7 +330,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   statRow: { flexDirection: 'row', gap: space[3] },
   statCard: {
     flex: 1, backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.border, padding: space[3], gap: 2, ...shadow.sm,
+    padding: space[3], gap: 2, ...shadow.sm,
   },
   statIcon: { marginBottom: space[1] },
   statLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -340,7 +340,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Cards */
   card: {
     backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.border, padding: space[4], ...shadow.sm,
+    padding: space[4], ...shadow.sm,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[3] },
   cardTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text },
@@ -392,7 +392,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* No plan */
   noPlan: {
     backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.border, padding: space[6],
+    padding: space[6],
     alignItems: 'center', gap: space[3], ...shadow.sm,
   },
   noPlanIcon: {

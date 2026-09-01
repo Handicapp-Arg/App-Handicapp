@@ -88,6 +88,28 @@ es mentira.
 
 ---
 
+## Sin bordes (regla nueva, 01/09)
+
+**Las tarjetas y superficies NO llevan borde.** El borde gris alrededor de cada
+caja era lo que hacía ver la app como un wireframe ("app de mentira"). La
+jerarquía se logra como en Instagram/Airbnb:
+
+- **Claro**: tarjeta blanca sobre fondo `c.bg` (#f9fafb) + sombra apenas
+  perceptible (opacity 0.05, radius 8). Ya está en `card.base/padded/overflow`
+  de `styles/common.ts` — usarlos.
+- **Oscuro**: sin sombra (no se ve); alcanza el contraste `c.surface` sobre `c.bg`.
+- **Inputs**: rellenos (`#f1f2f4` en claro, `surfaceAlt` en oscuro), sin borde
+  visible; el foco pinta el borde en `c.brand` (el borde transparente de 1.5 ya
+  reserva el espacio — no hay salto).
+- **Separadores dentro de una lista** (filas de un menú, celdas): un hairline
+  `c.border` está bien — eso es nativo de iOS. Lo prohibido es el borde
+  ALREDEDOR de tarjetas y cajas.
+- Excepciones legítimas: el borde de foco, bordes semánticos de alerta
+  (`errorBox`), y anillos de avatar.
+
+Al tocar una pantalla: borrar `borderWidth`/`borderColor` de tarjetas propias y
+reemplazar por `...card.base` o el patrón de sombra de arriba.
+
 ## Medidas
 
 Todo sale de `styles/tokens.ts`. Nunca números sueltos.

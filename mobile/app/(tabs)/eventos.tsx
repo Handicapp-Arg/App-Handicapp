@@ -214,7 +214,7 @@ function CreateEventModal({ visible, onClose, c, s }: { visible: boolean; onClos
                   {expenseCategories.map((cat) => (
                     <TouchableOpacity
                       key={cat.value}
-                      style={[s.categoryBtn, expenseCategory === cat.value && { backgroundColor: c.text, borderColor: c.text }]}
+                      style={[s.categoryBtn, expenseCategory === cat.value && { backgroundColor: c.text }]}
                       onPress={() => { haptic.selection(); setExpenseCategory(expenseCategory === cat.value ? '' : cat.value); }}
                       activeOpacity={0.75}
                     >
@@ -421,9 +421,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filterRow: { paddingHorizontal: space[4], paddingVertical: space[2], gap: space[2] },
   filterChip: {
     borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[1] + 2,
-    backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt,
   },
-  filterChipActive: { backgroundColor: c.brand, borderColor: c.brand },
+  filterChipActive: { backgroundColor: c.brand },
   filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterChipTextActive: { color: colors.white },
   counter: { fontSize: text.xs, color: c.textFaint, paddingHorizontal: space[4], paddingBottom: space[1] },
@@ -444,8 +444,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   typeBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   errorText: { fontSize: text.sm, color: colors.red500 },
-  currencyBtn: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
-  currencyBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
+  currencyBtn: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
+  currencyBtnActive: { backgroundColor: c.brand },
   currencyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   currencyBtnTextActive: { color: colors.white },
   photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
@@ -454,6 +454,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoAdd: { width: 72, height: 72, borderRadius: radius.md, borderWidth: 1.5, borderColor: c.borderStrong, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2, backgroundColor: c.surfaceAlt },
   photoAddText: { fontSize: 10, color: c.textFaint, fontWeight: weight.semibold },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  categoryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  categoryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
   categoryBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
 });

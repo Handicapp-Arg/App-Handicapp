@@ -151,7 +151,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   label: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   btn: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    borderRadius: radius.md,
     paddingHorizontal: space[4], minHeight: touch.field,
     backgroundColor: c.surfaceAlt,
   },
@@ -160,8 +160,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   // Android inline
   androidInline: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.lg,
+    borderRadius: radius.lg,
     backgroundColor: c.surface, overflow: 'hidden', marginTop: 4,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
   androidPicker: { height: 180 },
   androidActions: {

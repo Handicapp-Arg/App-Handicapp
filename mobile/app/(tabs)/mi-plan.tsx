@@ -265,10 +265,7 @@ function PlanCardInner({
 
       {/* CTA */}
       {current ? (
-        <View style={[s.statePill, {
-          backgroundColor: soft,
-          borderColor: c.borderStrong,
-        }]}>
+        <View style={[s.statePill, { backgroundColor: soft }]}>
           <Text style={[s.statePillText, { color: c.textMuted }]}>
             Plan actual
           </Text>
@@ -302,7 +299,7 @@ function PlanCardInner({
           <ArrowRight size={16} color={colors.white} strokeWidth={2.6} />
         </Pressable>
       ) : (
-        <View style={[s.statePill, { backgroundColor: soft, borderColor: c.borderStrong }]}>
+        <View style={[s.statePill, { backgroundColor: soft }]}>
           <Text style={[s.statePillText, { color: c.textFaint }]}>Incluido</Text>
         </View>
       )}
@@ -321,8 +318,7 @@ function PlanCard({
 
   const frameStyle = [
     s.planCard,
-    m.featured && [s.planCardFeatured, { borderColor: m.accent }],
-    current && { borderColor: m.accent, borderWidth: 1.5 },
+    m.featured && s.planCardFeatured,
   ];
 
   return (
@@ -377,7 +373,7 @@ function CheckoutSheet({
       {plan ? (
         <>
           {/* Resumen del plan */}
-          <View style={[s.summaryCard, { borderColor: m.accent + '55', backgroundColor: m.soft }]}>
+          <View style={[s.summaryCard, { backgroundColor: m.soft }]}>
             <View style={[s.tierIcon, {
               backgroundColor: c.surface, borderColor: m.accent + '44',
             }]}>
@@ -592,14 +588,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   loadingBox: {
     height: 100, alignItems: 'center', justifyContent: 'center',
     backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.border,
+    ...(c.isDark ? {} : shadow.sm),
   },
   emptyText: { fontSize: text.sm, color: c.textFaint, paddingHorizontal: space[1] },
 
   /* Plan actual (destacado en cuero) */
   currentCard: {
     backgroundColor: c.brandSoft, borderRadius: radius.xl,
-    borderWidth: 1.5, borderColor: c.brand,
     padding: space[4], gap: space[4], ...shadow.sm,
   },
   currentHeader: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
@@ -625,8 +620,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: c.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.surfaceAlt, borderRadius: radius.full,
     paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 1,
   },
   chipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
@@ -634,12 +628,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* ─── Plan cards con identidad ─── */
   planCard: {
     backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.border,
     padding: space[4], paddingTop: space[5], gap: space[3],
     overflow: 'hidden', ...shadow.sm,
   },
   planCardFeatured: {
-    borderWidth: 2, transform: [{ scale: 1.015 }], ...shadow.md,
+    transform: [{ scale: 1.015 }], ...shadow.md,
   },
   accentStripe: {
     position: 'absolute', top: 0, left: 0, right: 0, height: 4,
@@ -683,7 +676,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   featRowText: { flex: 1, fontSize: text.sm, color: c.textMuted },
 
   statePill: {
-    marginTop: space[1], borderRadius: radius.md, borderWidth: 1,
+    marginTop: space[1], borderRadius: radius.md,
     paddingVertical: space[2] + 2, alignItems: 'center',
   },
   statePillText: { fontSize: text.sm, fontWeight: weight.semibold },
@@ -708,7 +701,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   summaryCard: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    borderRadius: radius.lg, borderWidth: 1, padding: space[3],
+    borderRadius: radius.lg, padding: space[3],
   },
   summaryName: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text },
   summaryTier: { fontSize: 10, fontWeight: weight.bold, letterSpacing: 0.6, marginTop: 1 },
@@ -718,7 +711,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   secureNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: space[2],
     backgroundColor: c.brandSoft, borderRadius: radius.md,
-    padding: space[3], borderWidth: 1, borderColor: c.brand + '33',
+    padding: space[3],
   },
   secureNoteText: { flex: 1, fontSize: text.xs, color: c.textMuted, lineHeight: 17 },
 

@@ -167,9 +167,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderRadius: radius.xl,
     padding: space[3],
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.borderStrong,
-    ...shadow.sm,
+    ...(c.isDark ? {} : shadow.sm),
   },
   photo: {
     width: 84,
@@ -192,8 +190,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   footer: {
     paddingHorizontal: space[5],
     paddingTop: space[3],
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.border,
   },
   exitBtn: {
     flexDirection: 'row',

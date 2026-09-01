@@ -234,8 +234,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   inputWrap: {
     height: 56, borderRadius: 14,
-    borderWidth: 1.5, borderColor: c.border,
-    backgroundColor: c.surfaceAlt,
+    borderWidth: 1.5, borderColor: 'transparent',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
     justifyContent: 'center',
   },
   inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },
@@ -265,14 +265,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   devBtn: {
     alignItems: 'center', justifyContent: 'center',
     paddingVertical: 11, marginTop: 4,
-    borderRadius: 12, borderWidth: 1,
-    borderColor: c.border, backgroundColor: c.surfaceAlt,
+    borderRadius: 12, backgroundColor: c.surfaceAlt,
   },
   devBtnText: { fontSize: 12.5, fontWeight: '600', color: c.textMuted },
 
   picker: {
     backgroundColor: c.surfaceAlt, borderRadius: 16, overflow: 'hidden',
-    borderWidth: 1, borderColor: c.border, marginBottom: 8,
+    marginBottom: 8,
+    ...(c.isDark ? {} : {
+      shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+    }),
   },
   pickerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

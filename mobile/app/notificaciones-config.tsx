@@ -363,8 +363,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: c.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: c.borderStrong,
     overflow: 'hidden',
     ...shadow.sm,
   },

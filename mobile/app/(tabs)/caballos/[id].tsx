@@ -44,7 +44,7 @@ import { Avatar } from '../../../components/Avatar';
 import { useToast } from '../../../components/Toast';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight } from '../../../styles/tokens';
+import { space, text, radius, weight, shadow } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
 import { ActionSheet } from '../../../components/ActionSheet';
 import { FormSheet } from '../../../components/FormSheet';
@@ -820,7 +820,7 @@ export default function HorseDetailScreen() {
             <View style={s.section}>
               <Text style={s.sectionTitle}>Propiedad</Text>
               <TouchableOpacity
-                style={[s.smallBtn, { alignSelf: 'flex-start', borderColor: colors.red500 }]}
+                style={[s.smallBtn, { alignSelf: 'flex-start', backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2' }]}
                 onPress={() => setShowTransfer(true)}
                 activeOpacity={0.8}
               >
@@ -1204,13 +1204,13 @@ export default function HorseDetailScreen() {
             contentContainerStyle={{ flexDirection: 'row', gap: 6, paddingRight: 8 }}
           >
             <TouchableOpacity
-              style={[s.activityChip, activityType === 'all' && { backgroundColor: c.surfaceAlt, borderColor: c.text }]}
+              style={[s.activityChip, activityType === 'all' && { backgroundColor: c.brandSoft }]}
               onPress={() => { haptic.selection(); setActivityType('all'); }}
             >
-              <Text style={[s.activityChipText, activityType === 'all' && { color: c.text }]}>Todas</Text>
+              <Text style={[s.activityChipText, activityType === 'all' && { color: c.brand }]}>Todas</Text>
             </TouchableOpacity>
             {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
-              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg, borderColor: m.color }]} onPress={() => { haptic.selection(); setActivityType(v); }}>
+              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg }]} onPress={() => { haptic.selection(); setActivityType(v); }}>
                 <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
               </TouchableOpacity>
             ))}
@@ -1397,7 +1397,7 @@ export default function HorseDetailScreen() {
             const mc = MEDICAL_TYPE_COLORS[t];
             const active = medicalForm.type === t;
             return (
-              <TouchableOpacity key={t} style={[s.medTypeOption, active && { backgroundColor: mc.bg, borderColor: mc.text }]} onPress={() => { haptic.selection(); setMedicalForm((p) => ({ ...p, type: t })); }} activeOpacity={0.7}>
+              <TouchableOpacity key={t} style={[s.medTypeOption, active && { backgroundColor: mc.bg }]} onPress={() => { haptic.selection(); setMedicalForm((p) => ({ ...p, type: t })); }} activeOpacity={0.7}>
                 <Text style={[s.medTypeOptionText, active && { color: mc.text, fontWeight: '700' }]}>{MEDICAL_TYPE_LABELS[t]}</Text>
               </TouchableOpacity>
             );
@@ -1450,7 +1450,7 @@ export default function HorseDetailScreen() {
               .map((v) => (
                 <TouchableOpacity
                   key={v.id}
-                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: c.brand, borderColor: c.brand }]}
+                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: c.brand }]}
                   onPress={() => { haptic.selection(); setSelectedVetId(v.id); }}
                   activeOpacity={0.75}
                 >
@@ -1502,7 +1502,7 @@ export default function HorseDetailScreen() {
               .map((m) => (
                 <TouchableOpacity
                   key={m.user_id}
-                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedMemberId === m.user_id && { backgroundColor: c.brand, borderColor: c.brand }]}
+                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedMemberId === m.user_id && { backgroundColor: c.brand }]}
                   onPress={() => { haptic.selection(); setSelectedMemberId(m.user_id); }}
                   activeOpacity={0.75}
                 >
@@ -1549,7 +1549,7 @@ export default function HorseDetailScreen() {
               .map((p) => (
                 <TouchableOpacity
                   key={p.id}
-                  style={[s.smallBtn, { alignSelf: 'stretch', paddingVertical: 12 }, transferOwnerId === p.id && { backgroundColor: colors.red500, borderColor: colors.red500 }]}
+                  style={[s.smallBtn, { alignSelf: 'stretch', paddingVertical: 12 }, transferOwnerId === p.id && { backgroundColor: colors.red500 }]}
                   onPress={() => { haptic.selection(); setTransferOwnerId(p.id); }}
                   activeOpacity={0.75}
                 >
@@ -1637,7 +1637,7 @@ export default function HorseDetailScreen() {
                 style={[
                   s.typeChip,
                   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-                  active && { backgroundColor: c.isDark ? t.color + '26' : t.color + '18', borderColor: t.color },
+                  active && { backgroundColor: c.isDark ? t.color + '26' : t.color + '18' },
                 ]}
                 onPress={() => { haptic.selection(); setNewEventType(t.key); }}
                 activeOpacity={0.7}
@@ -1844,13 +1844,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   emptyTitle: { fontSize: 15, fontWeight: '700', color: c.text },
 
   /* Info */
-  infoGrid: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  infoGrid: { backgroundColor: c.surface, borderRadius: 16, padding: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8, ...(c.isDark ? {} : shadow.sm) },
   infoItem: { width: '47%', backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 10 },
   infoLabel: { fontSize: 10, fontWeight: '600', color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
   infoValue: { fontSize: 13, fontWeight: '600', color: c.text, marginTop: 2 },
 
   /* Financial */
-  financialCard: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 14, gap: 10 },
+  financialCard: { backgroundColor: c.surface, borderRadius: 16, padding: 14, gap: 10, ...(c.isDark ? {} : shadow.sm) },
   financialGrid: { flexDirection: 'row', gap: 10 },
   financialStat: { flex: 1, borderRadius: 12, padding: 12 },
   financialStatValue: { fontSize: 18, fontWeight: '800', color: c.text },
@@ -1863,14 +1863,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   barValue: { width: 64, fontSize: 10, fontWeight: '600', color: c.textMuted, textAlign: 'right' },
 
   /* Docs */
-  docsCard: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
+  docsCard: { backgroundColor: c.surface, borderRadius: 16, overflow: 'hidden', ...(c.isDark ? {} : shadow.sm) },
   docRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
   docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   docName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.text },
   docDivider: { height: 1, backgroundColor: c.border, marginHorizontal: 12 },
 
   /* Peso */
-  weightCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
+  weightCard: { backgroundColor: c.surface, borderRadius: 14, padding: 12, ...(c.isDark ? {} : shadow.sm) },
   weightLatest: { backgroundColor: c.isDark ? 'rgba(234,88,12,0.14)' : '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
   weightValue: { fontSize: 28, fontWeight: '800', color: c.isDark ? '#fb923c' : '#c2410c' },
   weightCC: { fontSize: 12, color: c.isDark ? '#fdba74' : '#ea580c', marginTop: 2 },
@@ -1881,8 +1881,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Rutina */
   routineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
-  routineItemChecked: { borderColor: c.isDark ? 'rgba(34,197,94,0.4)' : '#86efac', backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
+  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, backgroundColor: c.surface, ...(c.isDark ? {} : shadow.sm) },
+  routineItemChecked: { backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
   routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: c.textMuted },
   routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d' },
   routineAuthor: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10 },
@@ -1896,7 +1896,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Eventos */
   eventsList: { gap: 8 },
-  eventCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 14, gap: 6 },
+  eventCard: { backgroundColor: c.surface, borderRadius: 14, padding: 14, gap: 6, ...(c.isDark ? {} : shadow.sm) },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: 11, color: c.textFaint },
   eventDesc: { fontSize: text.base, color: c.text, lineHeight: 22 },
@@ -1914,15 +1914,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   commentDate: { fontSize: 10, color: c.textFaint },
   commentText: { fontSize: 12, color: c.text, marginTop: 2 },
   commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },
-  commentInput: { flex: 1, borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: c.text, backgroundColor: c.surfaceAlt, minHeight: 36, maxHeight: 80 },
+  commentInput: { flex: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: c.text, backgroundColor: c.surfaceAlt, minHeight: 36, maxHeight: 80 },
   commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
   /* Médico */
-  healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 12, gap: 8 },
+  healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 14, padding: 12, marginBottom: 12, gap: 8 },
   healthBookHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
   healthBookIcon: { width: 22, height: 22, borderRadius: 7, backgroundColor: c.brandSoft, justifyContent: 'center', alignItems: 'center' },
   healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingLeft: 12, paddingRight: 10, paddingVertical: 8, overflow: 'hidden' },
+  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: c.surface, borderRadius: 12, paddingLeft: 12, paddingRight: 10, paddingVertical: 8, overflow: 'hidden' },
   healthAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
   healthIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   healthName: { fontSize: 13, fontWeight: '600', color: c.text },
@@ -1931,12 +1931,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   healthBadgeDot: { width: 5, height: 5, borderRadius: 999 },
   healthBadgeText: { fontSize: 9, fontWeight: '700' },
-  healthCertifyBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.brand, paddingHorizontal: 10, paddingVertical: 5 },
+  healthCertifyBtn: { borderRadius: 999, backgroundColor: c.brandSoft, paddingHorizontal: 10, paddingVertical: 5 },
   healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
   certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: 11, marginTop: 2 },
-  certifyBtnLocked: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.borderStrong },
+  certifyBtnLocked: { backgroundColor: c.surfaceAlt },
   certifyBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
-  medCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 12 },
+  medCard: { backgroundColor: c.surface, borderRadius: 14, padding: 12, ...(c.isDark ? {} : shadow.sm) },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   medTypeText: { fontSize: 10, fontWeight: '700' },
@@ -1946,14 +1946,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   medBrand: { fontSize: 11, color: c.textFaint },
   medNotes: { fontSize: 11, color: c.textMuted, fontStyle: 'italic' },
   medTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  medTypeOption: { borderRadius: 10, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: c.surface },
+  medTypeOption: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: c.surfaceAlt },
   medTypeOptionText: { fontSize: 12, color: c.textMuted },
 
   /* Fotos */
   activityTypeRow: { marginBottom: 10, flexGrow: 0 },
   captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.text },
   captureBtnText: { fontSize: 12, fontWeight: '700', color: c.surface },
-  activityChip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border },
+  activityChip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
   activityChipText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   photoWrap: { width: '31%', aspectRatio: 1, position: 'relative' },
@@ -1965,9 +1965,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoStampTime: { fontSize: 8, fontWeight: '500', color: 'rgba(255,255,255,0.85)' },
 
   /* Botones pequeños */
-  smallBtn: { borderRadius: 999, borderWidth: 1, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
+  smallBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
   smallBtnText: { fontSize: 11, fontWeight: '600', color: c.text },
-  typeChip: { borderRadius: 20, borderWidth: 1.5, borderColor: c.borderStrong, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.surfaceAlt },
+  typeChip: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.surfaceAlt },
   typeChipText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
   pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.isDark ? 'rgba(239,68,68,0.16)' : '#fef2f2', minWidth: 44, justifyContent: 'center' },
   pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.isDark ? '#fca5a5' : '#dc2626' },
@@ -1986,10 +1986,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Formularios (dentro de FormSheet) */
   fieldLabel: { fontSize: 13, fontWeight: '600', color: c.text },
   fieldError: { fontSize: 13, color: colors.red500 },
-  input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
+  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong },
+  btnSecondary: { backgroundColor: c.surfaceAlt },
   btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
 });

@@ -35,6 +35,8 @@ import { useTheme, type ThemeColors } from '../../../lib/theme';
 import type { Horse } from '../../../../packages/shared/src';
 import { AppImage } from '../../../components/AppImage';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import { HorseshoeH } from '../../../components/icons/equine';
 
 function HorseCard({ horse, monthlySpend, c, s }: {
   horse: Horse;
@@ -50,52 +52,50 @@ function HorseCard({ horse, monthlySpend, c, s }: {
     <PressableScale
       style={s.card}
       onPress={() => { haptic.light(); router.push(`/(tabs)/caballos/${horse.id}`); }}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver ficha de ${horse.name}`}
     >
-      {/* Photo */}
-      <View style={s.cardPhotoWrap}>
-        {horse.image_url
-          ? <AppImage source={{ uri: horse.image_url }} style={s.cardPhoto} />
-          : (
-            <View style={s.cardPhotoPlaceholder}>
-              <Text style={s.cardPhotoInitial}>{horse.name[0]?.toUpperCase()}</Text>
-            </View>
-          )
-        }
-        {horse.horse_record_id && (
-          <View style={s.cardVerifiedDot}>
-            <ShieldCheck size={9} color={colors.white} strokeWidth={2} />
-          </View>
-        )}
-      </View>
-
-      {/* Info */}
-      <View style={s.cardBody}>
-        <View style={s.cardNameRow}>
-          <Text style={s.cardName} numberOfLines={1}>{horse.name}</Text>
-          {horse.activity && (
-            <View style={s.cardActivityPill}>
-              <Text style={s.cardActivityText}>{horse.activity.name}</Text>
-            </View>
-          )}
+      {/* La foto es la tarjeta; el texto vive sobre un degradado */}
+      {horse.image_url ? (
+        <AppImage source={{ uri: horse.image_url }} style={s.cardPhoto} />
+      ) : (
+        <View style={s.cardPhotoPlaceholder}>
+          <HorseshoeH size={64} color={c.brand} />
         </View>
-        {subtitle ? <Text style={s.cardBreed} numberOfLines={1}>{subtitle}</Text> : null}
-        {horse.establishment && (
-          <View style={s.cardEstabRow}>
-            <Building2 size={11} color={c.textFaint} strokeWidth={2} />
-            <Text style={s.cardEstab} numberOfLines={1}>{horse.establishment.name}</Text>
+      )}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.02)', 'rgba(0,0,0,0.62)']}
+        locations={[0.4, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Insignias arriba */}
+      <View style={s.cardTopRow}>
+        {horse.activity ? (
+          <View style={s.cardActivityPill}>
+            <Text style={s.cardActivityText}>{horse.activity.name}</Text>
           </View>
-        )}
-        {monthlySpend != null && monthlySpend > 0 && (
-          <View style={s.cardSpendRow}>
-            <TrendingUp size={12} color={c.success} strokeWidth={2} />
-            <Text style={s.cardSpend}>{formatMoney(monthlySpend)} este mes</Text>
+        ) : <View />}
+        {horse.horse_record_id ? (
+          <View style={s.cardVerifiedPill}>
+            <ShieldCheck size={12} color={colors.white} strokeWidth={2.4} />
+            <Text style={s.cardVerifiedText}>Padrón</Text>
           </View>
-        )}
+        ) : null}
       </View>
 
-      {/* Entrar al detalle */}
-      <View style={s.cardActions}>
-        <ChevronRight size={18} color={c.textFaint} strokeWidth={2} />
+      {/* Nombre y datos sobre el degradado */}
+      <View style={s.cardOverlay}>
+        <Text style={s.cardName} numberOfLines={1}>{horse.name}</Text>
+        <View style={s.cardMetaRow}>
+          {subtitle ? <Text style={s.cardBreed} numberOfLines={1}>{subtitle}</Text> : null}
+          {horse.establishment ? (
+            <Text style={s.cardEstab} numberOfLines={1}>  ·  {horse.establishment.name}</Text>
+          ) : null}
+        </View>
+        {monthlySpend != null && monthlySpend > 0 && (
+          <Text style={s.cardSpend}>{formatMoney(monthlySpend)} este mes</Text>
+        )}
       </View>
     </PressableScale>
   );
@@ -883,41 +883,49 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: text.base, color: c.text },
   list: { paddingBottom: 100, gap: 10 },
-  // ─── Horse Card (list style) ───────────────────────────────────────────────
+  // ─── Horse Card — foto primero (la imagen es la tarjeta) ──────────────────
   card: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: c.surface, borderRadius: 16,
-    padding: 12, gap: 12,
-    ...shadow.sm,
+    height: 210,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    backgroundColor: c.surfaceAlt,
+    ...(c.isDark ? {} : { ...shadow.sm }),
   },
-  cardPhotoWrap: { position: 'relative' },
-  cardPhoto: { width: 68, height: 68, borderRadius: 12 },
+  cardPhoto: { ...StyleSheet.absoluteFillObject },
   cardPhotoPlaceholder: {
-    width: 68, height: 68, borderRadius: 12,
-    backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center',
-  },
-  cardPhotoInitial: { fontSize: 26, fontWeight: '800', color: c.brand, opacity: 0.5 },
-  cardVerifiedDot: {
-    position: 'absolute', bottom: -3, right: -3,
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: c.success, borderWidth: 2, borderColor: colors.white,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#efe9df',
     justifyContent: 'center', alignItems: 'center',
+    opacity: 0.9,
   },
-  cardBody: { flex: 1, gap: 3 },
-  cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cardName: { fontSize: text.base, fontWeight: '700', color: c.text, flex: 1 },
+  cardTopRow: {
+    position: 'absolute', top: space[3], left: space[3], right: space[3],
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
   cardActivityPill: {
-    backgroundColor: c.brandSoft, borderRadius: 6,
-    paddingHorizontal: 7, paddingVertical: 2, flexShrink: 0,
+    backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: radius.full,
+    paddingHorizontal: space[3], paddingVertical: 4,
   },
-  cardActivityText: { fontSize: 10, fontWeight: '700', color: c.brand },
-  cardBreed: { fontSize: 12, color: c.textMuted },
-  cardEstabRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardEstab: { fontSize: 12, color: c.textFaint, flex: 1 },
-  cardSpendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  cardSpend: { fontSize: 12, fontWeight: '600', color: c.success },
-  cardActions: { alignItems: 'center', gap: 6 },
-  cardQuickBtn: { padding: 2 },
+  cardActivityText: { fontSize: text.xs, fontWeight: weight.bold, color: '#7d5426' },
+  cardVerifiedPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: radius.full,
+    paddingHorizontal: space[2] + 2, paddingVertical: 4,
+  },
+  cardVerifiedText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
+  cardOverlay: {
+    position: 'absolute', left: space[4], right: space[4], bottom: space[3] + 2,
+    gap: 2,
+  },
+  cardName: {
+    fontSize: text.lg, fontWeight: weight.extrabold, color: colors.white,
+    letterSpacing: -0.4,
+    textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 },
+  },
+  cardMetaRow: { flexDirection: 'row', alignItems: 'center' },
+  cardBreed: { fontSize: text.sm, color: 'rgba(255,255,255,0.92)', fontWeight: weight.medium },
+  cardEstab: { fontSize: text.sm, color: 'rgba(255,255,255,0.75)', flexShrink: 1 },
+  cardSpend: { fontSize: text.sm, fontWeight: weight.bold, color: 'rgba(255,255,255,0.95)', marginTop: 2 },
   // ─── FAB ──────────────────────────────────────────────────────────────────
   fab: {
     position: 'absolute', right: 20,

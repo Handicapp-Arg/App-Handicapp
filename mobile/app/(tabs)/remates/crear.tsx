@@ -69,7 +69,7 @@ function TypeOption({ type, selected, onSelect, c, s }: {
 
   return (
     <TouchableOpacity
-      style={[s.typeOption, isSelected && { borderColor: config.color, backgroundColor: config.soft }]}
+      style={[s.typeOption, isSelected && { backgroundColor: config.soft }]}
       onPress={() => { haptic.selection(); onSelect(type); }}
       activeOpacity={0.8}
       accessibilityRole="button"
@@ -459,15 +459,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: '30%',
     alignItems: 'center',
     padding: space[3],
-    backgroundColor: c.surface,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.xl,
-    borderWidth: 2,
-    borderColor: c.borderStrong,
     gap: space[2],
     position: 'relative',
-    ...shadow.sm,
   },
-  horseOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
+  horseOptionActive: { backgroundColor: c.brandSoft },
   horseOptionAvatar: {
     width: 52, height: 52, borderRadius: radius.full,
     backgroundColor: c.surfaceAlt,
@@ -488,10 +485,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Type options */
   typeOption: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 2, borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt, borderRadius: radius.xl,
     padding: space[4],
-    ...shadow.sm,
   },
   typeIcon: { width: 48, height: 48, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center' },
   typeBody: { flex: 1 },
@@ -504,7 +499,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   currencyToggle: {
     flexDirection: 'row', borderRadius: radius.lg, overflow: 'hidden',
-    borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt,
+    backgroundColor: c.surfaceAlt,
   },
   currencyBtn: { paddingHorizontal: space[4], paddingVertical: space[3] },
   currencyBtnActive: { backgroundColor: c.brand },
@@ -512,31 +507,25 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   currencyBtnTextActive: { color: colors.white },
   priceInput: {
     flex: 1, fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text,
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4', borderRadius: radius.xl,
     paddingHorizontal: space[4], paddingVertical: space[3],
     textAlign: 'right', fontVariant: ['tabular-nums'],
-    ...shadow.sm,
   },
 
   row: { flexDirection: 'row', gap: space[3] },
   input: {
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4', borderRadius: radius.lg,
     paddingHorizontal: space[4], paddingVertical: space[3] + 2,
     fontSize: text.base, color: c.text,
-    ...shadow.sm,
   },
 
   /* Date picker */
   dateTrigger: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 2, borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt, borderRadius: radius.xl,
     padding: space[4],
-    ...shadow.sm,
   },
-  dateTriggerFilled: { borderColor: c.brand, backgroundColor: c.brandSoft },
+  dateTriggerFilled: { backgroundColor: c.brandSoft },
   dateTriggerIcon: { width: 44, height: 44, borderRadius: radius.lg, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   dateTriggerLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   dateTriggerSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
@@ -556,10 +545,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   timeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   timeChip: {
     paddingHorizontal: space[4], paddingVertical: space[2] + 2,
-    borderRadius: radius.full, borderWidth: 1.5, borderColor: c.borderStrong,
-    backgroundColor: c.surface,
+    borderRadius: radius.full,
+    backgroundColor: c.surfaceAlt,
   },
-  timeChipActive: { backgroundColor: c.brand, borderColor: c.brand },
+  timeChipActive: { backgroundColor: c.brand },
   timeChipText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   timeChipTextActive: { color: colors.white },
 
@@ -572,11 +561,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Checks */
   checkRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt, borderRadius: radius.lg,
     padding: space[4],
   },
-  checkRowActive: { borderColor: c.success, backgroundColor: c.successSoft },
+  checkRowActive: { backgroundColor: c.successSoft },
   checkbox: {
     width: 24, height: 24, borderRadius: 6,
     borderWidth: 2, borderColor: c.borderStrong,
@@ -598,9 +586,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     paddingHorizontal: space[4],
     paddingTop: space[3],
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-    ...shadow.sm,
+    ...(c.isDark ? {} : shadow.sm),
   },
   publishBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

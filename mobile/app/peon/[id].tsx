@@ -167,7 +167,7 @@ export default function PeonHorse() {
         {buttons.map((b) => (
           <PressableScale
             key={b.label}
-            style={[s.btn, b.done && { backgroundColor: c.success, borderColor: c.success }]}
+            style={[s.btn, b.done && { backgroundColor: c.success }]}
             scaleTo={0.95}
             onPress={b.onPress}
             accessibilityRole="button"
@@ -265,13 +265,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: '47.5%',
     minHeight: 118,
     borderRadius: radius.xl,
-    backgroundColor: c.surface,
-    borderWidth: 2,
-    borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     padding: space[3],
-    ...shadow.sm,
+    ...(c.isDark ? {} : shadow.sm),
   },
   checkBadge: {
     position: 'absolute',

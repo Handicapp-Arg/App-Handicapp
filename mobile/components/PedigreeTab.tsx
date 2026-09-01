@@ -735,7 +735,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   empty: { flex: 1, padding: 32, alignItems: 'center', gap: 12, justifyContent: 'center' },
   emptyIcon: {
     width: 72, height: 72, borderRadius: 36, backgroundColor: c.surfaceAlt,
-    borderWidth: 1, borderColor: c.border,
     justifyContent: 'center', alignItems: 'center', marginBottom: 4,
   },
   emptyTitle: { fontSize: 17, fontWeight: '800', color: c.text, textAlign: 'center' },
@@ -750,10 +749,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
     paddingHorizontal: space[3], minHeight: touch.min,
-    borderRadius: radius.sm, borderWidth: 1, borderColor: c.borderStrong,
-    backgroundColor: c.surface,
+    borderRadius: radius.sm,
+    backgroundColor: c.surfaceAlt,
   },
-  actionBtnPrimary: { backgroundColor: c.brand, borderColor: c.brand },
+  actionBtnPrimary: { backgroundColor: c.brand },
   actionBtnText: { fontSize: 12, fontWeight: '600', color: c.brand },
 
   banner: {
@@ -776,14 +775,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   treeCard: {
     backgroundColor: c.surface, borderRadius: 16,
     marginHorizontal: 16, marginBottom: 12,
-    borderWidth: 1, borderColor: c.border,
     overflow: 'hidden',
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
 
   noData: { margin: 16, padding: 16, backgroundColor: c.surfaceAlt, borderRadius: 12, alignItems: 'center', gap: 6 },
   noDataText: { fontSize: 13, color: c.textMuted, textAlign: 'center' },
 
-  docsCard: { margin: 16, backgroundColor: c.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: c.border, gap: 8 },
+  docsCard: {
+    margin: 16, backgroundColor: c.surface, borderRadius: 12, padding: 14, gap: 8,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+  },
   docsTitle: { fontSize: 13, fontWeight: '700', color: c.text },
   docRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   docName: { fontSize: 13, color: c.textMuted, flex: 1 },
@@ -805,20 +807,21 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   fieldsetTitle: { fontSize: text.xs, fontWeight: weight.extrabold, color: c.textMuted, letterSpacing: 0.8, textTransform: 'uppercase' },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, marginBottom: 4, marginTop: space[2] },
   input: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.md,
+    borderRadius: radius.md,
     paddingHorizontal: space[3], paddingVertical: space[2] + 2, minHeight: touch.min,
-    fontSize: text.base, color: c.text, backgroundColor: c.surface,
+    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   grandRow: { flexDirection: 'row', gap: space[2] + 2, marginBottom: space[2] + 2 },
   grandLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, marginBottom: 4 },
   inputSm: {
-    borderWidth: 1, borderColor: c.borderStrong, borderRadius: radius.sm,
+    borderRadius: radius.sm,
     paddingHorizontal: space[2] + 2, paddingVertical: space[2], minHeight: touch.min,
-    fontSize: text.sm, color: c.text, backgroundColor: c.surface,
+    fontSize: text.sm, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   dropdown: {
-    backgroundColor: c.surface, borderRadius: radius.md, borderWidth: 1,
-    borderColor: c.borderStrong, overflow: 'hidden', marginTop: 4,
+    backgroundColor: c.surface, borderRadius: radius.md,
+    overflow: 'hidden', marginTop: 4,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
   dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: space[3], minHeight: touch.min, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: c.border },
   dropdownName: { fontSize: text.base, color: c.text, fontWeight: weight.medium },
@@ -832,6 +835,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btnPrimaryText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
   btnSecondaryText: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted },
-  btnOutline: { borderWidth: 1.5, borderColor: c.brand },
+  btnOutline: { backgroundColor: c.brandSoft },
   btnOutlineText: { fontSize: text.base, fontWeight: weight.semibold, color: c.brand },
 });

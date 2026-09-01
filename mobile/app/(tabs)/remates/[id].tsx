@@ -230,7 +230,7 @@ export default function AuctionDetailScreen() {
               { ok: auction.has_health_cert, label: 'Certificado SENASA vigente' },
               { ok: auction.has_ownership_docs, label: 'Docs de propiedad (Studbook/SRA)' },
             ].map(({ ok, label }) => (
-              <View key={label} style={[s.docRow, { backgroundColor: ok ? c.successSoft : c.surfaceAlt, borderColor: ok ? c.success : c.borderStrong }]}>
+              <View key={label} style={[s.docRow, { backgroundColor: ok ? c.successSoft : c.surfaceAlt }]}>
                 {ok
                   ? <CheckCircle2 size={16} color={c.success} strokeWidth={2} />
                   : <XCircle size={16} color={c.textFaint} strokeWidth={2} />}
@@ -307,8 +307,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   priceCard: {
     backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.borderStrong,
-    padding: space[5], marginBottom: space[4], ...shadow.sm,
+    padding: space[5], marginBottom: space[4], ...(c.isDark ? {} : shadow.sm),
   },
   priceLabelSmall: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   priceMain: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
@@ -322,14 +321,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   bidBox: {
     backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.borderStrong,
-    padding: space[4], marginBottom: space[4], ...shadow.sm,
+    padding: space[4], marginBottom: space[4], ...(c.isDark ? {} : shadow.sm),
   },
   bidHint: { fontSize: text.sm, color: c.textFaint, marginBottom: space[2] },
   bidInputRow: { flexDirection: 'row', gap: space[2] },
   bidInput: {
-    flex: 1, height: touch.field, borderWidth: 1.5, borderColor: c.borderStrong, borderRadius: radius.lg,
-    paddingHorizontal: space[4],
+    flex: 1, height: touch.field, borderRadius: radius.lg,
+    paddingHorizontal: space[4], backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
     fontSize: text.md, color: c.text, fontVariant: ['tabular-nums'],
   },
   bidBtn: {
@@ -346,17 +344,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   docRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    borderWidth: 1, borderRadius: radius.lg, padding: space[3],
+    borderRadius: radius.lg, padding: space[3],
   },
   docLabel: { fontSize: text.sm, fontWeight: weight.medium },
 
   bidRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     padding: space[3], borderRadius: radius.lg,
-    borderWidth: 1, borderColor: c.border,
     backgroundColor: c.surfaceAlt, marginBottom: space[2],
   },
-  bidRowActive: { backgroundColor: c.successSoft, borderColor: c.success },
+  bidRowActive: { backgroundColor: c.successSoft },
   bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   bidDate: { fontSize: text.xs, color: c.textFaint },
   bidAmount: { fontSize: text.base, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },

@@ -418,7 +418,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   viewTextActive: { color: c.text },
   calHint: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', paddingVertical: space[6] },
   dayLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'capitalize' },
-  apptCard: { backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.border, padding: space[4], gap: space[2], shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  apptCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   apptRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   typeDot: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   typeText: { fontSize: text.xs, fontWeight: weight.semibold },

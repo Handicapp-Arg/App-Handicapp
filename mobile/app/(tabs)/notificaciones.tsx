@@ -299,8 +299,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
     paddingVertical: space[1],
     minWidth: 230,
-    borderWidth: 1,
-    borderColor: c.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,

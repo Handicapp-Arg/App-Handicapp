@@ -44,9 +44,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4], paddingVertical: space[2] + 2,
     borderRadius: radius.full,
     backgroundColor: c.surface,
-    borderWidth: 1, borderColor: c.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14, shadowRadius: 16, elevation: 6,
+    ...(c.isDark ? {} : {
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.14, shadowRadius: 16, elevation: 6,
+    }),
   },
   texto: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 });

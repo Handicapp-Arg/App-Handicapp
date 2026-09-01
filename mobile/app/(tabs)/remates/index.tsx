@@ -232,10 +232,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   searchRow: { paddingHorizontal: space[4], paddingBottom: space[2] },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.borderStrong,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4', borderRadius: radius.xl,
     paddingHorizontal: space[3], height: touch.min,
-    ...shadow.sm,
   },
   searchInput: { flex: 1, fontSize: text.base, color: c.text },
 
@@ -260,9 +258,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   card: {
     backgroundColor: c.surface, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: c.borderStrong,
     padding: space[4], marginBottom: space[3],
-    ...shadow.sm,
+    ...(c.isDark ? {} : shadow.sm),
   },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: space[3] },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1 },
@@ -272,10 +269,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   typeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: space[2], paddingVertical: 3,
-    borderRadius: radius.full, borderWidth: 1,
+    borderRadius: radius.full,
   },
-  typeBadgeRemate: { backgroundColor: c.infoSoft, borderColor: c.info },
-  typeBadgeDirecto: { backgroundColor: c.surfaceAlt, borderColor: c.border },
+  typeBadgeRemate: { backgroundColor: c.infoSoft },
+  typeBadgeDirecto: { backgroundColor: c.surfaceAlt },
   typeBadgeText: { fontSize: text.xs, fontWeight: weight.semibold },
 
   cardFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },

@@ -73,7 +73,7 @@ export function EventCard({ event, showHorse = true, canEditMetrics = false, onD
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  wrap: { gap: space[2], backgroundColor: c.surface, borderColor: c.border },
+  wrap: { gap: space[2], backgroundColor: c.surface },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   left: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1, flexWrap: 'wrap' },
   right: { flexDirection: 'row', alignItems: 'center', gap: space[2], flexShrink: 0 },

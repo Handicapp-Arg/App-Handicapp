@@ -181,6 +181,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btn: { borderRadius: radius.lg, height: touch.button, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  btnSecondary: { backgroundColor: c.surfaceAlt },
   btnSecondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
 });

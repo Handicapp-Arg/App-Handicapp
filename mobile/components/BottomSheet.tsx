@@ -171,7 +171,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     paddingHorizontal: 16, paddingTop: 10,
     gap: 8,
-    borderTopWidth: 1, borderColor: c.border,
     overflow: 'hidden',
   },
   dragArea: { marginBottom: 8 },

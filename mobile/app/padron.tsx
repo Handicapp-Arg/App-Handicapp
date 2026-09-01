@@ -508,11 +508,9 @@ const makeCardStyles = (c: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: c.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: c.borderStrong,
     padding: space[4],
     marginBottom: space[3],
-    ...shadow.sm,
+    ...(c.isDark ? {} : shadow.sm),
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: space[2] },
   cardName: { flex: 1, fontSize: text.base, fontWeight: weight.bold, color: c.text },
@@ -544,16 +542,14 @@ type TreeStyles = ReturnType<typeof makeTreeStyles>;
 
 const makeTreeStyles = (c: ThemeColors) => StyleSheet.create({
   node: {
-    backgroundColor: c.surface,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: c.borderStrong,
     paddingHorizontal: space[3],
     paddingVertical: space[2],
     marginBottom: space[1],
   },
-  nodeRoot: { borderColor: c.brand + '60', backgroundColor: c.brandSoft },
-  nodeEmpty: { borderStyle: 'dashed', borderColor: c.borderStrong },
+  nodeRoot: { backgroundColor: c.brandSoft },
+  nodeEmpty: { backgroundColor: 'transparent', borderWidth: 1, borderStyle: 'dashed', borderColor: c.borderStrong },
   nodeName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   nodeNameRoot: { fontSize: text.base, fontWeight: weight.bold, color: c.brand },
   nodeMeta: { fontSize: text.xs, color: c.textFaint },

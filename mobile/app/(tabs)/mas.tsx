@@ -273,8 +273,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionCard: {
     backgroundColor: c.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: c.border,
     overflow: 'hidden',
     ...shadow.sm,
   },
@@ -312,8 +310,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: c.surfaceAlt,
     borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: c.border,
     padding: 3,
   },
   segmentBtn: {

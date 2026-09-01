@@ -736,9 +736,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   avatarText: { color: colors.white, fontWeight: weight.bold },
 
   // Card
-  card: { backgroundColor: c.surface, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, borderWidth: 1, borderColor: c.borderStrong, overflow: 'hidden', ...shadow.sm },
-  cardPinned: { borderColor: c.warning, backgroundColor: c.warningSoft },
-  cardHidden: { opacity: 0.55, borderColor: c.danger },
+  card: { backgroundColor: c.surface, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, overflow: 'hidden', ...(c.isDark ? {} : shadow.sm) },
+  cardPinned: { backgroundColor: c.warningSoft },
+  cardHidden: { opacity: 0.55 },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], paddingBottom: 0, gap: space[3] },
   authorInfo: { flex: 1 },
@@ -767,23 +767,23 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   // Menu
 
   // Composer closed
-  composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.borderStrong, padding: space[3], ...shadow.sm },
+  composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.xl, padding: space[3], ...(c.isDark ? {} : shadow.sm) },
   composerPlaceholder: { flex: 1, fontSize: text.sm, color: c.textFaint },
 
   // Composer (FormSheet)
-  composerCancelBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[3], borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surfaceAlt },
+  composerCancelBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[3], borderRadius: radius.lg, backgroundColor: c.surfaceAlt },
   composerCancel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   postBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: c.brand, paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.lg },
   postBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
   typeRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
-  typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
   typeBtnActive: { backgroundColor: c.brand, borderColor: c.brand },
   typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   typeBtnTextActive: { color: colors.white },
   composerRow: { flexDirection: 'row', gap: space[3], padding: space[4], alignItems: 'flex-start' },
   composerInput: { flex: 1, fontSize: text.base, color: c.text, minHeight: 100 },
   horsePickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: c.border },
-  horseChip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: 5, borderWidth: 1, borderColor: c.borderStrong, backgroundColor: c.surface },
+  horseChip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: 5, backgroundColor: c.surfaceAlt },
   horseChipActive: { backgroundColor: c.brand, borderColor: c.brand },
   horseChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   horseChipTextActive: { color: colors.white },

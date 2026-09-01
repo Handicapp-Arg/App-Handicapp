@@ -274,7 +274,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   inviteBox: {
     backgroundColor: c.brandSoft, borderRadius: 12, padding: 13,
-    borderWidth: 1, borderColor: c.brand,
   },
   inviteText: { fontSize: 13.5, color: c.textMuted, lineHeight: 19 },
   inviteStrong: { fontWeight: '700', color: c.text },
@@ -288,8 +287,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   inputWrap: {
     height: 56, borderRadius: 14,
-    borderWidth: 1.5, borderColor: c.border,
-    backgroundColor: c.surfaceAlt,
+    borderWidth: 1.5, borderColor: 'transparent',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
     justifyContent: 'center',
   },
   inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },
@@ -319,9 +318,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   roleOption: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 15,
-    borderRadius: 14, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.surface,
+    borderRadius: 14, backgroundColor: c.surfaceAlt,
   },
-  roleOptionActive: { borderColor: c.brand, backgroundColor: c.brandSoft },
+  roleOptionActive: { backgroundColor: c.brandSoft },
   roleOptionLabel: { fontSize: 15.5, fontWeight: '700', color: c.text, letterSpacing: -0.2 },
   roleOptionDesc: { fontSize: 12.5, color: c.textMuted, marginTop: 2, lineHeight: 17 },
 });

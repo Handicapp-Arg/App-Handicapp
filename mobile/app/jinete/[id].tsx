@@ -451,9 +451,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4],
     paddingVertical: space[2] + 2,
     borderRadius: radius.full,
-    backgroundColor: c.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.borderStrong,
+    backgroundColor: c.surfaceAlt,
   },
   starsInput: {
     flexDirection: 'row',
@@ -464,7 +462,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   chipActive: {
     backgroundColor: c.brand,
-    borderColor: c.brand,
   },
   chipText: {
     fontSize: text.base,
@@ -487,8 +484,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.text,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.borderStrong,
   },
   noteInput: {
     marginTop: space[3],
@@ -499,8 +494,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: text.base,
     fontFamily: fontFamily.medium,
     color: c.text,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.borderStrong,
   },
   photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
   photoImg: { width: '100%', height: '100%' },
@@ -566,8 +559,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderRadius: radius.lg,
     padding: space[3],
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.borderStrong,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
   histDateBox: {
     width: 52,

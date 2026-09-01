@@ -29,39 +29,62 @@ export const makeTypography = (c: ThemeColors) => StyleSheet.create({
   link: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
 });
 
+/**
+ * Tarjetas SIN borde: la jerarquía la dan el fondo y una sombra apenas
+ * perceptible, como en Instagram/Airbnb. El borde gris alrededor de cada cosa
+ * era lo que hacía ver la app como un wireframe. En oscuro la sombra no se ve:
+ * alcanza el contraste surface (#18181b) sobre bg (#0b0b0c).
+ */
 export const makeCard = (c: ThemeColors) => StyleSheet.create({
   base: {
     backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: c.border,
+    borderRadius: radius.xl,
+    ...(c.isDark ? {} : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    }),
   },
   padded: {
     backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: c.border,
+    borderRadius: radius.xl,
     padding: space[4],
+    ...(c.isDark ? {} : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    }),
   },
   overflow: {
     backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: c.border,
+    borderRadius: radius.xl,
     overflow: 'hidden' as const,
+    ...(c.isDark ? {} : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    }),
   },
 });
 
 export const makeInput = (c: ThemeColors) => StyleSheet.create({
   base: {
     height: touch.field,
+    // Relleno sin borde visible (estilo Instagram/Airbnb); el 1.5 transparente
+    // evita el salto de layout cuando el foco pinta el borde.
     borderWidth: 1.5,
-    borderColor: c.border,
+    borderColor: 'transparent',
     borderRadius: radius.lg,
     paddingHorizontal: space[4],
     fontSize: text.md,
     color: c.text,
-    backgroundColor: c.surfaceAlt,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   /** Igual que `base` pero para el campo enfocado. */
   focused: {
@@ -70,13 +93,13 @@ export const makeInput = (c: ThemeColors) => StyleSheet.create({
   },
   multiline: {
     borderWidth: 1.5,
-    borderColor: c.border,
+    borderColor: 'transparent',
     borderRadius: radius.lg,
     paddingHorizontal: space[4],
     paddingVertical: space[4],
     fontSize: text.md,
     color: c.text,
-    backgroundColor: c.surfaceAlt,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
     minHeight: 104,
     textAlignVertical: 'top' as const,
   },
@@ -91,13 +114,11 @@ export const makeButton = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'center' as const,
   },
   secondary: {
-    borderWidth: 1.5,
-    borderColor: c.border,
     borderRadius: radius.lg,
     height: touch.button,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    backgroundColor: c.surfaceAlt,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
   },
   danger: {
     borderWidth: 1.5,
