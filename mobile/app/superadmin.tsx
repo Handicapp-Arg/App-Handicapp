@@ -9,9 +9,8 @@ import { Routes } from '../lib/routes';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { ListRowSkeleton } from '../components/Skeleton';
-import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { useAuth } from '../lib/auth';
 import { formatMoney } from '../lib/currency';
 import { haptic } from '../lib/haptics';
@@ -44,15 +43,15 @@ const makeStatusMeta = (c: ThemeColors): Record<SuperAdminOrg['status'], { bg: s
   trial:     { bg: c.warningSoft, text: c.warning, label: 'Trial' },
 });
 
+// Tarjetas neutras (superficie + sombra), igual que las de supervision.tsx: el
+// acento vive solo en el color del valor, nunca pintando la tarjeta entera.
 function MetricBox({ label, value, sub, tone = 'navy', c, s }: { label: string; value: string; sub?: string; tone?: 'navy' | 'gold' | 'gray'; c: ThemeColors; s: Styles }) {
-  const bg = tone === 'navy' ? c.brand : tone === 'gold' ? c.warningSoft : c.surface;
-  const fg = tone === 'navy' ? colors.white : tone === 'gold' ? c.warning : c.text;
-  const labelColor = tone === 'navy' ? 'rgba(255,255,255,0.6)' : tone === 'gold' ? c.warning : c.textFaint;
+  const fg = tone === 'navy' ? c.brand : tone === 'gold' ? c.warning : c.text;
   return (
-    <View style={[s.metric, { backgroundColor: bg }]}>
-      <Text style={[s.metricLabel, { color: labelColor }]}>{label}</Text>
+    <View style={s.metric}>
+      <Text style={s.metricLabel}>{label}</Text>
       <Text style={[s.metricValue, { color: fg }]} numberOfLines={1}>{value}</Text>
-      {sub && <Text style={[s.metricSub, { color: labelColor }]} numberOfLines={1}>{sub}</Text>}
+      {sub && <Text style={s.metricSub} numberOfLines={1}>{sub}</Text>}
     </View>
   );
 }
@@ -232,12 +231,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   metric: {
     flexBasis: '48.5%',
     flexGrow: 1,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     padding: space[3],
+    ...(c.isDark ? {} : shadow.sm),
   },
-  metricLabel: { fontSize: text.xs, fontWeight: weight.bold, letterSpacing: 0.4 },
+  metricLabel: { fontSize: text.xs, fontWeight: weight.bold, letterSpacing: 0.4, color: c.textFaint },
   metricValue: { fontSize: text.xl, fontWeight: weight.extrabold, marginTop: 4 },
-  metricSub: { fontSize: text.xs, marginTop: 2 },
+  metricSub: { fontSize: text.xs, marginTop: 2, color: c.textFaint },
   search: {
     backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     borderRadius: radius.md,

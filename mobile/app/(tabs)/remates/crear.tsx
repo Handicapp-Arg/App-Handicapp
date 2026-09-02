@@ -217,7 +217,7 @@ export default function CrearRemateScreen() {
           </View>
 
           {/* Paso 3: Precio */}
-          <View style={s.section}>
+          <View style={[s.section, s.groupStart]}>
             <Text style={s.sectionLabel}>
               {type === 'venta_directa' ? 'Precio de venta' : 'Precio base de la subasta'}
             </Text>
@@ -350,28 +350,24 @@ export default function CrearRemateScreen() {
             </View>
           )}
 
-          {/* Título */}
-          <View style={s.section}>
-            <Text style={s.sectionLabel}>Título del anuncio</Text>
+          {/* Título y ubicación: sin rótulo, el placeholder describe el campo */}
+          <View style={[s.section, s.groupStart]}>
             <TextInput
               style={s.input}
               value={title}
               onChangeText={setTitle}
-              placeholder={horseName ? `${horseName} en venta` : 'Ej: Cuarteron Polo 10 años'}
+              placeholder={horseName ? `${horseName} en venta` : 'Título del anuncio, ej: Cuarteron Polo 10 años'}
               placeholderTextColor={c.textFaint}
               autoCapitalize="sentences"
+              accessibilityLabel="Título del anuncio"
             />
-          </View>
-
-          {/* Ubicación */}
-          <View style={s.section}>
-            <Text style={s.sectionLabel}>Ubicación (opcional)</Text>
             <TextInput
               style={s.input}
               value={location}
               onChangeText={setLocation}
-              placeholder="Ej: Buenos Aires, Argentina"
+              placeholder="Ubicación (opcional), ej: Buenos Aires, Argentina"
               placeholderTextColor={c.textFaint}
+              accessibilityLabel="Ubicación"
             />
           </View>
 
@@ -451,6 +447,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   content: { padding: space[4], gap: space[5] },
 
   section: { gap: space[3] },
+  // Separación extra al arrancar un grupo temático nuevo (caballo+tipo / precio+fecha / datos finales).
+  groupStart: { marginTop: space[3] },
   sectionLabel: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
 
   /* Horse selector */

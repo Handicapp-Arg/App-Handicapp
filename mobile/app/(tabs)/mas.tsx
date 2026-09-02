@@ -255,8 +255,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface, borderRadius: radius.xl,
     paddingVertical: space[3], paddingHorizontal: space[3] + 2,
     marginHorizontal: space[4], marginBottom: space[4],
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+    ...(c.isDark ? {} : shadow.sm),
   },
   profileName: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
 
@@ -274,7 +273,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    ...shadow.sm,
+    ...(c.isDark ? {} : shadow.sm),
   },
 
   row: {
@@ -322,8 +321,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   segmentBtnActive: {
     backgroundColor: c.surface,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 2, elevation: 1,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 }),
   },
   segmentText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   segmentTextActive: { color: c.text },

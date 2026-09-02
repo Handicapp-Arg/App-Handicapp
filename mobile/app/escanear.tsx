@@ -225,6 +225,11 @@ const makeStyles = (_c: ThemeColors) => StyleSheet.create({
     fontWeight: weight.medium,
     color: '#fff',
     textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: space[4],
+    paddingVertical: space[2],
+    borderRadius: radius.md,
+    overflow: 'hidden',
   },
   errorText: {
     fontSize: text.sm,

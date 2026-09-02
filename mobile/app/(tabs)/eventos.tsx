@@ -218,7 +218,7 @@ function CreateEventModal({ visible, onClose, c, s }: { visible: boolean; onClos
                       onPress={() => { haptic.selection(); setExpenseCategory(expenseCategory === cat.value ? '' : cat.value); }}
                       activeOpacity={0.75}
                     >
-                      <cat.Icon size={14} color={expenseCategory === cat.value ? c.surface : cat.color} strokeWidth={2} />
+                      <cat.Icon size={16} color={expenseCategory === cat.value ? c.surface : cat.color} strokeWidth={2} />
                       <Text style={[s.categoryBtnText, expenseCategory === cat.value && { color: c.surface }]}>{cat.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -423,9 +423,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[1] + 2,
     backgroundColor: c.surfaceAlt,
   },
-  filterChipActive: { backgroundColor: c.brand },
+  filterChipActive: { backgroundColor: c.text },
   filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  filterChipTextActive: { color: colors.white },
+  filterChipTextActive: { color: c.surface },
   counter: { fontSize: text.xs, color: c.textFaint, paddingHorizontal: space[4], paddingBottom: space[1] },
   list: { paddingBottom: 120 },
   footer: { padding: space[5], alignItems: 'center' },

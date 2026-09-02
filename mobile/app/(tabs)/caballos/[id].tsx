@@ -637,7 +637,7 @@ export default function HorseDetailScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Ver código QR del caballo"
               >
-                <QrCode size={18} color={c.isDark ? '#1a1207' : colors.white} strokeWidth={2.2} />
+                <QrCode size={20} color={c.isDark ? '#1a1207' : colors.white} strokeWidth={2.2} />
               </TouchableOpacity>
             )}
           </View>
@@ -669,7 +669,7 @@ export default function HorseDetailScreen() {
               onPress={() => { haptic.selection(); setActiveTab(key); }}
               activeOpacity={0.7}
             >
-              <TabIconCmp size={17} color={tabColor} strokeWidth={2} />
+              <TabIconCmp size={20} color={tabColor} strokeWidth={2} />
               <Text style={[s.tabLabel, activeTab === key && s.tabLabelActive]} numberOfLines={1}>{label}</Text>
             </TouchableOpacity>
           );
@@ -870,7 +870,7 @@ export default function HorseDetailScreen() {
                           accessibilityRole="button"
                           accessibilityLabel={`Eliminar documento ${doc.name}`}
                         >
-                          <Trash2 size={16} color={c.textFaint} strokeWidth={2} />
+                          <Trash2 size={20} color={c.textFaint} strokeWidth={2} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1149,14 +1149,22 @@ export default function HorseDetailScreen() {
                             accessibilityRole="button"
                             accessibilityLabel={`Más opciones de ${rec.name}`}
                           >
-                            <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
+                            <MoreVertical size={20} color={c.textFaint} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </View>
                     </View>
                     {(rec.next_due || rec.brand || rec.notes) && (
                       <View style={{ gap: 2, paddingLeft: 2, marginTop: 4 }}>
-                        {rec.next_due && <Text style={s.medNextDue}>{vence(rec.next_due)}</Text>}
+                        {rec.next_due && (() => {
+                          const dueStatus = healthStatusFromNextDue(rec.next_due);
+                          const dueColor = dueStatus === 'rojo' ? c.danger : dueStatus === 'amarillo' ? c.warning : c.textFaint;
+                          return (
+                            <Text style={[s.medNextDue, { color: dueColor, fontWeight: dueStatus === 'rojo' ? weight.bold : weight.medium }]}>
+                              {vence(rec.next_due)}
+                            </Text>
+                          );
+                        })()}
                         {rec.brand && <Text style={s.medBrand}>Marca: {rec.brand}</Text>}
                         {rec.notes && <Text style={s.medNotes}>{rec.notes}</Text>}
                       </View>
@@ -1800,7 +1808,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
   heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 20 },
   heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  horseName: { fontSize: 24, fontWeight: '800', color: colors.white, lineHeight: 30, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  horseName: { fontSize: text.xl, fontWeight: '800', letterSpacing: -0.5, color: colors.white, lineHeight: 32, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   heroBadges: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   heroBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   heroBadgeAmber: { backgroundColor: 'rgba(245,158,11,0.35)' },
@@ -1820,13 +1828,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 11, paddingHorizontal: 2, gap: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: space[3], paddingHorizontal: 2, gap: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabItemActive: { borderBottomColor: c.text },
-  tabLabel: { fontSize: 10.5, fontWeight: '600', color: c.textFaint },
+  tabLabel: { fontSize: 11, fontWeight: '600', color: c.textFaint },
   tabLabelActive: { color: c.text },
 
   /* Sections */
-  section: { margin: 16, gap: 10 },
+  section: { margin: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
   countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
@@ -1863,7 +1871,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   docDivider: { height: 1, backgroundColor: c.border, marginHorizontal: 12 },
 
   /* Peso */
-  weightCard: { backgroundColor: c.surface, borderRadius: 14, padding: 12, ...(c.isDark ? {} : shadow.sm) },
+  weightCard: { backgroundColor: c.surface, borderRadius: 16, padding: 12, ...(c.isDark ? {} : shadow.sm) },
   weightLatest: { backgroundColor: c.isDark ? 'rgba(234,88,12,0.14)' : '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
   weightValue: { fontSize: 28, fontWeight: '800', color: c.isDark ? '#fb923c' : '#c2410c' },
   weightCC: { fontSize: 12, color: c.isDark ? '#fdba74' : '#ea580c', marginTop: 2 },
@@ -1889,7 +1897,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Eventos */
   eventsList: { gap: 8 },
-  eventCard: { backgroundColor: c.surface, borderRadius: 14, padding: 14, gap: 6, ...(c.isDark ? {} : shadow.sm) },
+  eventCard: { backgroundColor: c.surface, borderRadius: 16, padding: 14, gap: 6, ...(c.isDark ? {} : shadow.sm) },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: 11, color: c.textFaint },
   eventDesc: { fontSize: text.base, color: c.text, lineHeight: 22 },
@@ -1911,7 +1919,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
   /* Médico */
-  healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 14, padding: 12, marginBottom: 12, gap: 8 },
+  healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 16, padding: 12, marginBottom: 12, gap: 8 },
   healthBookHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
   healthBookIcon: { width: 22, height: 22, borderRadius: 7, backgroundColor: c.brandSoft, justifyContent: 'center', alignItems: 'center' },
   healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -1926,16 +1934,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   healthBadgeText: { fontSize: 9, fontWeight: '700' },
   healthCertifyBtn: { borderRadius: 999, backgroundColor: c.brandSoft, paddingHorizontal: 10, paddingVertical: 5 },
   healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
-  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: 11, marginTop: 2 },
+  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: space[3], marginTop: 2 },
   certifyBtnLocked: { backgroundColor: c.surfaceAlt },
   certifyBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
-  medCard: { backgroundColor: c.surface, borderRadius: 14, padding: 12, ...(c.isDark ? {} : shadow.sm) },
+  medCard: { backgroundColor: c.surface, borderRadius: 16, padding: 12, ...(c.isDark ? {} : shadow.sm) },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   medTypeText: { fontSize: 10, fontWeight: '700' },
   medName: { flex: 1, fontSize: 13, fontWeight: '600', color: c.text },
   medDate: { fontSize: 10, color: c.textFaint },
-  medNextDue: { fontSize: 11, color: '#d97706', fontWeight: '500' },
+  medNextDue: { fontSize: 11 },
   medBrand: { fontSize: 11, color: c.textFaint },
   medNotes: { fontSize: 11, color: c.textMuted, fontStyle: 'italic' },
   medTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },

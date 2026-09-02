@@ -88,14 +88,16 @@ function NotifRow({
         onPress={() => { haptic.light(); onPress(item); }}
         activeOpacity={0.75}
       >
-        {/* Ícono */}
-        <View style={[s.iconWrap, { backgroundColor: iconBg }]}>
+        {/* Ícono — en las leídas retrocede (opacidad), para que la atención
+            quede en las no leídas */}
+        <View style={[s.iconWrap, { backgroundColor: iconBg }, item.read && s.iconWrapRead]}>
           <MetaIcon size={20} color={meta.color} strokeWidth={2} />
         </View>
 
         {/* Contenido */}
         <View style={s.rowBody}>
           <View style={s.rowTop}>
+            {!item.read && <View style={s.unreadDot} />}
             <Text style={[s.rowTitle, !item.read && s.rowTitleUnread]} numberOfLines={1}>
               {item.title}
             </Text>
@@ -356,6 +358,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
   },
+  iconWrapRead: {
+    opacity: 0.55,
+  },
   rowBody: {
     flex: 1,
     gap: 2,
@@ -375,6 +380,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   rowTitleUnread: {
     color: c.text,
+  },
+  unreadDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: c.brand,
+    flexShrink: 0,
   },
   rowMsg: {
     fontSize: text.sm,

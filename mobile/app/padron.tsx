@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Routes } from '../lib/routes';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight, shadow } from '../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../styles/tokens';
 import { haptic } from '../lib/haptics';
 import { useHorseRecordTree, useSearchLiveStudbook, type HorseRecord, type HorseRecordNode } from '../hooks/use-horse-records';
 import { ListRowSkeleton } from '../components/Skeleton';
@@ -468,7 +468,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
     paddingHorizontal: space[3],
-    height: 44,
+    height: touch.min,
   },
   searchInput: { flex: 1, fontSize: text.sm, color: c.text },
   totalText: { fontSize: text.xs, color: c.textFaint, marginTop: space[2], paddingLeft: space[1] },

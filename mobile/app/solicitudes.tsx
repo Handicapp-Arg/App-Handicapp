@@ -11,12 +11,13 @@ import { ErrorState } from '../components/ErrorState';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 import {
   useBoardingRequests, useAcceptBoardingRequest, useRejectBoardingRequest,
   type BoardingRequest,
 } from '../hooks/use-boarding-requests';
 import { haptic } from '../lib/haptics';
+import { fechaHumana } from '../lib/fechas';
 
 type Filter = 'pending' | 'accepted' | 'rejected';
 
@@ -55,9 +56,7 @@ function RequestRow({
       {req.message && (
         <Text style={s.message} numberOfLines={3}>“{req.message}”</Text>
       )}
-      <Text style={s.date}>
-        {new Date(req.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
-      </Text>
+      <Text style={s.date}>{fechaHumana(req.created_at)}</Text>
       {isPending && (
         <View style={s.actions}>
           <TouchableOpacity
@@ -181,7 +180,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 44,
+    minHeight: touch.min,
     justifyContent: 'center',
     paddingVertical: space[2],
     borderRadius: radius.md,
@@ -224,7 +223,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    minHeight: 44,
+    minHeight: touch.min,
     justifyContent: 'center',
     paddingVertical: space[3],
     borderRadius: radius.md,

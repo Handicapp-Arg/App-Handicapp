@@ -29,9 +29,9 @@ function fechaLarga(): string {
 function HorseRowSkeleton({ s }: { s: Styles }) {
   return (
     <View style={s.card}>
-      <Skeleton width={64} height={64} borderRadius={radius.full} />
+      <Skeleton width={84} height={84} borderRadius={radius.full} />
       <View style={s.skeletonLines}>
-        <Skeleton height={18} width="60%" />
+        <Skeleton height={22} width="60%" />
       </View>
     </View>
   );
@@ -39,15 +39,15 @@ function HorseRowSkeleton({ s }: { s: Styles }) {
 
 function HorseCard({ horse, c, s, onPress }: { horse: Horse; c: ThemeColors; s: Styles; onPress: () => void }) {
   return (
-    <PressableScale style={s.card} onPress={onPress} scaleTo={0.97}>
+    <PressableScale style={s.card} onPress={onPress} scaleTo={0.96}>
       {horse.image_url ? (
         <AppImage source={{ uri: horse.image_url }} style={s.photo} />
       ) : (
-        <Avatar name={horse.name} size={64} />
+        <Avatar name={horse.name} size={84} />
       )}
       <Text style={s.cardName} numberOfLines={1}>{horse.name}</Text>
       <View style={s.chevWrap}>
-        <ChevronRight size={26} color={c.textFaint} strokeWidth={2.4} />
+        <ChevronRight size={30} color={c.textFaint} strokeWidth={2.6} />
       </View>
     </PressableScale>
   );
@@ -113,7 +113,7 @@ export default function JineteHome() {
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
         >
-          <LogOut size={22} color={c.textMuted} strokeWidth={2.2} />
+          <LogOut size={26} color={c.textMuted} strokeWidth={2.4} />
           <Text style={s.exitText}>Salir</Text>
         </PressableScale>
       </View>
@@ -131,14 +131,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingBottom: space[4],
   },
   hello: {
-    fontSize: text['2xl'],
-    lineHeight: 36,
+    fontSize: text.display,
+    lineHeight: 40,
     fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: c.text,
   },
   date: {
-    fontSize: text.base,
+    fontSize: 19,
     marginTop: space[1],
     fontFamily: fontFamily.medium,
     fontWeight: weight.medium,
@@ -146,7 +146,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     textTransform: 'capitalize',
   },
   subtitle: {
-    fontSize: text.sm,
+    fontSize: text.base,
     marginTop: space[2],
     fontFamily: fontFamily.medium,
     fontWeight: weight.medium,
@@ -156,7 +156,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[5],
     paddingTop: space[2],
     paddingBottom: space[6],
-    gap: space[3],
+    gap: space[4],
   },
   card: {
     flexDirection: 'row',
@@ -167,15 +167,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     ...(c.isDark ? {} : shadow.sm),
   },
   photo: {
-    width: 64,
-    height: 64,
+    width: 84,
+    height: 84,
     borderRadius: radius.full,
     backgroundColor: c.surfaceAlt,
   },
   cardName: {
     flex: 1,
     marginLeft: space[4],
-    fontSize: text.lg,
+    fontSize: text.xl,
     fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.text,
@@ -192,10 +192,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     gap: space[3],
     backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
-    paddingVertical: space[4],
+    paddingVertical: space[4] + 2,
   },
   exitText: {
-    fontSize: text.md,
+    fontSize: text.lg,
     fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.textMuted,

@@ -10,11 +10,13 @@ export function HorseIcon({ size = 24, color = '#000' }: Props) {
   return <Horse size={size} color={color} weight="regular" />;
 }
 
-const ISOTIPO_URL = 'https://res.cloudinary.com/dh2m9ychv/image/upload/c_crop,g_north,w_0.80,h_0.56,y_0.13/v1762370534/logo-full-white_suu2qt.png';
+// Isotipo LOCAL (herradura + H). Antes se descargaba de Cloudinary en runtime:
+// sin señal, la marca desaparecía del login y del nav.
+const ISOTIPO_LOCAL = require('../../assets/splash-icon-solo.png');
 
 /** Isotipo real de la marca (herradura + H), recoloreado con el color del contexto. */
 export function BrandIsotipo({ size = 24, color = '#000' }: Props) {
-  return <Image source={{ uri: ISOTIPO_URL }} style={{ width: size + 2, height: size + 2, tintColor: color }} resizeMode="contain" />;
+  return <Image source={ISOTIPO_LOCAL} style={{ width: size + 2, height: size + 2, tintColor: color }} resizeMode="contain" />;
 }
 
 /** Herradura — el isotipo de la marca, estilo línea (combina con Lucide). */
@@ -36,12 +38,9 @@ export function Horseshoe({ size = 24, color = '#000', strokeWidth = 2 }: Props)
   );
 }
 
-/** Isotipo OFICIAL de la marca (cabeza + herradura + H), recortado del logo. */
-const ISOTIPO_H_URL = 'https://res.cloudinary.com/dh2m9ychv/image/upload/c_crop,g_north,w_0.80,h_0.62,y_0.06/v1762370534/logo-full-white_suu2qt.png';
-
-/** Isotipo oficial de HandicApp, recoloreado con el color del contexto (cuero del tema). */
+/** Isotipo oficial de HandicApp (local), recoloreado con el color del contexto. */
 export function HorseshoeH({ size = 24, color = '#000' }: Props) {
-  return <Image source={{ uri: ISOTIPO_H_URL }} style={{ width: size, height: size, tintColor: color }} resizeMode="contain" />;
+  return <Image source={ISOTIPO_LOCAL} style={{ width: size, height: size, tintColor: color }} resizeMode="contain" />;
 }
 
 /** Cabeza de caballo de perfil (FontAwesome sólido) — seria pero rellena. */
@@ -62,13 +61,9 @@ export function HorseHeadOutline({ size = 24, color = '#000', strokeWidth = 26 }
   );
 }
 
-/** Cabeza de caballo para el nav inferior — contorno, alineado como los íconos
- *  lucide (llena su caja). Escala el trazo al viewBox 512 para que combine el grosor. */
+/** Caballo para el nav inferior: el glifo profesional de Phosphor.
+ *  El contorno artesanal anterior (path de FontAwesome con trazo escalado a
+ *  mano) se veía deforme en tamaños chicos. */
 export function HorseHeadNav({ size = 24, color = '#000', strokeWidth = 2 }: Props) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 512 512" fill="none"
-      stroke={color} strokeWidth={strokeWidth * 20} strokeLinejoin="round" strokeLinecap="round">
-      <Path d={HORSE_HEAD_PATH} />
-    </Svg>
-  );
+  return <Horse size={size} color={color} weight={strokeWidth >= 2.3 ? 'bold' : 'regular'} />;
 }

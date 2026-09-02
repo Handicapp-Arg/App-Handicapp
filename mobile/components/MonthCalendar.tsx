@@ -119,7 +119,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   wrap: { paddingHorizontal: space[4], paddingTop: space[1], paddingBottom: space[3] },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] },
   navBtn: { width: 34, height: 34, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surfaceAlt },
-  monthLabel: { fontSize: text.base, fontWeight: weight.bold, color: c.text, textTransform: 'capitalize' },
+  monthLabel: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, textTransform: 'capitalize', letterSpacing: -0.3 },
   weekRow: { flexDirection: 'row', marginBottom: space[1] },
   weekDay: { flex: 1, textAlign: 'center', fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

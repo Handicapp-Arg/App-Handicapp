@@ -10,8 +10,9 @@ import { Search, ChevronRight, Calendar, Stethoscope, type LucideIcon } from 'lu
 import { HorseIcon } from '../components/icons/equine';
 import { useSearch } from '../hooks/use-search';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 import { Routes, nav } from '../lib/routes';
+import { fechaHumana } from '../lib/fechas';
 
 function SectionHeader({ label, s }: { label: string; s: Styles }) {
   return (
@@ -32,13 +33,13 @@ function ResultRow({
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.7}>
       <View style={s.rowIcon}>
-        <Icon size={18} color={c.brand} />
+        <Icon size={20} color={c.brand} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.rowTitle} numberOfLines={1}>{title}</Text>
         {subtitle ? <Text style={s.rowSub} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
-      <ChevronRight size={14} color={c.textFaint} strokeWidth={2} />
+      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
     </TouchableOpacity>
   );
 }
@@ -63,7 +64,7 @@ export default function BuscarScreen() {
       {/* Header con buscador */}
       <View style={s.header}>
         <View style={s.searchBar}>
-          <Search size={18} color={c.textFaint} strokeWidth={2} />
+          <Search size={20} color={c.textFaint} strokeWidth={2} />
           <TextInput
             ref={inputRef}
             style={s.input}
@@ -133,7 +134,7 @@ export default function BuscarScreen() {
                 <ResultRow
                   icon={Calendar}
                   title={e.description}
-                  subtitle={[e.type, e.date ? new Date(e.date).toLocaleDateString('es-AR') : undefined].filter(Boolean).join(' · ')}
+                  subtitle={[e.type, e.date ? fechaHumana(e.date) : undefined].filter(Boolean).join(' · ')}
                   onPress={() => { nav.push(router, Routes.tabsEventos); }}
                   c={c}
                   s={s}
@@ -170,8 +171,8 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: 40 },
-  input: { flex: 1, fontSize: text.sm, color: c.text, height: 40 },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.min },
+  input: { flex: 1, fontSize: text.sm, color: c.text, height: touch.min },
   cancelBtn: { paddingVertical: space[2] },
   cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
   results: { padding: space[4], gap: space[4], paddingBottom: space[10] },

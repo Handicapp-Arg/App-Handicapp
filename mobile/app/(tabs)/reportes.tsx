@@ -16,6 +16,7 @@ import { useReportSummary, type ReportSummary } from '../../hooks/use-reports';
 import { ReportSkeleton } from '../../components/Skeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { formatMoney } from '../../lib/currency';
+import { fechaHoraHumana, vence } from '../../lib/fechas';
 
 const CATEGORY_LABELS: Record<string, string> = {
   alimentacion: 'Alimentación',
@@ -44,15 +45,6 @@ const fmtMonth = (ym: string) => {
   return new Date(Number(y), Number(m) - 1, 1)
     .toLocaleDateString('es-AR', { month: 'short' });
 };
-
-const fmtDate = (iso: string) =>
-  new Date(iso.length <= 10 ? iso + 'T12:00:00' : iso)
-    .toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
-
-const fmtDateTime = (iso: string) =>
-  new Date(iso).toLocaleDateString('es-AR', {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  });
 
 function StatCard({ icon, label, value, hint, s }: {
   icon: React.ReactNode; label: string; value: string; hint?: string; s: Styles;
@@ -126,15 +118,12 @@ function ExpensesCard({ expenses, c, s }: { expenses: ReportSummary['expenses'];
         <Text style={s.cardTitle}>Gastos</Text>
       </View>
 
-      <View style={s.expenseTotals}>
-        <View style={s.expenseBox}>
-          <Text style={s.expenseBoxLbl}>Este mes</Text>
-          <Text style={s.expenseBoxVal}>{fmtMoney(expenses.month_total)}</Text>
-        </View>
-        <View style={s.expenseBox}>
-          <Text style={s.expenseBoxLbl}>Últimos 12 meses</Text>
-          <Text style={s.expenseBoxVal}>{fmtMoney(expenses.year_total)}</Text>
-        </View>
+      <View style={s.expenseHero}>
+        <Text style={s.expenseHeroLbl}>Gasto de este mes</Text>
+        <Text style={s.expenseHeroVal}>{fmtMoney(expenses.month_total)}</Text>
+        <Text style={s.expenseHeroHint}>
+          {fmtMoney(expenses.year_total)} en los últimos 12 meses
+        </Text>
       </View>
 
       {chrono.length > 0 ? (
@@ -216,7 +205,7 @@ function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming'];
               {a.horse_name} · {APPOINTMENT_LABELS[a.type] ?? a.type}
             </Text>
           </View>
-          <Text style={s.upDate}>{fmtDateTime(a.scheduled_at)}</Text>
+          <Text style={s.upDate}>{fechaHoraHumana(a.scheduled_at)}</Text>
         </View>
       ))}
 
@@ -229,7 +218,7 @@ function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming'];
             <Text style={s.upTitle} numberOfLines={1}>{m.name}</Text>
             <Text style={s.upSub} numberOfLines={1}>{m.horse_name}</Text>
           </View>
-          <Text style={s.upDate}>{fmtDate(m.next_due)}</Text>
+          <Text style={s.upDate}>{vence(m.next_due)}</Text>
         </View>
       ))}
     </View>
@@ -334,7 +323,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   statIcon: { marginBottom: space[1] },
   statLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  statValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
+  statValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
   statHint: { fontSize: text.xs, color: c.textFaint },
 
   /* Cards */
@@ -354,27 +343,33 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   healthRow: { flexDirection: 'row', gap: space[2] },
   healthBox: { flex: 1, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', gap: 2 },
-  healthNum: { fontSize: text.xl, fontWeight: weight.extrabold },
+  healthNum: { fontSize: text.xl, fontWeight: weight.extrabold, fontVariant: ['tabular-nums'] },
   healthLbl: { fontSize: text.xs, fontWeight: weight.semibold },
 
-  /* Expenses */
-  expenseTotals: { flexDirection: 'row', gap: space[3], marginBottom: space[4] },
-  expenseBox: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
-  expenseBoxLbl: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  expenseBoxVal: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text, marginTop: 2 },
+  /* Expenses — el total del mes es el protagonista de la pantalla */
+  expenseHero: { alignItems: 'center', paddingVertical: space[4], marginBottom: space[2], gap: 2 },
+  expenseHeroLbl: {
+    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
+    textTransform: 'uppercase', letterSpacing: 0.8,
+  },
+  expenseHeroVal: {
+    fontSize: text.display, fontWeight: weight.extrabold, color: c.text,
+    letterSpacing: -0.5, fontVariant: ['tabular-nums'],
+  },
+  expenseHeroHint: { fontSize: text.xs, color: c.textFaint, marginTop: space[1] },
 
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 104 },
-  chartCol: { flex: 1, alignItems: 'center', gap: 5, height: '100%' },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: space[2], height: 112, marginTop: space[2] },
+  chartCol: { flex: 1, alignItems: 'center', gap: space[1] + 1, height: '100%' },
   chartValRow: { height: 12, alignSelf: 'stretch', justifyContent: 'flex-end', alignItems: 'center' },
-  chartVal: { fontSize: 8, fontWeight: weight.bold, color: c.text },
+  chartVal: { fontSize: 9, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
   chartBarTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
   chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
-  chartLbl: { fontSize: 9, color: c.textFaint, textTransform: 'capitalize' },
+  chartLbl: { fontSize: text.xs - 1, color: c.textFaint, textTransform: 'capitalize' },
 
-  catSection: { marginTop: space[4], paddingTop: space[4], borderTopWidth: 1, borderTopColor: c.border, gap: space[3] },
+  catSection: { marginTop: space[5], paddingTop: space[4], borderTopWidth: 1, borderTopColor: c.border, gap: space[3] },
   catRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catName: { fontSize: text.sm, color: c.textMuted },
-  catTotal: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  catTotal: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
   catTrack: { height: 6, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   catFill: { height: '100%', borderRadius: radius.full },
 

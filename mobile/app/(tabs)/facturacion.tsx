@@ -426,6 +426,7 @@ export default function FacturacionScreen() {
                 <View style={s.billHeader}>
                   <View style={{ flex: 1, gap: 4 }}>
                     <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
+                      <View style={[s.statusDot, { backgroundColor: sc.text }]} />
                       <Text style={[s.statusText, { color: sc.text }]}>{meta.label}</Text>
                     </View>
                     {bill.horse && <Text style={s.horseName}>{bill.horse.name}</Text>}
@@ -499,9 +500,10 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[2] },
-  billCard: { backgroundColor: c.surface, borderRadius: radius.lg, padding: space[4], gap: space[3], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
+  billCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[3], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   billHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  statusBadge: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, alignSelf: 'flex-start' },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: text.xs, fontWeight: weight.semibold },
   horseName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   period: { fontSize: text.xs, color: c.textMuted },

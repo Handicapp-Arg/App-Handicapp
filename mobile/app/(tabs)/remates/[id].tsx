@@ -39,14 +39,17 @@ function Countdown({ end, s }: { end: string; s: Styles }) {
 
   if (left === 0) return <Text style={s.remateClosed}>Remate cerrado</Text>;
 
+  // Urgencia visual: cierra en menos de 24h -> se pinta en c.warning.
+  const urgent = left < 24 * 60 * 60 * 1000;
+
   return (
     <View style={{ flexDirection: 'row', gap: space[2] }}>
       {[{ v: d, l: 'd' }, { v: h, l: 'h' }, { v: m, l: 'm' }, { v: sec, l: 's' }].map(({ v, l }) => (
         <View key={l} style={{ alignItems: 'center' }}>
-          <View style={s.countBox}>
+          <View style={[s.countBox, urgent && s.countBoxUrgent]}>
             <Text style={s.countNum}>{String(v).padStart(2, '0')}</Text>
           </View>
-          <Text style={s.countLabel}>{l}</Text>
+          <Text style={[s.countLabel, urgent && s.countLabelUrgent]}>{l}</Text>
         </View>
       ))}
     </View>
@@ -317,8 +320,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   remateClosed: { color: c.danger, fontWeight: weight.bold },
 
   countBox: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
+  countBoxUrgent: { backgroundColor: c.warning },
   countNum: { color: colors.white, fontSize: text.lg, fontWeight: weight.extrabold },
   countLabel: { fontSize: text.xs, color: c.textFaint, marginTop: 2, textTransform: 'uppercase' },
+  countLabelUrgent: { color: c.warning, fontWeight: weight.bold },
 
   bidBox: {
     backgroundColor: c.surface, borderRadius: radius.xl,

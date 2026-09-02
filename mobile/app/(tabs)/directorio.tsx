@@ -21,7 +21,7 @@ import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { Avatar } from '../../components/Avatar';
-import { space, text, radius, weight } from '../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { FormSheet } from '../../components/FormSheet';
 
 interface DirectorioItem {
@@ -298,8 +298,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: c.borderStrong, borderTopColor: c.brand },
   pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: c.goldSoft, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: c.goldBorder },
   pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.goldText },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: 2 },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: text.sm, color: c.text },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.min },
+  searchInput: { flex: 1, fontSize: text.sm, color: c.text, height: touch.min },
   list: { paddingBottom: 120 },
   itemWrap: { marginHorizontal: space[4] },
   card: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[4], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },

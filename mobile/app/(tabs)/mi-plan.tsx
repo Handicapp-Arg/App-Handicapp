@@ -23,6 +23,7 @@ import {
   usePlanStatus, usePlanCatalog, useSubscribe, type Plan, type PlanRoleTarget,
 } from '../../hooks/use-plan';
 import { FormSheet } from '../../components/FormSheet';
+import { vence } from '../../lib/fechas';
 
 /** Extrae un mensaje de error legible de una respuesta de axios. */
 function errMessage(err: unknown, fallback: string): string {
@@ -474,7 +475,7 @@ export default function MiPlanScreen() {
     : 0;
 
   const expires = status?.plan_expires_at
-    ? new Date(status.plan_expires_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+    ? vence(status.plan_expires_at)
     : null;
 
   return (
@@ -496,7 +497,7 @@ export default function MiPlanScreen() {
                 <Text style={s.currentPlanName}>{status.label}</Text>
                 <Text style={s.currentPlanSub}>
                   {status.price_ars > 0 ? fmtPrice(status.price_ars) : 'Plan gratuito'}
-                  {expires ? ` · vence el ${expires}` : ''}
+                  {expires ? ` · ${expires}` : ''}
                 </Text>
               </View>
             </View>
@@ -608,7 +609,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   usageBlock: { gap: space[2] },
   usageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   usageLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  usageValue: { fontSize: text.sm, color: c.textMuted },
+  usageValue: { fontSize: text.sm, color: c.textMuted, fontVariant: ['tabular-nums'] },
   progressTrack: {
     height: 8, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden',
   },
@@ -655,7 +656,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   tierKindLabel: { fontSize: 10, fontWeight: weight.bold, letterSpacing: 0.6, marginTop: 1 },
 
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] },
-  priceBig: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5 },
+  priceBig: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   priceUnit: { fontSize: text.sm, fontWeight: weight.medium, color: c.textFaint },
 
   limitChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
@@ -705,7 +706,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   summaryName: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text },
   summaryTier: { fontSize: 10, fontWeight: weight.bold, letterSpacing: 0.6, marginTop: 1 },
-  summaryPrice: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.3 },
+  summaryPrice: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.3, fontVariant: ['tabular-nums'] },
   summaryUnit: { fontSize: text.xs, color: c.textFaint },
 
   secureNote: {

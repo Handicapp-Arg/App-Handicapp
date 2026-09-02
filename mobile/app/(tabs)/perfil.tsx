@@ -868,9 +868,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionSubtitle: { fontSize: text.sm, color: c.textMuted },
   emptyText: { fontSize: text.sm, color: c.textFaint },
   searchInput: {
-    borderWidth: 1, borderColor: 'transparent', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    borderWidth: 1, borderColor: 'transparent', borderRadius: radius.md,
+    paddingHorizontal: space[4], paddingVertical: space[3],
+    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
 
   // Plan Pro (gradiente premium)
@@ -1022,9 +1022,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inputWithIcon: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
-    paddingHorizontal: 14, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    paddingHorizontal: space[4], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
-  inputWithIconField: { flex: 1, paddingVertical: 12, fontSize: 14, color: c.text },
+  inputWithIconField: { flex: 1, paddingVertical: space[3], fontSize: text.base, color: c.text },
   fieldHint: { fontSize: text.xs, color: c.textFaint },
 
   whatsappRow: {
@@ -1041,8 +1041,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   editLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   editInput: {
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    paddingHorizontal: space[4], paddingVertical: space[3],
+    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   editSaveBtn: {
     backgroundColor: c.brand, borderRadius: radius.lg,

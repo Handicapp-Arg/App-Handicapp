@@ -19,6 +19,6 @@ export function EventTypeBadge({ type }: { type: string }) {
 }
 
 const styles = StyleSheet.create({
-  badge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 4, alignSelf: 'flex-start' },
+  badge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1], alignSelf: 'flex-start' },
   text: { fontSize: text.xs, fontWeight: weight.bold },
 });

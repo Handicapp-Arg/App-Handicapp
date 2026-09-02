@@ -107,7 +107,7 @@ function ContractCard({
           </View>
         </View>
         <ChevronDown
-          size={18}
+          size={20}
           color={c.textFaint}
           strokeWidth={2}
           style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}
@@ -557,7 +557,7 @@ type CStyles = ReturnType<typeof makeCStyles>;
 const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   card: { backgroundColor: c.surface, borderRadius: radius.xl, overflow: 'hidden', ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3] },
-  docIcon: { width: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  docIcon: { width: space[8], alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
   meta: { fontSize: text.xs, color: c.textFaint },
   tagRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },

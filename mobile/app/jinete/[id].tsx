@@ -190,7 +190,7 @@ export default function JineteHorse() {
           accessibilityLabel="Volver"
           hitSlop={8}
         >
-          <ChevronLeft size={28} color={c.text} strokeWidth={2.4} />
+          <ChevronLeft size={32} color={c.text} strokeWidth={2.6} />
         </PressableScale>
         {horse?.image_url ? (
           <AppImage source={{ uri: horse.image_url }} style={s.photo} />
@@ -270,7 +270,7 @@ export default function JineteHorse() {
                 hitSlop={4}
               >
                 <Star
-                  size={30}
+                  size={34}
                   color={filled ? c.brand : c.borderStrong}
                   fill={filled ? c.brand : 'transparent'}
                   strokeWidth={2}
@@ -409,8 +409,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderBottomColor: c.border,
   },
   backBtn: {
-    width: touch.min,
-    height: touch.min,
+    width: touch.field,
+    height: touch.field,
     borderRadius: radius.full,
     backgroundColor: c.surfaceAlt,
     justifyContent: 'center',
@@ -419,7 +419,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photo: { width: touch.min, height: touch.min, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
   horseName: {
     flex: 1,
-    fontSize: text.lg,
+    fontSize: text.xl,
     fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: c.text,
@@ -448,8 +448,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     gap: space[2],
   },
   chip: {
-    paddingHorizontal: space[4],
-    paddingVertical: space[2] + 2,
+    minHeight: touch.field,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: space[5],
+    paddingVertical: space[3],
     borderRadius: radius.full,
     backgroundColor: c.surfaceAlt,
   },
@@ -458,13 +461,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     gap: space[1],
   },
   starTouch: {
-    padding: space[1] + 1,
+    padding: space[3],
   },
   chipActive: {
     backgroundColor: c.brand,
   },
   chipText: {
-    fontSize: text.base,
+    fontSize: text.md,
     fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.text,
@@ -476,11 +479,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   rowItem: { flex: 1 },
   input: {
+    minHeight: touch.field,
     backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
     paddingHorizontal: space[4],
-    paddingVertical: space[3] + 2,
-    fontSize: text.md,
+    fontSize: text.lg,
     fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.text,
@@ -513,7 +516,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space[2],
-    height: 54,
+    height: touch.field,
     borderRadius: radius.lg,
     borderWidth: 1.5,
     borderColor: c.borderStrong,
@@ -523,14 +526,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoBtnFullText: { fontSize: text.base, color: c.brand, fontFamily: fontFamily.semibold, fontWeight: weight.semibold },
   saveBtn: {
     marginTop: space[5],
+    minHeight: touch.button,
     backgroundColor: c.brand,
     borderRadius: radius.lg,
     paddingVertical: space[4] + 2,
     alignItems: 'center',
+    justifyContent: 'center',
     ...shadow.md,
   },
   saveText: {
-    fontSize: text.md,
+    fontSize: text.lg,
     fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: colors.white,

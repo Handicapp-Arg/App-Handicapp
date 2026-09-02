@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { X, Camera } from 'lucide-react-native';
 import { EventTypeBadge } from './EventTypeBadge';
 import { TrainingMetricsPanel } from './TrainingMetricsPanel';
 import { formatCurrency } from '../lib/currency';
@@ -42,7 +43,7 @@ export function EventCard({ event, showHorse = true, canEditMetrics = false, onD
               accessibilityRole="button"
               accessibilityLabel="Eliminar evento"
             >
-              <Text style={s.deleteBtnText}>✕</Text>
+              <X size={16} color={c.textFaint} strokeWidth={2} />
             </TouchableOpacity>
           )}
         </View>
@@ -60,7 +61,10 @@ export function EventCard({ event, showHorse = true, canEditMetrics = false, onD
 
       {/* Fotos */}
       {event.photos && event.photos.length > 0 && (
-        <Text style={s.photoCount}>📷 {event.photos.length} foto{event.photos.length > 1 ? 's' : ''}</Text>
+        <View style={s.photoCountRow}>
+          <Camera size={14} color={c.textFaint} strokeWidth={2} />
+          <Text style={s.photoCount}>{event.photos.length} foto{event.photos.length > 1 ? 's' : ''}</Text>
+        </View>
       )}
 
       {/* Métricas de entrenamiento */}
@@ -79,8 +83,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   horseName: { fontSize: text.xs, color: c.textFaint, fontWeight: weight.medium },
   date: { fontSize: text.xs, color: c.textFaint },
   deleteBtn: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  deleteBtnText: { fontSize: 14, color: c.textFaint },
   amount: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
   desc: { fontSize: text.base, color: c.textMuted, lineHeight: 22 },
+  photoCountRow: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
   photoCount: { fontSize: text.xs, color: c.textFaint },
 });

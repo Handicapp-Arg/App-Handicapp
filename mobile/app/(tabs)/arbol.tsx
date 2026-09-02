@@ -11,6 +11,8 @@ import { useTheme, type ThemeColors } from '../../lib/theme';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { HorseHeadOutline } from '../../components/icons/equine';
 import { Routes } from '../../lib/routes';
+import { haptic } from '../../lib/haptics';
+import { space, text, radius, weight } from '../../styles/tokens';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const NODE_W   = 148;
@@ -251,7 +253,7 @@ function DepthToggle({ value, onChange, s }: { value: number; onChange: (v: numb
         <TouchableOpacity
           key={d}
           style={[s.depthBtn, value === d && s.depthBtnActive]}
-          onPress={() => onChange(d)}
+          onPress={() => { haptic.selection(); onChange(d); }}
           hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel={`Mostrar ${d} generaciones`}
@@ -433,10 +435,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.bg,
   },
   controls: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 10,
-    gap: 10,
+    paddingHorizontal: space[4],
+    paddingTop: space[1],
+    paddingBottom: space[2] + 2,
+    gap: space[2] + 2,
     zIndex: 10,
   },
   searchWrap: {
@@ -449,13 +451,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     borderWidth: 1,
     borderColor: 'transparent',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    borderRadius: radius.md,
+    paddingHorizontal: space[3],
+    paddingVertical: space[2] + 1,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: text.sm,
     color: c.text,
   },
   dropdown: {
@@ -464,7 +466,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: c.surface,
-    borderRadius: 12,
+    borderRadius: radius.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
@@ -476,19 +478,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3] - 1,
     borderBottomWidth: 1,
     borderBottomColor: c.border,
-    gap: 8,
+    gap: space[2],
   },
   dropdownName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: text.sm,
+    fontWeight: weight.semibold,
     color: c.text,
   },
   dropdownSub: {
-    fontSize: 11,
+    fontSize: text.xs - 1,
     color: c.textFaint,
     marginTop: 1,
   },
@@ -498,20 +500,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'space-between',
   },
   depthRowLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: text.xs,
+    fontWeight: weight.semibold,
     color: c.textFaint,
   },
   depthRow: {
     flexDirection: 'row',
     backgroundColor: c.surfaceAlt,
-    borderRadius: 9,
+    borderRadius: radius.sm,
     padding: 3,
   },
   depthBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 7,
+    paddingHorizontal: space[3],
+    paddingVertical: space[2] + 2,
+    borderRadius: radius.sm - 1,
   },
   depthBtnActive: {
     backgroundColor: c.surface,
@@ -522,8 +524,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     elevation: 2,
   },
   depthLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: text.xs - 1,
+    fontWeight: weight.semibold,
     color: c.textFaint,
   },
   depthLabelActive: {
@@ -533,28 +535,28 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 4,
+    paddingVertical: space[1],
     alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: 12,
+    fontSize: text.xs,
     color: c.textMuted,
   },
   // Gen headers
   genRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: space[2],
     gap: COL_GAP,
   },
   genHeader: {
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingVertical: space[1],
+    borderRadius: radius.sm - 2,
     backgroundColor: c.surfaceAlt,
     alignItems: 'center',
   },
   genLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     color: c.textFaint,
@@ -587,7 +589,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   nodeName: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     color: c.text,
     lineHeight: 16,
   },
@@ -598,7 +600,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   nodeBadge: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     marginTop: 4,
   },
   nodeNoBadge: {
@@ -614,14 +616,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   subjectLabel: {
     fontSize: 8,
-    fontWeight: '800',
+    fontWeight: weight.extrabold,
     textTransform: 'uppercase',
     letterSpacing: 1,
     color: c.brand,
   },
   subjectName: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: weight.extrabold,
     color: c.text,
     lineHeight: 17,
   },
@@ -632,7 +634,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   subjectVerified: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     color: c.success,
     marginTop: 3,
   },
@@ -641,16 +643,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    gap: 12,
+    padding: space[10],
+    gap: space[3],
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: text.md,
+    fontWeight: weight.bold,
     color: c.textMuted,
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: text.sm,
     color: c.textFaint,
     textAlign: 'center',
     lineHeight: 19,
@@ -660,29 +662,29 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderTopWidth: 1,
     borderTopColor: c.border,
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: space[4],
+    paddingTop: space[2] + 2,
   },
   legendTitle: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: weight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     color: c.textFaint,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: space[2],
   },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    columnGap: 18,
-    rowGap: 8,
+    columnGap: space[4] + 2,
+    rowGap: space[2],
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: space[1] + 2,
   },
   legendLine: {
     width: 14,
@@ -690,8 +692,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: 2,
   },
   legendText: {
-    fontSize: 11,
+    fontSize: text.xs - 1,
     color: c.textMuted,
-    fontWeight: '500',
+    fontWeight: weight.medium,
   },
 });

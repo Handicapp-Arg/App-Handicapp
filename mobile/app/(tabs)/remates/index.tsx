@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, Plus, Gavel, Tag, XCircle, MapPin, Star, CheckCircle2 } from 'lucide-react-native';
+import { Search, Plus, Gavel, Tag, XCircle, MapPin, Star, CheckCircle2, Clock } from 'lucide-react-native';
 import { useAuctions } from '../../../hooks/use-auctions';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { HorseCardSkeleton } from '../../../components/Skeleton';
@@ -23,9 +23,26 @@ function formatARS(n: number, cur: string) {
   return formatMoney(n, cur as Currency);
 }
 
+// Tiempo restante compacto para la tarjeta ("Cierra en 3h", "Cierra en 2d").
+// Devuelve null si no aplica (sin fecha, o ya cerrado) y marca `urgent` si
+// faltan menos de 24hs — esa es la señal que dispara el color de alerta.
+function timeLeft(end: string | null | undefined): { label: string; urgent: boolean } | null {
+  if (!end) return null;
+  const ms = new Date(end).getTime() - Date.now();
+  if (isNaN(ms) || ms <= 0) return null;
+  const hours = ms / 3_600_000;
+  if (hours < 24) {
+    const h = Math.max(1, Math.floor(hours));
+    return { label: `Cierra en ${h}h`, urgent: true };
+  }
+  const days = Math.floor(hours / 24);
+  return { label: `Cierra en ${days}d`, urgent: false };
+}
+
 function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => void; c: ThemeColors; s: Styles }) {
   const isRemate = item.type === 'remate';
   const price = isRemate ? (item.top_bid ?? item.starting_bid) : item.asking_price;
+  const closing = isRemate && item.status === 'active' ? timeLeft(item.auction_end) : null;
 
   return (
     <TouchableOpacity
@@ -58,6 +75,12 @@ function AuctionCard({ item, onPress, c, s }: { item: Auction; onPress: () => vo
           <Text style={s.price} numberOfLines={1}>{price != null ? formatARS(Number(price), item.currency) : '–'}</Text>
         </View>
         <View style={s.metaRight}>
+          {closing && (
+            <View style={s.metaRow}>
+              <Clock size={11} color={closing.urgent ? c.warning : c.textFaint} strokeWidth={2} />
+              <Text style={[s.metaText, closing.urgent && s.metaTextUrgent]}>{closing.label}</Text>
+            </View>
+          )}
           {item.bid_count != null && item.bid_count > 0 && (
             <Text style={s.metaText}>{item.bid_count} puja{item.bid_count !== 1 ? 's' : ''}</Text>
           )}
@@ -248,7 +271,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   filterBtnActive: {
     backgroundColor: c.surface,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 }),
   },
   filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterBtnTextActive: { color: c.text },
@@ -281,6 +304,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   metaRight: { alignItems: 'flex-end', gap: 3 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   metaText: { fontSize: text.xs, color: c.textFaint },
+  metaTextUrgent: { color: c.warning, fontWeight: weight.bold },
   watchingBadge: { fontSize: text.xs, color: c.warning, fontWeight: weight.semibold },
 
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },

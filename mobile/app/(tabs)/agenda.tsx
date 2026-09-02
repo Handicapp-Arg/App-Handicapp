@@ -76,18 +76,18 @@ function AppointmentCard({
             accessibilityRole="button"
             accessibilityLabel="Más opciones del turno"
           >
-            <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
+            <MoreVertical size={20} color={c.textFaint} strokeWidth={2} />
           </TouchableOpacity>
         </View>
         <Text style={s.apptTitle}>{appt.title}</Text>
         {appt.horse && <Text style={s.apptHorse}>{appt.horse.name}</Text>}
         <View style={s.apptDateRow}>
-          <Clock size={13} color={c.textFaint} strokeWidth={2} />
+          <Clock size={16} color={c.textFaint} strokeWidth={2} />
           <Text style={s.apptTime}>{timeStr}</Text>
         </View>
         {appt.completed && (
           <View style={s.completedRow}>
-            <Check size={13} color={c.success} strokeWidth={2.5} />
+            <Check size={16} color={c.success} strokeWidth={2.5} />
             <Text style={s.completedText}>Completado</Text>
           </View>
         )}
@@ -440,7 +440,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   dayLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'capitalize' },
   apptCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   apptRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  typeDot: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
+  typeDot: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1] },
   typeText: { fontSize: text.xs, fontWeight: weight.semibold },
   apptActions: { flexDirection: 'row', gap: space[3] },
   completeBtn: { fontSize: 18, color: c.success },
@@ -450,7 +450,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   apptDateRow: { flexDirection: 'row', gap: space[2] },
   apptDate: { fontSize: text.xs, color: c.textMuted },
   apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold },
-  completedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  completedRow: { flexDirection: 'row', alignItems: 'center', gap: space[1], marginTop: space[1] },
   completedText: { fontSize: text.xs, color: c.success, fontWeight: weight.semibold },
   chip: { borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
   chipActive: { backgroundColor: c.brand },

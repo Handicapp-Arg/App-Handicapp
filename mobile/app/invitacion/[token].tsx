@@ -86,8 +86,13 @@ export default function InvitationScreen() {
             <Text style={s.btnPrimaryText}>Crear cuenta y unirme</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => { haptic.light(); nav.replace(router, Routes.authLogin); }}>
-            <Text style={s.btnSecondaryText}>Ya tengo cuenta</Text>
+          <TouchableOpacity
+            style={s.linkBtn}
+            onPress={() => { haptic.light(); nav.replace(router, Routes.authLogin); }}
+            accessibilityRole="button"
+            accessibilityLabel="Ya tengo cuenta"
+          >
+            <Text style={s.linkBtnText}>Ya tengo cuenta</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -153,8 +158,13 @@ export default function InvitationScreen() {
           {accept.isPending ? <ActivityIndicator color={colors.white} /> : <Text style={s.btnPrimaryText}>Aceptar invitación</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => { haptic.light(); nav.replace(router, Routes.tabsHome); }}>
-          <Text style={s.btnSecondaryText}>No gracias</Text>
+        <TouchableOpacity
+          style={s.linkBtn}
+          onPress={() => { haptic.light(); nav.replace(router, Routes.tabsHome); }}
+          accessibilityRole="button"
+          accessibilityLabel="No gracias"
+        >
+          <Text style={s.linkBtnText}>No gracias</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -181,6 +191,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btn: { borderRadius: radius.lg, height: touch.button, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
+  // CTA secundario como link de texto: el primario tiene que quedar solo, sin competencia visual.
+  linkBtn: { alignItems: 'center', justifyContent: 'center', minHeight: touch.min, paddingVertical: space[2] },
+  linkBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted },
 });

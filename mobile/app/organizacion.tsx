@@ -27,6 +27,7 @@ import { Avatar } from '../components/Avatar';
 import { RoleBadge } from '../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
+import { fechaHumana } from '../lib/fechas';
 
 // Descripciones de rol unificadas con la web (fuente de verdad: ROLE_OPTIONS de organizacion/page.tsx).
 const ROLE_OPTIONS: { value: OrgRole; label: string; desc: string }[] = [
@@ -294,14 +295,14 @@ export default function OrganizacionScreen() {
                 <Text style={{ fontSize: text.xs, color: c.textMuted }}>
                   {org.horse_count} de {horseLimit} caballos
                 </Text>
-                <Text style={{ fontSize: text.xs, fontWeight: weight.semibold, color: pct >= 80 ? colors.amber600 : c.textMuted }}>
+                <Text style={{ fontSize: text.xs, fontWeight: weight.semibold, color: pct >= 80 ? c.warning : c.textMuted }}>
                   {Math.round(pct)}%
                 </Text>
               </View>
               <View style={s.progressTrack}>
                 <View style={[s.progressFill, {
                   width: `${pct}%` as any,
-                  backgroundColor: pct >= 100 ? colors.red500 : pct >= 80 ? colors.amber600 : c.brand,
+                  backgroundColor: pct >= 100 ? c.danger : pct >= 80 ? c.warning : c.brand,
                 }]} />
               </View>
             </View>
@@ -309,8 +310,8 @@ export default function OrganizacionScreen() {
 
           {isAdmin && org.join_code && (
             <View style={s.codeRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.codeLabel}>Código de la caballeriza</Text>
+              <View style={s.codeBlock}>
+                <Text style={s.codeLabel}>Código de invitación</Text>
                 <Text style={s.codeValue}>{org.join_code}</Text>
               </View>
               <TouchableOpacity
@@ -336,7 +337,7 @@ export default function OrganizacionScreen() {
               <Animated.View key={inv.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.invCard}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.invEmail}>{inv.email}</Text>
-                  <Text style={s.invMeta}>{ROLE_LABELS[inv.role_in_org]} · expira {new Date(inv.expires_at).toLocaleDateString('es-AR')}</Text>
+                  <Text style={s.invMeta}>{ROLE_LABELS[inv.role_in_org]} · expira {fechaHumana(inv.expires_at)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <TouchableOpacity
@@ -356,7 +357,7 @@ export default function OrganizacionScreen() {
                       accessibilityLabel="Cancelar invitación"
                       hitSlop={8}
                     >
-                      <X size={14} color={colors.red500} strokeWidth={2} />
+                      <X size={16} color={c.danger} strokeWidth={2} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -509,10 +510,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   progressTrack: { height: 8, borderRadius: 4, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
 
-  codeRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: c.border },
-  codeLabel: { fontSize: 10, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  codeValue: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: 2, marginTop: 2, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
-  codeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.md, backgroundColor: c.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8 },
+  codeRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[4], paddingTop: space[4], borderTopWidth: 1, borderTopColor: c.border },
+  codeBlock: {
+    flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.md,
+    paddingHorizontal: space[3], paddingVertical: space[2],
+  },
+  codeLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  codeValue: { fontSize: text.lg, fontWeight: weight.bold, color: c.brand, letterSpacing: 2, marginTop: 2, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
+  codeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.md, backgroundColor: c.brandSoft, paddingHorizontal: 12, paddingVertical: 8 },
   codeBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: c.brand },
 
   joinCard: { gap: 8, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, padding: space[3] },

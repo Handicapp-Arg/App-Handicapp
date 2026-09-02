@@ -30,7 +30,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#9D6C35"
+        "backgroundColor": "#0b0b0c"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -80,8 +80,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
-          "color": "#0f1f3d",
+          "icon": "./assets/notification-icon.png",
+          "color": "#9d6c35",
           "sounds": []
         }
       ],
