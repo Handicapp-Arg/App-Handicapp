@@ -17,6 +17,8 @@ import {
   useTogglePin, useToggleHide,
 } from '../../hooks/use-feed';
 import { useHorses } from '../../hooks/use-horses';
+import { useAgenda, APPOINTMENT_TYPES } from '../../hooks/use-agenda';
+import { useNotifications } from '../../lib/notifications';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { Avatar as UserAvatar } from '../../components/Avatar';
@@ -27,6 +29,7 @@ import { useToast } from '../../components/Toast';
 import {
   Images, Camera, X, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
   Eye, EyeOff, PlayCircle, Search, Bell, Newspaper, Check, Megaphone, Tag,
+  CalendarPlus, CalendarClock, ScanLine,
 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { HorseIcon } from '../../components/icons/equine';
@@ -598,6 +601,123 @@ function Composer({ user, c, s }: { user: { name: string; role: string; avatar_c
 }
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
+
+/** "Hoy" / "Mañana" / "vie 5" - las fechas crudas se sienten de planilla. */
+function fechaHumana(iso: string): string {
+  const d = new Date(iso);
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const dia = new Date(d); dia.setHours(0, 0, 0, 0);
+  const diff = Math.round((dia.getTime() - hoy.getTime()) / 86400000);
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Mañana';
+  return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
+}
+
+/**
+ * Encabezado de Inicio: saludo, acciones rapidas y proximos turnos.
+ * Es lo que separa un feed generico de un inicio con proposito (Uber/YPF):
+ * la primera pantalla te saluda, te ofrece lo que viniste a hacer y te
+ * adelanta lo que se viene.
+ */
+function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { unread } = useNotifications();
+  const { data: turnos } = useAgenda(true);
+  const proximos = (turnos ?? []).filter(Boolean).slice(0, 5);
+
+  const nombre = (user?.name ?? '').split(' ')[0] || 'Hola';
+  const fecha = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const acciones = [
+    { label: 'Evento', Icon: CalendarPlus, onPress: () => router.push('/eventos') },
+    { label: 'Turno', Icon: CalendarClock, onPress: () => router.push('/agenda') },
+    { label: 'Escanear', Icon: ScanLine, onPress: () => router.push('/escanear') },
+    { label: 'Caballos', Icon: HorseIcon, onPress: () => router.push('/caballos') },
+  ];
+
+  return (
+    <View>
+      {/* Saludo */}
+      <View style={s.inicioTop}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.inicioHola}>Hola, {nombre} 👋</Text>
+          <Text style={s.inicioFecha}>{fecha}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => { haptic.selection(); router.push('/notificaciones'); }}
+          hitSlop={8}
+          style={s.inicioBell}
+          accessibilityRole="button"
+          accessibilityLabel={unread > 0 ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}
+        >
+          <Bell size={23} color={c.text} strokeWidth={2} />
+          {unread > 0 && (
+            <View style={s.inicioBadge}>
+              <Text style={s.inicioBadgeText}>{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { haptic.selection(); router.push('/perfil'); }}
+          accessibilityRole="button"
+          accessibilityLabel="Mi perfil"
+        >
+          <UserAvatar name={user?.name ?? ''} avatarColor={user?.avatar_color} size={40} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Acciones rápidas */}
+      <View style={s.inicioAcciones}>
+        {acciones.map(({ label, Icon, onPress }) => (
+          <TouchableOpacity
+            key={label}
+            style={s.inicioAccion}
+            onPress={() => { haptic.selection(); onPress(); }}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+          >
+            <View style={s.inicioAccionIcon}>
+              <Icon size={22} color={c.brand} strokeWidth={2.1} />
+            </View>
+            <Text style={s.inicioAccionLabel}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Próximos turnos */}
+      {proximos.length > 0 && (
+        <View style={s.inicioTurnos}>
+          <View style={s.inicioTurnosHead}>
+            <Text style={s.inicioSeccion}>Próximos turnos</Text>
+            <TouchableOpacity onPress={() => { haptic.selection(); router.push('/agenda'); }} hitSlop={6}>
+              <Text style={s.inicioVerTodo}>Ver agenda</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.inicioTurnosRow}>
+            {proximos.map((t) => {
+              const meta = APPOINTMENT_TYPES[t!.type] ?? APPOINTMENT_TYPES.otro;
+              return (
+                <TouchableOpacity
+                  key={t!.id}
+                  style={s.inicioTurno}
+                  onPress={() => { haptic.selection(); router.push('/agenda'); }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[s.inicioTurnoDia, { color: meta.color }]}>{fechaHumana(t!.scheduled_at)}</Text>
+                  <Text style={s.inicioTurnoTitulo} numberOfLines={1}>{t!.title}</Text>
+                  {t!.horse && <Text style={s.inicioTurnoCaballo} numberOfLines={1}>{t!.horse.name}</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function MuroTab() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -624,31 +744,7 @@ export default function MuroTab() {
     </Animated.View>
   ), [user?.id, isAdmin, c, s]);
 
-  const Navbar = (
-    <View style={s.navbar}>
-      <Text style={s.navTitle}>HandicApp</Text>
-      <View style={s.navActions}>
-        <TouchableOpacity
-          onPress={() => { haptic.selection(); setSearchOpen(true); }}
-          hitSlop={8}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Buscar"
-        >
-          <Search size={24} color={c.text} strokeWidth={2} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => { haptic.selection(); router.push('/notificaciones'); }}
-          hitSlop={8}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Notificaciones"
-        >
-          <Bell size={24} color={c.text} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const Navbar = <InicioHeader c={c} s={s} />;
 
   const ListHeader = (
     <View>
@@ -723,6 +819,48 @@ export default function MuroTab() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  // --- Inicio ---------------------------------------------------------------
+  inicioTop: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[3],
+  },
+  inicioHola: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.6, fontFamily: fontFamily.semibold },
+  inicioFecha: { fontSize: text.sm, color: c.textFaint, marginTop: 1, textTransform: 'capitalize' },
+  inicioBell: { position: 'relative', padding: 4 },
+  inicioBadge: {
+    position: 'absolute', top: 0, right: -2,
+    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
+    backgroundColor: c.danger, alignItems: 'center', justifyContent: 'center',
+  },
+  inicioBadgeText: { fontSize: 10, fontWeight: weight.extrabold, color: colors.white },
+  inicioAcciones: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: space[5], paddingBottom: space[4],
+  },
+  inicioAccion: { alignItems: 'center', gap: 6, width: 68 },
+  inicioAccionIcon: {
+    width: 54, height: 54, borderRadius: radius.full,
+    backgroundColor: c.brandSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  inicioAccionLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
+  inicioTurnos: { paddingBottom: space[3] },
+  inicioTurnosHead: {
+    flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
+    paddingHorizontal: space[4], marginBottom: space[2],
+  },
+  inicioSeccion: { fontSize: text.base, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
+  inicioVerTodo: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
+  inicioTurnosRow: { paddingHorizontal: space[4], gap: space[2] + 2 },
+  inicioTurno: {
+    width: 150, borderRadius: radius.lg, padding: space[3],
+    backgroundColor: c.surface,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+  },
+  inicioTurnoDia: { fontSize: text.xs, fontWeight: weight.extrabold, textTransform: 'uppercase', letterSpacing: 0.4 },
+  inicioTurnoTitulo: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, marginTop: 3 },
+  inicioTurnoCaballo: { fontSize: text.xs, color: c.textMuted, marginTop: 1 },
+
   root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingBottom: space[10] },
