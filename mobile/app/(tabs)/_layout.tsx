@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, ListPlus, QrCode, CalendarClock } from 'lucide-react-native';
 import { useMemo, type ComponentType } from 'react';
 import { HorseHeadNav, BrandIsotipo } from '../../components/icons/equine';
-import { LinearGradient } from 'expo-linear-gradient';
 import { haptic } from '../../lib/haptics';
+import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
 import { weight } from '../../styles/tokens';
@@ -53,8 +53,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         accessibilityLabel={meta.label}
         accessibilityState={{ selected: focused }}
       >
-        {focused && <View style={styles.activeBar} />}
-        <Icon size={23} color={color} strokeWidth={focused ? 2.6 : 2} />
+        <Icon size={24} color={color} strokeWidth={focused ? 2.4 : 2} />
         <Text style={[styles.label, { color, fontWeight: focused ? weight.bold : weight.semibold }]}>{meta.label}</Text>
       </TouchableOpacity>
     );
@@ -68,33 +67,18 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       {renderTab('agenda')}
       {renderTab('mas')}
 
-      {/* Botón central que sobresale: Home (logo) para propietario, QR para el resto */}
+      {/* Botón central: sobrio. Home (isotipo) para propietario, escáner QR para el resto. */}
       <TouchableOpacity
-        style={[styles.qrBtn, { bottom: insets.bottom + 24 }, isProp && { borderWidth: 0, backgroundColor: 'transparent', overflow: 'hidden' }]}
+        style={[styles.centerBtn, { bottom: insets.bottom + 16 }]}
         activeOpacity={0.85}
-        onPress={() => { haptic.light(); router.push(isProp ? '/muro' : '/buscar'); }}
+        onPress={() => { haptic.light(); router.push(isProp ? '/muro' : '/escanear'); }}
         accessibilityRole="button"
         accessibilityLabel={isProp ? 'Ir al inicio' : 'Escanear código QR'}
       >
-        {isProp && (
-          <LinearGradient
-            colors={c.isDark ? ['#e6c599', '#c2955a'] : ['#b8894a', '#875626']}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-        )}
         {isProp
-          ? <BrandIsotipo size={40} color={c.isDark ? '#1a1207' : '#ffffff'} />
-          : <QrCode size={24} color={c.isDark ? '#1a1207' : '#ffffff'} strokeWidth={2.4} />}
+          ? <BrandIsotipo size={30} color={colors.white} />
+          : <QrCode size={24} color={colors.white} strokeWidth={2.2} />}
       </TouchableOpacity>
-      <Text
-        style={[styles.qrLabel, { bottom: insets.bottom + 6 }]}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        {isProp ? 'Home' : 'QR'}
-      </Text>
     </View>
   );
 }
@@ -135,14 +119,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: c.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 10,
-    elevation: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    paddingTop: 8,
   },
   tab: {
     flex: 1,
@@ -151,41 +128,22 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     gap: 3,
     position: 'relative',
   },
-  activeBar: {
-    position: 'absolute',
-    top: -10,
-    width: 40,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: c.brand,
-  },
   label: { fontSize: 11, letterSpacing: 0.1 },
   qrSlot: { width: 70 },
-  qrBtn: {
+  centerBtn: {
     position: 'absolute',
     left: '50%',
-    marginLeft: -28,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    marginLeft: -26,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: c.brand,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: c.surface,
-    elevation: 7,
-    shadowColor: c.brand,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: c.isDark ? 0.22 : 0.3,
-    shadowRadius: 7,
-  },
-  qrLabel: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '700',
-    color: c.brand,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
   },
 });
