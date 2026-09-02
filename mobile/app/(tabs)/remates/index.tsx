@@ -232,7 +232,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   searchRow: { paddingHorizontal: space[4], paddingBottom: space[2] },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4', borderRadius: radius.xl,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.xl,
     paddingHorizontal: space[3], height: touch.min,
   },
   searchInput: { flex: 1, fontSize: text.base, color: c.text },
@@ -253,7 +253,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filterBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterBtnTextActive: { color: c.text },
 
-  list: { paddingBottom: space[10], flexGrow: 1 },
+  list: { paddingBottom: 120, flexGrow: 1 },
   cardWrap: { paddingHorizontal: space[4] },
 
   card: {

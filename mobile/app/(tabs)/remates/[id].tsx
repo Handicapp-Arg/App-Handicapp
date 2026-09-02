@@ -17,6 +17,7 @@ import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
 import { formatMoney, type Currency } from '../../../lib/currency';
+import { fechaHoraHumana } from '../../../lib/fechas';
 
 function formatARS(n: number | null | undefined, cur: string) {
   if (n == null) return '–';
@@ -269,7 +270,7 @@ export default function AuctionDetailScreen() {
                   <Avatar name={b.bidder?.name} size={32} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.bidderName}>{b.bidder?.name ?? 'Usuario'}</Text>
-                    <Text style={s.bidDate}>{new Date(b.created_at).toLocaleString('es-AR')}</Text>
+                    <Text style={s.bidDate}>{fechaHoraHumana(b.created_at)}</Text>
                   </View>
                   <Text style={s.bidAmount}>{formatARS(b.amount, b.currency)}</Text>
                 </View>
@@ -298,7 +299,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   publishBtn: { backgroundColor: c.brand, paddingHorizontal: space[4], borderRadius: radius.lg, minHeight: touch.min, justifyContent: 'center', alignItems: 'center' },
   publishBtnText: { color: colors.white, fontSize: text.sm, fontWeight: weight.bold },
 
-  scroll: { paddingHorizontal: space[4], paddingBottom: space[16] },
+  scroll: { paddingHorizontal: space[4], paddingBottom: 120 },
 
   auctionTitle: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.4, marginBottom: 4 },
   horseName: { fontSize: text.base, color: c.textMuted },
@@ -327,7 +328,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bidInputRow: { flexDirection: 'row', gap: space[2] },
   bidInput: {
     flex: 1, height: touch.field, borderRadius: radius.lg,
-    paddingHorizontal: space[4], backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    paddingHorizontal: space[4], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     fontSize: text.md, color: c.text, fontVariant: ['tabular-nums'],
   },
   bidBtn: {

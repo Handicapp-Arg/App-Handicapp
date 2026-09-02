@@ -43,6 +43,7 @@ import { EventTypeBadge } from '../../../components/EventTypeBadge';
 import { Avatar } from '../../../components/Avatar';
 import { useToast } from '../../../components/Toast';
 import { colors } from '../../../lib/colors';
+import { fechaHumana, fechaHoraHumana, vence } from '../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
 import type { Event, Horse } from '../../../../packages/shared/src';
@@ -219,7 +220,7 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={s.commentAuthor}>{c.user?.name}</Text>
-                  <Text style={s.commentDate}>{new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</Text>
+                  <Text style={s.commentDate}>{fechaHumana(c.created_at)}</Text>
                 </View>
                 <Text style={s.commentText}>{c.text}</Text>
               </View>
@@ -257,9 +258,7 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
 
 /* ─── EventCard ─── */
 function EventCard({ event, currentUserId, canEdit, c, s }: { event: Event; currentUserId?: string; canEdit?: boolean; c: ThemeColors; s: Styles }) {
-  let _ed = new Date(event.date + 'T12:00:00');
-  if (isNaN(_ed.getTime())) _ed = new Date(event.date);
-  const date = isNaN(_ed.getTime()) ? '' : _ed.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  const date = fechaHumana(event.date);
   return (
     <View style={s.eventCard}>
       <View style={s.eventHeader}>
@@ -569,7 +568,7 @@ export default function HorseDetailScreen() {
   const infoItems: { label: string; value: string }[] = [];
   if (horse.birth_date) {
     const years = Math.floor((Date.now() - new Date(horse.birth_date + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-    infoItems.push({ label: 'Nacimiento', value: `${new Date(horse.birth_date + 'T12:00:00').toLocaleDateString('es-AR')} · ${years} años` });
+    infoItems.push({ label: 'Nacimiento', value: `${fechaHumana(horse.birth_date)} · ${years} años` });
   }
   if (horse.microchip) infoItems.push({ label: 'Microchip', value: horse.microchip });
   if (horse.owner) infoItems.push({ label: 'Propietario', value: horse.owner.name });
@@ -580,7 +579,7 @@ export default function HorseDetailScreen() {
   return (
     <ScrollView
       style={s.root}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={{ paddingBottom: 120 }}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
     >
@@ -832,7 +831,7 @@ export default function HorseDetailScreen() {
                   {movements.slice(0, 5).map((m) => (
                     <View key={m.id} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
                       <Text style={{ fontSize: 11, color: c.textFaint }}>
-                        {new Date(m.created_at).toLocaleDateString('es-AR')}
+                        {fechaHumana(m.created_at)}
                       </Text>
                       <Text style={{ fontSize: 11, color: c.textMuted, flex: 1 }}>{m.description}</Text>
                     </View>
@@ -898,12 +897,12 @@ export default function HorseDetailScreen() {
                 <View style={s.weightLatest}>
                   <Text style={s.weightValue}>{Number(weightRecords[0].weight_kg)} kg</Text>
                   {weightRecords[0].body_condition && <Text style={s.weightCC}>CC: {weightRecords[0].body_condition}/9</Text>}
-                  <Text style={s.weightDate}>{new Date(weightRecords[0].date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
+                  <Text style={s.weightDate}>{fechaHumana(weightRecords[0].date)}</Text>
                 </View>
                 {weightRecords.slice(1, 4).map((r) => (
                   <View key={r.id} style={s.weightRow}>
                     <Text style={s.weightRowValue}>{Number(r.weight_kg)} kg</Text>
-                    <Text style={s.weightRowDate}>{new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
+                    <Text style={s.weightRowDate}>{fechaHumana(r.date)}</Text>
                   </View>
                 ))}
               </View>
@@ -1081,11 +1080,7 @@ export default function HorseDetailScreen() {
                     <View style={s.healthDueRow}>
                       <CalendarClock size={10} color={c.textFaint} strokeWidth={2} />
                       <Text style={s.healthDue} numberOfLines={1}>
-                        {nextDue
-                          ? status === 'rojo'
-                            ? `Venció el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                            : `Vence el ${new Date(nextDue + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                          : 'Sin registro'}
+                        {nextDue ? vence(nextDue) : 'Sin registro'}
                       </Text>
                     </View>
                   </View>
@@ -1143,7 +1138,7 @@ export default function HorseDetailScreen() {
                       </View>
                       <Text style={s.medName} numberOfLines={1}>{rec.name}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={s.medDate}>{new Date(rec.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
+                        <Text style={s.medDate}>{fechaHumana(rec.date)}</Text>
                         {can('horses', 'update') && (
                           <TouchableOpacity
                             onPress={() => Alert.alert('Eliminar', `¿Eliminás "${rec.name}"?`, [
@@ -1161,7 +1156,7 @@ export default function HorseDetailScreen() {
                     </View>
                     {(rec.next_due || rec.brand || rec.notes) && (
                       <View style={{ gap: 2, paddingLeft: 2, marginTop: 4 }}>
-                        {rec.next_due && <Text style={s.medNextDue}>Próxima: {new Date(rec.next_due + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>}
+                        {rec.next_due && <Text style={s.medNextDue}>{vence(rec.next_due)}</Text>}
                         {rec.brand && <Text style={s.medBrand}>Marca: {rec.brand}</Text>}
                         {rec.notes && <Text style={s.medNotes}>{rec.notes}</Text>}
                       </View>
@@ -1221,9 +1216,7 @@ export default function HorseDetailScreen() {
             <View style={s.photosGrid}>
               {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).slice(0, 9).map((p, index) => {
                 const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
-                const stamp = p.taken_at
-                  ? new Date(p.taken_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-                  : '';
+                const stamp = p.taken_at ? fechaHoraHumana(p.taken_at) : '';
                 return (
                   <AnimatedTouchable
                     key={p.id}
@@ -1770,7 +1763,7 @@ export default function HorseDetailScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 13, fontWeight: '600', color: c.text }} numberOfLines={1}>{exp.description}</Text>
                           <Text style={{ fontSize: 11, color: c.textFaint }}>
-                            {(() => { let d = new Date(exp.date + 'T12:00:00'); if (isNaN(d.getTime())) d = new Date(exp.date); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+                            {fechaHumana(exp.date) || '—'}
                           </Text>
                         </View>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: c.text }}>{formatMoney(exp.amount)}</Text>

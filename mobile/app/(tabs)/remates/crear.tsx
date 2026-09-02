@@ -417,7 +417,7 @@ export default function CrearRemateScreen() {
         </ScrollView>
 
         {/* Footer con botón */}
-        <View style={[s.footer, { paddingBottom: insets.bottom + space[3] }]}>
+        <View style={[s.footer, { paddingBottom: insets.bottom + 100 }]}>
           <TouchableOpacity
             style={[s.publishBtn, (!horseId || createAuction.isPending) && s.publishBtnDisabled]}
             onPress={handleSubmit}
@@ -507,14 +507,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   currencyBtnTextActive: { color: colors.white },
   priceInput: {
     flex: 1, fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4', borderRadius: radius.xl,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.xl,
     paddingHorizontal: space[4], paddingVertical: space[3],
     textAlign: 'right', fontVariant: ['tabular-nums'],
   },
 
   row: { flexDirection: 'row', gap: space[3] },
   input: {
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4', borderRadius: radius.lg,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.lg,
     paddingHorizontal: space[4], paddingVertical: space[3] + 2,
     fontSize: text.base, color: c.text,
   },

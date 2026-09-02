@@ -248,7 +248,7 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  content: { paddingBottom: space[10], gap: space[1] },
+  content: { paddingBottom: 120, gap: space[1] },
 
   profileCard: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],

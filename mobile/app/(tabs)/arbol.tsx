@@ -417,7 +417,7 @@ export default function ArbolScreen() {
       )}
 
       {/* Legend (deja espacio para la tab bar inferior) */}
-      <View style={[s.legendBar, { paddingBottom: insets.bottom + 64 }]}>
+      <View style={[s.legendBar, { paddingBottom: insets.bottom + 100 }]}>
         <Text style={s.legendTitle}>Referencias</Text>
         <Legend s={s} c={c} />
       </View>
@@ -446,7 +446,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     borderWidth: 1,
     borderColor: 'transparent',
     borderRadius: 12,

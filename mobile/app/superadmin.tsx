@@ -239,7 +239,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   metricValue: { fontSize: text.xl, fontWeight: weight.extrabold, marginTop: 4 },
   metricSub: { fontSize: text.xs, marginTop: 2 },
   search: {
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     borderRadius: radius.md,
     paddingHorizontal: space[4],
     paddingVertical: space[3],

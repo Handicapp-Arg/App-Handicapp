@@ -415,7 +415,7 @@ export default function FacturacionScreen() {
         <FlatList
           data={bills}
           keyExtractor={(b) => b.id}
-          contentContainerStyle={{ paddingBottom: space[8], gap: space[3] }}
+          contentContainerStyle={{ paddingBottom: 120, gap: space[3] }}
           ListHeaderComponent={<ScreenHeader scrollable showBack backTo={Routes.mas} title="Facturación" right={headerRight} />}
           renderItem={({ item: bill, index }) => {
             const meta = STATUS_META[bill.status];

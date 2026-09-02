@@ -6,7 +6,7 @@ import {
   Building2, CloudOff, FileText, Lock, Receipt, Calendar, Stethoscope,
   Newspaper, Search, SlidersHorizontal, Mail, Users, Bell, Trophy, Inbox,
 } from 'lucide-react-native';
-import { HorseIcon } from './icons/equine';
+import { HorseIcon, HorseshoeH } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, weight, radius, touch } from '../styles/tokens';
@@ -48,15 +48,20 @@ export function EmptyState({ icon, title, message, actionLabel, onAction, tint }
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const accent = tint ?? c.brand;            // CTA (botón) — el tint solo pinta el botón
-  const iconColor = c.textMuted;             // ícono SIEMPRE gris neutro (sobrio, no marrón)
-  const iconBg = c.surfaceAlt;               // fondo del ícono SIEMPRE gris sutil
+  const iconColor = c.brand;                 // ícono cálido: cuero de marca
+  const iconBg = c.brandSoft;                // fondo del ícono: cuero suave
   return (
     <Animated.View entering={FadeInDown.duration(350)} style={s.wrap}>
-      <View style={[s.iconCircle, { backgroundColor: iconBg }]}>
-        {(() => {
-          const L = ICON_MAP[icon];
-          return L ? <L size={32} color={iconColor} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={iconColor} />;
-        })()}
+      <View style={s.iconArea}>
+        <View style={s.watermarkWrap} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <HorseshoeH size={140} color={c.brand} />
+        </View>
+        <View style={[s.iconCircle, { backgroundColor: iconBg }]}>
+          {(() => {
+            const L = ICON_MAP[icon];
+            return L ? <L size={32} color={iconColor} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={iconColor} />;
+          })()}
+        </View>
       </View>
       <Text style={s.title}>{title}</Text>
       {message && <Text style={s.message}>{message}</Text>}
@@ -77,13 +82,29 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     padding: space[8],
     gap: space[3],
   },
-  iconCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: radius.full,
+  iconArea: {
+    width: 140,
+    height: 140,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: space[2],
+  },
+  watermarkWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 140,
+    height: 140,
+    opacity: 0.05,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: text.lg,

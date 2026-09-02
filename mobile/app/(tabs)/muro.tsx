@@ -863,7 +863,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingBottom: space[10] },
+  list: { paddingBottom: 120 },
 
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[3] },
   navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: c.text, letterSpacing: -0.3 },

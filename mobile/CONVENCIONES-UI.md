@@ -238,6 +238,34 @@ para no quedar debajo del indicador de gestos del iPhone:
 
 ---
 
+## Fechas
+
+Ninguna pantalla formatea una fecha a mano. Nada de `toLocaleDateString`,
+`toLocaleString`, `toLocaleTimeString`, `Intl.DateTimeFormat` ni concatenar
+un ISO — eso es lo que hace ver la app "de desarrollador" ("2026-09-01",
+"01/09/2026 14:30"). Las apps consolidadas (Uber, YPF, Airbnb) siempre
+humanizan: "Hoy 14:30", "Mañana", "vie 5 sep", "hace 2 días".
+
+Toda fecha de cara al usuario sale de `lib/fechas.ts`:
+
+| Helper | Uso | Ejemplo |
+|---|---|---|
+| `fechaHumana(iso)` | Fecha sola, sin hora | "Hoy" / "Mañana" / "Ayer" / "vie 5 sep" |
+| `fechaHoraHumana(iso)` | Fecha + hora | "Hoy 14:30" / "vie 5 sep, 14:30" |
+| `hace(iso)` | Tiempo relativo (timelines, comentarios) | "hace 5 minutos" |
+| `vence(iso)` | Vencimientos (vacunas, libreta sanitaria) | "Vence en 12 días" / "Vencida hace 3 días" |
+
+Los cuatro devuelven `''` ante una fecha inválida (nunca "Invalid Date") y
+aceptan tanto `"2026-09-01"` (fecha sola) como un timestamp ISO completo —
+el helper internamente ancla la fecha sola al mediodía local para no
+correrse un día por huso horario, así que ya no hace falta escribir
+`+ 'T12:00:00'` a mano en cada pantalla.
+
+Esto es solo para **presentación**. El valor que viaja al backend o a un
+`<DatePicker>`/input sigue siendo el ISO crudo tal cual — no tocar esos.
+
+---
+
 ## Antes de dar algo por terminado
 
 1. `npx tsc --noEmit` en 0.
@@ -245,3 +273,4 @@ para no quedar debajo del indicador de gestos del iPhone:
 3. Ningún `<Image>` de react-native para contenido remoto.
 4. Ningún número mágico donde hay un token.
 5. Probado mentalmente en claro y oscuro.
+6. Ninguna fecha cruda — pasa por `lib/fechas.ts`.

@@ -427,7 +427,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filterChipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   filterChipTextActive: { color: colors.white },
   counter: { fontSize: text.xs, color: c.textFaint, paddingHorizontal: space[4], paddingBottom: space[1] },
-  list: { paddingBottom: space[8] },
+  list: { paddingBottom: 120 },
   footer: { padding: space[5], alignItems: 'center' },
   // Modal form
   chip: {

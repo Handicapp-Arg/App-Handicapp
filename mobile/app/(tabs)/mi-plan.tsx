@@ -577,7 +577,7 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  content: { padding: space[4], paddingBottom: space[12] },
+  content: { padding: space[4], paddingBottom: 120 },
 
   sectionTitle: {
     fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,

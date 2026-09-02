@@ -698,7 +698,7 @@ export default function PerfilScreen() {
     <View style={[s.root, { paddingTop: insets.top }]}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: space[10] }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
@@ -870,7 +870,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   searchInput: {
     borderWidth: 1, borderColor: 'transparent', borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
 
   // Plan Pro (gradiente premium)
@@ -1022,7 +1022,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inputWithIcon: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
-    paddingHorizontal: 14, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    paddingHorizontal: 14, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   inputWithIconField: { flex: 1, paddingVertical: 12, fontSize: 14, color: c.text },
   fieldHint: { fontSize: text.xs, color: c.textFaint },
@@ -1042,7 +1042,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   editInput: {
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    fontSize: 14, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   editSaveBtn: {
     backgroundColor: c.brand, borderRadius: radius.lg,

@@ -19,6 +19,7 @@ import { Skeleton } from '../../components/Skeleton';
 import { FormSheet } from '../../components/FormSheet';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
+import { fechaHumana } from '../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { AppImage } from '../../components/AppImage';
@@ -62,9 +63,8 @@ function ContractCard({
   const isEstab = contract.establishment_id === userId;
   const ownerSigned = !!contract.signed_at;
   const estabSigned = !!contract.establishment_signed_at;
-  const dateStr = new Date(contract.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-  const fmtDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  const dateStr = fechaHumana(contract.created_at);
+  const fmtDate = (d: string | null) => (d ? fechaHumana(d) : '');
 
   // Aviso de firma parcial (una parte firmó, falta la otra).
   const partialMsg =
@@ -527,7 +527,7 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  content: { paddingBottom: space[10] },
+  content: { paddingBottom: 120 },
   body: { paddingHorizontal: space[4], paddingTop: space[2], gap: space[4] },
   group: { gap: space[3] },
   groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8 },

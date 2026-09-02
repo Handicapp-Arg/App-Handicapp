@@ -84,7 +84,7 @@ export const makeInput = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4],
     fontSize: text.md,
     color: c.text,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   /** Igual que `base` pero para el campo enfocado. */
   focused: {
@@ -99,7 +99,7 @@ export const makeInput = (c: ThemeColors) => StyleSheet.create({
     paddingVertical: space[4],
     fontSize: text.md,
     color: c.text,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     minHeight: 104,
     textAlignVertical: 'top' as const,
   },
@@ -118,7 +118,7 @@ export const makeButton = (c: ThemeColors) => StyleSheet.create({
     height: touch.button,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   danger: {
     borderWidth: 1.5,

@@ -23,6 +23,7 @@ import { useCommonStyles } from '../../styles/common';
 import { useToast } from '../../components/Toast';
 import { ActionSheet } from '../../components/ActionSheet';
 import { FormSheet } from '../../components/FormSheet';
+import { SwipeableRow } from '../../components/SwipeableRow';
 
 const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES);
 
@@ -46,51 +47,70 @@ function AppointmentCard({
   const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <View style={[s.apptCard, appt.completed && { opacity: 0.5 }]}>
-      <View style={s.apptRow}>
-        <View style={[s.typeDot, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
-          <Text style={[s.typeText, { color: meta.color }]}>{meta.label}</Text>
+    <SwipeableRow
+      acciones={[
+        ...(appt.completed ? [] : [{
+          label: 'Completar',
+          Icon: Check,
+          color: c.success,
+          onPress: () => onComplete(appt.id),
+          accessibilityLabel: 'Marcar turno como completado',
+        }]),
+        {
+          label: 'Eliminar',
+          Icon: Trash2,
+          color: c.danger,
+          onPress: () => onDelete(appt.id),
+          accessibilityLabel: 'Eliminar turno',
+        },
+      ]}
+    >
+      <View style={[s.apptCard, appt.completed && { opacity: 0.5 }]}>
+        <View style={s.apptRow}>
+          <View style={[s.typeDot, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
+            <Text style={[s.typeText, { color: meta.color }]}>{meta.label}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => { haptic.selection(); setMenuOpen(true); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Más opciones del turno"
+          >
+            <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={() => { haptic.selection(); setMenuOpen(true); }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Más opciones del turno"
-        >
-          <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-      <Text style={s.apptTitle}>{appt.title}</Text>
-      {appt.horse && <Text style={s.apptHorse}>{appt.horse.name}</Text>}
-      <View style={s.apptDateRow}>
-        <Clock size={13} color={c.textFaint} strokeWidth={2} />
-        <Text style={s.apptTime}>{timeStr}</Text>
-      </View>
-      {appt.completed && (
-        <View style={s.completedRow}>
-          <Check size={13} color={c.success} strokeWidth={2.5} />
-          <Text style={s.completedText}>Completado</Text>
+        <Text style={s.apptTitle}>{appt.title}</Text>
+        {appt.horse && <Text style={s.apptHorse}>{appt.horse.name}</Text>}
+        <View style={s.apptDateRow}>
+          <Clock size={13} color={c.textFaint} strokeWidth={2} />
+          <Text style={s.apptTime}>{timeStr}</Text>
         </View>
-      )}
+        {appt.completed && (
+          <View style={s.completedRow}>
+            <Check size={13} color={c.success} strokeWidth={2.5} />
+            <Text style={s.completedText}>Completado</Text>
+          </View>
+        )}
 
-      <ActionSheet
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        acciones={[
-          ...(appt.completed ? [] : [{
-            label: 'Marcar como completado',
-            Icon: Check,
-            onPress: () => onComplete(appt.id),
-          }]),
-          {
-            label: 'Eliminar turno',
-            Icon: Trash2,
-            destructiva: true,
-            onPress: () => onDelete(appt.id),
-          },
-        ]}
-      />
-    </View>
+        <ActionSheet
+          visible={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          acciones={[
+            ...(appt.completed ? [] : [{
+              label: 'Marcar como completado',
+              Icon: Check,
+              onPress: () => onComplete(appt.id),
+            }]),
+            {
+              label: 'Eliminar turno',
+              Icon: Trash2,
+              destructiva: true,
+              onPress: () => onDelete(appt.id),
+            },
+          ]}
+        />
+      </View>
+    </SwipeableRow>
   );
 }
 
@@ -325,7 +345,7 @@ export default function AgendaScreen() {
         </View>
       ) : viewMode === 'calendar' ? (
         <ScrollView
-          contentContainerStyle={{ paddingBottom: space[8] }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
         >
@@ -379,7 +399,7 @@ export default function AgendaScreen() {
           ListHeaderComponent={Header}
           data={Object.entries(grouped)}
           keyExtractor={([day]) => day}
-          contentContainerStyle={{ paddingBottom: space[8], gap: space[5] }}
+          contentContainerStyle={{ paddingBottom: 120, gap: space[5] }}
           renderItem={({ item: [day, items], index }) => (
             <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ gap: space[2], paddingHorizontal: space[4] }}>
               <Text style={s.dayLabel}>{day}</Text>

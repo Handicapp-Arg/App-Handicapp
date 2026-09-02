@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, ListPlus, QrCode, CalendarClock } from 'lucide-react-native';
 import { useMemo, type ComponentType } from 'react';
 import { HorseHeadNav, BrandIsotipo } from '../../components/icons/equine';
+import { BlurView } from 'expo-blur';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
@@ -61,6 +62,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.bar, { height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
+      {/* Vidrio esmerilado de fondo; el botón central sobresale sin recorte. */}
+      <BlurView
+        intensity={82}
+        tint={c.isDark ? 'dark' : 'light'}
+        style={[StyleSheet.absoluteFill, styles.barGlass]}
+      />
       {isProp ? renderTab('caballos/index') : renderTab('muro')}
       {isProp ? renderTab('eventos') : renderTab('caballos/index')}
       <View style={styles.qrSlot} />
@@ -114,12 +121,19 @@ export default function TabsLayout() {
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: c.border,
     paddingTop: 8,
+  },
+  barGlass: {
+    // El blur pone el vidrio; este velo le da el tinte de la superficie.
+    backgroundColor: c.isDark ? 'rgba(29,26,23,0.72)' : 'rgba(255,255,255,0.72)',
   },
   tab: {
     flex: 1,

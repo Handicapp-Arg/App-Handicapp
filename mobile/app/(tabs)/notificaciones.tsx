@@ -7,18 +7,20 @@ import { useRouter } from 'expo-router';
 import {
   FileText, Receipt, AlertCircle, File, CheckCircle2, XCircle, Home, Trophy,
   Award, Lock, Bell, BellOff, ChevronLeft, Stethoscope, UserPlus,
-  Users, ArrowUp, MoreVertical, CheckCheck, type LucideIcon,
+  Users, ArrowUp, MoreVertical, CheckCheck, Check, type LucideIcon,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ListRowSkeleton } from '../../components/Skeleton';
 import { useNotifications, type NotificationItem } from '../../lib/notifications';
 import { clearBadge } from '../../lib/push-notifications';
+import { fechaHumana, hace } from '../../lib/fechas';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
 import { ActionSheet } from '../../components/ActionSheet';
+import { SwipeableRow } from '../../components/SwipeableRow';
 
 /* ─── Tipo → icono + colores (theme-aware, semánticos) ─── */
 const makeTypeMeta = (c: ThemeColors): Record<string, { icon: LucideIcon; bg: string; color: string }> => ({
@@ -40,31 +42,29 @@ const makeTypeMeta = (c: ThemeColors): Record<string, { icon: LucideIcon; bg: st
   default:            { icon: Bell,         bg: c.surfaceAlt,   color: c.textMuted },
 });
 
+// Tiempo relativo unificado (lib/fechas.ts): "Ahora" para lo instantáneo,
+// "hace X" hasta la semana, y fecha corta ("vie 5 sep") más allá.
 function formatTime(iso: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffH = Math.floor(diffMin / 60);
-  const diffD = Math.floor(diffH / 24);
-
+  if (isNaN(d.getTime())) return '';
+  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
   if (diffMin < 1) return 'Ahora';
-  if (diffMin < 60) return `Hace ${diffMin} min`;
-  if (diffH < 24) return `Hace ${diffH} h`;
-  if (diffD === 1) return 'Ayer';
-  if (diffD < 7) return `Hace ${diffD} días`;
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+  const diffDias = Math.floor(diffMin / 1440);
+  if (diffDias >= 7) return fechaHumana(iso);
+  return hace(iso);
 }
 
 /* ─── Item ─── */
 function NotifRow({
   item,
   onPress,
+  onMarkRead,
   c,
   s,
 }: {
   item: NotificationItem;
   onPress: (n: NotificationItem) => void;
+  onMarkRead: (id: string) => void;
   c: ThemeColors;
   s: Styles;
 }) {
@@ -74,27 +74,37 @@ function NotifRow({
   const iconBg = meta.bg;
 
   return (
-    <TouchableOpacity
-      style={[s.row, !item.read && s.rowUnread]}
-      onPress={() => { haptic.light(); onPress(item); }}
-      activeOpacity={0.75}
+    <SwipeableRow
+      acciones={item.read ? [] : [{
+        label: 'Leída',
+        Icon: Check,
+        color: c.info,
+        onPress: () => onMarkRead(item.id),
+        accessibilityLabel: 'Marcar como leída',
+      }]}
     >
-      {/* Ícono */}
-      <View style={[s.iconWrap, { backgroundColor: iconBg }]}>
-        <MetaIcon size={20} color={meta.color} strokeWidth={2} />
-      </View>
-
-      {/* Contenido */}
-      <View style={s.rowBody}>
-        <View style={s.rowTop}>
-          <Text style={[s.rowTitle, !item.read && s.rowTitleUnread]} numberOfLines={1}>
-            {item.title}
-          </Text>
+      <TouchableOpacity
+        style={[s.row, !item.read && s.rowUnread]}
+        onPress={() => { haptic.light(); onPress(item); }}
+        activeOpacity={0.75}
+      >
+        {/* Ícono */}
+        <View style={[s.iconWrap, { backgroundColor: iconBg }]}>
+          <MetaIcon size={20} color={meta.color} strokeWidth={2} />
         </View>
-        <Text style={s.rowMsg} numberOfLines={2}>{item.message}</Text>
-        <Text style={s.rowTime}>{formatTime(item.created_at)}</Text>
-      </View>
-    </TouchableOpacity>
+
+        {/* Contenido */}
+        <View style={s.rowBody}>
+          <View style={s.rowTop}>
+            <Text style={[s.rowTitle, !item.read && s.rowTitleUnread]} numberOfLines={1}>
+              {item.title}
+            </Text>
+          </View>
+          <Text style={s.rowMsg} numberOfLines={2}>{item.message}</Text>
+          <Text style={s.rowTime}>{formatTime(item.created_at)}</Text>
+        </View>
+      </TouchableOpacity>
+    </SwipeableRow>
   );
 }
 
@@ -210,6 +220,7 @@ export default function NotificacionesScreen() {
                 <NotifRow
                   item={row.item}
                   onPress={handlePress}
+                  onMarkRead={(id) => void markOneRead(id)}
                   c={c}
                   s={s}
                 />
@@ -308,7 +319,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Lista */
   list: {
-    paddingBottom: space[10],
+    paddingBottom: 120,
   },
 
   sectionLabel: {

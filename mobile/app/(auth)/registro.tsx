@@ -288,7 +288,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inputWrap: {
     height: 56, borderRadius: 14,
     borderWidth: 1.5, borderColor: 'transparent',
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     justifyContent: 'center',
   },
   inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },

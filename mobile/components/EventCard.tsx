@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { EventTypeBadge } from './EventTypeBadge';
 import { TrainingMetricsPanel } from './TrainingMetricsPanel';
 import { formatCurrency } from '../lib/currency';
+import { fechaHumana } from '../lib/fechas';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, weight } from '../styles/tokens';
 import { useCommonStyles } from '../styles/common';
@@ -19,9 +20,7 @@ export function EventCard({ event, showHorse = true, canEditMetrics = false, onD
   const { c } = useTheme();
   const { card } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
-  const date = new Date(event.date + 'T12:00:00').toLocaleDateString('es-AR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
+  const date = fechaHumana(event.date);
 
   return (
     <View style={[card.padded, s.wrap]}>

@@ -809,14 +809,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   input: {
     borderRadius: radius.md,
     paddingHorizontal: space[3], paddingVertical: space[2] + 2, minHeight: touch.min,
-    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   grandRow: { flexDirection: 'row', gap: space[2] + 2, marginBottom: space[2] + 2 },
   grandLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, marginBottom: 4 },
   inputSm: {
     borderRadius: radius.sm,
     paddingHorizontal: space[2] + 2, paddingVertical: space[2], minHeight: touch.min,
-    fontSize: text.sm, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f1f2f4',
+    fontSize: text.sm, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
   dropdown: {
     backgroundColor: c.surface, borderRadius: radius.md,

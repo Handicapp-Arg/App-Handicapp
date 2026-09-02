@@ -882,7 +882,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     minHeight: 48, ...shadow.sm,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: text.base, color: c.text },
-  list: { paddingBottom: 100, gap: 10 },
+  list: { paddingBottom: 120, gap: 10 },
   // ─── Horse Card — foto primero (la imagen es la tarjeta) ──────────────────
   card: {
     height: 210,
