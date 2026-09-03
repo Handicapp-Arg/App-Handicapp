@@ -170,14 +170,14 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3], gap: space[3], borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.min },
   input: { flex: 1, fontSize: text.sm, color: c.text, height: touch.min },
   cancelBtn: { paddingVertical: space[2] },
   cancelText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
   results: { padding: space[4], gap: space[4], paddingBottom: space[10] },
   sectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: space[2] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: c.border },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   rowIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   rowTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },

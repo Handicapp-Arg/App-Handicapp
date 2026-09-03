@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
@@ -14,6 +14,7 @@ import { useEncargadoDashboard, type EncargadoFeedItem } from '../hooks/use-dash
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { haptic } from '../lib/haptics';
 import { Routes, nav } from '../lib/routes';
+import { fechaHoraHumana } from '../lib/fechas';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 import { AppImage } from '../components/AppImage';
@@ -34,16 +35,9 @@ const KIND_META: Record<EncargadoFeedItem['kind'], { Icon: LucideIcon; label: st
   aviso:         { Icon: Megaphone,     label: 'Aviso' },
 };
 
-/** Hora en formato es-AR. Muestra la hora si es de hoy, si no fecha corta. */
+/** Hora humana: solo la hora si es de hoy ("14:30"), si no fecha corta ("vie 5 sep, 14:30"). */
 function formatAt(at: string): string {
-  const d = new Date(at);
-  if (Number.isNaN(d.getTime())) return '';
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) {
-    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  }
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+  return fechaHoraHumana(at).replace(/^Hoy /, '');
 }
 
 function StatCard({ value, label, s, alert }: { value: number; label: string; s: Styles; alert?: boolean }) {
@@ -122,7 +116,7 @@ export default function SupervisionScreen() {
             <AlertTriangle size={16} color={c.danger} strokeWidth={2.4} />
             <Text style={s.alertTitle}>Alertas</Text>
           </View>
-          <View style={s.group}>
+          <View>
             {alerts.map((item, i) => (
               <Animated.View key={`${item.horse_id}-${item.at}-${i}`} entering={FadeInDown.delay(Math.min(i, 6) * 40).duration(300)}>
                 {i > 0 && <View style={s.divider} />}
@@ -163,8 +157,9 @@ export default function SupervisionScreen() {
           ListHeaderComponent={header}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={s.divider} />}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(300)} style={[s.group, s.feedItemSpacing]}>
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(300)}>
               <FeedRow item={item} c={c} s={s} onPress={() => goHorse(item.horse_id)} />
             </Animated.View>
           )}
@@ -215,22 +210,21 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[1], marginBottom: space[2],
   },
 
-  group: {
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    ...(c.isDark ? {} : shadow.sm),
-  },
-  feedItemSpacing: { marginBottom: space[3] },
-
   feedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[3],
     paddingVertical: space[3],
-    paddingHorizontal: space[3] + 1,
+    minHeight: 52,
   },
-  feedRowAlert: { backgroundColor: `${c.danger}0d` },
+  // Tinte semántico de alerta (excepción legítima): radio propio y margen
+  // negativo para que el contenido quede alineado con las demás filas.
+  feedRowAlert: {
+    backgroundColor: `${c.danger}0d`,
+    borderRadius: radius.lg,
+    paddingHorizontal: space[2],
+    marginHorizontal: -space[2],
+  },
   feedIcon: {
     width: 40, height: 40, borderRadius: radius.md,
     justifyContent: 'center', alignItems: 'center', flexShrink: 0,
@@ -246,5 +240,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   thumb: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: c.surfaceAlt, flexShrink: 0 },
 
-  divider: { height: 1, backgroundColor: c.border, marginLeft: space[3] + 1 + 40 + space[3] },
+  divider: { height: 1, backgroundColor: c.border, marginLeft: 40 + space[3] },
 });

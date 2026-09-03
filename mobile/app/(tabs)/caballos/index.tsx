@@ -965,7 +965,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   catLabelActive: { color: c.brand },
   // ─── Filtros ───────────────────────────────────────────────────────────────
   filterRow: { paddingHorizontal: 12, paddingVertical: 6, gap: 8 },
-  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surfaceAlt },
   filterChipActive: { backgroundColor: c.brand, borderColor: c.brand },
   filterChipText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
   filterChipTextActive: { color: colors.white },

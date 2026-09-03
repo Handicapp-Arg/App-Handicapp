@@ -20,6 +20,7 @@ import { configurarRed } from '../lib/network';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 320, fade: true });
 import { OfflineBanner } from '../components/OfflineBanner';
+import { IngresoCurtain } from '../components/IngresoCurtain';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
@@ -135,6 +136,7 @@ export default function RootLayout() {
               </AuthProvider>
             )}
             {fontsLoaded && <OfflineBanner />}
+            <IngresoCurtain />
           </SafeAreaProvider>
         </ThemeProvider>
       </QueryClientProvider>

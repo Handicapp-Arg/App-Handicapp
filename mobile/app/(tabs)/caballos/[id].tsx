@@ -187,9 +187,9 @@ const ROUTINE_ICON: Record<string, { Icon: LucideIcon; color: string }> = {
   health_check:   { Icon: HeartPulse, color: '#ef4444' },
 };
 
-function InfoItem({ label, value, s }: { label: string; value: string; s: Styles }) {
+function InfoItem({ label, value, s, isLast }: { label: string; value: string; s: Styles; isLast?: boolean }) {
   return (
-    <View style={s.infoItem}>
+    <View style={[s.infoRow, isLast && s.infoRowLast]}>
       <Text style={s.infoLabel} numberOfLines={1}>{label}</Text>
       <Text style={s.infoValue} numberOfLines={2}>{value}</Text>
     </View>
@@ -257,10 +257,10 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
 }
 
 /* ─── EventCard ─── */
-function EventCard({ event, currentUserId, canEdit, c, s }: { event: Event; currentUserId?: string; canEdit?: boolean; c: ThemeColors; s: Styles }) {
+function EventCard({ event, currentUserId, canEdit, isLast, c, s }: { event: Event; currentUserId?: string; canEdit?: boolean; isLast?: boolean; c: ThemeColors; s: Styles }) {
   const date = fechaHumana(event.date);
   return (
-    <View style={s.eventCard}>
+    <View style={[s.eventRow, isLast && s.eventRowLast]}>
       <View style={s.eventHeader}>
         <EventTypeBadge type={event.type} />
         <Text style={s.eventDate}>{date}</Text>
@@ -680,11 +680,13 @@ export default function HorseDetailScreen() {
       {activeTab === 'info' && (
         <View style={{ gap: 0 }}>
 
-          {/* Info grid */}
+          {/* Datos del caballo — lista plana estilo iOS */}
           {infoItems.length > 0 && (
             <View style={s.section}>
-              <View style={s.infoGrid}>
-                {infoItems.map((item) => <InfoItem key={item.label} label={item.label} value={item.value} s={s} />)}
+              <View style={s.infoList}>
+                {infoItems.map((item, i) => (
+                  <InfoItem key={item.label} label={item.label} value={item.value} s={s} isLast={i === infoItems.length - 1} />
+                ))}
               </View>
             </View>
           )}
@@ -698,21 +700,21 @@ export default function HorseDetailScreen() {
                   <Text style={{ fontSize: 12, color: c.brand, fontWeight: '600' }}>Ver detalle →</Text>
                 </TouchableOpacity>
               </View>
-              <View style={s.financialCard}>
-                <View style={s.financialGrid}>
-                  <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
-                    <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
-                      {formatMoney(financial.total)}
-                    </Text>
-                    <Text style={s.financialStatLabel}>Total gastos</Text>
-                  </View>
-                  <View style={[s.financialStat, { backgroundColor: c.surfaceAlt }]}>
-                    <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
-                      {formatMoney(financial.average_monthly)}
-                    </Text>
-                    <Text style={s.financialStatLabel}>Promedio/mes</Text>
-                  </View>
+              <View style={s.financialGrid}>
+                <View style={[s.financialStat, { backgroundColor: c.brandSoft }]}>
+                  <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                    {formatMoney(financial.total)}
+                  </Text>
+                  <Text style={s.financialStatLabel}>Total gastos</Text>
                 </View>
+                <View style={[s.financialStat, { backgroundColor: c.surfaceAlt }]}>
+                  <Text style={s.financialStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                    {formatMoney(financial.average_monthly)}
+                  </Text>
+                  <Text style={s.financialStatLabel}>Promedio/mes</Text>
+                </View>
+              </View>
+              <View style={{ gap: space[2], marginTop: space[3] }}>
                 {(financial.by_category ?? []).slice(0, 4).map((cat) => {
                   const meta = EXPENSE_CATEGORY_META[cat.category] ?? { Icon: Package, color: '#6b7280' };
                   const MetaIcon = meta.Icon;
@@ -744,27 +746,24 @@ export default function HorseDetailScreen() {
               {!horseVets?.length ? (
                 <Text style={s.emptyText}>Sin veterinarios asignados</Text>
               ) : (
-                <View style={s.docsCard}>
-                  {horseVets.map((v, i) => (
-                    <View key={v.id}>
-                      {i > 0 && <View style={s.docDivider} />}
-                      <View style={s.docRow}>
-                        <Avatar name={v.user.name} size={36} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.docName}>{v.user.name}</Text>
-                          <Text style={{ fontSize: 11, color: c.textFaint }}>{v.user.email}</Text>
-                        </View>
-                        {can('horses', 'update') && (
-                          <TouchableOpacity
-                            onPress={() => handleRemoveVet(v.user_id, v.user.name)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Quitar a ${v.user.name}`}
-                          >
-                            <XCircle size={20} color={c.textFaint} strokeWidth={2} />
-                          </TouchableOpacity>
-                        )}
+                <View>
+                  {horseVets.map((v) => (
+                    <View key={v.id} style={s.personRow}>
+                      <Avatar name={v.user.name} size={36} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.docName}>{v.user.name}</Text>
+                        <Text style={{ fontSize: 11, color: c.textFaint }}>{v.user.email}</Text>
                       </View>
+                      {can('horses', 'update') && (
+                        <TouchableOpacity
+                          onPress={() => handleRemoveVet(v.user_id, v.user.name)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Quitar a ${v.user.name}`}
+                        >
+                          <XCircle size={20} color={c.textFaint} strokeWidth={2} />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -786,27 +785,24 @@ export default function HorseDetailScreen() {
               {!assignees?.length ? (
                 <Text style={s.emptyText}>Sin personas asignadas. Jinetes y peones solo ven los caballos que les asignes.</Text>
               ) : (
-                <View style={s.docsCard}>
-                  {assignees.map((m, i) => (
-                    <View key={m.id}>
-                      {i > 0 && <View style={s.docDivider} />}
-                      <View style={s.docRow}>
-                        <Avatar name={m.user.name} size={36} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.docName}>{m.user.name}</Text>
-                          <Text style={{ fontSize: 11, color: c.textFaint }}>{m.user.email}</Text>
-                        </View>
-                        {canManageTeam && (
-                          <TouchableOpacity
-                            onPress={() => handleRemoveMember(m.user_id, m.user.name)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Quitar a ${m.user.name}`}
-                          >
-                            <XCircle size={20} color={c.textFaint} strokeWidth={2} />
-                          </TouchableOpacity>
-                        )}
+                <View>
+                  {assignees.map((m) => (
+                    <View key={m.id} style={s.personRow}>
+                      <Avatar name={m.user.name} size={36} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.docName}>{m.user.name}</Text>
+                        <Text style={{ fontSize: 11, color: c.textFaint }}>{m.user.email}</Text>
                       </View>
+                      {canManageTeam && (
+                        <TouchableOpacity
+                          onPress={() => handleRemoveMember(m.user_id, m.user.name)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Quitar a ${m.user.name}`}
+                        >
+                          <XCircle size={20} color={c.textFaint} strokeWidth={2} />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -854,26 +850,23 @@ export default function HorseDetailScreen() {
             {!documents?.length ? (
               <Text style={s.emptyText}>Sin documentos adjuntos</Text>
             ) : (
-              <View style={s.docsCard}>
-                {documents.map((doc, i) => (
-                  <View key={doc.id}>
-                    {i > 0 && <View style={s.docDivider} />}
-                    <View style={s.docRow}>
-                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => { haptic.light(); Linking.openURL(doc.url); }} activeOpacity={0.7}>
-                        <View style={s.docIcon}><FileText size={18} color={colors.red500} strokeWidth={2} /></View>
-                        <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
+              <View>
+                {documents.map((doc) => (
+                  <View key={doc.id} style={s.personRow}>
+                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => { haptic.light(); Linking.openURL(doc.url); }} activeOpacity={0.7}>
+                      <View style={s.docIcon}><FileText size={18} color={colors.red500} strokeWidth={2} /></View>
+                      <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
+                    </TouchableOpacity>
+                    {can('horses', 'update') && (
+                      <TouchableOpacity
+                        onPress={() => handleDeleteDoc(doc.id, doc.name)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Eliminar documento ${doc.name}`}
+                      >
+                        <Trash2 size={20} color={c.textFaint} strokeWidth={2} />
                       </TouchableOpacity>
-                      {can('horses', 'update') && (
-                        <TouchableOpacity
-                          onPress={() => handleDeleteDoc(doc.id, doc.name)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Eliminar documento ${doc.name}`}
-                        >
-                          <Trash2 size={20} color={c.textFaint} strokeWidth={2} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                    )}
                   </View>
                 ))}
               </View>
@@ -893,14 +886,14 @@ export default function HorseDetailScreen() {
             {!weightRecords?.length ? (
               <Text style={s.emptyText}>Sin registros de peso</Text>
             ) : (
-              <View style={s.weightCard}>
+              <View>
                 <View style={s.weightLatest}>
                   <Text style={s.weightValue}>{Number(weightRecords[0].weight_kg)} kg</Text>
                   {weightRecords[0].body_condition && <Text style={s.weightCC}>CC: {weightRecords[0].body_condition}/9</Text>}
                   <Text style={s.weightDate}>{fechaHumana(weightRecords[0].date)}</Text>
                 </View>
-                {weightRecords.slice(1, 4).map((r) => (
-                  <View key={r.id} style={s.weightRow}>
+                {weightRecords.slice(1, 4).map((r, i, arr) => (
+                  <View key={r.id} style={[s.weightRow, i === arr.length - 1 && s.weightRowLast]}>
                     <Text style={s.weightRowValue}>{Number(r.weight_kg)} kg</Text>
                     <Text style={s.weightRowDate}>{fechaHumana(r.date)}</Text>
                   </View>
@@ -1012,7 +1005,7 @@ export default function HorseDetailScreen() {
             <View style={s.eventsList}>
               {sortedEvents.map((ev, index) => (
                 <Animated.View key={ev.id} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
-                  <EventCard event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} c={c} s={s} />
+                  <EventCard event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} isLast={index === sortedEvents.length - 1} c={c} s={s} />
                 </Animated.View>
               ))}
             </View>
@@ -1058,19 +1051,17 @@ export default function HorseDetailScreen() {
           {/* Libreta sanitaria */}
           <View style={s.healthBook}>
             <View style={s.healthBookHeader}>
-              <View style={s.healthBookIcon}>
-                <ShieldCheck size={13} color={c.brand} strokeWidth={2.4} />
-              </View>
+              <ShieldCheck size={14} color={c.brand} strokeWidth={2.4} />
               <Text style={s.healthBookTitle}>Libreta sanitaria</Text>
             </View>
-            {SANITARY_DISEASES.map((d) => {
+            {SANITARY_DISEASES.map((d, i) => {
               const last = medicalRecords?.filter((r) => r.type === 'sanidad').find((r) => d.match.test(r.name)) ?? null;
               const nextDue = last?.next_due ?? null;
               const status = healthStatusFromNextDue(nextDue);
               const meta = healthStatusMeta[status];
               const StatusIcon = meta.Icon;
               return (
-                <View key={d.key} style={s.healthRow}>
+                <View key={d.key} style={[s.healthRow, i === SANITARY_DISEASES.length - 1 && s.healthRowLast]}>
                   <View style={[s.healthAccent, { backgroundColor: meta.dot }]} />
                   <View style={[s.healthIconWrap, { backgroundColor: meta.bg }]}>
                     <StatusIcon size={16} color={meta.text} strokeWidth={2.2} />
@@ -1127,11 +1118,12 @@ export default function HorseDetailScreen() {
           {!medicalRecords?.length ? (
             <Text style={s.emptyText}>Sin registros médicos. Agregá vacunas, desparasitaciones y tratamientos.</Text>
           ) : (
-            <View style={{ gap: 8 }}>
+            <View>
               {medicalRecords.map((rec, index) => {
                 const mc = MEDICAL_TYPE_COLORS[rec.type] ?? MEDICAL_TYPE_COLORS.tratamiento;
+                const isLast = index === medicalRecords.length - 1;
                 return (
-                  <Animated.View key={rec.id} style={s.medCard} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
+                  <Animated.View key={rec.id} style={[s.medRow, isLast && s.medRowLast]} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
                     <View style={s.medCardTop}>
                       <View style={[s.medTypeBadge, { backgroundColor: mc.bg }]}>
                         <Text style={[s.medTypeText, { color: mc.text }]}>{MEDICAL_TYPE_LABELS[rec.type] ?? rec.type}</Text>
@@ -1709,7 +1701,7 @@ export default function HorseDetailScreen() {
 
               {/* Por categoría */}
               {(financial.by_category ?? []).length > 0 && (
-                <View style={[s.financialCard, { marginTop: 14 }]}>
+                <View style={{ marginTop: space[6] }}>
                   <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Por categoría</Text>
                   {financial.by_category.map((cat) => {
                     const meta = EXPENSE_CATEGORY_META[cat.category] ?? { Icon: Package, color: '#6b7280' };
@@ -1741,7 +1733,7 @@ export default function HorseDetailScreen() {
 
               {/* Evolución mensual */}
               {(financial.monthly ?? []).length > 0 && (
-                <View style={[s.financialCard, { marginTop: 14 }]}>
+                <View style={{ marginTop: space[6] }}>
                   <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Evolución mensual</Text>
                   {(financial.monthly ?? []).slice(0, 6).map((m) => {
                     const [year, month] = m.month.split('-');
@@ -1760,13 +1752,14 @@ export default function HorseDetailScreen() {
 
               {/* Últimos gastos */}
               {(financial.recent_expenses ?? []).length > 0 && (
-                <View style={[s.financialCard, { marginTop: 14 }]}>
+                <View style={{ marginTop: space[6] }}>
                   <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Últimos gastos</Text>
-                  {financial.recent_expenses.map((exp) => {
+                  {financial.recent_expenses.map((exp, i, arr) => {
                     const meta = EXPENSE_CATEGORY_META[exp.expense_category ?? ''] ?? { Icon: Package, color: '#6b7280' };
                     const MetaIcon = meta.Icon;
+                    const isLast = i === arr.length - 1;
                     return (
-                      <View key={exp.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.border }}>
+                      <View key={exp.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: isLast ? 0 : 1, borderBottomColor: c.border }}>
                         <MetaIcon size={18} color={meta.color} strokeWidth={2} />
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 13, fontWeight: '600', color: c.text }} numberOfLines={1}>{exp.description}</Text>
@@ -1844,14 +1837,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   emptyBox: { alignItems: 'center', paddingVertical: 32, gap: 8 },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: c.text },
 
-  /* Info */
-  infoGrid: { backgroundColor: c.surface, borderRadius: 16, padding: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8, ...(c.isDark ? {} : shadow.sm) },
-  infoItem: { width: '47%', backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 10 },
-  infoLabel: { fontSize: 10, fontWeight: '600', color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  infoValue: { fontSize: 13, fontWeight: '600', color: c.text, marginTop: 2 },
+  /* Info — lista plana estilo iOS, fila key/value */
+  infoList: { gap: 0 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: space[3], gap: space[4], borderBottomWidth: 1, borderBottomColor: c.border },
+  infoRowLast: { borderBottomWidth: 0 },
+  infoLabel: { fontSize: text.sm, color: c.textMuted },
+  infoValue: { fontSize: text.base, fontWeight: '600', color: c.text, textAlign: 'right', flexShrink: 1 },
 
   /* Financial */
-  financialCard: { backgroundColor: c.surface, borderRadius: 16, padding: 14, gap: 10, ...(c.isDark ? {} : shadow.sm) },
   financialGrid: { flexDirection: 'row', gap: 10 },
   financialStat: { flex: 1, borderRadius: 12, padding: 12 },
   financialStatValue: { fontSize: 18, fontWeight: '800', color: c.text },
@@ -1863,26 +1856,24 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   barFill: { height: '100%', backgroundColor: c.brand, borderRadius: 999 },
   barValue: { width: 64, fontSize: 10, fontWeight: '600', color: c.textMuted, textAlign: 'right' },
 
-  /* Docs */
-  docsCard: { backgroundColor: c.surface, borderRadius: 16, overflow: 'hidden', ...(c.isDark ? {} : shadow.sm) },
-  docRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10 },
+  /* Docs / personas — filas planas, sin envoltorio de tarjeta (patrón Más) */
+  personRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: 10 },
   docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   docName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.text },
-  docDivider: { height: 1, backgroundColor: c.border, marginHorizontal: 12 },
 
-  /* Peso */
-  weightCard: { backgroundColor: c.surface, borderRadius: 16, padding: 12, ...(c.isDark ? {} : shadow.sm) },
-  weightLatest: { backgroundColor: c.isDark ? 'rgba(234,88,12,0.14)' : '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 8 },
+  /* Peso — último valor como dato destacado, historial como filas planas */
+  weightLatest: { backgroundColor: c.isDark ? 'rgba(234,88,12,0.14)' : '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 4 },
   weightValue: { fontSize: 28, fontWeight: '800', color: c.isDark ? '#fb923c' : '#c2410c' },
   weightCC: { fontSize: 12, color: c.isDark ? '#fdba74' : '#ea580c', marginTop: 2 },
   weightDate: { fontSize: 11, color: c.isDark ? '#fdba74' : '#9a3412', marginTop: 2 },
-  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: c.border },
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border },
+  weightRowLast: { borderBottomWidth: 0 },
   weightRowValue: { fontSize: 14, fontWeight: '600', color: c.text },
   weightRowDate: { fontSize: 12, color: c.textFaint },
 
   /* Rutina */
   routineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, backgroundColor: c.surface, ...(c.isDark ? {} : shadow.sm) },
+  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, backgroundColor: c.surfaceAlt },
   routineItemChecked: { backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
   routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: c.textMuted },
   routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d' },
@@ -1895,9 +1886,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   routineTrendBar: { width: 14, borderRadius: 4, minHeight: 4 },
   routineTrendLabel: { fontSize: 9, color: c.textFaint, fontWeight: weight.medium },
 
-  /* Eventos */
-  eventsList: { gap: 8 },
-  eventCard: { backgroundColor: c.surface, borderRadius: 16, padding: 14, gap: 6, ...(c.isDark ? {} : shadow.sm) },
+  /* Eventos — filas planas separadas por hairline, no tarjetas apiladas */
+  eventsList: { gap: 0 },
+  eventRow: { paddingVertical: space[4], gap: 6, borderBottomWidth: 1, borderBottomColor: c.border },
+  eventRowLast: { borderBottomWidth: 0 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: 11, color: c.textFaint },
   eventDesc: { fontSize: text.base, color: c.text, lineHeight: 22 },
@@ -1918,12 +1910,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   commentInput: { flex: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: c.text, backgroundColor: c.surfaceAlt, minHeight: 36, maxHeight: 80 },
   commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
-  /* Médico */
-  healthBook: { backgroundColor: c.surfaceAlt, borderRadius: 16, padding: 12, marginBottom: 12, gap: 8 },
+  /* Médico — la libreta se aplana (sin envoltorio de tarjeta), pero cada fila
+     conserva su color de estado: es información crítica, tiene que seguir gritando. */
+  healthBook: { marginBottom: space[5], gap: 8 },
   healthBookHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
-  healthBookIcon: { width: 22, height: 22, borderRadius: 7, backgroundColor: c.brandSoft, justifyContent: 'center', alignItems: 'center' },
   healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: c.surface, borderRadius: 12, paddingLeft: 12, paddingRight: 10, paddingVertical: 8, overflow: 'hidden' },
+  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: c.surface, borderRadius: 12, paddingLeft: 12, paddingRight: 10, paddingVertical: 10, overflow: 'hidden', ...(c.isDark ? {} : shadow.sm) },
+  healthRowLast: {},
   healthAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
   healthIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   healthName: { fontSize: 13, fontWeight: '600', color: c.text },
@@ -1937,7 +1930,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: space[3], marginTop: 2 },
   certifyBtnLocked: { backgroundColor: c.surfaceAlt },
   certifyBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
-  medCard: { backgroundColor: c.surface, borderRadius: 16, padding: 12, ...(c.isDark ? {} : shadow.sm) },
+  medRow: { paddingVertical: space[3], gap: 6, borderBottomWidth: 1, borderBottomColor: c.border },
+  medRowLast: { borderBottomWidth: 0 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   medTypeText: { fontSize: 10, fontWeight: '700' },

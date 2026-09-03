@@ -659,11 +659,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   // Legend
   legendBar: {
-    backgroundColor: c.surface,
     borderTopWidth: 1,
     borderTopColor: c.border,
     paddingHorizontal: space[4],
-    paddingTop: space[2] + 2,
+    paddingTop: space[3],
   },
   legendTitle: {
     fontSize: 9,

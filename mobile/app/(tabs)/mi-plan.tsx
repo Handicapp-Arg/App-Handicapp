@@ -588,16 +588,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   loadingBox: {
     height: 100, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    ...(c.isDark ? {} : shadow.sm),
   },
   emptyText: { fontSize: text.sm, color: c.textFaint, paddingHorizontal: space[1] },
 
-  /* Plan actual (destacado en cuero) */
-  currentCard: {
-    backgroundColor: c.brandSoft, borderRadius: radius.xl,
-    padding: space[4], gap: space[4], ...shadow.sm,
-  },
+  /* Plan actual — aplanado: vive directo sobre c.bg, el ícono en cuero es el acento */
+  currentCard: { gap: space[4] },
   currentHeader: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   currentIcon: {
     width: 44, height: 44, borderRadius: radius.md,

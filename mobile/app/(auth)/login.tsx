@@ -1,8 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Keyboard,
-} from 'react-native';
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Keyboard, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn, FadeInDown, useSharedValue, useAnimatedStyle,
@@ -14,10 +13,15 @@ import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { AuthBackground } from '../../components/auth-ui';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
+import { mostrarCortina, ocultarCortina } from '../../components/IngresoCurtain';
 import { BottomSheet } from '../../components/BottomSheet';
 import { HorseshoeH } from '../../components/icons/equine';
 import { fontFamily } from '../../styles/fonts';
+
+
 
 const DEV_USERS = [
   { email: 'admin@handicapp.com',           password: 'handicapp2026', name: 'Alejo Admin',          role: 'Administrador' },
@@ -58,37 +62,8 @@ function DevUserPicker({ onSelect, s }: { onSelect: (email: string, password: st
 }
 
 
-/** Overlay de ingreso: el isotipo late y gira suave mientras la sesión abre. */
-function LoginOverlay({ c }: { c: ThemeColors }) {
-  const scale = useSharedValue(1);
-  const spin = useSharedValue(0);
 
-  useEffect(() => {
-    scale.value = withRepeat(
-      withSequence(
-        withTiming(1.12, { duration: 620, easing: Easing.inOut(Easing.quad) }),
-        withTiming(1, { duration: 620, easing: Easing.inOut(Easing.quad) }),
-      ),
-      -1,
-    );
-    spin.value = withRepeat(withTiming(360, { duration: 2600, easing: Easing.linear }), -1);
-  }, []);
 
-  const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { rotate: `${spin.value}deg` }],
-  }));
-
-  return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', zIndex: 100 }]}
-      entering={FadeIn.duration(220)}
-    >
-      <Animated.View style={logoStyle}>
-        <HorseshoeH size={64} color={c.brand} />
-      </Animated.View>
-    </Animated.View>
-  );
-}
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -110,10 +85,14 @@ export default function LoginScreen() {
     setError('');
     setLoading(true);
     haptic.light();
+    mostrarCortina();
     try {
       await login(email.trim().toLowerCase(), password);
       haptic.success();
+      // La navegación al Home ya ocurrió por debajo: revelarla con calma.
+      setTimeout(() => ocultarCortina(), 250);
     } catch {
+      ocultarCortina();
       setError('Credenciales inválidas. Verificá tu email y contraseña.');
       haptic.error();
     } finally {
@@ -123,8 +102,8 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <AuthBackground c={c} />
-      {loading && <LoginOverlay c={c} />}
+      <AuthDarkBackground />
+
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -139,9 +118,9 @@ export default function LoginScreen() {
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
-          {/* Marca */}
+          {/* Marca: blanca, grande, respirando sobre un halo cuero */}
           <Animated.View style={s.header} entering={FadeIn.duration(500)}>
-            <HorseshoeH size={52} color={c.brand} />
+            <BrandMark />
           </Animated.View>
 
           {/* Título */}
@@ -164,7 +143,7 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Correo electrónico"
-                placeholderTextColor={c.textFaint}
+                placeholderTextColor={D.textFaint}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -185,7 +164,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Contraseña"
-                placeholderTextColor={c.textFaint}
+                placeholderTextColor={D.textFaint}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -204,8 +183,8 @@ export default function LoginScreen() {
                 accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword
-                  ? <EyeOff size={19} color={c.textFaint} />
-                  : <Eye size={19} color={c.textFaint} />
+                  ? <EyeOff size={19} color={D.textFaint} />
+                  : <Eye size={19} color={D.textFaint} />
                 }
               </Pressable>
             </View>
@@ -248,7 +227,7 @@ export default function LoginScreen() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: c.bg },
+  root: { flex: 1, backgroundColor: D.bgBottom },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 26 },
 
@@ -257,9 +236,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   intro: { marginBottom: 26 },
   title: {
     fontSize: 32, fontWeight: '700', fontFamily: fontFamily.semibold,
-    letterSpacing: -0.8, color: c.text,
+    letterSpacing: -0.8, color: D.text,
   },
-  subtitle: { fontSize: 15, color: c.textMuted, marginTop: 6, letterSpacing: -0.1 },
+  subtitle: { fontSize: 15, color: D.textMuted, marginTop: 6, letterSpacing: -0.1 },
 
   form: { gap: 12 },
 
@@ -272,23 +251,23 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inputWrap: {
     height: 56, borderRadius: 14,
     borderWidth: 1.5, borderColor: 'transparent',
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    backgroundColor: D.field,
     justifyContent: 'center',
   },
-  inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },
+  inputWrapFocused: { borderColor: D.brand, backgroundColor: D.fieldFocus },
   inputRow: { flexDirection: 'row', alignItems: 'center' },
   input: {
     height: '100%', paddingHorizontal: 16,
-    fontSize: 16.5, color: c.text, letterSpacing: -0.2,
+    fontSize: 16.5, color: D.text, letterSpacing: -0.2,
   },
   inputFlex: { flex: 1 },
   eyeBtn: { paddingHorizontal: 16, height: '100%', justifyContent: 'center' },
 
   forgotBtn: { alignSelf: 'flex-end', paddingVertical: 2 },
-  forgotText: { fontSize: 13.5, color: c.textMuted, fontWeight: '500' },
+  forgotText: { fontSize: 13.5, color: D.textMuted, fontWeight: '500' },
 
   btn: {
-    backgroundColor: c.brand, borderRadius: 14, height: 56,
+    backgroundColor: D.brand, borderRadius: 14, height: 56,
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   btnPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
@@ -296,8 +275,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btnText: { color: colors.white, fontSize: 16.5, fontWeight: '700', letterSpacing: -0.2 },
 
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
-  footerText: { fontSize: 14.5, color: c.textMuted },
-  link: { fontSize: 14.5, fontWeight: '700', color: c.brand },
+  footerText: { fontSize: 14.5, color: D.textMuted },
+  link: { fontSize: 14.5, fontWeight: '700', color: D.brand },
 
   devBtn: {
     alignItems: 'center', justifyContent: 'center',

@@ -4,7 +4,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useMemo, useEffect } from 'react';
 import {
@@ -23,7 +22,7 @@ import { Routes } from '../../lib/routes';
 import { Avatar } from '../../components/Avatar';
 import { RoleBadge } from '../../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow, touch } from '../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { usePlanStatus, useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../hooks/use-plan';
 import { VetVerifiedBadge, isVetVerified } from '../../components/VerifiedBadge';
 import { useToast } from '../../components/Toast';
@@ -56,21 +55,16 @@ function PlanCard({ plan, horseCount, horseLimit, isLimited, c, s }: {
 
   if (isPro) {
     return (
-      <LinearGradient
-        colors={['#241910', '#5f3f18', '#a87330']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={s.planPro}
-      >
+      <View style={s.planPro}>
         <View style={s.planProTop}>
           <View style={s.planProBadge}>
-            <Crown size={13} color="#241910" strokeWidth={2.5} />
+            <Crown size={13} color={colors.white} strokeWidth={2.5} />
             <Text style={s.planProBadgeText}>PRO</Text>
           </View>
         </View>
         <Text style={s.planProTitle}>Acceso ilimitado</Text>
         <Text style={s.planProSub}>{horseCount} caballos · todas las funciones</Text>
-      </LinearGradient>
+      </View>
     );
   }
 
@@ -661,7 +655,7 @@ function VetLicenseSection({ user, c, s }: {
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
-  const { c } = useTheme();
+  const { c, preference, setPreference } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: planStatus } = usePlanStatus();
   const { data: adminUsers, isLoading: loadingAdminUsers } = useAdminPlanUsers(user?.role === 'admin');
@@ -765,45 +759,66 @@ export default function PerfilScreen() {
             </View>
           )}
 
+          {/* Apariencia (movida desde Más: la config personal vive en Perfil) */}
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Apariencia</Text>
+            <View style={s.themeSegment}>
+              {([['auto','Automático'],['light','Claro'],['dark','Oscuro']] as const).map(([value,label]) => {
+                const active = preference === value;
+                return (
+                  <TouchableOpacity
+                    key={value}
+                    style={[s.themeSegmentBtn, active && s.themeSegmentBtnActive]}
+                    onPress={() => { haptic.selection(); setPreference(value); }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Tema ${label}`}
+                  >
+                    <Text style={[s.themeSegmentText, active && s.themeSegmentTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Account settings */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>Mi cuenta</Text>
-            <View style={s.accountCard}>
-              <TouchableOpacity
-                style={s.accountRow}
-                onPress={() => setShowEditProfile(true)}
-                activeOpacity={0.8}
-              >
-                <User size={18} color={c.text} strokeWidth={2} />
-                <View style={{ flex: 1 }}>
-                  <Text style={s.accountRowLabel}>Editar datos personales</Text>
-                  <Text style={s.accountRowSub}>{user.name} · {user.email}</Text>
-                </View>
-                <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-              </TouchableOpacity>
-              <View style={s.accountDivider} />
-              <TouchableOpacity
-                style={s.accountRow}
-                onPress={() => setShowChangePassword(true)}
-                activeOpacity={0.8}
-              >
-                <Lock size={18} color={c.text} strokeWidth={2} />
-                <View style={{ flex: 1 }}>
-                  <Text style={s.accountRowLabel}>Cambiar contraseña</Text>
-                </View>
-                <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={s.accountRow}
+              onPress={() => setShowEditProfile(true)}
+              activeOpacity={0.8}
+            >
+              <User size={18} color={c.text} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.accountRowLabel}>Editar datos personales</Text>
+                <Text style={s.accountRowSub}>{user.name} · {user.email}</Text>
+              </View>
+              <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
+            </TouchableOpacity>
+            <View style={s.accountDivider} />
+            <TouchableOpacity
+              style={s.accountRow}
+              onPress={() => setShowChangePassword(true)}
+              activeOpacity={0.8}
+            >
+              <Lock size={18} color={c.text} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.accountRowLabel}>Cambiar contraseña</Text>
+              </View>
+              <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
+            </TouchableOpacity>
           </View>
+
+          {/* Color de avatar — junto a Mi cuenta: ambas son identidad personal */}
+          <AvatarColorSection user={user} c={c} s={s} />
 
           {/* Contacto / WhatsApp */}
           <ContactSection user={user} c={c} s={s} />
 
           {/* Matrícula profesional (solo veterinarios) */}
           {user.role === 'veterinario' && <VetLicenseSection user={user} c={c} s={s} />}
-
-          {/* Color de avatar */}
-          <AvatarColorSection user={user} c={c} s={s} />
 
           {/* Logout */}
           <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
@@ -838,6 +853,20 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
+  themeSegment: {
+    flexDirection: 'row', gap: space[1], padding: 3,
+    backgroundColor: c.surfaceAlt, borderRadius: radius.lg,
+  },
+  themeSegmentBtn: {
+    flex: 1, minHeight: touch.min, borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  themeSegmentBtnActive: {
+    backgroundColor: c.surface,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 }),
+  },
+  themeSegmentText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
+  themeSegmentTextActive: { color: c.text, fontWeight: weight.semibold },
 
   hero: {
     alignItems: 'center',
@@ -873,18 +902,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
   },
 
-  // Plan Pro (gradiente premium)
-  planPro: { borderRadius: radius.xl, padding: space[4] + 2, overflow: 'hidden' },
-  planProTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space[2] },
-  planProBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#e8c787', borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3 },
-  planProBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: '#241910', letterSpacing: 1 },
-  planProTitle: { fontSize: text.lg, fontWeight: weight.bold, color: colors.white },
-  planProSub: { fontSize: text.xs, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  // Plan Free
-  planFree: {
-    backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2],
-    ...(c.isDark ? {} : shadow.sm),
-  },
+  // Plan Pro — aplanado: identidad de marca solo en el badge puntual
+  planPro: { gap: space[2] },
+  planProTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  planProBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: c.brand, borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3 },
+  planProBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white, letterSpacing: 1 },
+  planProTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
+  planProSub: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
+  // Plan Free — aplanado
+  planFree: { gap: space[2] },
   planFreeBadge: { backgroundColor: c.surfaceAlt, borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
   planFreeBadgeText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
   planFreeUsage: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
@@ -899,9 +925,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   planUpgradeText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
 
   adminRow: {
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    padding: space[4], gap: space[2] + 2,
-    ...(c.isDark ? {} : shadow.sm),
+    gap: space[2] + 2,
+    paddingVertical: space[3],
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
   },
   adminRowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
   adminRowName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
@@ -939,31 +965,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    paddingVertical: space[3] + 2, minHeight: touch.min,
-    marginHorizontal: space[4], marginTop: space[5],
-    ...(c.isDark ? {} : shadow.sm),
+    minHeight: touch.min, marginTop: space[2],
   },
   logoutText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.danger },
 
-  accountCard: {
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    overflow: 'hidden',
-    ...(c.isDark ? {} : shadow.sm),
-  },
   accountRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    paddingHorizontal: space[4], paddingVertical: space[4],
+    minHeight: 52, paddingVertical: space[2] + 2,
   },
   accountRowLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   accountRowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
-  accountDivider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
+  accountDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
 
-  colorCard: {
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    padding: space[4], gap: space[4],
-    ...(c.isDark ? {} : shadow.sm),
-  },
+  colorCard: { gap: space[4] },
   colorPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   colorPreview: {
     width: 56, height: 56, borderRadius: 28,
@@ -985,11 +999,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   colorDotAuto: { backgroundColor: c.surfaceAlt },
   colorDotAutoText: { fontSize: 10, fontWeight: weight.bold, color: c.textMuted },
 
-  vetCard: {
-    backgroundColor: c.surface, borderRadius: radius.lg,
-    padding: space[4], gap: space[3],
-    ...(c.isDark ? {} : shadow.sm),
-  },
+  vetCard: { gap: space[3] },
   vetStatusRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3],

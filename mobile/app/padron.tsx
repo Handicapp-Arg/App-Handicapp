@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { X, CheckCircle2, Info, ChevronLeft, Search, Globe } from 'lucide-react-native';
+import { X, CheckCircle2, Info, ChevronLeft, ChevronRight, Search, Globe } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Routes } from '../lib/routes';
 import { colors } from '../lib/colors';
@@ -79,27 +79,30 @@ function RecordCard({ record, onPress, cs, c }: { record: HorseRecord; onPress: 
   const st = record.ownership_status ?? 'unverified';
   const ss = statusStyle(st, c);
   return (
-    <TouchableOpacity style={cs.card} onPress={onPress} activeOpacity={0.8}>
-      <View style={cs.cardHeader}>
-        <Text style={cs.cardName} numberOfLines={1}>{record.name}</Text>
-        <View style={[cs.badge, { backgroundColor: ss.bg }]}>
-          <View style={[cs.badgeDot, { backgroundColor: ss.color }]} />
-          <Text style={[cs.badgeText, { color: ss.color }]}>{STATUS_LABEL[st]}</Text>
+    <TouchableOpacity style={cs.row} onPress={onPress} activeOpacity={0.6}>
+      <View style={{ flex: 1 }}>
+        <View style={cs.cardHeader}>
+          <Text style={cs.cardName} numberOfLines={1}>{record.name}</Text>
+          <View style={[cs.badge, { backgroundColor: ss.bg }]}>
+            <View style={[cs.badgeDot, { backgroundColor: ss.color }]} />
+            <Text style={[cs.badgeText, { color: ss.color }]}>{STATUS_LABEL[st]}</Text>
+          </View>
         </View>
+        <View style={cs.cardMeta}>
+          {record.birth_year != null && <Text style={cs.metaItem}>{record.birth_year}</Text>}
+          {record.sex && <Text style={cs.metaItem}>{SEX_LABEL[record.sex]}</Text>}
+          {record.country_code && <Text style={cs.metaItem}>{record.country_code}</Text>}
+          {record.color && <Text style={cs.metaItem} numberOfLines={1}>{record.color}</Text>}
+        </View>
+        {(record.sire_name || record.dam_name) && (
+          <Text style={cs.cardPedigree} numberOfLines={1}>
+            {record.sire_name ? `♂ ${record.sire_name}` : ''}
+            {record.sire_name && record.dam_name ? '   ' : ''}
+            {record.dam_name ? `♀ ${record.dam_name}` : ''}
+          </Text>
+        )}
       </View>
-      <View style={cs.cardMeta}>
-        {record.birth_year != null && <Text style={cs.metaItem}>{record.birth_year}</Text>}
-        {record.sex && <Text style={cs.metaItem}>{SEX_LABEL[record.sex]}</Text>}
-        {record.country_code && <Text style={cs.metaItem}>{record.country_code}</Text>}
-        {record.color && <Text style={cs.metaItem} numberOfLines={1}>{record.color}</Text>}
-      </View>
-      {(record.sire_name || record.dam_name) && (
-        <Text style={cs.cardPedigree} numberOfLines={1}>
-          {record.sire_name ? `♂ ${record.sire_name}` : ''}
-          {record.sire_name && record.dam_name ? '   ' : ''}
-          {record.dam_name ? `♀ ${record.dam_name}` : ''}
-        </Text>
-      )}
+      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} style={{ marginLeft: space[2] }} />
     </TouchableOpacity>
   );
 }
@@ -351,6 +354,7 @@ export default function PadronScreen() {
             <Text style={s.liveSectionTitle}>{liveItems.length} en el Stud Book Argentino</Text>
             {liveItems.map((record, index) => (
               <Animated.View key={record.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+                {index > 0 && <View style={cardS.divider} />}
                 <RecordCard record={record} onPress={() => handleSelect(record.id)} cs={cardS} c={c} />
               </Animated.View>
             ))}
@@ -417,6 +421,7 @@ export default function PadronScreen() {
           )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={cardS.divider} />}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
           }
@@ -446,29 +451,23 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space[4],
-    paddingVertical: space[3],
-    backgroundColor: c.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
+    paddingTop: space[3],
+    paddingBottom: space[2],
   },
   backBtn: { padding: space[1], marginRight: space[2] },
   title: { fontSize: text.xl, fontWeight: weight.bold, color: c.text },
   subtitle: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
   searchWrap: {
-    backgroundColor: c.surface,
     paddingHorizontal: space[4],
     paddingBottom: space[3],
-    paddingTop: space[2],
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: c.surfaceAlt,
+    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
     borderRadius: radius.lg,
     paddingHorizontal: space[3],
-    height: touch.min,
+    height: touch.field,
   },
   searchInput: { flex: 1, fontSize: text.sm, color: c.text },
   totalText: { fontSize: text.xs, color: c.textFaint, marginTop: space[2], paddingLeft: space[1] },
@@ -505,13 +504,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 type CardStyles = ReturnType<typeof makeCardStyles>;
 
 const makeCardStyles = (c: ThemeColors) => StyleSheet.create({
-  card: {
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    padding: space[4],
-    marginBottom: space[3],
-    ...(c.isDark ? {} : shadow.sm),
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: space[3],
   },
+  divider: { height: 1, backgroundColor: c.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: space[2] },
   cardName: { flex: 1, fontSize: text.base, fontWeight: weight.bold, color: c.text },
   badge: {

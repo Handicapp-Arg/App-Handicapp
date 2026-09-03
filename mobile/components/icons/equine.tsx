@@ -12,7 +12,7 @@ export function HorseIcon({ size = 24, color = '#000' }: Props) {
 
 // Isotipo LOCAL (herradura + H). Antes se descargaba de Cloudinary en runtime:
 // sin señal, la marca desaparecía del login y del nav.
-const ISOTIPO_LOCAL = require('../../assets/splash-icon-solo.png');
+const ISOTIPO_LOCAL = require('../../assets/isotipo.png');
 
 /** Isotipo real de la marca (herradura + H), recoloreado con el color del contexto. */
 export function BrandIsotipo({ size = 24, color = '#000' }: Props) {
@@ -61,9 +61,7 @@ export function HorseHeadOutline({ size = 24, color = '#000', strokeWidth = 26 }
   );
 }
 
-/** Caballo para el nav inferior: el glifo profesional de Phosphor.
- *  El contorno artesanal anterior (path de FontAwesome con trazo escalado a
- *  mano) se veía deforme en tamaños chicos. */
+/** Caballo para el nav inferior: el glifo profesional de Phosphor. */
 export function HorseHeadNav({ size = 24, color = '#000', strokeWidth = 2 }: Props) {
-  return <Horse size={size} color={color} weight={strokeWidth >= 2.3 ? 'bold' : 'regular'} />;
+  return <Horse size={size} color={color} weight={strokeWidth >= 2 ? 'regular' : 'light'} />;
 }

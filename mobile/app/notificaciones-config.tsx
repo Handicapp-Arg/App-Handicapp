@@ -17,7 +17,7 @@ import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { Routes } from '../lib/routes';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight, shadow, touch } from '../styles/tokens';
+import { space, text, radius, weight, touch } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 import {
   useNotificationSettings, useUpdateNotificationSettings, useEventTypes,
@@ -329,9 +329,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: space[4],
     paddingVertical: space[3],
-    backgroundColor: c.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
   },
   backBtn: {
     width: 32, height: 32,
@@ -356,24 +353,21 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   list: {
     padding: space[4],
-    gap: space[4],
+    gap: space[6],
     paddingBottom: space[10],
   },
 
   card: {
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    ...shadow.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+    paddingTop: space[4],
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space[3],
-    padding: space[4],
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-    backgroundColor: c.surfaceAlt,
+    paddingHorizontal: space[4],
+    paddingBottom: space[3],
   },
   cardTitle: {
     fontSize: text.sm,
@@ -409,7 +403,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   masterRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    padding: space[4],
+    paddingHorizontal: space[4],
   },
   masterLeft: { flexDirection: 'row', alignItems: 'center', gap: space[3], flex: 1 },
   masterIcon: {

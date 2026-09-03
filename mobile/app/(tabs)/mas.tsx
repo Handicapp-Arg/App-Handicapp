@@ -1,19 +1,18 @@
 import { useMemo } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Gavel, GitBranch, BookOpen, FileText, Receipt, CalendarClock,
   Inbox, Building2, Settings, ShieldCheck, ChevronRight,
-  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, QrCode, type LucideIcon,
-} from 'lucide-react-native';
+  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, QrCode, type LucideIcon, LogOut, Newspaper } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { Avatar } from '../../components/Avatar';
-import { useTheme, type ThemeColors, type ThemePreference } from '../../lib/theme';
+import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow, touch } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
 
@@ -31,11 +30,10 @@ function MenuRow({ item, onPress, c, s }: { item: MenuItem; onPress: () => void;
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.6}>
       <View style={s.iconWrap}>
-        <Icon size={22} color={c.text} strokeWidth={2} />
+        <Icon size={22} color={c.text} strokeWidth={1.7} />
       </View>
       <View style={s.rowBody}>
         <Text style={s.rowLabel}>{item.label}</Text>
-        <Text style={s.rowDesc} numberOfLines={1}>{item.desc}</Text>
       </View>
       {item.badge != null && item.badge > 0 && (
         <View style={s.badge}>
@@ -55,7 +53,6 @@ function Section({ title, items, onPress, c, s }: { title: string; items: MenuIt
       <View style={s.sectionCard}>
         {items.map((item, idx) => (
           <Animated.View key={item.path} entering={FadeInDown.duration(320).delay(Math.min(idx, 8) * 45)}>
-            {idx > 0 && <View style={s.divider} />}
             <MenuRow item={item} onPress={() => { haptic.light(); onPress(item.path); }} c={c} s={s} />
           </Animated.View>
         ))}
@@ -64,40 +61,10 @@ function Section({ title, items, onPress, c, s }: { title: string; items: MenuIt
   );
 }
 
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'auto', label: 'Automático' },
-  { value: 'light', label: 'Claro' },
-  { value: 'dark', label: 'Oscuro' },
-];
-
-function AppearanceSection({ c, s }: { c: ThemeColors; s: Styles }) {
-  const { preference, setPreference } = useTheme();
-  return (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>Apariencia</Text>
-      <View style={s.segment}>
-        {THEME_OPTIONS.map((opt) => {
-          const active = preference === opt.value;
-          return (
-            <TouchableOpacity
-              key={opt.value}
-              style={[s.segmentBtn, active && s.segmentBtnActive]}
-              onPress={() => { haptic.selection(); setPreference(opt.value); }}
-              activeOpacity={0.85}
-            >
-              <Text style={[s.segmentText, active && s.segmentTextActive]}>{opt.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 export default function MasScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: planStatus } = usePlanStatus();
@@ -112,6 +79,12 @@ export default function MasScreen() {
   const push = (path: string) => nav.push(router, path);
 
   const principal: MenuItem[] = [
+    {
+      icon: Newspaper,
+      label: 'Muro',
+      desc: 'Novedades y actividad de la comunidad',
+      path: '/muro',
+    },
     {
       icon: QrCode,
       label: 'Escanear QR',
@@ -142,12 +115,12 @@ export default function MasScreen() {
       desc: 'Registro oficial, pedigree y propietarios',
       path: Routes.padron,
     },
-    {
+    ...(!isProp ? [{
       icon: CalendarClock,
       label: 'Eventos',
       desc: 'Historial de carreras y actividades',
       path: Routes.tabsEventos,
-    },
+    }] : []),
     {
       icon: Receipt,
       label: 'Facturación',
@@ -239,7 +212,22 @@ export default function MasScreen() {
       <Section title="Principal" items={principal} onPress={push} c={c} s={s} />
       <Section title="Gestión" items={gestion} onPress={push} c={c} s={s} />
       <Section title="Cuenta" items={cuenta} onPress={push} c={c} s={s} />
-      <AppearanceSection c={c} s={s} />
+      <TouchableOpacity
+        style={s.logoutRow}
+        onPress={() => {
+          haptic.medium();
+          Alert.alert('Cerrar sesión', '¿Salir de tu cuenta?', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Cerrar sesión', style: 'destructive', onPress: () => { void logout(); } },
+          ]);
+        }}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar sesión"
+      >
+        <LogOut size={20} color={c.danger} strokeWidth={1.8} />
+        <Text style={s.logoutText}>Cerrar sesión</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -248,6 +236,11 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
+  logoutRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: space[2], minHeight: 52, marginTop: space[4],
+  },
+  logoutText: { fontSize: text.md, fontWeight: weight.medium, color: c.danger, letterSpacing: -0.2 },
   content: { paddingBottom: 120, gap: space[1] },
 
   profileCard: {
@@ -269,18 +262,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     marginBottom: space[2],
     paddingHorizontal: space[1],
   },
-  sectionCard: {
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    ...(c.isDark ? {} : shadow.sm),
-  },
+  sectionCard: {},
 
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space[4],
-    paddingVertical: space[3] + 2,
+    minHeight: 52,
     gap: space[3],
   },
   iconWrap: {
@@ -289,7 +277,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   rowBody: { flex: 1 },
-  rowLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
   rowDesc: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   badge: {
@@ -305,24 +293,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   divider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
 
-  segment: {
-    flexDirection: 'row',
-    backgroundColor: c.surfaceAlt,
-    borderRadius: radius.full,
-    padding: 3,
-  },
-  segmentBtn: {
-    flex: 1,
-    paddingVertical: space[2] + 2,
-    minHeight: touch.min,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: radius.full,
-  },
   segmentBtnActive: {
     backgroundColor: c.surface,
     ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 }),
   },
-  segmentText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  segmentTextActive: { color: c.text },
 });

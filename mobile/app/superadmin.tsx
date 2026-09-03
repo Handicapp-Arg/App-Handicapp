@@ -132,9 +132,10 @@ export default function SuperAdminScreen() {
         data={orgs ?? []}
         keyExtractor={(o) => o.id}
         contentContainerStyle={s.list}
+        ItemSeparatorComponent={() => <View style={s.divider} />}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
         ListHeaderComponent={
-          <View style={{ gap: space[3], marginBottom: space[3] }}>
+          <View style={{ gap: space[3], marginBottom: space[1] }}>
             {metrics && (
               <View style={s.metricsGrid}>
                 <MetricBox
@@ -178,6 +179,7 @@ export default function SuperAdminScreen() {
               placeholderTextColor={c.textFaint}
               style={s.search}
             />
+            <Text style={s.sectionTitle}>Organizaciones</Text>
           </View>
         }
         renderItem={({ item, index }) => (
@@ -222,7 +224,7 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
   center: { padding: space[8], alignItems: 'center' },
-  list: { padding: space[3], gap: space[3], paddingBottom: space[8] },
+  list: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[8] },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -236,6 +238,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     padding: space[3],
     ...(c.isDark ? {} : shadow.sm),
   },
+  sectionTitle: {
+    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
+    textTransform: 'uppercase', letterSpacing: 1, paddingHorizontal: space[1],
+  },
   metricLabel: { fontSize: text.xs, fontWeight: weight.bold, letterSpacing: 0.4, color: c.textFaint },
   metricValue: { fontSize: text.xl, fontWeight: weight.extrabold, marginTop: 4 },
   metricSub: { fontSize: text.xs, marginTop: 2, color: c.textFaint },
@@ -247,13 +253,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: text.sm,
     color: c.text,
   },
+  // Fila de lista (patrón Más): sin fondo, borde ni sombra; vive directo sobre el bg.
   orgRow: {
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    padding: space[4],
+    paddingVertical: space[3],
     gap: space[2],
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
+  divider: { height: 1, backgroundColor: c.border },
   orgHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   orgName: { flex: 1, fontSize: text.md, fontWeight: weight.bold, color: c.text, marginRight: space[2] },
   orgOwner: { fontSize: text.xs, color: c.textFaint },

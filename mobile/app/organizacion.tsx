@@ -27,6 +27,7 @@ import { Avatar } from '../components/Avatar';
 import { RoleBadge } from '../components/RoleBadge';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
+import { makeCard } from '../styles/common';
 import { fechaHumana } from '../lib/fechas';
 
 // Descripciones de rol unificadas con la web (fuente de verdad: ROLE_OPTIONS de organizacion/page.tsx).
@@ -280,17 +281,19 @@ export default function OrganizacionScreen() {
     <View style={s.root}>
       <ScreenHeader title="Caballeriza" showBack backTo={Routes.mas} />
 
-      <ScrollView contentContainerStyle={{ padding: space[4], paddingBottom: 40, gap: space[4] }} showsVerticalScrollIndicator={false}>
-        {/* Card principal */}
-        <View style={s.heroCard}>
-          <Text style={s.orgName}>{org.name}</Text>
-          <View style={[s.badge, org.plan === 'free' ? s.badgeGray : s.badgeGold]}>
-            <Text style={[s.badgeText, org.plan === 'free' ? s.badgeTextGray : s.badgeTextGold]}>
-              {PLAN_LABELS[org.plan]}
-            </Text>
+      <ScrollView contentContainerStyle={{ padding: space[4], paddingBottom: 40, gap: space[6] }} showsVerticalScrollIndicator={false}>
+        {/* Info de la caballeriza — vive directo sobre el fondo, sin envoltorio */}
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+            <Text style={s.orgName}>{org.name}</Text>
+            <View style={[s.badge, org.plan === 'free' ? s.badgeGray : s.badgeGold]}>
+              <Text style={[s.badgeText, org.plan === 'free' ? s.badgeTextGray : s.badgeTextGold]}>
+                {PLAN_LABELS[org.plan]}
+              </Text>
+            </View>
           </View>
           {horseLimit && (
-            <View style={{ marginTop: 14, gap: 6 }}>
+            <View style={{ marginTop: space[3], gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: text.xs, color: c.textMuted }}>
                   {org.horse_count} de {horseLimit} caballos
@@ -307,13 +310,14 @@ export default function OrganizacionScreen() {
               </View>
             </View>
           )}
+        </View>
 
-          {isAdmin && org.join_code && (
-            <View style={s.codeRow}>
-              <View style={s.codeBlock}>
-                <Text style={s.codeLabel}>Código de invitación</Text>
-                <Text style={s.codeValue}>{org.join_code}</Text>
-              </View>
+        {/* Código de invitación — dato copiable autónomo: conserva superficie */}
+        {isAdmin && org.join_code && (
+          <View style={{ gap: space[2] }}>
+            <Text style={s.sectionLabel}>Código de invitación</Text>
+            <View style={s.codeBlock}>
+              <Text style={s.codeValue}>{org.join_code}</Text>
               <TouchableOpacity
                 style={s.codeBtn}
                 onPress={async () => {
@@ -326,94 +330,106 @@ export default function OrganizacionScreen() {
                 <Text style={s.codeBtnText}>Compartir</Text>
               </TouchableOpacity>
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
-        {/* Invitaciones pendientes */}
+        {/* Invitaciones pendientes — filas planas sobre el fondo */}
         {invitations && invitations.length > 0 && (
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: space[2] }}>
             <Text style={s.sectionLabel}>Invitaciones pendientes ({invitations.length})</Text>
-            {invitations.map((inv, index) => (
-              <Animated.View key={inv.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.invCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.invEmail}>{inv.email}</Text>
-                  <Text style={s.invMeta}>{ROLE_LABELS[inv.role_in_org]} · expira {fechaHumana(inv.expires_at)}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <TouchableOpacity
-                    onPress={() => Share.share({ message: `Te invito a HandicApp: ${getInviteUrl(inv.token)}` })}
-                    style={s.invBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel="Compartir invitación"
-                    hitSlop={8}
-                  >
-                    <Share2 size={14} color={c.brand} strokeWidth={2} />
-                  </TouchableOpacity>
-                  {isAdmin && (
+            <View>
+              {invitations.map((inv, index) => (
+                <Animated.View
+                  key={inv.id}
+                  entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}
+                  style={[s.invRow, index > 0 && s.rowDivider]}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.invEmail} numberOfLines={1}>{inv.email}</Text>
+                    <Text style={s.invMeta} numberOfLines={1}>{ROLE_LABELS[inv.role_in_org]} · expira {fechaHumana(inv.expires_at)}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: space[1] }}>
                     <TouchableOpacity
-                      onPress={() => cancelInv.mutate(inv.id)}
+                      onPress={() => Share.share({ message: `Te invito a HandicApp: ${getInviteUrl(inv.token)}` })}
                       style={s.invBtn}
                       accessibilityRole="button"
-                      accessibilityLabel="Cancelar invitación"
+                      accessibilityLabel="Compartir invitación"
                       hitSlop={8}
                     >
-                      <X size={16} color={c.danger} strokeWidth={2} />
+                      <Share2 size={14} color={c.brand} strokeWidth={2} />
                     </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-            ))}
-          </View>
-        )}
-
-        {/* Solicitudes de ingreso */}
-        {isAdmin && pendingJoins.length > 0 && (
-          <View style={{ gap: 8 }}>
-            <Text style={s.sectionLabel}>Solicitudes de ingreso ({pendingJoins.length})</Text>
-            {pendingJoins.map((req, index) => (
-              <Animated.View key={req.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.joinCard}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-                  <Avatar name={req.requester.name} size={36} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.memberName} numberOfLines={1}>{req.requester.name}</Text>
-                    <Text style={s.memberEmail} numberOfLines={1}>{req.requester.email}</Text>
+                    {isAdmin && (
+                      <TouchableOpacity
+                        onPress={() => cancelInv.mutate(inv.id)}
+                        style={s.invBtn}
+                        accessibilityRole="button"
+                        accessibilityLabel="Cancelar invitación"
+                        hitSlop={8}
+                      >
+                        <X size={16} color={c.danger} strokeWidth={2} />
+                      </TouchableOpacity>
+                    )}
                   </View>
-                </View>
-                {req.message ? <Text style={s.joinMessage} numberOfLines={3}>“{req.message}”</Text> : null}
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                  <TouchableOpacity
-                    style={[s.btn, s.btnSecondary, { flex: 1, paddingVertical: 10 }]}
-                    onPress={() => {
-                      Alert.alert('Rechazar solicitud', `¿Rechazar el ingreso de ${req.requester.name}?`, [
-                        { text: 'Cancelar', style: 'cancel' },
-                        {
-                          text: 'Rechazar', style: 'destructive', onPress: () => {
-                            haptic.light();
-                            rejectJoin.mutate(req.id, { onSuccess: () => toast.info('Solicitud rechazada') });
-                          },
-                        },
-                      ]);
-                    }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={s.btnSecondaryText}>Rechazar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[s.btn, s.btnPrimary, { flex: 1, paddingVertical: 10 }]}
-                    onPress={() => { haptic.medium(); setApproveTarget(req); }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={s.btnPrimaryText}>Aprobar</Text>
-                  </TouchableOpacity>
-                </View>
-              </Animated.View>
-            ))}
+                </Animated.View>
+              ))}
+            </View>
           </View>
         )}
 
-        {/* Miembros */}
+        {/* Solicitudes de ingreso — filas expandidas: info + acciones en la misma fila, sin envoltorio */}
+        {isAdmin && pendingJoins.length > 0 && (
+          <View style={{ gap: space[2] }}>
+            <Text style={s.sectionLabel}>Solicitudes de ingreso ({pendingJoins.length})</Text>
+            <View>
+              {pendingJoins.map((req, index) => (
+                <Animated.View
+                  key={req.id}
+                  entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}
+                  style={[s.joinRow, index > 0 && s.rowDivider]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+                    <Avatar name={req.requester.name} size={36} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={s.memberName} numberOfLines={1}>{req.requester.name}</Text>
+                      <Text style={s.memberEmail} numberOfLines={1}>{req.requester.email}</Text>
+                    </View>
+                  </View>
+                  {req.message ? <Text style={s.joinMessage} numberOfLines={3}>“{req.message}”</Text> : null}
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                    <TouchableOpacity
+                      style={[s.btn, s.btnSecondary, { flex: 1, paddingVertical: 10 }]}
+                      onPress={() => {
+                        Alert.alert('Rechazar solicitud', `¿Rechazar el ingreso de ${req.requester.name}?`, [
+                          { text: 'Cancelar', style: 'cancel' },
+                          {
+                            text: 'Rechazar', style: 'destructive', onPress: () => {
+                              haptic.light();
+                              rejectJoin.mutate(req.id, { onSuccess: () => toast.info('Solicitud rechazada') });
+                            },
+                          },
+                        ]);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={s.btnSecondaryText}>Rechazar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.btn, s.btnPrimary, { flex: 1, paddingVertical: 10 }]}
+                      onPress={() => { haptic.medium(); setApproveTarget(req); }}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={s.btnPrimaryText}>Aprobar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Miembros — filas planas, patrón de "Más" */}
         <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[2] }}>
             <Text style={s.sectionLabel}>Miembros ({org.members.length})</Text>
             {isAdmin && (
               <TouchableOpacity
@@ -426,11 +442,15 @@ export default function OrganizacionScreen() {
             )}
           </View>
 
-          <View style={{ gap: 8 }}>
+          <View>
             {org.members.map((m, index) => {
               const isOrgOwner = m.user_id === org.owner_id;
               return (
-                <Animated.View key={m.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.memberCard}>
+                <Animated.View
+                  key={m.id}
+                  entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}
+                  style={[s.memberRow, index > 0 && s.rowDivider]}
+                >
                   <Avatar name={m.user.name} avatarColor={m.user.avatar_color} size={36} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.memberName} numberOfLines={1}>
@@ -498,9 +518,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   sectionLabel: { fontSize: 11, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  heroCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
   orgName: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: -0.5 },
-  badge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
+  badge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   badgeGray: { backgroundColor: c.surfaceAlt },
   badgeGold: { backgroundColor: c.goldSoft, borderWidth: 1, borderColor: c.goldBorder },
   badgeText: { fontSize: 11, fontWeight: weight.bold },
@@ -510,28 +529,31 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   progressTrack: { height: 8, borderRadius: 4, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
 
-  codeRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[4], paddingTop: space[4], borderTopWidth: 1, borderTopColor: c.border },
+  // Código de invitación: único bloque que conserva superficie — es un dato
+  // autónomo copiable ("hero de dato"), no una fila de menú.
   codeBlock: {
-    flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.md,
-    paddingHorizontal: space[3], paddingVertical: space[2],
+    ...makeCard(c).padded,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3],
   },
-  codeLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
-  codeValue: { fontSize: text.lg, fontWeight: weight.bold, color: c.brand, letterSpacing: 2, marginTop: 2, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
+  codeValue: { fontSize: text.xl, fontWeight: weight.bold, color: c.brand, letterSpacing: 2, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
   codeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.md, backgroundColor: c.brandSoft, paddingHorizontal: 12, paddingVertical: 8 },
   codeBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: c.brand },
 
-  joinCard: { gap: 8, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, padding: space[3] },
+  joinRow: { gap: 8, paddingVertical: space[3] },
   joinMessage: { fontSize: text.sm, color: c.textMuted, fontStyle: 'italic' },
 
-  invCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.goldSoft, borderRadius: radius.md, padding: space[3], borderWidth: 1, borderColor: c.goldBorder },
-  invEmail: { fontSize: text.sm, fontWeight: weight.semibold, color: c.goldText },
-  invMeta: { fontSize: 11, color: c.goldText, marginTop: 1 },
-  invBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: c.surface, justifyContent: 'center', alignItems: 'center' },
+  invRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: space[3] },
+  invEmail: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  invMeta: { fontSize: 11, color: c.textFaint, marginTop: 1 },
+  invBtn: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+
+  // Hairline separador DENTRO de una lista de filas (permitido por la regla de bordes).
+  rowDivider: { borderTopWidth: 1, borderTopColor: c.border },
 
   inviteBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 6 },
   inviteBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
 
-  memberCard: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[3], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
   memberName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   memberEmail: { fontSize: 11, color: c.textFaint, marginTop: 1 },
   roleBadge: { borderRadius: radius.full, backgroundColor: c.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4 },

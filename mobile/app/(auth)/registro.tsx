@@ -12,7 +12,7 @@ import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { HorseshoeH } from '../../components/icons/equine';
-import { AuthBackground } from '../../components/auth-ui';
+import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
 import { BottomSheet } from '../../components/BottomSheet';
 import { useInvitationByToken, ROLE_LABELS } from '../../hooks/use-organizations';
 import { fontFamily } from '../../styles/fonts';
@@ -84,7 +84,7 @@ export default function RegistroScreen() {
 
   return (
     <View style={s.root}>
-      <AuthBackground c={c} />
+      <AuthDarkBackground />
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -101,7 +101,7 @@ export default function RegistroScreen() {
         >
           {/* Marca */}
           <Animated.View style={s.header} entering={FadeIn.duration(500)}>
-            <HorseshoeH size={52} color={c.brand} />
+            <BrandMark size={72} />
           </Animated.View>
 
           {/* Título */}
@@ -135,7 +135,7 @@ export default function RegistroScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="Nombre completo"
-                placeholderTextColor={c.textFaint}
+                placeholderTextColor={D.textFaint}
                 autoCapitalize="words"
                 autoComplete="name"
                 textContentType="name"
@@ -158,7 +158,7 @@ export default function RegistroScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Correo electrónico"
-                placeholderTextColor={c.textFaint}
+                placeholderTextColor={D.textFaint}
                 editable={!emailBloqueado}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -180,7 +180,7 @@ export default function RegistroScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Contraseña (mínimo 6 caracteres)"
-                placeholderTextColor={c.textFaint}
+                placeholderTextColor={D.textFaint}
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -202,7 +202,7 @@ export default function RegistroScreen() {
                   <Text style={s.selectHint}>Tipo de cuenta</Text>
                   <Text style={s.selectValue}>{ROLE_INFO[role]?.label ?? 'Elegí una opción'}</Text>
                 </View>
-                <ChevronDown size={19} color={c.textFaint} strokeWidth={2} />
+                <ChevronDown size={19} color={D.textFaint} strokeWidth={2} />
               </Pressable>
             )}
 
@@ -257,7 +257,7 @@ export default function RegistroScreen() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: c.bg },
+  root: { flex: 1, backgroundColor: D.bgBottom },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 26 },
 
@@ -266,46 +266,46 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   intro: { marginBottom: 24 },
   title: {
     fontSize: 32, fontWeight: '700', fontFamily: fontFamily.semibold,
-    letterSpacing: -0.8, color: c.text,
+    letterSpacing: -0.8, color: D.text,
   },
-  subtitle: { fontSize: 15, color: c.textMuted, marginTop: 6, letterSpacing: -0.1 },
+  subtitle: { fontSize: 15, color: D.textMuted, marginTop: 6, letterSpacing: -0.1 },
 
   form: { gap: 12 },
 
   inviteBox: {
-    backgroundColor: c.brandSoft, borderRadius: 12, padding: 13,
+    backgroundColor: 'rgba(198,148,86,0.14)', borderRadius: 12, padding: 13,
   },
-  inviteText: { fontSize: 13.5, color: c.textMuted, lineHeight: 19 },
-  inviteStrong: { fontWeight: '700', color: c.text },
-  inviteRole: { fontWeight: '700', color: c.brand },
+  inviteText: { fontSize: 13.5, color: D.textMuted, lineHeight: 19 },
+  inviteStrong: { fontWeight: '700', color: D.text },
+  inviteRole: { fontWeight: '700', color: D.brand },
 
   errorBox: {
-    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2', borderRadius: 12, padding: 13,
-    borderWidth: 1, borderColor: c.isDark ? 'rgba(239,68,68,0.3)' : '#fecaca',
+    backgroundColor: D.dangerBg, borderRadius: 12, padding: 13,
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)',
   },
-  errorText: { fontSize: 13.5, color: c.isDark ? '#fca5a5' : '#b91c1c' },
+  errorText: { fontSize: 13.5, color: D.danger },
 
   inputWrap: {
     height: 56, borderRadius: 14,
     borderWidth: 1.5, borderColor: 'transparent',
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    backgroundColor: D.field,
     justifyContent: 'center',
   },
-  inputWrapFocused: { borderColor: c.brand, backgroundColor: c.surface },
+  inputWrapFocused: { borderColor: D.brand, backgroundColor: D.fieldFocus },
   inputWrapDisabled: { opacity: 0.6 },
   input: {
     height: '100%', paddingHorizontal: 16,
-    fontSize: 16.5, color: c.text, letterSpacing: -0.2,
+    fontSize: 16.5, color: D.text, letterSpacing: -0.2,
   },
 
   selectField: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   selectPressed: { opacity: 0.85 },
   selectTexts: { flex: 1 },
-  selectHint: { fontSize: 11.5, color: c.textFaint, marginBottom: 1 },
-  selectValue: { fontSize: 15.5, fontWeight: '600', color: c.text, letterSpacing: -0.2 },
+  selectHint: { fontSize: 11.5, color: D.textFaint, marginBottom: 1 },
+  selectValue: { fontSize: 15.5, fontWeight: '600', color: D.text, letterSpacing: -0.2 },
 
   btn: {
-    backgroundColor: c.brand, borderRadius: 14, height: 56,
+    backgroundColor: D.brand, borderRadius: 14, height: 56,
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   btnPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
@@ -313,8 +313,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btnText: { color: colors.white, fontSize: 16.5, fontWeight: '700', letterSpacing: -0.2 },
 
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
-  footerText: { fontSize: 14.5, color: c.textMuted },
-  link: { fontSize: 14.5, fontWeight: '700', color: c.brand },
+  footerText: { fontSize: 14.5, color: D.textMuted },
+  link: { fontSize: 14.5, fontWeight: '700', color: D.brand },
 
   roleOption: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 15,

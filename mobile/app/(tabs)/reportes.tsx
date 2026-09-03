@@ -46,11 +46,11 @@ const fmtMonth = (ym: string) => {
     .toLocaleDateString('es-AR', { month: 'short' });
 };
 
-function StatCard({ icon, label, value, hint, s }: {
-  icon: React.ReactNode; label: string; value: string; hint?: string; s: Styles;
+function StatCard({ icon, label, value, hint, divider, s }: {
+  icon: React.ReactNode; label: string; value: string; hint?: string; divider?: boolean; s: Styles;
 }) {
   return (
-    <View style={s.statCard}>
+    <View style={[s.statCard, divider && s.statCardDivider]}>
       <View style={s.statIcon}>{icon}</View>
       <Text style={s.statLabel}>{label}</Text>
       <Text style={s.statValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
@@ -283,11 +283,11 @@ export default function ReportesScreen() {
               <StatCard
                 icon={<HeartPulse size={20} color={c.brand} strokeWidth={2} />}
                 label="Vencidos" value={String(data.health.rojo)}
-                hint={`${data.health.amarillo} por vencer`} s={s}
+                hint={`${data.health.amarillo} por vencer`} divider s={s}
               />
               <StatCard
                 icon={<TrendingUp size={20} color={c.brand} strokeWidth={2} />}
-                label="Gasto mes" value={fmtMoney(data.expenses.month_total)} s={s}
+                label="Gasto mes" value={fmtMoney(data.expenses.month_total)} divider s={s}
               />
             </Animated.View>
 
@@ -311,26 +311,23 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  content: { padding: space[4], paddingBottom: 120, gap: space[4] },
+  content: { padding: space[4], paddingBottom: 120, gap: space[6] },
 
   emptyText: { fontSize: text.sm, color: c.textFaint, paddingHorizontal: space[1] },
 
-  /* Stats */
-  statRow: { flexDirection: 'row', gap: space[3] },
+  /* Stats — aplanadas, separadas por un hairline vertical en vez de tarjeta */
+  statRow: { flexDirection: 'row' },
   statCard: {
-    flex: 1, backgroundColor: c.surface, borderRadius: radius.lg,
-    padding: space[3], gap: 2, ...shadow.sm,
+    flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: space[2],
   },
+  statCardDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: c.border },
   statIcon: { marginBottom: space[1] },
-  statLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
   statValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
-  statHint: { fontSize: text.xs, color: c.textFaint },
+  statHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center' },
 
-  /* Cards */
-  card: {
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    padding: space[4], ...shadow.sm,
-  },
+  /* Secciones — aplanadas, viven directo sobre c.bg */
+  card: { gap: 0 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[3] },
   cardTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text },
   cardHint: { fontSize: text.xs, color: c.textFaint, marginTop: space[3], lineHeight: 16 },
@@ -366,7 +363,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
   chartLbl: { fontSize: text.xs - 1, color: c.textFaint, textTransform: 'capitalize' },
 
-  catSection: { marginTop: space[5], paddingTop: space[4], borderTopWidth: 1, borderTopColor: c.border, gap: space[3] },
+  catSection: { marginTop: space[5], paddingTop: space[4], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, gap: space[3] },
   catRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catName: { fontSize: text.sm, color: c.textMuted },
   catTotal: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
@@ -386,9 +383,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* No plan */
   noPlan: {
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    padding: space[6],
-    alignItems: 'center', gap: space[3], ...shadow.sm,
+    paddingVertical: space[8], paddingHorizontal: space[6],
+    alignItems: 'center', gap: space[3],
   },
   noPlanIcon: {
     width: 60, height: 60, borderRadius: radius.xl,

@@ -252,11 +252,11 @@ export default function DirectorioScreen() {
           renderItem={({ item, index }) => {
             const hasPending = pendingForEstab(item.id);
             return (
-              <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={[s.itemWrap, s.card]}>
+              <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={s.row}>
                 <Avatar name={item.name} size={44} />
                 <View style={{ flex: 1 }}>
-                  <Text style={s.cardName}>{item.name}</Text>
-                  <Text style={s.cardSub}>
+                  <Text style={s.rowName}>{item.name}</Text>
+                  <Text style={s.rowSub}>
                     {item.horse_count === 0
                       ? 'Sin caballos alojados'
                       : `${item.horse_count} caballo${item.horse_count !== 1 ? 's' : ''} en pensión`}
@@ -280,7 +280,7 @@ export default function DirectorioScreen() {
               </Animated.View>
             );
           }}
-          ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
+          ItemSeparatorComponent={() => <View style={s.divider} />}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
         />
       )}
@@ -298,19 +298,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: c.borderStrong, borderTopColor: c.brand },
   pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: c.goldSoft, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: c.goldBorder },
   pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.goldText },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.min },
-  searchInput: { flex: 1, fontSize: text.sm, color: c.text, height: touch.min },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.field },
+  searchInput: { flex: 1, fontSize: text.sm, color: c.text, height: touch.field },
   list: { paddingBottom: 120 },
   itemWrap: { marginHorizontal: space[4] },
-  card: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.lg, padding: space[4], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
-  avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
-  cardName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
-  cardSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, paddingHorizontal: space[4] },
+  rowName: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   requestBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 7 },
   requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
   pendingChip: { borderRadius: radius.full, backgroundColor: c.goldSoft, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: c.goldBorder },
   pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: c.goldText },
+  divider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
   // Sheet de solicitud (FormSheet)
   modalDesc: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },

@@ -15,7 +15,7 @@ import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../../styles/tokens';
 import { formatMoney, type Currency } from '../../../lib/currency';
 import { fechaHoraHumana } from '../../../lib/fechas';
 
@@ -164,8 +164,8 @@ export default function AuctionDetailScreen() {
           </View>
         )}
 
-        {/* Precio */}
-        <View style={s.priceCard}>
+        {/* Precio: hero de dato, directo sobre el fondo (sin caja) */}
+        <View style={s.priceHero}>
           <Text style={s.priceLabelSmall}>
             {isRemate ? (topBid ? 'Puja actual' : 'Puja inicial') : 'Precio pedido'}
           </Text>
@@ -190,7 +190,7 @@ export default function AuctionDetailScreen() {
 
         {/* Acción pujar */}
         {!isSeller && isActive && isRemate && (
-          <View style={s.bidBox}>
+          <View style={s.section}>
             <Text style={s.sectionTitle}>Hacer una puja</Text>
             <Text style={s.bidHint}>Mínimo: {formatARS(minNextBid, auction.currency)}</Text>
             <View style={s.bidInputRow}>
@@ -226,15 +226,15 @@ export default function AuctionDetailScreen() {
           </View>
         )}
 
-        {/* Documentación */}
+        {/* Documentación: filas planas, sin caja por ítem */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Documentación</Text>
-          <View style={{ gap: space[2] }}>
+          <View>
             {[
               { ok: auction.has_health_cert, label: 'Certificado SENASA vigente' },
               { ok: auction.has_ownership_docs, label: 'Docs de propiedad (Studbook/SRA)' },
-            ].map(({ ok, label }) => (
-              <View key={label} style={[s.docRow, { backgroundColor: ok ? c.successSoft : c.surfaceAlt }]}>
+            ].map(({ ok, label }, idx) => (
+              <View key={label} style={[s.docRow, idx === 0 && s.docRowDivider]}>
                 {ok
                   ? <CheckCircle2 size={16} color={c.success} strokeWidth={2} />
                   : <XCircle size={16} color={c.textFaint} strokeWidth={2} />}
@@ -263,19 +263,24 @@ export default function AuctionDetailScreen() {
           </View>
         )}
 
-        {/* Historial pujas */}
+        {/* Historial pujas: filas de lista (patrón Más), no tarjetas con sombra */}
         {isRemate && bids && bids.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Historial de pujas ({bids.length})</Text>
-            {bids.slice(0, 10).map((b, index) => (
+            {bids.slice(0, 10).map((b, index, arr) => (
               <Animated.View key={b.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                <View style={[s.bidRow, b.status === 'active' && s.bidRowActive]}>
+                <View style={[s.bidRow, index < arr.length - 1 && s.bidRowDivider]}>
                   <Avatar name={b.bidder?.name} size={32} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.bidderName}>{b.bidder?.name ?? 'Usuario'}</Text>
                     <Text style={s.bidDate}>{fechaHoraHumana(b.created_at)}</Text>
                   </View>
-                  <Text style={s.bidAmount}>{formatARS(b.amount, b.currency)}</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[s.bidAmount, b.status === 'active' && s.bidAmountActive]}>
+                      {formatARS(b.amount, b.currency)}
+                    </Text>
+                    {b.status === 'active' && <Text style={s.bidWinningTag}>Ganando</Text>}
+                  </View>
                 </View>
               </Animated.View>
             ))}
@@ -309,12 +314,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, marginBottom: space[4] },
   location: { fontSize: text.xs, color: c.textFaint },
 
-  priceCard: {
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    padding: space[5], marginBottom: space[4], ...(c.isDark ? {} : shadow.sm),
+  priceHero: {
+    marginBottom: space[5],
   },
   priceLabelSmall: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  priceMain: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  priceMain: { fontSize: text.display, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   bidCount: { fontSize: text.xs, color: c.textFaint, marginTop: 4 },
 
   remateClosed: { color: c.danger, fontWeight: weight.bold },
@@ -325,11 +329,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   countLabel: { fontSize: text.xs, color: c.textFaint, marginTop: 2, textTransform: 'uppercase' },
   countLabelUrgent: { color: c.warning, fontWeight: weight.bold },
 
-  bidBox: {
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    padding: space[4], marginBottom: space[4], ...(c.isDark ? {} : shadow.sm),
-  },
-  bidHint: { fontSize: text.sm, color: c.textFaint, marginBottom: space[2] },
+  bidHint: { fontSize: text.sm, color: c.textFaint, marginBottom: space[2], marginTop: space[1] },
   bidInputRow: { flexDirection: 'row', gap: space[2] },
   bidInput: {
     flex: 1, height: touch.field, borderRadius: radius.lg,
@@ -350,19 +350,21 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   docRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    borderRadius: radius.lg, padding: space[3],
+    paddingVertical: space[3],
   },
+  docRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   docLabel: { fontSize: text.sm, fontWeight: weight.medium },
 
   bidRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    padding: space[3], borderRadius: radius.lg,
-    backgroundColor: c.surfaceAlt, marginBottom: space[2],
+    paddingVertical: space[3],
   },
-  bidRowActive: { backgroundColor: c.successSoft },
+  bidRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   bidderName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   bidDate: { fontSize: text.xs, color: c.textFaint },
   bidAmount: { fontSize: text.base, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
+  bidAmountActive: { color: c.success },
+  bidWinningTag: { fontSize: text.xs, fontWeight: weight.semibold, color: c.success, marginTop: 1 },
 
   legalBox: {
     flexDirection: 'row', gap: space[2], alignItems: 'flex-start',

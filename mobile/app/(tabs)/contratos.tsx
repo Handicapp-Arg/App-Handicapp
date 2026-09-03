@@ -47,12 +47,13 @@ Entre el establecimiento y el propietario, se acuerda:
 Firmado digitalmente en HandicApp.`;
 
 function ContractCard({
-  contract, userId, role, onSign, onReject, onDelete, c, cs,
+  contract, userId, role, onSign, onReject, onDelete, isLast, c, cs,
 }: {
   contract: Contract; userId: string; role: string;
   onSign: (c: Contract) => void;
   onReject: (c: Contract) => void;
   onDelete: (id: string) => void;
+  isLast?: boolean;
   c: ThemeColors;
   cs: CStyles;
 }) {
@@ -78,7 +79,7 @@ function ContractCard({
   const showEstabSign = isEstab && contract.status === 'pending' && !estabSigned;
 
   return (
-    <View style={cs.card}>
+    <View style={[expanded ? cs.cardExpanded : cs.rowCollapsed, !expanded && !isLast && cs.rowDivider]}>
       <TouchableOpacity
         onPress={() => { haptic.selection(); setExpanded((p) => !p); }}
         activeOpacity={0.7}
@@ -294,9 +295,9 @@ export default function ContratosScreen() {
         {header}
         <View style={s.body}>
           {isLoading && pending.length === 0 && others.length === 0 ? (
-            <View style={{ gap: space[3] }}>
+            <View>
               {Array.from({ length: 5 }).map((_, i) => (
-                <View key={i} style={cs.card}>
+                <View key={i} style={[cs.rowCollapsed, i < 4 && cs.rowDivider]}>
                   <View style={cs.cardHeader}>
                     <View style={{ flex: 1, gap: space[1] + 2 }}>
                       <Skeleton width={80} height={18} borderRadius={radius.full} />
@@ -324,7 +325,8 @@ export default function ContratosScreen() {
                   {pending.map((ct, index) => (
                     <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                       <ContractCard contract={ct} userId={user?.id ?? ''} role={user?.role ?? ''}
-                        onSign={openSign} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
+                        onSign={openSign} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)}
+                        isLast={index === pending.length - 1} c={c} cs={cs} />
                     </Animated.View>
                   ))}
                 </View>
@@ -335,7 +337,8 @@ export default function ContratosScreen() {
                   {others.map((ct, index) => (
                     <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                       <ContractCard contract={ct} userId={user?.id ?? ''} role={user?.role ?? ''}
-                        onSign={openSign} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)} c={c} cs={cs} />
+                        onSign={openSign} onReject={setRejectingContract} onDelete={(id) => deleteContract.mutate(id)}
+                        isLast={index === others.length - 1} c={c} cs={cs} />
                     </Animated.View>
                   ))}
                 </View>
@@ -529,8 +532,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   content: { paddingBottom: 120 },
   body: { paddingHorizontal: space[4], paddingTop: space[2], gap: space[4] },
-  group: { gap: space[3] },
-  groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8 },
+  group: { gap: 0 },
+  groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, marginBottom: space[2] },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
@@ -555,7 +558,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 type CStyles = ReturnType<typeof makeCStyles>;
 
 const makeCStyles = (c: ThemeColors) => StyleSheet.create({
-  card: { backgroundColor: c.surface, borderRadius: radius.xl, overflow: 'hidden', ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
+  // Expandido: es un documento que se abre, conserva superficie propia.
+  cardExpanded: { backgroundColor: c.surface, borderRadius: radius.xl, overflow: 'hidden', marginVertical: space[1], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
+  // Colapsado: fila plana sobre el fondo de la pantalla.
+  rowCollapsed: { backgroundColor: 'transparent' },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3] },
   docIcon: { width: space[8], alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: text.base, fontWeight: weight.bold, color: c.text },

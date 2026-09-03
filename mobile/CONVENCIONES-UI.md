@@ -88,6 +88,27 @@ es mentira.
 
 ---
 
+## El fondo es el lienzo (ley del 02/09 — la más importante)
+
+**Prohibido "caja dentro de caja".** El feedback textual del dueño tras recorrer
+la app: "muchos componentes dentro de componentes, eso no es nativo en móvil".
+Las dos pantallas que aprobó como canon son **login** y **Más**: el contenido
+vive DIRECTO sobre `c.bg`, las secciones se separan con título + aire, no con
+envoltorios.
+
+- **Se aplana** (pierde su fondo de tarjeta y vive sobre el bg): envoltorios de
+  sección, formularios, filas de configuración/listas, grids de info, paneles
+  que solo agrupan. La fila estilo Más (ícono + texto + chevron, minHeight 52,
+  sin divisores) es el patrón para listas de opciones.
+- **Conserva superficie** (`c.surface` + sombra sutil): solo lo que ES una
+  tarjeta de contenido real y autónomo — posts del muro, tarjetas foto de
+  caballos, turnos del carrusel del Inicio, un "hero" de dato (total del mes).
+  Regla práctica: si adentro tiene más de un tema, no es tarjeta, es sección.
+- Inputs conservan su relleno (`#f2f0eb` claro / surfaceAlt oscuro) — el campo
+  es un control, no una caja.
+- Al aplanar, revisar que la jerarquía no se pierda: títulos de sección con
+  peso, aire generoso entre grupos (space[6]+), y dentro del grupo compacto.
+
 ## Sin bordes (regla nueva, 01/09)
 
 **Las tarjetas y superficies NO llevan borde.** El borde gris alrededor de cada

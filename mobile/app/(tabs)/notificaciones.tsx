@@ -84,7 +84,7 @@ function NotifRow({
       }]}
     >
       <TouchableOpacity
-        style={[s.row, !item.read && s.rowUnread]}
+        style={s.row}
         onPress={() => { haptic.light(); onPress(item); }}
         activeOpacity={0.75}
       >
@@ -336,19 +336,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingBottom: space[2],
   },
 
-  /* Row */
+  /* Row — aplanada, vive directo sobre c.bg; el hairline es el único separador */
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: c.surface,
     paddingVertical: space[3] + 1,
     paddingHorizontal: space[4],
     gap: space[3],
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
-  },
-  rowUnread: {
-    backgroundColor: c.infoSoft,
   },
   iconWrap: {
     width: 40,

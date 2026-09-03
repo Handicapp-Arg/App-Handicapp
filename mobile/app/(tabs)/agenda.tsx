@@ -27,16 +27,18 @@ import { SwipeableRow } from '../../components/SwipeableRow';
 
 const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES);
 
-function AppointmentCard({
+function AppointmentRow({
   appt,
   onComplete,
   onDelete,
+  isLast,
   c,
   s,
 }: {
   appt: ReturnType<typeof useAgenda>['data'] extends (infer T)[] | undefined ? T : never;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
+  isLast?: boolean;
   c: ThemeColors;
   s: Styles;
 }) {
@@ -65,32 +67,23 @@ function AppointmentCard({
         },
       ]}
     >
-      <View style={[s.apptCard, appt.completed && { opacity: 0.5 }]}>
-        <View style={s.apptRow}>
-          <View style={[s.typeDot, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
-            <Text style={[s.typeText, { color: meta.color }]}>{meta.label}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => { haptic.selection(); setMenuOpen(true); }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Más opciones del turno"
-          >
-            <MoreVertical size={20} color={c.textFaint} strokeWidth={2} />
-          </TouchableOpacity>
+      <View style={[s.apptRow, !isLast && s.apptRowDivider, appt.completed && { opacity: 0.5 }]}>
+        <Text style={s.apptTime}>{timeStr}</Text>
+        <View style={[s.typeDot, { backgroundColor: meta.color }]} />
+        <View style={s.apptBody}>
+          <Text style={s.apptTitle} numberOfLines={1}>{appt.title}</Text>
+          <Text style={s.apptMeta} numberOfLines={1}>
+            {appt.horse ? `${appt.horse.name} · ` : ''}{meta.label}{appt.completed ? ' · Completado' : ''}
+          </Text>
         </View>
-        <Text style={s.apptTitle}>{appt.title}</Text>
-        {appt.horse && <Text style={s.apptHorse}>{appt.horse.name}</Text>}
-        <View style={s.apptDateRow}>
-          <Clock size={16} color={c.textFaint} strokeWidth={2} />
-          <Text style={s.apptTime}>{timeStr}</Text>
-        </View>
-        {appt.completed && (
-          <View style={s.completedRow}>
-            <Check size={16} color={c.success} strokeWidth={2.5} />
-            <Text style={s.completedText}>Completado</Text>
-          </View>
-        )}
+        <TouchableOpacity
+          onPress={() => { haptic.selection(); setMenuOpen(true); }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Más opciones del turno"
+        >
+          <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
+        </TouchableOpacity>
 
         <ActionSheet
           visible={menuOpen}
@@ -357,7 +350,7 @@ export default function AgendaScreen() {
             onSelectDay={setSelectedDay}
             markedDays={markedDays}
           />
-          <View style={{ paddingHorizontal: space[4], gap: space[2], marginTop: space[2] }}>
+          <View style={{ paddingHorizontal: space[4], marginTop: space[2] }}>
             {!selectedDay ? (
               <Text style={s.calHint}>Tocá un día para ver sus turnos</Text>
             ) : dayAppts.length === 0 ? (
@@ -365,7 +358,13 @@ export default function AgendaScreen() {
             ) : (
               dayAppts.map((appt, index) => (
                 <Animated.View key={appt.id} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 40)}>
-                  <AppointmentCard appt={appt} onComplete={(id) => complete.mutate(id)} onDelete={handleDelete} c={c} s={s} />
+                  <AppointmentRow
+                    appt={appt}
+                    onComplete={(id) => complete.mutate(id)}
+                    onDelete={handleDelete}
+                    isLast={index === dayAppts.length - 1}
+                    c={c} s={s}
+                  />
                 </Animated.View>
               ))
             )}
@@ -401,12 +400,13 @@ export default function AgendaScreen() {
           keyExtractor={([day]) => day}
           contentContainerStyle={{ paddingBottom: 120, gap: space[5] }}
           renderItem={({ item: [day, items], index }) => (
-            <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ gap: space[2], paddingHorizontal: space[4] }}>
+            <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ gap: space[1], paddingHorizontal: space[4] }}>
               <Text style={s.dayLabel}>{day}</Text>
-              {(items ?? []).map((appt) => appt ? (
-                <AppointmentCard key={appt.id} appt={appt}
+              {(items ?? []).map((appt, i) => appt ? (
+                <AppointmentRow key={appt.id} appt={appt}
                   onComplete={(id) => complete.mutate(id)}
                   onDelete={handleDelete}
+                  isLast={i === (items?.length ?? 0) - 1}
                   c={c} s={s}
                 />
               ) : null)}
@@ -438,20 +438,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   viewTextActive: { color: c.text },
   calHint: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', paddingVertical: space[6] },
   dayLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'capitalize' },
-  apptCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[2], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
-  apptRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  typeDot: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1] },
-  typeText: { fontSize: text.xs, fontWeight: weight.semibold },
-  apptActions: { flexDirection: 'row', gap: space[3] },
-  completeBtn: { fontSize: 18, color: c.success },
-  deleteBtn: { fontSize: 16, color: c.textFaint },
-  apptTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
-  apptHorse: { fontSize: text.xs, color: c.textFaint },
-  apptDateRow: { flexDirection: 'row', gap: space[2] },
-  apptDate: { fontSize: text.xs, color: c.textMuted },
-  apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold },
-  completedRow: { flexDirection: 'row', alignItems: 'center', gap: space[1], marginTop: space[1] },
-  completedText: { fontSize: text.xs, color: c.success, fontWeight: weight.semibold },
+  apptRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
+  apptRowDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
+  typeDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  apptBody: { flex: 1, gap: 2 },
+  apptTitle: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  apptMeta: { fontSize: text.xs, color: c.textFaint, textTransform: 'capitalize' },
+  apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold, width: 46, fontVariant: ['tabular-nums'] },
   chip: { borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
   chipActive: { backgroundColor: c.brand },
   chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },

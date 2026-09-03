@@ -55,10 +55,11 @@ function HorseSelector({ horses, selected, onSelect, s }: {
   );
 }
 
-function TypeOption({ type, selected, onSelect, c, s }: {
+function TypeOption({ type, selected, onSelect, isLast, c, s }: {
   type: AuctionType;
   selected: AuctionType;
   onSelect: (t: AuctionType) => void;
+  isLast: boolean;
   c: ThemeColors;
   s: Styles;
 }) {
@@ -69,7 +70,7 @@ function TypeOption({ type, selected, onSelect, c, s }: {
 
   return (
     <TouchableOpacity
-      style={[s.typeOption, isSelected && { backgroundColor: config.soft }]}
+      style={[s.typeOption, !isLast && s.typeOptionDivider]}
       onPress={() => { haptic.selection(); onSelect(type); }}
       activeOpacity={0.8}
       accessibilityRole="button"
@@ -212,8 +213,8 @@ export default function CrearRemateScreen() {
           {/* Paso 2: Tipo de venta */}
           <View style={s.section}>
             <Text style={s.sectionLabel}>Tipo de publicación</Text>
-            <TypeOption type="venta_directa" selected={type} onSelect={setType} c={c} s={s} />
-            <TypeOption type="remate" selected={type} onSelect={setType} c={c} s={s} />
+            <TypeOption type="venta_directa" selected={type} onSelect={setType} isLast={false} c={c} s={s} />
+            <TypeOption type="remate" selected={type} onSelect={setType} isLast c={c} s={s} />
           </View>
 
           {/* Paso 3: Precio */}
@@ -338,7 +339,7 @@ export default function CrearRemateScreen() {
                       </TouchableOpacity>
                     ))}
                   </View>
-                  {/* Resumen fecha+hora */}
+                  {/* Resumen fecha+hora: texto plano, sin caja */}
                   <View style={s.dateTimeSummary}>
                     <Clock size={14} color={c.brand} strokeWidth={2} />
                     <Text style={s.dateTimeSummaryText}>
@@ -371,11 +372,11 @@ export default function CrearRemateScreen() {
             />
           </View>
 
-          {/* Documentación */}
+          {/* Documentación: filas de lista, sin caja por ítem */}
           <View style={s.section}>
             <Text style={s.sectionLabel}>Documentación disponible</Text>
             <TouchableOpacity
-              style={[s.checkRow, hasHealthCert && s.checkRowActive]}
+              style={[s.checkRow, s.checkRowDivider]}
               onPress={() => { haptic.selection(); setHasHealthCert(!hasHealthCert); }}
               activeOpacity={0.8}
               accessibilityRole="checkbox"
@@ -388,7 +389,7 @@ export default function CrearRemateScreen() {
               <Text style={s.checkLabel}>Certificado sanitario SENASA</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[s.checkRow, hasOwnershipDocs && s.checkRowActive]}
+              style={s.checkRow}
               onPress={() => { haptic.selection(); setHasOwnershipDocs(!hasOwnershipDocs); }}
               activeOpacity={0.8}
               accessibilityRole="checkbox"
@@ -480,12 +481,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   emptyHorses: { alignItems: 'center', padding: space[8], gap: space[3] },
   emptyHorsesText: { fontSize: text.sm, color: c.textFaint },
 
-  /* Type options */
+  /* Type options: filas planas, separadas con hairline (patrón Más) */
   typeOption: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surfaceAlt, borderRadius: radius.xl,
-    padding: space[4],
+    paddingVertical: space[3],
   },
+  typeOptionDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   typeIcon: { width: 48, height: 48, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center' },
   typeBody: { flex: 1 },
   typeTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
@@ -552,17 +553,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   dateTimeSummary: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
-    backgroundColor: c.brandSoft, borderRadius: radius.lg, padding: space[3],
+    marginTop: space[1],
   },
   dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
 
-  /* Checks */
+  /* Checks: filas planas, separadas con hairline */
   checkRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surfaceAlt, borderRadius: radius.lg,
-    padding: space[4],
+    paddingVertical: space[3],
   },
-  checkRowActive: { backgroundColor: c.successSoft },
+  checkRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   checkbox: {
     width: 24, height: 24, borderRadius: 6,
     borderWidth: 2, borderColor: c.borderStrong,

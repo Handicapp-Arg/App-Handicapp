@@ -375,7 +375,7 @@ export default function EventosScreen() {
           keyExtractor={(e) => e.id}
           contentContainerStyle={s.list}
           ListHeaderComponent={headerChrome}
-          ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: c.border, marginLeft: space[4] }} />}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)} style={{ paddingHorizontal: space[4] }}>
               <EventCard

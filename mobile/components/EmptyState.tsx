@@ -6,7 +6,7 @@ import {
   Building2, CloudOff, FileText, Lock, Receipt, Calendar, Stethoscope,
   Newspaper, Search, SlidersHorizontal, Mail, Users, Bell, Trophy, Inbox,
 } from 'lucide-react-native';
-import { HorseIcon, HorseshoeH } from './icons/equine';
+import { HorseIcon } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, weight, radius, touch } from '../styles/tokens';
@@ -47,27 +47,20 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, message, actionLabel, onAction, tint }: EmptyStateProps) {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const accent = tint ?? c.brand;            // CTA (botón) — el tint solo pinta el botón
-  const iconColor = c.brand;                 // ícono cálido: cuero de marca
-  const iconBg = c.brandSoft;                // fondo del ícono: cuero suave
+  const accent = tint ?? c.brand;
   return (
     <Animated.View entering={FadeInDown.duration(350)} style={s.wrap}>
-      <View style={s.iconArea}>
-        <View style={s.watermarkWrap} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <HorseshoeH size={140} color={c.brand} />
-        </View>
-        <View style={[s.iconCircle, { backgroundColor: iconBg }]}>
-          {(() => {
-            const L = ICON_MAP[icon];
-            return L ? <L size={32} color={iconColor} strokeWidth={2} /> : <Ionicons name={icon} size={32} color={iconColor} />;
-          })()}
-        </View>
-      </View>
+      {(() => {
+        const L = ICON_MAP[icon];
+        return L
+          ? <L size={52} color={c.textFaint} strokeWidth={1.3} />
+          : <Ionicons name={icon} size={52} color={c.textFaint} />;
+      })()}
       <Text style={s.title}>{title}</Text>
       {message && <Text style={s.message}>{message}</Text>}
       {actionLabel && onAction && (
-        <TouchableOpacity style={[s.btn, { backgroundColor: accent, shadowColor: accent }]} onPress={onAction} activeOpacity={0.88}>
-          <Text style={s.btnText}>{actionLabel}</Text>
+        <TouchableOpacity style={s.btn} onPress={onAction} activeOpacity={0.8}>
+          <Text style={[s.btnText, { color: accent }]}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -81,30 +74,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     padding: space[8],
     gap: space[3],
-  },
-  iconArea: {
-    width: 140,
-    height: 140,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: space[2],
-  },
-  watermarkWrap: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 140,
-    height: 140,
-    opacity: 0.05,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: radius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   title: {
     fontSize: text.lg,
@@ -123,20 +92,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   btn: {
     marginTop: space[3],
-    minHeight: touch.button,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.full,
-    paddingHorizontal: space[6] + 2,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 4,
+    paddingHorizontal: space[5],
+    backgroundColor: c.brandSoft,
   },
   btnText: {
     fontSize: text.base,
-    fontWeight: weight.bold,
-    fontFamily: fontFamily.bold,
-    color: colors.white,
+    fontWeight: weight.semibold,
+    letterSpacing: -0.2,
   },
 });

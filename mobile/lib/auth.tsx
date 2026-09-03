@@ -81,8 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, loading, segments]);
 
   const login = async (email: string, password: string) => {
+    // El overlay de ingreso (logo respirando) necesita su momento: si el
+    // servidor contesta en 200ms el efecto ni se ve. Piso de 3.3s (tres vueltas del logo a 1.1s c/u) antes de
+    // publicar el usuario (que es lo que dispara la entrada a la app).
+    const t0 = Date.now();
     const { data } = await api.post('/auth/login', { email, password });
     await saveToken(data.accessToken, data.refreshToken);
+    const restante = 3300 - (Date.now() - t0);
+    if (restante > 0) await new Promise((r) => setTimeout(r, restante));
     await fetchUser();
   };
 

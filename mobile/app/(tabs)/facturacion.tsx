@@ -372,18 +372,20 @@ export default function FacturacionScreen() {
       {isLoading ? (
         <View>
           <ScreenHeader scrollable showBack backTo={Routes.mas} title="Facturación" right={headerRight} />
-          <View style={{ padding: space[4], gap: space[3] }}>
+          <View style={{ paddingHorizontal: space[4] }}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} style={s.billCard}>
+              <View key={i} style={[s.billRow, i < 4 && s.billDivider]}>
                 <View style={s.billHeader}>
                   <View style={{ flex: 1, gap: 6 }}>
-                    <Skeleton width={70} height={18} borderRadius={radius.full} />
                     <Skeleton width="55%" height={13} />
                     <Skeleton width="35%" height={11} />
                   </View>
-                  <Skeleton width={84} height={20} />
+                  <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                    <Skeleton width={84} height={20} />
+                    <Skeleton width={70} height={18} borderRadius={radius.full} />
+                  </View>
                 </View>
-                <Skeleton width="100%" height={44} borderRadius={radius.md} />
+                <Skeleton width="100%" height={32} borderRadius={radius.md} />
               </View>
             ))}
           </View>
@@ -415,28 +417,33 @@ export default function FacturacionScreen() {
         <FlatList
           data={bills}
           keyExtractor={(b) => b.id}
-          contentContainerStyle={{ paddingBottom: 120, gap: space[3] }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           ListHeaderComponent={<ScreenHeader scrollable showBack backTo={Routes.mas} title="Facturación" right={headerRight} />}
           renderItem={({ item: bill, index }) => {
             const meta = STATUS_META[bill.status];
             const sc = billStatusColors[bill.status] ?? billStatusColors.borrador;
             return (
-              <Animated.View style={[s.billCard, { marginHorizontal: space[4] }]} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                {/* Header */}
+              <Animated.View
+                style={[s.billRow, { marginHorizontal: space[4] }, index < bills.length - 1 && s.billDivider]}
+                entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}
+              >
+                {/* Fila estilo extracto: concepto + fecha a la izquierda, monto + estado a la derecha */}
                 <View style={s.billHeader}>
-                  <View style={{ flex: 1, gap: 4 }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={s.horseName} numberOfLines={1}>{bill.horse?.name ?? 'Factura'}</Text>
+                    <Text style={s.period}>{monthLabel(bill.month, bill.year)}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    <Text style={s.total}>{formatMoney(bill.total, bill.currency)}</Text>
                     <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
                       <View style={[s.statusDot, { backgroundColor: sc.text }]} />
                       <Text style={[s.statusText, { color: sc.text }]}>{meta.label}</Text>
                     </View>
-                    {bill.horse && <Text style={s.horseName}>{bill.horse.name}</Text>}
-                    <Text style={s.period}>{monthLabel(bill.month, bill.year)}</Text>
                   </View>
-                  <Text style={s.total}>{formatMoney(bill.total, bill.currency)}</Text>
                 </View>
 
-                {/* Items */}
-                <View style={s.itemsBox}>
+                {/* Ítems: detalle plano, sin caja */}
+                <View style={s.itemsList}>
                   {bill.items.map((item, i) => (
                     <View key={i} style={s.itemRow}>
                       <Text style={s.itemDesc} numberOfLines={1}>{item.description}</Text>
@@ -500,7 +507,8 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[2] },
-  billCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: space[4], gap: space[3], ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }) },
+  billRow: { paddingVertical: space[4], gap: space[3] },
+  billDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
   billHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, alignSelf: 'flex-start' },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
@@ -508,7 +516,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   horseName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   period: { fontSize: text.xs, color: c.textMuted },
   total: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
-  itemsBox: { backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3], gap: space[2] },
+  itemsList: { gap: space[1] + 2 },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between' },
   itemDesc: { fontSize: text.sm, color: c.textMuted, flex: 1, marginRight: space[2] },
   itemTotal: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },

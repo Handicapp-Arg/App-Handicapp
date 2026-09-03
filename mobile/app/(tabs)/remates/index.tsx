@@ -14,7 +14,8 @@ import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { haptic } from '../../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { makeCard } from '../../../styles/common';
 import { nav, Routes } from '../../../lib/routes';
 import type { Auction } from '../../../../packages/shared/src/types';
 import { formatMoney, type Currency } from '../../../lib/currency';
@@ -249,7 +250,9 @@ export default function RematesTab() {
 
 type Styles = ReturnType<typeof makeStyles>;
 
-const makeStyles = (c: ThemeColors) => StyleSheet.create({
+const makeStyles = (c: ThemeColors) => {
+  const card = makeCard(c);
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
 
   searchRow: { paddingHorizontal: space[4], paddingBottom: space[2] },
@@ -280,9 +283,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   cardWrap: { paddingHorizontal: space[4] },
 
   card: {
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    padding: space[4], marginBottom: space[3],
-    ...(c.isDark ? {} : shadow.sm),
+    ...card.padded,
+    marginBottom: space[3],
   },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: space[3] },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1 },
@@ -310,4 +312,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },
   docTag: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: space[2], paddingVertical: 2, backgroundColor: c.successSoft, borderRadius: radius.full },
   docTagText: { fontSize: text.xs, color: c.success, fontWeight: weight.semibold },
-});
+  });
+};

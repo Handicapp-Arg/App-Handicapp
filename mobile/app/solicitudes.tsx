@@ -149,6 +149,7 @@ export default function SolicitudesScreen() {
           data={filtered}
           keyExtractor={(r) => r.id}
           contentContainerStyle={s.list}
+          ItemSeparatorComponent={() => <View style={s.separator} />}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
@@ -196,12 +197,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     color: c.textMuted,
   },
   tabTextActive: { color: colors.white },
-  list: { padding: space[3], gap: space[3], paddingBottom: space[8] },
+  list: { paddingHorizontal: space[4], paddingBottom: space[8] },
+  separator: { height: 1, backgroundColor: c.border },
   row: {
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    padding: space[4],
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+    paddingVertical: space[4],
   },
   rowHead: {
     flexDirection: 'row',
