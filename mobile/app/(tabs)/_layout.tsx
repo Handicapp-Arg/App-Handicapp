@@ -92,7 +92,15 @@ export default function TabsLayout() {
       <Tabs.Screen name="mas" />
       <Tabs.Screen name="perfil"        options={{ href: null }} />
       <Tabs.Screen name="index"         options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]" options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/index"       options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/historial"   options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/sanidad"     options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/finanzas"    options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/fotos"       options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/equipo"      options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/documentos"  options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/rutina"      options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/pedigree"    options={{ href: null }} />
       <Tabs.Screen name="eventos"       options={{ href: null }} />
       <Tabs.Screen name="facturacion"   options={{ href: null }} />
       <Tabs.Screen name="remates/index" options={{ href: null }} />
