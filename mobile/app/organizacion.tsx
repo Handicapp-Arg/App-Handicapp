@@ -6,7 +6,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { CheckCircle2, Share2, X, XCircle } from 'lucide-react-native';
+import { Share2, X, XCircle } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
 import {
   useMyOrganizations, useOrganization, useOrgInvitations,
   useCreateInvitation, useCancelInvitation, useRemoveMember,
@@ -56,103 +57,87 @@ function getInviteUrl(token: string): string {
 
 function InviteModal({ visible, orgId, onClose, c, s }: { visible: boolean; orgId: string; onClose: () => void; c: ThemeColors; s: Styles }) {
   const create = useCreateInvitation(orgId);
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<OrgRole>('staff');
-  const [createdLink, setCreatedLink] = useState<string | null>(null);
 
   // La hoja ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
   useEffect(() => {
     if (!visible) return;
     setEmail('');
     setRole('staff');
-    setCreatedLink(null);
   }, [visible]);
 
   const handleSubmit = async () => {
     if (!email.trim()) return;
     const inv = await create.mutateAsync({ email: email.trim().toLowerCase(), role_in_org: role });
     haptic.success();
-    setCreatedLink(getInviteUrl(inv.token));
-  };
-
-  const shareLink = async () => {
-    if (!createdLink) return;
-    await Share.share({ message: `Te invito a HandicApp: ${createdLink}` });
+    const link = getInviteUrl(inv.token);
+    onClose();
+    const message = `Te invito a HandicApp: ${link}`;
+    try {
+      const result = await Share.share({ message });
+      if (result.action === Share.dismissedAction) {
+        await Clipboard.setStringAsync(link);
+        toast.success('Invitación creada — link copiado');
+      }
+    } catch {
+      await Clipboard.setStringAsync(link);
+      toast.success('Invitación creada — link copiado');
+    }
   };
 
   return (
     <FormSheet
       visible={visible}
       onClose={onClose}
-      title={createdLink ? 'Invitación lista' : 'Invitar miembro'}
+      title="Invitar miembro"
       footer={
-        !createdLink ? (
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, (!email.trim() || create.isPending) && { opacity: 0.5 }]}
-              disabled={!email.trim() || create.isPending}
-              onPress={handleSubmit}
-              activeOpacity={0.85}
-            >
-              {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Generar</Text>}
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1 }]} onPress={shareLink}>
-            <Text style={s.btnPrimaryText}>Compartir link</Text>
+        <>
+          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
+            <Text style={s.btnSecondaryText}>Cancelar</Text>
           </TouchableOpacity>
-        )
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { flex: 1 }, (!email.trim() || create.isPending) && { opacity: 0.5 }]}
+            disabled={!email.trim() || create.isPending}
+            onPress={handleSubmit}
+            activeOpacity={0.85}
+          >
+            {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Generar</Text>}
+          </TouchableOpacity>
+        </>
       }
     >
-      {!createdLink ? (
-        <>
-          <Text style={s.fieldLabel}>Email *</Text>
-          <TextInput
-            style={s.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="ejemplo@email.com"
-            placeholderTextColor={c.textFaint}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+      <Text style={s.fieldLabel}>Email *</Text>
+      <TextInput
+        style={s.input}
+        value={email}
+        onChangeText={setEmail}
+        placeholder="ejemplo@email.com"
+        placeholderTextColor={c.textFaint}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-          <Text style={[s.fieldLabel, { marginTop: 12 }]}>Rol</Text>
-          <View style={{ gap: 8 }}>
-            {ROLE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[s.roleCard, role === opt.value && s.roleCardActive]}
-                onPress={() => { haptic.selection(); setRole(opt.value); }}
-                activeOpacity={0.75}
-              >
-                <View style={[s.radio, role === opt.value && s.radioActive]}>
-                  {role === opt.value && <View style={s.radioDot} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.roleCardTitle, role === opt.value && s.roleCardTitleActive]}>{opt.label}</Text>
-                  <Text style={s.roleCardDesc}>{opt.desc}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      ) : (
-        <>
-          <View style={s.successIcon}>
-            <CheckCircle2 size={48} color={c.success} strokeWidth={2} />
-          </View>
-          <Text style={{ fontSize: text.sm, color: c.textMuted, textAlign: 'center', marginBottom: 12 }}>
-            Compartí este link con la persona invitada. Válido por 7 días.
-          </Text>
-          <View style={s.linkBox}>
-            <Text style={s.linkText} numberOfLines={2}>{createdLink}</Text>
-          </View>
-        </>
-      )}
+      <Text style={[s.fieldLabel, { marginTop: 12 }]}>Rol</Text>
+      <View style={{ gap: 8 }}>
+        {ROLE_OPTIONS.map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[s.roleCard, role === opt.value && s.roleCardActive]}
+            onPress={() => { haptic.selection(); setRole(opt.value); }}
+            activeOpacity={0.75}
+          >
+            <View style={[s.radio, role === opt.value && s.radioActive]}>
+              {role === opt.value && <View style={s.radioDot} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.roleCardTitle, role === opt.value && s.roleCardTitleActive]}>{opt.label}</Text>
+              <Text style={s.roleCardDesc}>{opt.desc}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
     </FormSheet>
   );
 }
@@ -573,9 +558,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   roleCardTitleActive: { color: c.brand },
   roleCardDesc: { fontSize: 11, color: c.textFaint, marginTop: 2, lineHeight: 16 },
 
-  successIcon: { alignItems: 'center', marginBottom: 12 },
-  linkBox: { backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: 12 },
-  linkText: { fontSize: 11, color: c.text, fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
 
   btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },

@@ -17,7 +17,7 @@ type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: num
 
 const TABS: Record<string, { Icon: IconType; label: string }> = {
   'caballos/index': { Icon: HorseHeadNav,  label: 'Caballos' },
-  eventos:          { Icon: CalendarClock, label: 'Eventos' },
+  'eventos/index':  { Icon: CalendarClock, label: 'Eventos' },
   agenda:           { Icon: Calendar,      label: 'Agenda' },
   mas:              { Icon: ListPlus,      label: 'Más' },
 };
@@ -71,7 +71,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           style={[StyleSheet.absoluteFill, styles.barGlass]}
         />
         {renderTab('caballos/index')}
-        {isProp && renderTab('eventos')}
+        {isProp && renderTab('eventos/index')}
         {renderTab('agenda')}
         {renderTab('mas')}
       </View>
@@ -86,7 +86,8 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false, animation: 'shift', sceneStyle: { backgroundColor: c.bg } }}
     >
-      <Tabs.Screen name="muro" />
+      <Tabs.Screen name="muro/index" />
+      <Tabs.Screen name="muro/nuevo" options={{ href: null }} />
       <Tabs.Screen name="caballos/index" />
       <Tabs.Screen name="agenda" />
       <Tabs.Screen name="mas" />
@@ -105,7 +106,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="caballos/[id]/documentos"  options={{ href: null }} />
       <Tabs.Screen name="caballos/[id]/rutina"      options={{ href: null }} />
       <Tabs.Screen name="caballos/[id]/pedigree"    options={{ href: null }} />
-      <Tabs.Screen name="eventos"       options={{ href: null }} />
+      <Tabs.Screen name="caballos/[id]/vincular-padron" options={{ href: null }} />
+      <Tabs.Screen name="eventos/index" options={{ href: null }} />
+      <Tabs.Screen name="eventos/nuevo" options={{ href: null }} />
       <Tabs.Screen name="facturacion/index" options={{ href: null }} />
       <Tabs.Screen name="facturacion/nueva" options={{ href: null }} />
       <Tabs.Screen name="facturacion/[id]"  options={{ href: null }} />

@@ -119,15 +119,15 @@ export default function SolicitudesScreen() {
     <View style={s.container}>
       <ScreenHeader title="Solicitudes" subtitle="Pensión de caballos" showBack backTo={Routes.mas} />
 
-      <View style={s.tabs}>
+      <View style={s.filterChips}>
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.value}
             onPress={() => { haptic.selection(); setFilter(f.value); }}
-            style={[s.tab, filter === f.value && s.tabActive]}
+            style={[s.filterChip, filter === f.value && s.filterChipActive]}
             activeOpacity={0.7}
           >
-            <Text style={[s.tabText, filter === f.value && s.tabTextActive]}>{f.label}</Text>
+            <Text style={[s.filterChipText, filter === f.value && s.filterChipTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -174,12 +174,12 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tabs: {
+  filterChips: {
     flexDirection: 'row',
     padding: space[3],
     gap: space[2],
   },
-  tab: {
+  filterChip: {
     flex: 1,
     minHeight: touch.min,
     justifyContent: 'center',
@@ -188,15 +188,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt,
     alignItems: 'center',
   },
-  tabActive: {
+  filterChipActive: {
     backgroundColor: c.brand,
   },
-  tabText: {
+  filterChipText: {
     fontSize: text.sm,
     fontWeight: weight.semibold,
     color: c.textMuted,
   },
-  tabTextActive: { color: colors.white },
+  filterChipTextActive: { color: colors.white },
   list: { paddingHorizontal: space[4], paddingBottom: space[8] },
   separator: { height: 1, backgroundColor: c.border },
   row: {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable,
   TextInput, RefreshControl, KeyboardAvoidingView,
@@ -10,13 +10,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ShieldCheck, Building2, TrendingUp, ChevronRight,
-  CheckCircle2, Info, Paperclip, FileText, Camera, Search, XCircle, Plus, X,
+  Camera, Search, XCircle, Plus, X,
   Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHorses, useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
-import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../hooks/use-horse-records';
 import { useCreateEvent } from '../../../hooks/use-events';
 import { formatMoney } from '../../../lib/currency';
 import { useDashboard } from '../../../hooks/use-dashboard';
@@ -30,6 +29,7 @@ import { ErrorState } from '../../../components/ErrorState';
 import { useToast } from '../../../components/Toast';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
+import { Routes, nav } from '../../../lib/routes';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import type { Horse } from '../../../../packages/shared/src';
@@ -267,253 +267,15 @@ function QuickGastoModal({
   );
 }
 
-const SOURCE_LABELS: Record<string, string> = {
-  studbook_ar: 'Studbook AR',
-  sra: 'SRA',
-  aqha: 'AQHA',
-  allbreed: 'AllBreed',
-  pedigreequery: 'PedigreeQuery',
-  manual: 'Manual',
-};
-
-function RecordMatchModal({
-  matches,
-  microchip,
-  birthDate,
-  horseId,
-  onClose,
-  onChrome,
-  c,
-  s,
-}: {
-  matches: HorseRecord[];
-  microchip: string;
-  birthDate: string;
-  horseId: string;
-  onClose: () => void;
-  onChrome: (chrome: { title: string; footer: ReactNode }) => void;
-  c: ThemeColors;
-  s: Styles;
-}) {
-  const submitClaim = useSubmitClaim();
-  const uploadDoc = useUploadClaimDocument();
-  const toast = useToast();
-  const [step, setStep] = useState<'list' | 'form' | 'done'>('list');
-  const [selectedRecord, setSelectedRecord] = useState<HorseRecord | null>(null);
-  const [docUri, setDocUri] = useState<string | null>(null);
-  const [registrationNumber, setRegistrationNumber] = useState('');
-  const [error, setError] = useState('');
-
-  const pickDoc = async (source: 'camera' | 'gallery') => {
-    if (source === 'camera') {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
-      const result = await ImagePicker.launchCameraAsync({ quality: 0.9, allowsEditing: false });
-      if (!result.canceled) setDocUri(result.assets[0].uri);
-    } else {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { toast.error('Necesitamos acceso a la galería.'); return; }
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.9, allowsEditing: false });
-      if (!result.canceled) setDocUri(result.assets[0].uri);
-    }
-  };
-
-  const handlePickDoc = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Cancelar', 'Tomar foto', 'Elegir de galería'], cancelButtonIndex: 0 },
-        (i) => { if (i === 1) pickDoc('camera'); else if (i === 2) pickDoc('gallery'); },
-      );
-    } else {
-      Alert.alert('Documento', '¿Cómo querés adjuntar el documento?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Tomar foto', onPress: () => pickDoc('camera') },
-        { text: 'Elegir de galería', onPress: () => pickDoc('gallery') },
-      ]);
-    }
-  };
-
-  const handleSendClaim = async () => {
-    if (!docUri && !registrationNumber.trim()) {
-      setError('Subí un documento o ingresá el número de registro para continuar.');
-      return;
-    }
-    setError('');
-    try {
-      let document_url: string | undefined;
-      let document_public_id: string | undefined;
-      if (docUri) {
-        const uploaded = await uploadDoc.mutateAsync(docUri);
-        document_url = uploaded.url;
-        document_public_id = uploaded.public_id;
-      }
-      await submitClaim.mutateAsync({
-        horse_record_id: selectedRecord!.id,
-        horse_id: horseId,
-        microchip: microchip || undefined,
-        claimed_birth_date: birthDate || undefined,
-        registration_number: registrationNumber.trim() || undefined,
-        document_url,
-        document_public_id,
-      });
-      setStep('done');
-    } catch {
-      setError('No se pudo enviar el reclamo. Intentá de nuevo.');
-    }
-  };
-
-  const isBusy = uploadDoc.isPending || submitClaim.isPending;
-
-  // El chrome (título + footer) lo dibuja el FormSheet del padre: acá sólo
-  // avisamos qué corresponde mostrar según el paso en el que estamos.
-  useEffect(() => {
-    if (step === 'done') {
-      onChrome({
-        title: '¡Reclamo aprobado!',
-        footer: (
-          <Pressable style={s.submitBtn} onPress={onClose}>
-            <Text style={s.submitBtnText}>Listo</Text>
-          </Pressable>
-        ),
-      });
-      return;
-    }
-    if (step === 'form' && selectedRecord) {
-      onChrome({
-        title: 'Validar posesión',
-        footer: (
-          <>
-            <Pressable
-              style={s.cancelBtn}
-              onPress={() => { haptic.selection(); setStep('list'); setDocUri(null); setRegistrationNumber(''); setError(''); }}
-            >
-              <Text style={s.cancelBtnText}>Volver</Text>
-            </Pressable>
-            <Pressable
-              style={[s.submitBtn, isBusy && { opacity: 0.6 }]}
-              onPress={handleSendClaim}
-              disabled={isBusy}
-            >
-              {isBusy
-                ? <ActivityIndicator color={colors.white} size="small" />
-                : <Text style={s.submitBtnText}>Enviar reclamo</Text>
-              }
-            </Pressable>
-          </>
-        ),
-      });
-      return;
-    }
-    onChrome({
-      title: 'Posibles coincidencias',
-      footer: (
-        <Pressable style={s.submitBtn} onPress={onClose}>
-          <Text style={s.submitBtnText}>Omitir por ahora</Text>
-        </Pressable>
-      ),
-    });
-  }, [step, selectedRecord, isBusy, docUri, registrationNumber]);
-
-  if (step === 'done') {
-    return (
-      <View style={s.matchDoneWrap}>
-        <CheckCircle2 size={52} color={c.success} strokeWidth={2} />
-        <Text style={s.matchDoneTitle}>¡Reclamo aprobado!</Text>
-        <Text style={s.matchDoneSub}>Tu caballo quedó vinculado al registro oficial del padrón.</Text>
-      </View>
-    );
-  }
-
-  if (step === 'form' && selectedRecord) {
-    return (
-      <>
-        <Text style={s.matchSubtitle}>{selectedRecord.name}</Text>
-        <View style={s.claimInfoBox}>
-          <Info size={16} color={c.textMuted} strokeWidth={2} />
-          <Text style={s.claimInfoText}>
-            Necesitamos al menos un documento oficial o el número de registro para validar la posesión.
-          </Text>
-        </View>
-
-        {/* Número de registro */}
-        <Text style={s.fieldLabel}>Número de registro (opcional)</Text>
-        <TextInput
-          style={s.input}
-          value={registrationNumber}
-          onChangeText={setRegistrationNumber}
-          placeholder="Ej: STB-2018-00142"
-          placeholderTextColor={c.textFaint}
-          autoCapitalize="characters"
-        />
-
-        {/* Upload documento */}
-        <Text style={s.fieldLabel}>Documento de propiedad</Text>
-        <TouchableOpacity style={s.docPickerBtn} onPress={handlePickDoc} activeOpacity={0.8}>
-          {docUri ? (
-            <View style={s.docPreviewRow}>
-              <AppImage source={{ uri: docUri }} style={s.docThumb} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.docPickedText}>Documento adjunto</Text>
-                <Text style={s.docPickedSub}>Tocá para cambiar</Text>
-              </View>
-              <CheckCircle2 size={20} color={c.success} strokeWidth={2} />
-            </View>
-          ) : (
-            <View style={s.docPlaceholder}>
-              <Paperclip size={28} color={c.textFaint} strokeWidth={2} />
-              <Text style={s.photoPlaceholderText}>Adjuntar certificado</Text>
-              <Text style={s.photoPlaceholderSub}>Foto del certificado del Studbook, DNE u otro</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {error ? <Text style={s.errorText}>{error}</Text> : null}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Text style={s.matchSubtitle}>Encontramos este caballo en el padrón</Text>
-      {matches.map((r) => (
-        <View key={r.id} style={s.matchRow}>
-          <View style={s.matchInfo}>
-            <Text style={s.matchName}>{r.name}</Text>
-            <View style={s.matchMeta}>
-              {r.birth_year && <Text style={s.matchDetail}>{r.birth_year}</Text>}
-              {r.sex && <Text style={s.matchDetail}>{r.sex}</Text>}
-              {r.breed && <Text style={s.matchDetail}>{r.breed}</Text>}
-              {r.color && <Text style={s.matchDetail}>{r.color}</Text>}
-            </View>
-            <View style={s.matchSourceRow}>
-              <FileText size={11} color={c.textFaint} strokeWidth={2} />
-              <Text style={s.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
-              {r.ownership_status === 'pending_claim' && (
-                <Text style={s.matchPending}>· Reclamo pendiente</Text>
-              )}
-            </View>
-          </View>
-          <TouchableOpacity
-            style={s.claimBtn}
-            onPress={() => { haptic.selection(); setSelectedRecord(r); setStep('form'); }}
-          >
-            <Text style={s.claimBtnText}>Reclamar</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
-    </>
-  );
-}
-
 function CreateHorseModal({
-  visible, onClose, c, s, onChrome,
+  visible, onClose, c, s,
 }: {
   visible: boolean;
   onClose: () => void;
   c: ThemeColors;
   s: Styles;
-  onChrome: (chrome: { title: string; footer: ReactNode }) => void;
 }) {
+  const router = useRouter();
   const createHorse = useCreateHorse();
   const uploadImage = useUploadHorseImage();
   const toast = useToast();
@@ -522,13 +284,12 @@ function CreateHorseModal({
   const [microchip, setMicrochip] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [matches, setMatches] = useState<{ records: HorseRecord[]; horseId: string } | null>(null);
 
   // El FormSheet no destruye el formulario al cerrarse: hay que limpiarlo
   // manualmente cuando se vuelve a abrir, o el usuario ve lo que tipeó antes.
   useEffect(() => {
     if (!visible) return;
-    setName(''); setBirthDate(''); setMicrochip(''); setPhotoUri(null); setError(''); setMatches(null);
+    setName(''); setBirthDate(''); setMicrochip(''); setPhotoUri(null); setError('');
   }, [visible]);
 
   const pickPhoto = async (source: 'camera' | 'gallery') => {
@@ -587,10 +348,9 @@ function CreateHorseModal({
         toast.success('Caballo guardado');
       }
       haptic.success();
+      onClose();
       if (result.record_matches.length > 0) {
-        setMatches({ records: result.record_matches, horseId: result.horse.id });
-      } else {
-        onClose();
+        nav.push(router, `${Routes.vincularPadron(result.horse.id)}?matches=${encodeURIComponent(JSON.stringify(result.record_matches))}&microchip=${encodeURIComponent(microchip)}&birthDate=${encodeURIComponent(birthDate)}`);
       }
     } catch (err) {
       haptic.error();
@@ -601,11 +361,12 @@ function CreateHorseModal({
 
   const isBusy = createHorse.isPending || uploadImage.isPending;
 
-  useEffect(() => {
-    if (matches !== null) return; // el chrome de este paso lo maneja RecordMatchModal
-    onChrome({
-      title: 'Nuevo caballo',
-      footer: (
+  return (
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Nuevo caballo"
+      footer={
         <>
           <Pressable style={s.cancelBtn} onPress={() => { haptic.light(); onClose(); }}>
             <Text style={s.cancelBtnText}>Cancelar</Text>
@@ -621,27 +382,8 @@ function CreateHorseModal({
             }
           </Pressable>
         </>
-      ),
-    });
-  }, [matches, isBusy, name, birthDate, microchip, photoUri]);
-
-  if (matches !== null) {
-    return (
-      <RecordMatchModal
-        matches={matches.records}
-        microchip={microchip}
-        birthDate={birthDate}
-        horseId={matches.horseId}
-        onClose={onClose}
-        onChrome={onChrome}
-        c={c}
-        s={s}
-      />
-    );
-  }
-
-  return (
-    <>
+      }
+    >
       {/* Foto */}
       <TouchableOpacity
         style={s.photoPickerBtn}
@@ -691,7 +433,7 @@ function CreateHorseModal({
         keyboardType="numeric"
       />
       {error ? <Text style={s.errorText}>{error}</Text> : null}
-    </>
+    </FormSheet>
   );
 }
 
@@ -705,10 +447,6 @@ export default function CaballosScreen() {
   const [filterActivity, setFilterActivity] = useState('');
   const [filterEstab, setFilterEstab] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [createChrome, setCreateChrome] = useState<{ title: string; footer: ReactNode }>({
-    title: 'Nuevo caballo', footer: null,
-  });
-  const handleCreateChrome = useCallback((chrome: { title: string; footer: ReactNode }) => setCreateChrome(chrome), []);
   const insets = useSafeAreaInsets();
 
   const spendMap = useMemo(() => {
@@ -850,21 +588,13 @@ export default function CaballosScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Formulario: crear caballo */}
-      <FormSheet
+      {/* Hoja: crear caballo */}
+      <CreateHorseModal
         visible={showCreate}
         onClose={() => setShowCreate(false)}
-        title={createChrome.title}
-        footer={createChrome.footer}
-      >
-        <CreateHorseModal
-          visible={showCreate}
-          onClose={() => setShowCreate(false)}
-          c={c}
-          s={s}
-          onChrome={handleCreateChrome}
-        />
-      </FormSheet>
+        c={c}
+        s={s}
+      />
 
     </View>
   );
@@ -991,28 +721,4 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoPlaceholderText: { fontSize: 12, fontWeight: '700', color: c.textMuted },
   photoPlaceholderSub: { fontSize: 10, color: c.textFaint },
   photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
-  // Match modal
-  matchCard: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
-  matchSubtitle: { fontSize: 12, color: c.textFaint, marginTop: 1 },
-  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: c.surfaceAlt, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: c.border },
-  matchInfo: { flex: 1, gap: 4 },
-  matchName: { fontSize: 15, fontWeight: '700', color: c.text },
-  matchMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  matchDetail: { fontSize: 12, color: c.textMuted, backgroundColor: c.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  matchSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  matchSource: { fontSize: 11, color: c.textFaint },
-  matchPending: { fontSize: 11, color: colors.amber600 },
-  claimBtn: { backgroundColor: c.brand, borderRadius: 10, paddingHorizontal: 14, minHeight: 44, minWidth: 80, alignItems: 'center', justifyContent: 'center' },
-  claimBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  matchDoneWrap: { alignItems: 'center', padding: 32, gap: 12 },
-  matchDoneTitle: { fontSize: 18, fontWeight: '700', color: c.text },
-  matchDoneSub: { fontSize: 14, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
-  claimInfoBox: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 12 },
-  claimInfoText: { flex: 1, fontSize: 12, color: c.textMuted, lineHeight: 17 },
-  docPickerBtn: { borderWidth: 1.5, borderColor: c.border, borderRadius: 14, borderStyle: 'dashed', overflow: 'hidden' },
-  docPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 24, gap: 6 },
-  docPreviewRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
-  docThumb: { width: 56, height: 56, borderRadius: 8 },
-  docPickedText: { fontSize: 13, fontWeight: '600', color: c.text },
-  docPickedSub: { fontSize: 11, color: c.textFaint, marginTop: 2 },
 });

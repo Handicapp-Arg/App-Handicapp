@@ -25,8 +25,6 @@ import { ActionSheet } from '../../components/ActionSheet';
 import { FormSheet } from '../../components/FormSheet';
 import { SwipeableRow } from '../../components/SwipeableRow';
 
-const TYPE_OPTIONS = Object.entries(APPOINTMENT_TYPES);
-
 function AppointmentRow({
   appt,
   onComplete,
@@ -118,7 +116,6 @@ function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: ()
   const [date, setDate] = useState('');
   const [timeDate, setTimeDate] = useState(() => { const d = new Date(); d.setHours(9, 0, 0, 0); return d; });
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
   const timeStr = timeDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
@@ -126,8 +123,7 @@ function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: ()
   // La hoja ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
   useEffect(() => {
     if (!visible) return;
-    setTitle(''); setDate(''); setNotes(''); setError('');
-    setType('veterinario');
+    setTitle(''); setDate(''); setError(''); setType('veterinario');
     setHorseId(horses?.[0]?.id ?? '');
     const d = new Date(); d.setHours(9, 0, 0, 0); setTimeDate(d);
   }, [visible]);
@@ -139,7 +135,7 @@ function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: ()
     const dt = new Date(date + 'T12:00:00');
     dt.setHours(timeDate.getHours(), timeDate.getMinutes());
     try {
-      await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString(), notes: notes || undefined });
+      await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString() });
       haptic.success();
       toast.success('Turno agendado');
       onClose();
@@ -185,20 +181,20 @@ function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: ()
             </ScrollView>
           </View>
 
-          {/* Tipo */}
-          <View style={{ gap: space[2] }}>
-            <Text style={typography.label}>Tipo</Text>
-            <View style={s.typeGrid}>
-              {TYPE_OPTIONS.map(([v, m]) => (
-                <TouchableOpacity key={v}
-                  style={[s.typeBtn, type === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg }]}
-                  onPress={() => { haptic.selection(); setType(v); }}
-                >
-                  <Text style={[s.typeBtnText, type === v && { color: m.color }]}>{m.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          {/* Tipo — fila compacta, un turno puede ser de herrador u otro */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
+            {Object.entries(APPOINTMENT_TYPES).map(([v, m]) => (
+              <TouchableOpacity
+                key={v}
+                style={[s.chip, type === v && s.chipActive]}
+                onPress={() => { haptic.selection(); setType(v); }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: type === v }}
+              >
+                <Text style={[s.chipText, type === v && s.chipTextActive]}>{m.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           {/* Título */}
           <View style={{ gap: space[2] }}>
@@ -229,12 +225,6 @@ function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: ()
                 }}
               />
             )}
-          </View>
-
-          {/* Notas */}
-          <View style={{ gap: space[2] }}>
-            <Text style={typography.label}>Notas (opcional)</Text>
-            <TextInput style={inputStyle.multiline} value={notes} onChangeText={setNotes} multiline placeholder="Observaciones..." placeholderTextColor={c.textFaint} />
           </View>
 
           {error ? <Text style={s.errorText}>{error}</Text> : null}
@@ -449,8 +439,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   chipActive: { backgroundColor: c.brand },
   chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   chipTextActive: { color: colors.white },
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  typeBtn: { borderRadius: radius.md, paddingVertical: space[2], paddingHorizontal: space[3], backgroundColor: c.surfaceAlt },
-  typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   errorText: { fontSize: text.sm, color: colors.red500 },
 });

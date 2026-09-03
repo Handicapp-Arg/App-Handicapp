@@ -370,7 +370,35 @@ function CheckoutSheet({
   };
 
   return (
-    <FormSheet visible={visible} onClose={onClose} title="Confirmar suscripción">
+    <FormSheet
+      visible={visible}
+      onClose={onClose}
+      title="Confirmar suscripción"
+      footer={plan ? (
+        <View style={{ flex: 1, gap: space[2] }}>
+          <Pressable
+            onPress={handlePay}
+            disabled={subscribe.isPending}
+            style={({ pressed }) => [s.payBtn, (pressed || subscribe.isPending) && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel={subscribe.isPending ? 'Redirigiendo al pago' : 'Ir al pago seguro'}
+          >
+            {subscribe.isPending ? (
+              <>
+                <ActivityIndicator size="small" color={colors.white} />
+                <Text style={s.payBtnText}>Redirigiendo…</Text>
+              </>
+            ) : (
+              <>
+                <Lock size={16} color={colors.white} strokeWidth={2.6} />
+                <Text style={s.payBtnText}>Ir al pago seguro</Text>
+              </>
+            )}
+          </Pressable>
+          {error ? <Text style={s.subError}>{error}</Text> : null}
+        </View>
+      ) : null}
+    >
       {plan ? (
         <>
           {/* Resumen del plan */}
@@ -417,27 +445,6 @@ function CheckoutSheet({
             </Text>
           </View>
 
-          {/* CTA pago */}
-          <Pressable
-            onPress={handlePay}
-            disabled={subscribe.isPending}
-            style={({ pressed }) => [s.payBtn, (pressed || subscribe.isPending) && { opacity: 0.7 }]}
-            accessibilityRole="button"
-            accessibilityLabel={subscribe.isPending ? 'Redirigiendo al pago' : 'Ir al pago seguro'}
-          >
-            {subscribe.isPending ? (
-              <>
-                <ActivityIndicator size="small" color={colors.white} />
-                <Text style={s.payBtnText}>Redirigiendo…</Text>
-              </>
-            ) : (
-              <>
-                <Lock size={16} color={colors.white} strokeWidth={2.6} />
-                <Text style={s.payBtnText}>Ir al pago seguro</Text>
-              </>
-            )}
-          </Pressable>
-          {error ? <Text style={s.subError}>{error}</Text> : null}
         </>
       ) : null}
     </FormSheet>

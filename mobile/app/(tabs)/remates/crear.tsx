@@ -192,7 +192,7 @@ export default function CrearRemateScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Paso 1: Elegir caballo */}
+          {/* Caballo y tipo de venta */}
           <View style={s.section}>
             <Text style={s.sectionLabel}>¿Cuál caballo querés vender?</Text>
             {myHorses.length === 0 ? (
@@ -210,14 +210,13 @@ export default function CrearRemateScreen() {
             )}
           </View>
 
-          {/* Paso 2: Tipo de venta */}
           <View style={s.section}>
             <Text style={s.sectionLabel}>Tipo de publicación</Text>
             <TypeOption type="venta_directa" selected={type} onSelect={setType} isLast={false} c={c} s={s} />
             <TypeOption type="remate" selected={type} onSelect={setType} isLast c={c} s={s} />
           </View>
 
-          {/* Paso 3: Precio */}
+          {/* Precio y cierre */}
           <View style={[s.section, s.groupStart]}>
             <Text style={s.sectionLabel}>
               {type === 'venta_directa' ? 'Precio de venta' : 'Precio base de la subasta'}
@@ -351,6 +350,7 @@ export default function CrearRemateScreen() {
             </View>
           )}
 
+          {/* Publicación */}
           {/* Título y ubicación: sin rótulo, el placeholder describe el campo */}
           <View style={[s.section, s.groupStart]}>
             <TextInput
