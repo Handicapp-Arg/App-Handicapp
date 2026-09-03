@@ -33,7 +33,6 @@ export function FormSheet({
   footer,
   /** Alto máximo de la hoja, como fracción de la pantalla. */
   maxHeight = '92%',
-  scrollEnabled = true,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -41,8 +40,6 @@ export function FormSheet({
   children: ReactNode;
   footer?: ReactNode;
   maxHeight?: `${number}%`;
-  /** Apagarlo mientras un hijo captura el gesto (ej.: el canvas de firma). */
-  scrollEnabled?: boolean;
 }) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
@@ -107,7 +104,6 @@ export function FormSheet({
                 s.body,
                 !footer && { paddingBottom: insets.bottom + 20 },
               ]}
-              scrollEnabled={scrollEnabled}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="interactive"
               showsVerticalScrollIndicator={false}

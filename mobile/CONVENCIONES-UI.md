@@ -88,6 +88,24 @@ es mentira.
 
 ---
 
+## Arquitectura de la información nativa (ley del 03/09)
+
+La estructura de cada sección debe ser la de una app nativa, no la de una web
+adaptada. Canon aprobado: la ficha del caballo (`caballos/[id]/`).
+
+1. **Resumen + push, nunca tabs internos.** Una pantalla con más de 2-3 temas
+   se parte: la principal RESUME (lo vital, las alertas, un dato hero) y cada
+   tema profundo es una pantalla propia que se abre con push y se vuelve con
+   el gesto del borde. Prohibidos los tab bars internos dentro de una pantalla.
+2. **Hojas (FormSheet/BottomSheet) solo para acciones rápidas**: hasta ~4
+   campos o una decisión puntual (un turno, un peso, confirmar algo). Un
+   formulario largo o multi-paso es una PANTALLA COMPLETA pusheada con su
+   header y su botón de guardar.
+3. **La pantalla principal de una sección responde en un vistazo** "¿está todo
+   bien? ¿qué hay de nuevo? ¿qué puedo hacer?" — lo demás se navega.
+4. Toda pantalla pusheada usa `ScreenHeader` con back y el contexto como
+   subtitle (ej: "Sanidad" / subtítulo "Malbec").
+
 ## El fondo es el lienzo (ley del 02/09 — la más importante)
 
 **Prohibido "caja dentro de caja".** El feedback textual del dueño tras recorrer

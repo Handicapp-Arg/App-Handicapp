@@ -11,6 +11,8 @@ export const Routes = {
   tabsEventos:         '/(tabs)/eventos',
   tabsAgenda:          '/(tabs)/agenda',
   tabsFacturacion:     '/(tabs)/facturacion',
+  facturacionNueva:    '/(tabs)/facturacion/nueva',
+  factura:             (id: string) => `/(tabs)/facturacion/${id}`,
   authLogin:           '/(auth)/login',
   authRegistro:        '/(auth)/registro',
   buscar:              '/buscar',
@@ -18,6 +20,9 @@ export const Routes = {
   unirme:              '/unirme',
   directorio:          '/directorio',
   contratos:           '/contratos',
+  contratoNuevo:       '/(tabs)/contratos/nuevo',
+  contrato:            (id: string) => `/(tabs)/contratos/${id}`,
+  contratoFirmar:      (id: string) => `/(tabs)/contratos/${id}/firmar`,
   solicitudes:         '/solicitudes',
   notificaciones:      '/notificaciones',
   notificacionesConfig: '/notificaciones-config',
@@ -33,6 +38,7 @@ export const Routes = {
   caballo:             (id: string) => `/(tabs)/caballos/${id}`,
   arbol:               '/(tabs)/arbol',
   padron:              '/padron',
+  padronRegistro:      (id: string) => `/padron/${id}`,
   supervision:         '/supervision',
 } as const;
 

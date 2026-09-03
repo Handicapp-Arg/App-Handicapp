@@ -90,7 +90,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="caballos/index" />
       <Tabs.Screen name="agenda" />
       <Tabs.Screen name="mas" />
-      <Tabs.Screen name="perfil"        options={{ href: null }} />
+      <Tabs.Screen name="perfil/index"        options={{ href: null }} />
+      <Tabs.Screen name="perfil/cuenta"       options={{ href: null }} />
+      <Tabs.Screen name="perfil/contacto"     options={{ href: null }} />
+      <Tabs.Screen name="perfil/matricula"    options={{ href: null }} />
+      <Tabs.Screen name="perfil/planes-admin" options={{ href: null }} />
       <Tabs.Screen name="index"         options={{ href: null }} />
       <Tabs.Screen name="caballos/[id]/index"       options={{ href: null }} />
       <Tabs.Screen name="caballos/[id]/historial"   options={{ href: null }} />
@@ -102,13 +106,18 @@ export default function TabsLayout() {
       <Tabs.Screen name="caballos/[id]/rutina"      options={{ href: null }} />
       <Tabs.Screen name="caballos/[id]/pedigree"    options={{ href: null }} />
       <Tabs.Screen name="eventos"       options={{ href: null }} />
-      <Tabs.Screen name="facturacion"   options={{ href: null }} />
+      <Tabs.Screen name="facturacion/index" options={{ href: null }} />
+      <Tabs.Screen name="facturacion/nueva" options={{ href: null }} />
+      <Tabs.Screen name="facturacion/[id]"  options={{ href: null }} />
       <Tabs.Screen name="remates/index" options={{ href: null }} />
       <Tabs.Screen name="remates/crear" options={{ href: null }} />
       <Tabs.Screen name="remates/[id]"  options={{ href: null }} />
       <Tabs.Screen name="notificaciones" options={{ href: null }} />
       <Tabs.Screen name="directorio"     options={{ href: null }} />
-      <Tabs.Screen name="contratos"      options={{ href: null }} />
+      <Tabs.Screen name="contratos/index"       options={{ href: null }} />
+      <Tabs.Screen name="contratos/nuevo"       options={{ href: null }} />
+      <Tabs.Screen name="contratos/[id]/index"  options={{ href: null }} />
+      <Tabs.Screen name="contratos/[id]/firmar" options={{ href: null }} />
       <Tabs.Screen name="arbol"          options={{ href: null }} />
       <Tabs.Screen name="mi-plan"        options={{ href: null }} />
       <Tabs.Screen name="reportes"       options={{ href: null }} />

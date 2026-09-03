@@ -32,6 +32,29 @@ export interface HorseRecord {
 
 interface SearchResult { items: HorseRecord[]; total: number }
 
+export interface HorseDetail extends HorseRecord {
+  registration_number: string | null;
+  birth_date: string | null;
+}
+
+export function useHorseRecordDetail(id: string | null) {
+  return useQuery<HorseDetail>({
+    queryKey: ['horse-records', id],
+    queryFn: () => api.get(`/horse-records/${id}`).then(r => r.data),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+}
+
+export function useHorseRecordProgeny(id: string | null) {
+  return useQuery<HorseRecord[]>({
+    queryKey: ['horse-records', id, 'progeny'],
+    queryFn: () => api.get(`/horse-records/${id}/progeny`).then(r => r.data),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+}
+
 export function useHorseRecordsSearch(name: string, enabled = true) {
   return useQuery<SearchResult>({
     queryKey: ['horse-records', 'search', name],
