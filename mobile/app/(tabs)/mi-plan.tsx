@@ -255,12 +255,15 @@ function PlanCardInner({
       {/* Features como checklist con el color del tier */}
       {plan.features.length > 0 && (
         <View style={[s.featList, { borderTopColor: c.border }]}>
-          {plan.features.map((f) => (
+          {plan.features.slice(0, 3).map((f) => (
             <FeatureRow
               key={f} label={featureLabel(f)} featureKey={f}
               accent={accent} soft={soft} textColor={c.textMuted} s={s}
             />
           ))}
+          {plan.features.length > 3 && (
+            <Text style={s.masBeneficios}>y {plan.features.length - 3} beneficios más</Text>
+          )}
         </View>
       )}
 
@@ -584,6 +587,7 @@ export default function MiPlanScreen() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  masBeneficios: { fontSize: text.sm, color: c.textFaint, marginTop: 2, marginLeft: 30 },
   root: { flex: 1, backgroundColor: c.bg },
   content: { padding: space[4], paddingBottom: 120 },
 

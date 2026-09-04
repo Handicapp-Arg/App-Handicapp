@@ -59,6 +59,9 @@ export default function ContactoScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         <View style={s.section}>
           <View style={s.card}>
@@ -74,6 +77,9 @@ export default function ContactoScreen() {
                   placeholderTextColor={c.textFaint}
                   keyboardType="phone-pad"
                   autoCapitalize="none"
+                  textContentType="telephoneNumber"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSavePhone}
                 />
               </View>
               <Text style={s.fieldHint}>Formato internacional, con código de país.</Text>

@@ -15,6 +15,8 @@ import { haptic } from '../lib/haptics';
 import { useSearchLiveStudbook, type HorseRecord } from '../hooks/use-horse-records';
 import { ListRowSkeleton } from '../components/Skeleton';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import api from '../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -93,7 +95,7 @@ export default function PadronScreen() {
   const s = useMemo(() => makeStyles(c), [c]);
   const cardS = useMemo(() => makeCardStyles(c), [c]);
 
-  const { data, isLoading, isFetching, refetch, isRefetching } = useSearch(query);
+  const { data, isLoading, isError, isFetching, refetch, isRefetching } = useSearch(query);
 
   // Búsqueda en vivo en el Stud Book Argentino (complemento explícito)
   const liveSearch = useSearchLiveStudbook();
@@ -203,6 +205,8 @@ export default function PadronScreen() {
         <View style={{ padding: space[4], gap: space[2] }}>
           {[1, 2, 3, 4, 5, 6].map((i) => <ListRowSkeleton key={i} />)}
         </View>
+      ) : isError && items.length === 0 ? (
+        <ErrorState onRetry={() => refetch()} />
       ) : (
         <FlatList
           data={items}
@@ -220,11 +224,11 @@ export default function PadronScreen() {
           }
           ListFooterComponent={liveFooter}
           ListEmptyComponent={
-            <View style={s.center}>
-              <Search size={40} color={c.textFaint} strokeWidth={2} />
-              <Text style={s.emptyTitle}>Sin resultados</Text>
-              {query ? <Text style={s.emptySubtitle}>No está en el padrón local</Text> : null}
-            </View>
+            <EmptyState
+              icon="search-outline"
+              title="Sin resultados"
+              message={query ? 'No está en el padrón local' : undefined}
+            />
           }
         />
       )}
@@ -251,10 +255,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   searchInput: { flex: 1, fontSize: text.sm, color: c.text },
   totalText: { fontSize: text.xs, color: c.textFaint, marginTop: space[2], paddingLeft: space[1] },
   list: { padding: space[4], paddingBottom: 80 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[8], marginTop: space[10] },
-  loadingText: { fontSize: text.sm, color: c.textFaint, marginTop: space[3] },
-  emptyTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted, marginTop: space[3] },
-  emptySubtitle: { fontSize: text.sm, color: c.textFaint, marginTop: space[1] },
   liveWrap: { marginTop: space[2], marginBottom: space[4] },
   liveBtn: {
     flexDirection: 'row',

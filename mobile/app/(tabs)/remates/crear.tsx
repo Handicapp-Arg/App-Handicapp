@@ -28,30 +28,22 @@ function HorseSelector({ horses, selected, onSelect, s }: {
   s: Styles;
 }) {
   return (
-    <View style={s.horseGrid}>
-      {horses.map((h) => (
-        <TouchableOpacity
-          key={h.id}
-          style={[s.horseOption, selected === h.id && s.horseOptionActive]}
-          onPress={() => { haptic.selection(); onSelect(h.id, h.name); }}
-          activeOpacity={0.75}
-        >
-          <View style={[s.horseOptionAvatar, selected === h.id && s.horseOptionAvatarActive]}>
-            <Text style={[s.horseOptionAvatarText, selected === h.id && { color: colors.white }]}>
-              {h.name[0]?.toUpperCase()}
-            </Text>
-          </View>
-          <Text style={[s.horseOptionName, selected === h.id && s.horseOptionNameActive]} numberOfLines={2}>
-            {h.name}
-          </Text>
-          {selected === h.id && (
-            <View style={s.horseCheckMark}>
-              <Check size={12} color={colors.white} strokeWidth={2} />
-            </View>
-          )}
-        </TouchableOpacity>
-      ))}
-    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horseChipRow}>
+      {horses.map((h) => {
+        const active = selected === h.id;
+        return (
+          <TouchableOpacity
+            key={h.id}
+            style={[s.horseChip, active && s.horseChipActive]}
+            onPress={() => { haptic.selection(); onSelect(h.id, h.name); }}
+            activeOpacity={0.75}
+          >
+            {active && <Check size={13} color={colors.white} strokeWidth={2.5} />}
+            <Text style={[s.horseChipText, active && s.horseChipTextActive]}>{h.name}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 }
 
@@ -191,6 +183,8 @@ export default function CrearRemateScreen() {
           contentContainerStyle={s.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          keyboardDismissMode="interactive"
         >
           {/* Caballo y tipo de venta */}
           <View style={s.section}>
@@ -242,7 +236,7 @@ export default function CrearRemateScreen() {
                 onChangeText={(v) => setPrice(v.replace(/[^0-9.]/g, ''))}
                 placeholder="0"
                 placeholderTextColor={c.textFaint}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
               />
             </View>
           </View>
@@ -414,7 +408,7 @@ export default function CrearRemateScreen() {
         </ScrollView>
 
         {/* Footer con botón */}
-        <View style={[s.footer, { paddingBottom: insets.bottom + 100 }]}>
+        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
           <TouchableOpacity
             style={[s.publishBtn, (!horseId || createAuction.isPending) && s.publishBtnDisabled]}
             onPress={handleSubmit}
@@ -452,32 +446,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   groupStart: { marginTop: space[3] },
   sectionLabel: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
 
-  /* Horse selector */
-  horseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
-  horseOption: {
-    width: '30%',
-    alignItems: 'center',
-    padding: space[3],
+  /* Horse selector: fila horizontal de chips (patrón facturacion/nueva) */
+  horseChipRow: { flexDirection: 'row', gap: space[2] },
+  horseChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2] + 2,
     backgroundColor: c.surfaceAlt,
-    borderRadius: radius.xl,
-    gap: space[2],
-    position: 'relative',
   },
-  horseOptionActive: { backgroundColor: c.brandSoft },
-  horseOptionAvatar: {
-    width: 52, height: 52, borderRadius: radius.full,
-    backgroundColor: c.surfaceAlt,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  horseOptionAvatarActive: { backgroundColor: c.brand },
-  horseOptionAvatarText: { fontSize: text.xl, fontWeight: weight.bold, color: c.brand },
-  horseOptionName: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted, textAlign: 'center' },
-  horseOptionNameActive: { color: c.brand },
-  horseCheckMark: {
-    position: 'absolute', top: 6, right: 6,
-    width: 20, height: 20, borderRadius: 10,
-    backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center',
-  },
+  horseChipActive: { backgroundColor: c.brand },
+  horseChipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  horseChipTextActive: { color: colors.white },
   emptyHorses: { alignItems: 'center', padding: space[8], gap: space[3] },
   emptyHorsesText: { fontSize: text.sm, color: c.textFaint },
 

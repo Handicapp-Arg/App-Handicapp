@@ -27,7 +27,12 @@ export function ScreenHeader({ title, subtitle, showBack, right, dark = false, s
   const router = useRouter();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const onBack = () => { if (backTo) router.navigate(backTo as never); else router.back(); };
+  // Volvé a donde viniste; backTo es solo el paracaídas para cuando no hay
+  // historial (deep link directo). Antes era al revés y te teletransportaba.
+  const onBack = () => {
+    if (router.canGoBack()) router.back();
+    else if (backTo) router.navigate(backTo as never);
+  };
 
   return (
     <View style={[
@@ -72,19 +77,22 @@ export function HeaderButton({
   onPress,
   variant = 'primary',
   icon,
+  disabled = false,
 }: {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'ghost';
   icon?: LucideIcon;
+  disabled?: boolean;
 }) {
   const Icon = icon;
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   return (
     <TouchableOpacity
-      style={[s.headerBtn, variant === 'ghost' ? s.headerBtnGhost : s.headerBtnPrimary]}
+      style={[s.headerBtn, variant === 'ghost' ? s.headerBtnGhost : s.headerBtnPrimary, disabled && s.headerBtnDisabled]}
       onPress={onPress}
+      disabled={disabled}
       activeOpacity={0.8}
     >
       {Icon && (
@@ -151,6 +159,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   headerBtnPrimary: { backgroundColor: c.brand },
   headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.borderStrong },
+  headerBtnDisabled: { opacity: 0.4 },
   headerBtnText: { fontSize: text.sm, fontWeight: weight.bold, fontFamily: fontFamily.bold },
   headerBtnTextPrimary: { color: colors.white },
   headerBtnTextGhost: { color: c.brand },

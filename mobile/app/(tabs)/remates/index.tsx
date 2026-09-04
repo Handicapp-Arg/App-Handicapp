@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, TextInput,
+  View, Text, FlatList, TouchableOpacity, Pressable, TextInput,
   StyleSheet, RefreshControl,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -19,6 +19,7 @@ import { makeCard } from '../../../styles/common';
 import { nav, Routes } from '../../../lib/routes';
 import type { Auction } from '../../../../packages/shared/src/types';
 import { formatMoney, type Currency } from '../../../lib/currency';
+import { colors } from '../../../lib/colors';
 
 function formatARS(n: number, cur: string) {
   return formatMoney(n, cur as Currency);
@@ -244,6 +245,16 @@ export default function RematesTab() {
           )}
         />
       )}
+
+      <Pressable
+        style={s.fab}
+        onPress={() => { haptic.medium(); nav.push(router, Routes.remateCrear); }}
+        accessibilityRole="button"
+        accessibilityLabel="Publicar caballo"
+        hitSlop={8}
+      >
+        <Plus size={26} color={colors.white} strokeWidth={2.5} />
+      </Pressable>
     </View>
   );
 }
@@ -312,5 +323,11 @@ const makeStyles = (c: ThemeColors) => {
   docRow: { flexDirection: 'row', gap: space[2], marginTop: space[2] },
   docTag: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: space[2], paddingVertical: 2, backgroundColor: c.successSoft, borderRadius: radius.full },
   docTagText: { fontSize: text.xs, color: c.success, fontWeight: weight.semibold },
+  fab: {
+    position: 'absolute', right: 20, bottom: 110,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
+    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
+  },
   });
 };

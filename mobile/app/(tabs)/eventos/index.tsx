@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, RefreshControl,
   ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useScrollToTop } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Plus } from 'lucide-react-native';
 import { useAllEvents, useDeleteEvent } from '../../../hooks/use-events';
 import { useAuth } from '../../../lib/auth';
 import { EventCard } from '../../../components/EventCard';
@@ -15,7 +17,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { EventRowSkeleton } from '../../../components/Skeleton';
 import { haptic } from '../../../lib/haptics';
-import { makeEventTypeColors } from '../../../lib/colors';
+import { colors, makeEventTypeColors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight } from '../../../styles/tokens';
 import { useCommonStyles } from '../../../styles/common';
@@ -46,6 +48,8 @@ export default function EventosScreen() {
   const deleteEvent = useDeleteEvent();
   const canCreate = can('events', 'create');
   const canDelete = can('events', 'delete');
+  const listRef = useRef<FlatList>(null);
+  useScrollToTop(listRef);
 
   useEffect(() => { reset(); }, [filterType]);
 
@@ -127,6 +131,7 @@ export default function EventosScreen() {
         </ScrollView>
       ) : (
         <FlatList
+          ref={listRef}
           data={events}
           keyExtractor={(e) => e.id}
           contentContainerStyle={s.list}
@@ -159,6 +164,18 @@ export default function EventosScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {canCreate && (
+        <Pressable
+          style={s.fab}
+          onPress={irANuevo}
+          accessibilityRole="button"
+          accessibilityLabel="Nuevo evento"
+          hitSlop={8}
+        >
+          <Plus size={26} color={colors.white} strokeWidth={2.5} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -175,4 +192,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   counter: { fontSize: text.xs, color: c.textFaint, paddingHorizontal: space[4], paddingBottom: space[1] },
   list: { paddingBottom: 120 },
   footer: { padding: space[5], alignItems: 'center' },
+  fab: {
+    position: 'absolute', right: 20, bottom: 110,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
+    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
+  },
 });

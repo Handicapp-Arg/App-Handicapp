@@ -15,6 +15,7 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
+import { differenceInYears } from 'date-fns';
 
 import {
   useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useWeightRecords,
@@ -234,7 +235,7 @@ export default function HorseDetailScreen() {
       <View style={[s.center, { paddingTop: insets.top }]}>
         <Text style={{ fontSize: text.base, color: c.textMuted }}>Caballo no encontrado</Text>
         <TouchableOpacity
-          onPress={() => { haptic.light(); router.navigate(Routes.tabsCaballos as never); }}
+          onPress={() => { haptic.light(); router.canGoBack() ? router.back() : router.navigate(Routes.tabsCaballos as never); }}
           accessibilityRole="button"
           accessibilityLabel="Volver a la lista de caballos"
         >
@@ -250,7 +251,11 @@ export default function HorseDetailScreen() {
   // ─── Datos vitales, una línea bajo el hero ───
   const vitals: string[] = [];
   if (horse.birth_date) {
-    const years = Math.floor((Date.now() - new Date(horse.birth_date + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+    // Igual que lib/fechas.ts: ancla la fecha sola al mediodía local para no
+    // correrse un día por huso horario.
+    const soloFecha = /^\d{4}-\d{2}-\d{2}$/.test(horse.birth_date);
+    const birthDate = new Date(soloFecha ? `${horse.birth_date}T12:00:00` : horse.birth_date);
+    const years = differenceInYears(new Date(), birthDate);
     vitals.push(`${years} años`);
   }
   if (horse.sex) vitals.push(SEX_LABEL[horse.sex] ?? horse.sex);
@@ -303,7 +308,7 @@ export default function HorseDetailScreen() {
         {/* Back */}
         <TouchableOpacity
           style={[s.heroPill, { top: insets.top + 10, left: 14 }]}
-          onPress={() => { haptic.light(); router.navigate(Routes.tabsCaballos as never); }}
+          onPress={() => { haptic.light(); router.canGoBack() ? router.back() : router.navigate(Routes.tabsCaballos as never); }}
           activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel="Volver a la lista de caballos"
@@ -542,38 +547,38 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: space[4], marginBottom: space[4], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: 12 },
   alertBannerDanger: { backgroundColor: c.dangerSoft },
   alertBannerWarning: { backgroundColor: c.warningSoft },
-  alertText: { flex: 1, fontSize: 13, fontWeight: '700' },
+  alertText: { flex: 1, fontSize: text.sm, fontWeight: '700' },
 
   /* Resumen vital */
   summaryCard: { marginHorizontal: space[4], marginBottom: space[6] },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.border },
   summaryRowLast: { borderBottomWidth: 0 },
-  summaryValue: { fontSize: 14, fontWeight: '700', color: c.text, maxWidth: 140 },
+  summaryValue: { fontSize: text.sm, fontWeight: '700', color: c.text, maxWidth: 140 },
 
   /* Lista de secciones — patrón Más/Ajustes */
   sectionsList: { marginHorizontal: space[4], marginBottom: space[8] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.border },
   rowIconWrap: { width: 28, alignItems: 'center', flexShrink: 0 },
   rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
-  rowSub: { fontSize: 12, color: c.textFaint, marginTop: 1 },
+  rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   /* Hoja QR */
-  qrTitle: { fontSize: 20, fontWeight: '800', color: c.text, marginBottom: 4 },
+  qrTitle: { fontSize: text.xl, fontWeight: '800', color: c.text, marginBottom: 4 },
   qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
   qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  qrHint: { textAlign: 'center', fontSize: 13, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
+  qrHint: { textAlign: 'center', fontSize: text.sm, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
   qrActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   qrLinkBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.surfaceAlt, paddingVertical: 13 },
-  qrLinkBtnText: { fontSize: 14, fontWeight: '700', color: c.brand },
+  qrLinkBtnText: { fontSize: text.sm, fontWeight: '700', color: c.brand },
   qrShareBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.brand, paddingVertical: 13 },
-  qrShareBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  qrShareBtnText: { fontSize: text.sm, fontWeight: '700', color: colors.white },
 
   /* Formularios (dentro de FormSheet) */
-  fieldError: { fontSize: 13, color: colors.red500 },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
+  fieldError: { fontSize: text.sm, color: colors.red500 },
+  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
 });

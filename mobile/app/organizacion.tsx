@@ -108,15 +108,15 @@ function InviteModal({ visible, orgId, onClose, c, s }: { visible: boolean; orgI
         </>
       }
     >
-      <Text style={s.fieldLabel}>Email *</Text>
       <TextInput
         style={s.input}
         value={email}
         onChangeText={setEmail}
-        placeholder="ejemplo@email.com"
+        placeholder="Email *, ej. ejemplo@email.com"
         placeholderTextColor={c.textFaint}
         keyboardType="email-address"
         autoCapitalize="none"
+        textContentType="emailAddress"
       />
 
       <Text style={[s.fieldLabel, { marginTop: 12 }]}>Rol</Text>
@@ -382,7 +382,7 @@ export default function OrganizacionScreen() {
                   {req.message ? <Text style={s.joinMessage} numberOfLines={3}>“{req.message}”</Text> : null}
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                     <TouchableOpacity
-                      style={[s.btn, s.btnSecondary, { flex: 1, paddingVertical: 10 }]}
+                      style={[s.btn, s.btnSecondary, { flex: 1, minHeight: 44, justifyContent: 'center' }]}
                       onPress={() => {
                         Alert.alert('Rechazar solicitud', `¿Rechazar el ingreso de ${req.requester.name}?`, [
                           { text: 'Cancelar', style: 'cancel' },
@@ -399,7 +399,7 @@ export default function OrganizacionScreen() {
                       <Text style={s.btnSecondaryText}>Rechazar</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[s.btn, s.btnPrimary, { flex: 1, paddingVertical: 10 }]}
+                      style={[s.btn, s.btnPrimary, { flex: 1, minHeight: 44, justifyContent: 'center' }]}
                       onPress={() => { haptic.medium(); setApproveTarget(req); }}
                       activeOpacity={0.85}
                     >
@@ -535,7 +535,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   // Hairline separador DENTRO de una lista de filas (permitido por la regla de bordes).
   rowDivider: { borderTopWidth: 1, borderTopColor: c.border },
 
-  inviteBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 6 },
+  inviteBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, minHeight: 44, justifyContent: 'center' },
   inviteBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
 
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AlertTriangle } from 'lucide-react-native';
@@ -118,9 +118,14 @@ export default function InvitationScreen() {
 
   const handleAccept = async () => {
     haptic.medium();
-    await accept.mutateAsync(token);
-    haptic.success();
-    nav.replace(router, Routes.organizacion);
+    try {
+      await accept.mutateAsync(token);
+      haptic.success();
+      nav.replace(router, Routes.organizacion);
+    } catch {
+      haptic.error();
+      Alert.alert('Error', 'No se pudo aceptar la invitación. Intentá de nuevo.');
+    }
   };
 
   return (

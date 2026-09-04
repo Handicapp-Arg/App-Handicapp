@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { AxiosError } from 'axios';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useRouter } from 'expo-router';
 import {
   BarChart3, HeartPulse, Wallet, CalendarClock, Stethoscope, TrendingUp,
@@ -42,8 +44,7 @@ const fmtMoney = (n: number) => formatMoney(n);
 
 const fmtMonth = (ym: string) => {
   const [y, m] = ym.split('-');
-  return new Date(Number(y), Number(m) - 1, 1)
-    .toLocaleDateString('es-AR', { month: 'short' });
+  return format(new Date(Number(y), Number(m) - 1, 1), 'MMM', { locale: es });
 };
 
 function StatCard({ icon, label, value, hint, divider, s }: {

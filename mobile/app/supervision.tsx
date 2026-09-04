@@ -14,19 +14,10 @@ import { useEncargadoDashboard, type EncargadoFeedItem } from '../hooks/use-dash
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { haptic } from '../lib/haptics';
 import { Routes, nav } from '../lib/routes';
-import { fechaHoraHumana } from '../lib/fechas';
+import { fechaHoraHumana, diaLargo } from '../lib/fechas';
 import { space, text, radius, weight, shadow } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 import { AppImage } from '../components/AppImage';
-
-
-const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-function fechaLarga(): string {
-  const d = new Date();
-  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
-}
 
 const KIND_META: Record<EncargadoFeedItem['kind'], { Icon: LucideIcon; label: string }> = {
   rutina:        { Icon: ClipboardList, label: 'Rutina' },
@@ -135,7 +126,7 @@ export default function SupervisionScreen() {
 
   return (
     <View style={s.screen}>
-      <ScreenHeader title="Supervisión" subtitle={fechaLarga()} showBack backTo={Routes.mas} />
+      <ScreenHeader title="Supervisión" subtitle={diaLargo(new Date().toISOString())} showBack backTo={Routes.mas} />
 
       {isLoading ? (
         <View style={s.center}><ActivityIndicator size="large" color={c.brand} /></View>

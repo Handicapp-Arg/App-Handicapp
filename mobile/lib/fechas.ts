@@ -9,6 +9,10 @@
  * que necesite mostrar una fecha debe pasar por acá — nunca formatear a mano
  * con `toLocaleDateString` / `toLocaleString` / `Intl.DateTimeFormat`.
  *
+ * También expone `hora(iso)` ("14:30") y `diaLargo(iso)` ("miércoles 3 de
+ * septiembre") para los casos en que solo hace falta la hora o el día
+ * completo (encabezados de agenda, subtítulos de "hoy").
+ *
  * Importante: estos helpers son solo para PRESENTACIÓN. El valor que viaja
  * al backend o a un `<DatePicker>` sigue siendo el ISO crudo tal cual.
  */
@@ -74,6 +78,29 @@ export function hace(iso: string | null | undefined): string {
   const d = aFecha(iso);
   if (!d) return '';
   return formatDistanceToNow(d, { addSuffix: true, locale: es });
+}
+
+/**
+ * Solo la hora: "14:30".
+ *
+ * Ante una fecha inválida devuelve `''`.
+ */
+export function hora(iso: string | null | undefined): string {
+  const d = aFecha(iso);
+  if (!d) return '';
+  return format(d, 'HH:mm');
+}
+
+/**
+ * Día completo, sin hora ni año: "miércoles 3 de septiembre". Para
+ * encabezados de sección (agrupar turnos por día, subtítulo de "hoy es...").
+ *
+ * Ante una fecha inválida devuelve `''`.
+ */
+export function diaLargo(iso: string | null | undefined): string {
+  const d = aFecha(iso);
+  if (!d) return '';
+  return format(d, "EEEE d 'de' MMMM", { locale: es });
 }
 
 /**

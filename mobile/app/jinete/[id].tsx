@@ -23,20 +23,10 @@ import { useToast } from '../../components/Toast';
 import { space, text, weight, radius, shadow, touch } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
 import { AppImage } from '../../components/AppImage';
+import { fechaHumana } from '../../lib/fechas';
 
 const DISCIPLINES = ['Paso', 'Trote', 'Galope', 'Salto', 'Doma'] as const;
 const RESPONSES = ['Bien', 'Normal', 'Cansado'] as const;
-
-const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-/** 'YYYY-MM-DD' → '2 jul'. Robusto ante fechas inválidas. */
-function fechaCorta(iso: string): string {
-  const parts = iso?.slice(0, 10).split('-');
-  if (!parts || parts.length < 3) return iso ?? '';
-  const [, m, d] = parts.map((p) => parseInt(p, 10));
-  const mes = MESES_CORTO[(m ?? 1) - 1] ?? '';
-  return `${d} ${mes}`;
-}
 
 function StarsRow({ value, color, faint }: { value: number; color: string; faint: string }) {
   return (
@@ -62,7 +52,7 @@ function HistoryRow({ item, c, s }: { item: TrainingHistoryItem; c: ThemeColors;
   return (
     <View style={s.histRow}>
       <View style={s.histDateBox}>
-        <Text style={s.histDate}>{fechaCorta(item.date)}</Text>
+        <Text style={s.histDate} numberOfLines={1} adjustsFontSizeToFit>{fechaHumana(item.date)}</Text>
       </View>
       <View style={s.histBody}>
         <Text style={s.histDiscipline} numberOfLines={1}>
@@ -567,7 +557,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
   histDateBox: {
-    width: 52,
+    width: 60,
     alignItems: 'center',
   },
   histDate: {

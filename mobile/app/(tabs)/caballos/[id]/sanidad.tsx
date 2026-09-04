@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ShieldCheck, AlertTriangle, XCircle, CalendarClock, Lock, Download, MoreVertical, type LucideIcon } from 'lucide-react-native';
+import { ShieldCheck, AlertTriangle, XCircle, CalendarClock, Lock, Download, MoreVertical, Trash2, type LucideIcon } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import {
@@ -20,9 +20,10 @@ import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana, vence } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../../../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
+import { ActionSheet } from '../../../../components/ActionSheet';
 import { todayISO } from '../../../../hooks/use-routines';
 
 function makeHealthStatusMeta(c: ThemeColors): Record<HealthStatus, { dot: string; bg: string; text: string; label: string; Icon: LucideIcon }> {
@@ -62,6 +63,7 @@ export default function SanidadScreen() {
   const [showAddWeight, setShowAddWeight] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(today);
+  const [medMenuRecord, setMedMenuRecord] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!showAddWeight) return;
@@ -92,31 +94,37 @@ export default function SanidadScreen() {
             return (
               <View key={d.key} style={s.healthRow}>
                 <View style={[s.healthAccent, { backgroundColor: meta.dot }]} />
-                <View style={[s.healthIconWrap, { backgroundColor: meta.bg }]}>
-                  <StatusIcon size={16} color={meta.text} strokeWidth={2.2} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={s.healthName} numberOfLines={1}>{d.name}</Text>
-                  <View style={s.healthDueRow}>
-                    <CalendarClock size={10} color={c.textFaint} strokeWidth={2} />
-                    <Text style={s.healthDue} numberOfLines={1}>
-                      {nextDue ? vence(nextDue) : 'Sin registro'}
-                    </Text>
+                <View style={s.healthTopRow}>
+                  <View style={[s.healthIconWrap, { backgroundColor: meta.bg }]}>
+                    <StatusIcon size={16} color={meta.text} strokeWidth={2.2} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.healthName} numberOfLines={1}>{d.name}</Text>
+                    <View style={s.healthDueRow}>
+                      <CalendarClock size={12} color={c.textFaint} strokeWidth={2} />
+                      <Text style={s.healthDue} numberOfLines={1}>
+                        {nextDue ? vence(nextDue) : 'Sin registro'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-                <View style={[s.healthBadge, { backgroundColor: meta.bg }]}>
-                  <View style={[s.healthBadgeDot, { backgroundColor: meta.dot }]} />
-                  <Text style={[s.healthBadgeText, { color: meta.text }]}>{meta.label}</Text>
+                <View style={s.healthBottomRow}>
+                  <View style={[s.healthBadge, { backgroundColor: meta.bg }]}>
+                    <View style={[s.healthBadgeDot, { backgroundColor: meta.dot }]} />
+                    <Text style={[s.healthBadgeText, { color: meta.text }]}>{meta.label}</Text>
+                  </View>
+                  {can('horses', 'update') && (
+                    <TouchableOpacity
+                      style={s.healthCertifyBtn}
+                      onPress={() => { haptic.light(); setMedicalForm({ type: 'sanidad', name: d.name, date: today }); setShowAddMedical(true); }}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Certificar ${d.name}`}
+                    >
+                      <Text style={s.healthCertifyText}>Certificar</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                {can('horses', 'update') && (
-                  <TouchableOpacity
-                    style={s.healthCertifyBtn}
-                    onPress={() => { haptic.light(); setMedicalForm({ type: 'sanidad', name: d.name, date: today }); setShowAddMedical(true); }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={s.healthCertifyText}>Certificar</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             );
           })}
@@ -225,10 +233,7 @@ export default function SanidadScreen() {
                         <Text style={s.medDate}>{fechaHumana(rec.date)}</Text>
                         {can('horses', 'update') && (
                           <TouchableOpacity
-                            onPress={() => Alert.alert('Eliminar', `¿Eliminás "${rec.name}"?`, [
-                              { text: 'Cancelar', style: 'cancel' },
-                              { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteMedical.mutate(rec.id); } },
-                            ])}
+                            onPress={() => { haptic.selection(); setMedMenuRecord({ id: rec.id, name: rec.name }); }}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             accessibilityRole="button"
                             accessibilityLabel={`Más opciones de ${rec.name}`}
@@ -341,6 +346,21 @@ export default function SanidadScreen() {
         <TextInput style={s.input} value={medicalForm.brand ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))} placeholder="Marca / laboratorio (opcional)" placeholderTextColor={c.textFaint} returnKeyType="next" />
         <TextInput style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]} value={medicalForm.notes ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))} placeholder="Notas / observaciones adicionales" placeholderTextColor={c.textFaint} multiline returnKeyType="done" />
       </FormSheet>
+
+      {/* ─── Menú de acciones del registro médico ─── */}
+      <ActionSheet
+        visible={!!medMenuRecord}
+        onClose={() => setMedMenuRecord(null)}
+        title={medMenuRecord?.name}
+        acciones={[
+          {
+            label: 'Eliminar',
+            Icon: Trash2,
+            destructiva: true,
+            onPress: () => { if (medMenuRecord) { haptic.medium(); deleteMedical.mutate(medMenuRecord.id); } },
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -359,58 +379,60 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Libreta sanitaria */
   healthBookHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 6 },
-  healthBookTitle: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  healthRow: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: c.surface, borderRadius: 12, paddingLeft: 12, paddingRight: 10, paddingVertical: 10, overflow: 'hidden', marginBottom: 8, ...(c.isDark ? {} : shadow.sm) },
+  healthBookTitle: { fontSize: text.xs, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  healthRow: { backgroundColor: c.surface, borderRadius: 12, paddingLeft: space[4], paddingRight: space[3], paddingVertical: space[3], overflow: 'hidden', marginBottom: space[2], gap: space[3], ...(c.isDark ? {} : shadow.sm) },
   healthAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
+  healthTopRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  healthBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   healthIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  healthName: { fontSize: 13, fontWeight: '600', color: c.text },
+  healthName: { fontSize: text.base, fontWeight: '600', color: c.text },
   healthDueRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-  healthDue: { fontSize: 10, color: c.textFaint, flexShrink: 1 },
+  healthDue: { fontSize: text.sm, color: c.textFaint, flexShrink: 1 },
   healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   healthBadgeDot: { width: 5, height: 5, borderRadius: 999 },
-  healthBadgeText: { fontSize: 9, fontWeight: '700' },
-  healthCertifyBtn: { borderRadius: 999, backgroundColor: c.brandSoft, paddingHorizontal: 10, paddingVertical: 5 },
-  healthCertifyText: { fontSize: 10, fontWeight: '700', color: c.brand },
+  healthBadgeText: { fontSize: text.xs, fontWeight: '700' },
+  healthCertifyBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, backgroundColor: c.brandSoft, paddingHorizontal: space[4] },
+  healthCertifyText: { fontSize: text.sm, fontWeight: '700', color: c.brand },
   certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: space[3], marginTop: 2 },
   certifyBtnLocked: { backgroundColor: c.surfaceAlt },
-  certifyBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
+  certifyBtnText: { fontSize: text.sm, fontWeight: '700', color: colors.white },
 
   /* Peso */
-  weightLatest: { backgroundColor: c.isDark ? 'rgba(234,88,12,0.14)' : '#fff7ed', borderRadius: 12, padding: 12, marginBottom: 4 },
-  weightValue: { fontSize: 28, fontWeight: '800', color: c.isDark ? '#fb923c' : '#c2410c' },
-  weightCC: { fontSize: 12, color: c.isDark ? '#fdba74' : '#ea580c', marginTop: 2 },
-  weightDate: { fontSize: 11, color: c.isDark ? '#fdba74' : '#9a3412', marginTop: 2 },
+  weightLatest: { backgroundColor: c.brandSoft, borderRadius: 12, padding: 12, marginBottom: 4 },
+  weightValue: { fontSize: text.xl, fontWeight: '800', color: c.brand },
+  weightCC: { fontSize: text.sm, color: c.brand, marginTop: 2 },
+  weightDate: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
   weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border },
   weightRowLast: { borderBottomWidth: 0 },
-  weightRowValue: { fontSize: 14, fontWeight: '600', color: c.text },
-  weightRowDate: { fontSize: 12, color: c.textFaint },
+  weightRowValue: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  weightRowDate: { fontSize: text.xs, color: c.textFaint },
 
   /* Médico */
   medRow: { paddingVertical: space[3], gap: 6, borderBottomWidth: 1, borderBottomColor: c.border },
   medRowLast: { borderBottomWidth: 0 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  medTypeText: { fontSize: 10, fontWeight: '700' },
-  medName: { flex: 1, fontSize: 13, fontWeight: '600', color: c.text },
-  medDate: { fontSize: 10, color: c.textFaint },
-  medNextDue: { fontSize: 11 },
-  medBrand: { fontSize: 11, color: c.textFaint },
-  medNotes: { fontSize: 11, color: c.textMuted, fontStyle: 'italic' },
+  medTypeText: { fontSize: text.xs, fontWeight: '700' },
+  medName: { flex: 1, fontSize: text.sm, fontWeight: '600', color: c.text },
+  medDate: { fontSize: text.xs, color: c.textFaint },
+  medNextDue: { fontSize: text.xs },
+  medBrand: { fontSize: text.xs, color: c.textFaint },
+  medNotes: { fontSize: text.xs, color: c.textMuted, fontStyle: 'italic' },
   medTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   medTypeOption: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: c.surfaceAlt },
-  medTypeOptionText: { fontSize: 12, color: c.textMuted },
+  medTypeOptionText: { fontSize: text.sm, color: c.textMuted },
 
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.isDark ? 'rgba(239,68,68,0.16)' : '#fef2f2', minWidth: 44, justifyContent: 'center' },
-  pdfBtnText: { fontSize: 11, fontWeight: '700', color: c.isDark ? '#fca5a5' : '#dc2626' },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, minHeight: touch.min, backgroundColor: c.dangerSoft, minWidth: 44, justifyContent: 'center' },
+  pdfBtnText: { fontSize: text.xs, fontWeight: '700', color: c.danger },
 
-  smallBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.text },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
 
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: c.text },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
+  fieldLabel: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
 });

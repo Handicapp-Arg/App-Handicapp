@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { haptic } from '../../../../lib/haptics';
 import { colors } from '../../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, radius, weight, touch } from '../../../../styles/tokens';
+import { useToast } from '../../../../components/Toast';
 
 export default function FirmarContratoScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -23,6 +24,7 @@ export default function FirmarContratoScreen() {
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: contracts, isLoading } = useContracts();
   const signContract = useSignContract();
+  const toast = useToast();
 
   const contract = contracts?.find((ct) => ct.id === id) ?? null;
 
@@ -35,9 +37,15 @@ export default function FirmarContratoScreen() {
       Alert.alert('Firma requerida', 'Dibujá tu firma en el recuadro antes de confirmar.');
       return;
     }
-    await signContract.mutateAsync({ id: contract.id, signature, signed_name: signedName.trim() });
-    haptic.success();
-    router.back();
+    try {
+      await signContract.mutateAsync({ id: contract.id, signature, signed_name: signedName.trim() });
+      haptic.success();
+      toast.success('Contrato firmado');
+      router.back();
+    } catch {
+      haptic.error();
+      toast.error('No se pudo firmar el contrato. Intentá de nuevo.');
+    }
   };
 
   const signatureWebStyle = useMemo(() => `
@@ -58,11 +66,11 @@ export default function FirmarContratoScreen() {
       <ScreenHeader scrollable showBack title="Firmar digitalmente" subtitle={contract.title} />
 
       <View style={s.body}>
-        <Text style={s.fieldLabel}>Tu nombre completo</Text>
         <TextInput
           style={s.input} value={signedName} onChangeText={setSignedName}
           placeholder="Tu nombre completo" placeholderTextColor={c.textFaint}
           autoCapitalize="words"
+          textContentType="name"
           returnKeyType="done"
         />
 
@@ -75,7 +83,7 @@ export default function FirmarContratoScreen() {
 
         {/* Sin ScrollView alrededor: el pad captura el gesto de trazo completo,
             sin conflicto de scroll robando el toque a mitad de firma. */}
-        <View style={s.signPad}>
+        <View style={s.signPad} onTouchStart={() => Keyboard.dismiss()}>
           <SignatureScreen
             ref={signatureRef}
             onOK={submitSignature}

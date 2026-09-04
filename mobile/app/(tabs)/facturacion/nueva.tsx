@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
   ActivityIndicator, Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { useCreateBill } from '../../../hooks/use-billing';
@@ -17,6 +17,7 @@ import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, touch, shadow } from '../../../styles/tokens';
 import { useCommonStyles } from '../../../styles/common';
+import { useToast } from '../../../components/Toast';
 
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -77,7 +78,7 @@ function AddItemSheet({ visible, onClose, onAdd, c }: {
           onChangeText={setQuantity}
           placeholder="Cantidad"
           placeholderTextColor={c.textFaint}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           returnKeyType="next"
         />
         <TextInput
@@ -86,7 +87,7 @@ function AddItemSheet({ visible, onClose, onAdd, c }: {
           onChangeText={setUnitPrice}
           placeholder="Precio unitario"
           placeholderTextColor={c.textFaint}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           returnKeyType="done"
           onSubmitEditing={handleAdd}
         />
@@ -97,11 +98,13 @@ function AddItemSheet({ visible, onClose, onAdd, c }: {
 
 export default function NuevaFacturaScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: horses } = useHorses();
   const createBill = useCreateBill();
+  const toast = useToast();
 
   const boardedHorses = useMemo(() => (horses ?? []).filter((h) => h.establishment_id), [horses]);
 
@@ -120,6 +123,21 @@ export default function NuevaFacturaScreen() {
 
   const total = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
   const canSubmit = !!horseId && !!ownerId && items.length > 0 && !createBill.isPending;
+  const isDirty = !!horseId || items.length > 0 || !!notes.trim();
+
+  // Intercepta salir (back del header, gesto o botón físico) y confirma solo
+  // si hay formulario sucio.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
+      if (!isDirty) return;
+      e.preventDefault();
+      Alert.alert('¿Descartar cambios?', 'Vas a perder lo que cargaste.', [
+        { text: 'Seguir editando', style: 'cancel' },
+        { text: 'Descartar', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, isDirty]);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -137,7 +155,8 @@ export default function NuevaFacturaScreen() {
       haptic.success();
       router.replace(Routes.factura(bill.id) as never);
     } catch {
-      Alert.alert('Error', 'No se pudo crear la factura. Intentá de nuevo.');
+      haptic.error();
+      toast.error('No se pudo crear la factura. Intentá de nuevo.');
     }
   };
 

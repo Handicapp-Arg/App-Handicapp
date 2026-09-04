@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ActivityIndicator, ScrollView,
+  ActivityIndicator, ScrollView, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../lib/auth';
 import { useCreatePost } from '../../../hooks/use-feed';
@@ -38,6 +38,7 @@ function FeedVideoPreview({ uri, style }: { uri: string; style: import('react-na
 
 export default function NuevoPostScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { c } = useTheme();
@@ -90,6 +91,21 @@ export default function NuevoPostScreen() {
   };
 
   const canPost = (!!text.trim() || media.length > 0) && !createPost.isPending;
+  const isDirty = !!text.trim() || media.length > 0;
+
+  // Intercepta salir (back del header, gesto o botón físico) y confirma solo
+  // si hay texto o adjuntos sin publicar.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
+      if (!isDirty) return;
+      e.preventDefault();
+      Alert.alert('¿Descartar publicación?', 'Vas a perder el texto o los adjuntos.', [
+        { text: 'Seguir editando', style: 'cancel' },
+        { text: 'Descartar', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, isDirty]);
 
   const handlePost = async () => {
     if (!text.trim() && !media.length) return;
@@ -102,6 +118,7 @@ export default function NuevoPostScreen() {
         photoUris: media.filter((m) => !m.isVideo).map((m) => m.uri),
         videoUris: media.filter((m) => m.isVideo).map((m) => m.uri),
       });
+      haptic.success();
       toast.success('Publicado');
       router.back();
     } catch {
@@ -121,7 +138,8 @@ export default function NuevoPostScreen() {
         right={
           <HeaderButton
             label={createPost.isPending ? 'Publicando…' : 'Publicar'}
-            onPress={() => { if (canPost) handlePost(); }}
+            onPress={handlePost}
+            disabled={!canPost}
           />
         }
       />

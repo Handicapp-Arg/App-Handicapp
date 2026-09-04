@@ -16,10 +16,10 @@ import { weight } from '../../styles/tokens';
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
 const TABS: Record<string, { Icon: IconType; label: string }> = {
-  'caballos/index': { Icon: HorseHeadNav,  label: 'Caballos' },
-  'eventos/index':  { Icon: CalendarClock, label: 'Eventos' },
-  agenda:           { Icon: Calendar,      label: 'Agenda' },
-  mas:              { Icon: ListPlus,      label: 'Más' },
+  caballos: { Icon: HorseHeadNav,  label: 'Caballos' },
+  eventos:  { Icon: CalendarClock, label: 'Eventos' },
+  agenda:   { Icon: Calendar,      label: 'Agenda' },
+  mas:      { Icon: ListPlus,      label: 'Más' },
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -70,8 +70,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           tint={c.isDark ? 'dark' : 'light'}
           style={[StyleSheet.absoluteFill, styles.barGlass]}
         />
-        {renderTab('caballos/index')}
-        {isProp && renderTab('eventos/index')}
+        {renderTab('caballos')}
+        {isProp && renderTab('eventos')}
         {renderTab('agenda')}
         {renderTab('mas')}
       </View>
@@ -83,45 +83,22 @@ export default function TabsLayout() {
   const { c } = useTheme();
   return (
     <Tabs
+      backBehavior="history"
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false, animation: 'shift', sceneStyle: { backgroundColor: c.bg } }}
     >
-      <Tabs.Screen name="muro/index" />
-      <Tabs.Screen name="muro/nuevo" options={{ href: null }} />
-      <Tabs.Screen name="caballos/index" />
+      <Tabs.Screen name="muro" />
+      <Tabs.Screen name="caballos" />
       <Tabs.Screen name="agenda" />
       <Tabs.Screen name="mas" />
-      <Tabs.Screen name="perfil/index"        options={{ href: null }} />
-      <Tabs.Screen name="perfil/cuenta"       options={{ href: null }} />
-      <Tabs.Screen name="perfil/contacto"     options={{ href: null }} />
-      <Tabs.Screen name="perfil/matricula"    options={{ href: null }} />
-      <Tabs.Screen name="perfil/planes-admin" options={{ href: null }} />
-      <Tabs.Screen name="index"         options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/index"       options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/historial"   options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/sanidad"     options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/finanzas"    options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/fotos"       options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/equipo"      options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/documentos"  options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/rutina"      options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/pedigree"    options={{ href: null }} />
-      <Tabs.Screen name="caballos/[id]/vincular-padron" options={{ href: null }} />
-      <Tabs.Screen name="eventos/index" options={{ href: null }} />
-      <Tabs.Screen name="eventos/nuevo" options={{ href: null }} />
-      <Tabs.Screen name="facturacion/index" options={{ href: null }} />
-      <Tabs.Screen name="facturacion/nueva" options={{ href: null }} />
-      <Tabs.Screen name="facturacion/[id]"  options={{ href: null }} />
-      <Tabs.Screen name="remates/index" options={{ href: null }} />
-      <Tabs.Screen name="remates/crear" options={{ href: null }} />
-      <Tabs.Screen name="remates/[id]"  options={{ href: null }} />
+      <Tabs.Screen name="perfil"      options={{ href: null }} />
+      <Tabs.Screen name="index"       options={{ href: null }} />
+      <Tabs.Screen name="eventos"     options={{ href: null }} />
+      <Tabs.Screen name="facturacion" options={{ href: null }} />
+      <Tabs.Screen name="remates"     options={{ href: null }} />
       <Tabs.Screen name="notificaciones" options={{ href: null }} />
       <Tabs.Screen name="directorio"     options={{ href: null }} />
-      <Tabs.Screen name="contratos/index"       options={{ href: null }} />
-      <Tabs.Screen name="contratos/nuevo"       options={{ href: null }} />
-      <Tabs.Screen name="contratos/[id]/index"  options={{ href: null }} />
-      <Tabs.Screen name="contratos/[id]/firmar" options={{ href: null }} />
-      <Tabs.Screen name="arbol"          options={{ href: null }} />
+      <Tabs.Screen name="contratos"      options={{ href: null }} />
       <Tabs.Screen name="mi-plan"        options={{ href: null }} />
       <Tabs.Screen name="reportes"       options={{ href: null }} />
     </Tabs>

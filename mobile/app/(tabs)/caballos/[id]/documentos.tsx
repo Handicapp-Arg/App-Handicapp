@@ -12,7 +12,7 @@ import { haptic } from '../../../../lib/haptics';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text } from '../../../../styles/tokens';
+import { space, text, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
 import { Spinner } from '../../../../components/Spinner';
@@ -164,19 +164,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  emptyText: { fontSize: 13, color: c.textFaint },
+  emptyText: { fontSize: text.sm, color: c.textFaint },
 
   personRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: 10 },
   docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
-  docName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.text },
+  docName: { flex: 1, fontSize: text.base, fontWeight: '500', color: c.text },
 
-  smallBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.text },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
 
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
+  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
 });

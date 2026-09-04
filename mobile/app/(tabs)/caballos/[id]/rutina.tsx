@@ -5,12 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse, CheckCircle2, User, Info, type LucideIcon,
 } from 'lucide-react-native';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 import { useHorse } from '../../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS, todayISO } from '../../../../hooks/use-routines';
 import { haptic } from '../../../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight } from '../../../../styles/tokens';
+import { space, text, weight, touch, radius } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { Spinner } from '../../../../components/Spinner';
 
@@ -57,13 +59,13 @@ export default function RutinaScreen() {
                   <Text style={{ fontSize: text.xs, color: pct >= 70 ? c.success : pct >= 40 ? c.warning : c.danger, fontWeight: weight.bold }}>
                     {pct}%
                   </Text>
-                  <Text style={{ fontSize: 10, color: c.textFaint }}>últimos {routines.length}d</Text>
+                  <Text style={{ fontSize: text.xs, color: c.textFaint }}>últimos {routines.length}d</Text>
                 </View>
               );
             })()}
           </View>
 
-          <View style={s.routineGrid}>
+          <View style={s.routineList}>
             {ROUTINE_ITEMS.map(({ key, label }) => {
               const checked = todayRoutine?.[key] ?? false;
               const ri = ROUTINE_ICON[key];
@@ -74,10 +76,14 @@ export default function RutinaScreen() {
                   style={[s.routineItem, checked && s.routineItemChecked]}
                   onPress={() => { haptic.selection(); upsertRoutine.mutate({ date: today, [key]: !checked }); }}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={checked ? `${label}, hecho` : label}
                 >
-                  <RIcon size={16} color={ri?.color ?? c.textFaint} strokeWidth={2} />
-                  <Text style={[s.routineLabel, checked && s.routineLabelChecked]} numberOfLines={1}>{label}</Text>
-                  {checked && <CheckCircle2 size={16} color={c.success} strokeWidth={2} />}
+                  <View style={[s.routineIconWrap, { backgroundColor: checked ? (c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4') : c.surface }]}>
+                    <RIcon size={18} color={ri?.color ?? c.textFaint} strokeWidth={2} />
+                  </View>
+                  <Text style={[s.routineLabel, checked && s.routineLabelChecked]}>{label}</Text>
+                  {checked && <CheckCircle2 size={20} color={c.success} strokeWidth={2} />}
                 </TouchableOpacity>
               );
             })}
@@ -90,7 +96,7 @@ export default function RutinaScreen() {
               <Text style={s.routineAuthorText}>
                 Cargó {todayRoutine.filler.name}
                 {todayRoutine.created_at
-                  ? ` · ${new Date(todayRoutine.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`
+                  ? ` · ${format(new Date(todayRoutine.created_at), 'HH:mm', { locale: es })}`
                   : ''}
               </Text>
             </View>
@@ -104,7 +110,7 @@ export default function RutinaScreen() {
                 {[...routines].reverse().map((r) => {
                   const completedCount = ROUTINE_ITEMS.filter(({ key }) => r[key]).length;
                   const pct = completedCount / ROUTINE_ITEMS.length;
-                  const dayLabel = new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'narrow' });
+                  const dayLabel = format(new Date(`${r.date}T12:00:00`), 'EEEEE', { locale: es });
                   const isToday = r.date === today;
                   return (
                     <View key={r.date} style={s.routineTrendDay}>
@@ -131,17 +137,22 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
 
-  routineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  routineItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, padding: 10, backgroundColor: c.surfaceAlt },
+  routineList: { gap: space[2] },
+  routineItem: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    minHeight: 60, borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: space[2],
+    backgroundColor: c.surfaceAlt,
+  },
   routineItemChecked: { backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
-  routineLabel: { flex: 1, fontSize: 12, fontWeight: '500', color: c.textMuted },
-  routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d' },
+  routineIconWrap: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  routineLabel: { flex: 1, fontSize: text.base, fontWeight: '500', color: c.textMuted },
+  routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d', fontWeight: weight.semibold },
   routineAuthor: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10 },
   routineAuthorText: { fontSize: 11, color: c.textFaint, fontWeight: weight.medium },
   routineTrend: { marginTop: 12, backgroundColor: c.surfaceAlt, borderRadius: 12, padding: space[3] },
-  routineTrendTitle: { fontSize: 10, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  routineTrendTitle: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   routineTrendDays: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 52 },
   routineTrendDay: { alignItems: 'center', gap: 4, flex: 1 },
   routineTrendBar: { width: 14, borderRadius: 4, minHeight: 4 },
-  routineTrendLabel: { fontSize: 9, color: c.textFaint, fontWeight: weight.medium },
+  routineTrendLabel: { fontSize: text.xs, color: c.textFaint, fontWeight: weight.medium },
 });

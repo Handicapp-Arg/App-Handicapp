@@ -3,11 +3,13 @@ import {
 } from 'react-native';
 import { useState, useMemo } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { ChevronDown } from 'lucide-react-native';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, touch } from '../../../styles/tokens';
 import { useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../../hooks/use-plan';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { fechaHumana } from '../../../lib/fechas';
 
 const ROLE_LABELS: Record<string, string> = {
   propietario: 'Propietario',
@@ -33,9 +35,7 @@ function AdminUserRow({ u, onActivate, onRevoke, isPending, c, s }: {
   const [months, setMonths] = useState(1);
   const [showMonths, setShowMonths] = useState(false);
   const isPro = u.plan === 'pro';
-  const expiresStr = u.plan_expires_at
-    ? new Date(u.plan_expires_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
-    : null;
+  const expiresStr = u.plan_expires_at ? fechaHumana(u.plan_expires_at) : null;
 
   return (
     <View style={s.adminRow}>
@@ -54,8 +54,14 @@ function AdminUserRow({ u, onActivate, onRevoke, isPending, c, s }: {
       {isPro && expiresStr && <Text style={s.adminExpires}>Vence: {expiresStr}</Text>}
       {!isPro && (
         <>
-          <TouchableOpacity onPress={() => setShowMonths((p) => !p)} style={s.monthsToggle}>
-            <Text style={s.monthsToggleText}>Duración: {months} {months === 1 ? 'mes' : 'meses'} ▾</Text>
+          <TouchableOpacity
+            onPress={() => setShowMonths((p) => !p)}
+            style={[s.monthsToggle, s.monthsToggleRow]}
+            accessibilityRole="button"
+            accessibilityLabel="Elegir duración del plan Pro"
+          >
+            <Text style={s.monthsToggleText}>Duración: {months} {months === 1 ? 'mes' : 'meses'}</Text>
+            <ChevronDown size={16} color={c.textMuted} strokeWidth={2} />
           </TouchableOpacity>
           {showMonths && (
             <View style={s.monthsGrid}>
@@ -191,6 +197,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
     justifyContent: 'center', backgroundColor: c.surfaceAlt,
   },
+  monthsToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   monthsToggleText: { fontSize: text.sm, color: c.text },
   monthsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   monthsOption: {

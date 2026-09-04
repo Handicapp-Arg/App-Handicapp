@@ -141,13 +141,14 @@ export default function FacturaDetalleScreen() {
 
   const meta = STATUS_META[bill.status];
   const sc = billStatusColors[bill.status] ?? billStatusColors.borrador;
+  const showActions = (isEst && bill.status === 'borrador') || (isProp && bill.status === 'enviada');
 
   return (
     <View style={s.root}>
       <ScreenHeader showBack title="Factura" subtitle={`${bill.horse?.name ?? ''} · ${monthLabel(bill.month, bill.year)}`} />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: insets.bottom + space[10] }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + (showActions ? touch.button + space[8] : space[10]) }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero: monto total + estado */}
@@ -186,42 +187,43 @@ export default function FacturaDetalleScreen() {
           </View>
         )}
 
-        {/* Acciones según rol y estado */}
-        {((isEst && bill.status === 'borrador') || (isProp && bill.status === 'enviada')) && (
-          <View style={s.section}>
-            {isEst && bill.status === 'borrador' && (
-              <TouchableOpacity
-                style={s.actionBtnBlue}
-                onPress={handleSend}
-                accessibilityRole="button"
-                accessibilityLabel="Enviar factura al propietario"
-              >
-                <Text style={[s.actionBtnText, { color: c.info }]}>Enviar al propietario</Text>
-              </TouchableOpacity>
-            )}
-            {isProp && bill.status === 'enviada' && (
-              <View style={s.actionRow}>
-                <TouchableOpacity
-                  style={[s.actionBtnGreen, { flex: 1 }]}
-                  onPress={handleApprove}
-                  accessibilityRole="button"
-                  accessibilityLabel="Aprobar factura"
-                >
-                  <Text style={[s.actionBtnText, { color: c.success }]}>Aprobar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.actionBtnRed, { flex: 1 }]}
-                  onPress={() => { haptic.light(); setDisputing(true); }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Disputar factura"
-                >
-                  <Text style={[s.actionBtnText, { color: c.danger }]}>Disputar</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
       </ScrollView>
+
+      {/* Acciones según rol y estado — barra fija inferior, como remates/[id] */}
+      {showActions && (
+        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
+          {isEst && bill.status === 'borrador' && (
+            <TouchableOpacity
+              style={[s.actionBtnBlue, { flex: 1 }]}
+              onPress={handleSend}
+              accessibilityRole="button"
+              accessibilityLabel="Enviar factura al propietario"
+            >
+              <Text style={[s.actionBtnText, { color: c.info }]}>Enviar al propietario</Text>
+            </TouchableOpacity>
+          )}
+          {isProp && bill.status === 'enviada' && (
+            <>
+              <TouchableOpacity
+                style={[s.actionBtnGreen, { flex: 1 }]}
+                onPress={handleApprove}
+                accessibilityRole="button"
+                accessibilityLabel="Aprobar factura"
+              >
+                <Text style={[s.actionBtnText, { color: c.success }]}>Aprobar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.actionBtnRed, { flex: 1 }]}
+                onPress={() => { haptic.light(); setDisputing(true); }}
+                accessibilityRole="button"
+                accessibilityLabel="Disputar factura"
+              >
+                <Text style={[s.actionBtnText, { color: c.danger }]}>Disputar</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
 
       <DisputeSheet visible={disputing} billId={bill.id} onClose={() => setDisputing(false)} />
     </View>
@@ -247,7 +249,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   disputeReason: { fontSize: text.sm, color: c.danger, fontStyle: 'italic' },
   notes: { fontSize: text.sm, color: c.textFaint },
 
-  actionRow: { flexDirection: 'row', gap: space[2] },
+  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg },
   actionBtnBlue: { backgroundColor: c.infoSoft, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },
   actionBtnGreen: { backgroundColor: c.successSoft, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },
   actionBtnRed: { backgroundColor: c.dangerSoft, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },

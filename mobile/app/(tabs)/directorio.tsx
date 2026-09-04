@@ -117,7 +117,7 @@ function RequestModal({
           </Text>
         )}
 
-        <Text style={s.fieldLabel}>Caballo *</Text>
+        <Text style={s.fieldLabel}>Caballo</Text>
         {!available.length ? (
           <Text style={s.emptyText}>No tenés caballos disponibles para alojar en este establecimiento.</Text>
         ) : (
@@ -141,12 +141,11 @@ function RequestModal({
           </View>
         )}
 
-        <Text style={[s.fieldLabel, { marginTop: 14 }]}>Mensaje (opcional)</Text>
         <TextInput
-          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10, marginTop: 14 }]}
           value={message}
           onChangeText={setMessage}
-          placeholder="Presentate brevemente..."
+          placeholder="Mensaje (opcional): presentate brevemente..."
           placeholderTextColor={c.textFaint}
           multiline
         />
@@ -305,7 +304,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, paddingHorizontal: space[4] },
   rowName: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
-  requestBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, paddingVertical: 7 },
+  requestBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, minHeight: touch.min, justifyContent: 'center' },
   requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
   pendingChip: { borderRadius: radius.full, backgroundColor: c.goldSoft, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: c.goldBorder },
   pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: c.goldText },

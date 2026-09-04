@@ -1,15 +1,19 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, forwardRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Modal, KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
   ScrollView, Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  X, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus,
+  ChevronLeft, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus,
   Network, CheckCircle2, AlertTriangle, XCircle, Circle,
 } from 'lucide-react-native';
 import { HorseHeadIcon } from './icons/equine';
+import { FormSheet } from './FormSheet';
+import { useToast } from './Toast';
 import { colors } from '../lib/colors';
+import { haptic } from '../lib/haptics';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, touch } from '../styles/tokens';
 import {
@@ -31,21 +35,21 @@ interface NodeData {
   inSystem?: boolean;
 }
 
-const statusColor = (st: string, isDark: boolean): string => (({
-  verified:   isDark ? '#86efac' : '#15803d',
-  partial:    isDark ? '#fdba74' : '#c2410c',
-  disputed:   isDark ? '#fca5a5' : '#b91c1c',
-  unverified: colors.gray400,
-  pending:    isDark ? '#fcd34d' : '#d97706',
-} as Record<string, string>)[st] ?? colors.gray400);
+const statusColor = (st: string, c: ThemeColors): string => (({
+  verified:   c.success,
+  partial:    c.warning,
+  disputed:   c.danger,
+  unverified: c.textFaint,
+  pending:    c.info,
+} as Record<string, string>)[st] ?? c.textFaint);
 
-const statusBg = (st: string, isDark: boolean): string => (({
-  verified:   isDark ? 'rgba(34,197,94,0.14)'  : '#f0fdf4',
-  partial:    isDark ? 'rgba(249,115,22,0.14)' : '#fff7ed',
-  disputed:   isDark ? 'rgba(239,68,68,0.14)'  : '#fef2f2',
-  unverified: isDark ? 'rgba(148,163,184,0.12)': colors.gray50,
-  pending:    isDark ? 'rgba(245,158,11,0.14)' : '#fffbeb',
-} as Record<string, string>)[st] ?? (isDark ? 'rgba(148,163,184,0.12)' : colors.gray50));
+const statusBg = (st: string, c: ThemeColors): string => (({
+  verified:   c.successSoft,
+  partial:    c.warningSoft,
+  disputed:   c.dangerSoft,
+  unverified: c.surfaceAlt,
+  pending:    c.infoSoft,
+} as Record<string, string>)[st] ?? c.surfaceAlt);
 
 // Semantic parent colors (slightly brighter in dark for legibility)
 const sireColor = (isDark: boolean) => (isDark ? '#38bdf8' : '#0369a1');
@@ -63,8 +67,8 @@ function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: numb
   }
 
   const st = data.status ?? 'unverified';
-  const col = statusColor(st, c.isDark);
-  const bg  = statusBg(st, c.isDark);
+  const col = statusColor(st, c);
+  const bg  = statusBg(st, c);
 
   return (
     <View style={[n.node, { width, backgroundColor: bg, borderColor: dim ? c.borderStrong : col + '50', opacity: dim ? 0.7 : 1 }]}>
@@ -264,11 +268,13 @@ const makeN = (c: ThemeColors) => StyleSheet.create({
 // Buscar caballo
 // ──────────────────────────────────────────────
 
-function HorseSearchField({ label, value, onChange, onSelect }: {
+const HorseSearchField = forwardRef<TextInput, {
   label: string; value: string;
   onChange: (v: string) => void;
   onSelect: (id: string, name: string) => void;
-}) {
+  returnKeyType?: 'next' | 'done' | 'go';
+  onSubmitEditing?: () => void;
+}>(function HorseSearchField({ label, value, onChange, onSelect, returnKeyType, onSubmitEditing }, ref) {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const [open, setOpen] = useState(false);
@@ -278,6 +284,7 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
     <View style={{ marginBottom: 12 }}>
       <Text style={s.fieldLabel}>{label}</Text>
       <TextInput
+        ref={ref}
         style={s.input}
         value={value}
         onChangeText={(v) => { onChange(v); setOpen(true); }}
@@ -286,6 +293,8 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
         placeholder="Buscar en HandicApp..."
         placeholderTextColor={c.textFaint}
         autoCapitalize="words"
+        returnKeyType={returnKeyType}
+        onSubmitEditing={onSubmitEditing}
       />
       {open && results.length > 0 && (
         <View style={s.dropdown}>
@@ -305,7 +314,7 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
       )}
     </View>
   );
-}
+});
 
 // ──────────────────────────────────────────────
 // Formulario edición
@@ -313,12 +322,22 @@ function HorseSearchField({ label, value, onChange, onSelect }: {
 
 function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () => void }) {
   const { c } = useTheme();
+  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
+  const toast = useToast();
   const { data: existing } = usePedigree(horseId);
   const upsert = useUpsertPedigree(horseId);
   const validate = useValidatePedigree(horseId);
   const [validationResult, setValidationResult] = useState<{ status: string } | null>(null);
   const [initialized, setInitialized] = useState(false);
+
+  const refSireReg = useRef<TextInput>(null);
+  const refDamName = useRef<TextInput>(null);
+  const refDamReg = useRef<TextInput>(null);
+  const refPatSire = useRef<TextInput>(null);
+  const refPatDam = useRef<TextInput>(null);
+  const refMatSire = useRef<TextInput>(null);
+  const refMatDam = useRef<TextInput>(null);
 
   const [form, setForm] = useState<CreatePedigreeDto>({
     sire_id: undefined, sire_name: '', sire_registration_number: '',
@@ -361,159 +380,184 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
       maternal_grandsire_name: form.maternal_grandsire_name || undefined,
       maternal_granddam_name: form.maternal_granddam_name || undefined,
     };
-    await upsert.mutateAsync(dto);
-    if (andValidate) {
-      const result = await validate.mutateAsync();
-      setValidationResult(result);
-    } else {
-      onClose();
+    try {
+      await upsert.mutateAsync(dto);
+      if (andValidate) {
+        const result = await validate.mutateAsync();
+        setValidationResult(result);
+      } else {
+        haptic.success();
+        toast.success('Pedigrí guardado');
+        onClose();
+      }
+    } catch {
+      haptic.error();
+      toast.error('No se pudo guardar el pedigrí. Probá de nuevo.');
     }
   };
 
-  if (validationResult) {
-    const map: Record<string, { Icon: typeof CheckCircle2; title: string; msg: string; color: string }> = {
-      verified: { Icon: CheckCircle2,  title: 'Pedigrí verificado',   msg: 'Los datos coinciden con registros oficiales.', color: c.isDark ? '#86efac' : '#15803d' },
-      partial:  { Icon: AlertTriangle, title: 'Validación parcial',   msg: 'Algunos datos coinciden. Revisá y corregí para mejorar el resultado.', color: c.isDark ? '#fdba74' : '#c2410c' },
-      failed:   { Icon: XCircle,       title: 'Sin coincidencias',    msg: 'No se encontró en ningún registro oficial. Verificá la ortografía del nombre.', color: c.isDark ? '#fca5a5' : colors.red500 },
-      disputed: { Icon: AlertTriangle, title: 'Datos inconsistentes', msg: 'Distintas fuentes muestran información contradictoria.', color: c.isDark ? '#fca5a5' : '#b91c1c' },
-    };
-    const cfg = map[validationResult.status] ?? { Icon: Info, title: validationResult.status, msg: '', color: c.textMuted };
-    const ResultIcon = cfg.Icon;
-    return (
-      <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: cfg.color + (c.isDark ? '24' : '18'), justifyContent: 'center', alignItems: 'center' }}>
-            <ResultIcon size={44} color={cfg.color} strokeWidth={2} />
+  const resultMap: Record<string, { Icon: typeof CheckCircle2; title: string; msg: string; color: string }> = {
+    verified: { Icon: CheckCircle2,  title: 'Pedigrí verificado',   msg: 'Los datos coinciden con registros oficiales.', color: c.success },
+    partial:  { Icon: AlertTriangle, title: 'Validación parcial',   msg: 'Algunos datos coinciden. Revisá y corregí para mejorar el resultado.', color: c.warning },
+    failed:   { Icon: XCircle,       title: 'Sin coincidencias',    msg: 'No se encontró en ningún registro oficial. Verificá la ortografía del nombre.', color: c.danger },
+    disputed: { Icon: AlertTriangle, title: 'Datos inconsistentes', msg: 'Distintas fuentes muestran información contradictoria.', color: c.danger },
+  };
+  const resultCfg = validationResult
+    ? (resultMap[validationResult.status] ?? { Icon: Info, title: validationResult.status, msg: '', color: c.textMuted })
+    : null;
+  const ResultIcon = resultCfg?.Icon;
+
+  const closeResult = () => { setValidationResult(null); onClose(); };
+
+  return (
+    <>
+      <View style={[s.formScreen, { paddingTop: insets.top }]}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={8}
+              style={s.backBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+            >
+              <ChevronLeft size={24} color={c.text} strokeWidth={2.2} />
+            </TouchableOpacity>
+            <Text style={s.modalTitle}>Editar pedigrí</Text>
+            <View style={s.backBtn} />
           </View>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: cfg.color, marginTop: 16, textAlign: 'center' }}>{cfg.title}</Text>
-          {cfg.msg ? <Text style={{ fontSize: 14, color: c.textMuted, textAlign: 'center', marginTop: 10, lineHeight: 20 }}>{cfg.msg}</Text> : null}
-          <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 32, width: '100%' }]} onPress={onClose}>
+
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
+            {/* Padre */}
+            <View style={s.fieldset}>
+              <View style={s.fieldsetHeader}>
+                <Mars size={14} color={sireColor(c.isDark)} strokeWidth={2} />
+                <Text style={[s.fieldsetTitle, { color: sireColor(c.isDark) }]}>PADRE</Text>
+              </View>
+              <HorseSearchField
+                label="Nombre del padre"
+                value={form.sire_name ?? ''}
+                onChange={(v) => setForm((f) => ({ ...f, sire_name: v, sire_id: undefined }))}
+                onSelect={(id, name) => setForm((f) => ({ ...f, sire_id: id, sire_name: name }))}
+                returnKeyType="next"
+                onSubmitEditing={() => refSireReg.current?.focus()}
+              />
+              <Text style={s.fieldLabel}>N° de registro (opcional)</Text>
+              <TextInput ref={refSireReg} style={s.input} value={form.sire_registration_number ?? ''}
+                onChangeText={(v) => setForm((f) => ({ ...f, sire_registration_number: v }))}
+                placeholder="SBA #12345" placeholderTextColor={c.textFaint}
+                returnKeyType="next" onSubmitEditing={() => refDamName.current?.focus()} />
+            </View>
+
+            {/* Madre */}
+            <View style={s.fieldset}>
+              <View style={s.fieldsetHeader}>
+                <Venus size={14} color={damColor(c.isDark)} strokeWidth={2} />
+                <Text style={[s.fieldsetTitle, { color: damColor(c.isDark) }]}>MADRE</Text>
+              </View>
+              <HorseSearchField
+                ref={refDamName}
+                label="Nombre de la madre"
+                value={form.dam_name ?? ''}
+                onChange={(v) => setForm((f) => ({ ...f, dam_name: v, dam_id: undefined }))}
+                onSelect={(id, name) => setForm((f) => ({ ...f, dam_id: id, dam_name: name }))}
+                returnKeyType="next"
+                onSubmitEditing={() => refDamReg.current?.focus()}
+              />
+              <Text style={s.fieldLabel}>N° de registro (opcional)</Text>
+              <TextInput ref={refDamReg} style={s.input} value={form.dam_registration_number ?? ''}
+                onChangeText={(v) => setForm((f) => ({ ...f, dam_registration_number: v }))}
+                placeholder="SBA #67890" placeholderTextColor={c.textFaint}
+                returnKeyType="next" onSubmitEditing={() => refPatSire.current?.focus()} />
+            </View>
+
+            {/* Abuelos */}
+            <View style={s.fieldset}>
+              <Text style={s.fieldsetTitle}>ABUELOS (opcional)</Text>
+              <View style={s.grandRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.grandLabel}>Abuelo paterno</Text>
+                  <TextInput ref={refPatSire} style={s.inputSm} value={form.paternal_grandsire_name ?? ''}
+                    onChangeText={(v) => setForm((f) => ({ ...f, paternal_grandsire_name: v }))}
+                    placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words"
+                    returnKeyType="next" onSubmitEditing={() => refPatDam.current?.focus()} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.grandLabel}>Abuela paterna</Text>
+                  <TextInput ref={refPatDam} style={s.inputSm} value={form.paternal_granddam_name ?? ''}
+                    onChangeText={(v) => setForm((f) => ({ ...f, paternal_granddam_name: v }))}
+                    placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words"
+                    returnKeyType="next" onSubmitEditing={() => refMatSire.current?.focus()} />
+                </View>
+              </View>
+              <View style={s.grandRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.grandLabel}>Abuelo materno</Text>
+                  <TextInput ref={refMatSire} style={s.inputSm} value={form.maternal_grandsire_name ?? ''}
+                    onChangeText={(v) => setForm((f) => ({ ...f, maternal_grandsire_name: v }))}
+                    placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words"
+                    returnKeyType="next" onSubmitEditing={() => refMatDam.current?.focus()} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.grandLabel}>Abuela materna</Text>
+                  <TextInput ref={refMatDam} style={s.inputSm} value={form.maternal_granddam_name ?? ''}
+                    onChangeText={(v) => setForm((f) => ({ ...f, maternal_granddam_name: v }))}
+                    placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words"
+                    returnKeyType="done" />
+                </View>
+              </View>
+            </View>
+
+            {(upsert.isError || validate.isError) && (
+              <Text style={s.errorText}>Error al guardar. Intentá de nuevo.</Text>
+            )}
+
+            <View style={s.hintRow}>
+              <Info size={13} color={c.textFaint} strokeWidth={2} style={{ marginTop: 2 }} />
+              <Text style={s.hint}>
+                "Guardar y validar" consulta Stud Book Argentino, SRA y PedigreeQuery para verificar los datos automáticamente.
+              </Text>
+            </View>
+          </ScrollView>
+
+          <View style={[s.modalFooter, { paddingBottom: insets.bottom + space[3] }]}>
+            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
+              <Text style={s.btnSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnOutline, { flex: 1 }]}
+              onPress={() => handleSave(false)} disabled={isPending}>
+              {upsert.isPending && !validate.isPending
+                ? <ActivityIndicator color={c.brand} size="small" />
+                : <Text style={s.btnOutlineText}>Guardar</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1.4 }]}
+              onPress={() => handleSave(true)} disabled={isPending}>
+              {validate.isPending
+                ? <ActivityIndicator color={colors.white} size="small" />
+                : <>
+                    <ShieldCheck size={16} color={colors.white} strokeWidth={2} />
+                    <Text style={s.btnPrimaryText}>Validar</Text>
+                  </>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+
+      {/* ─── Resultado de la validación ─── */}
+      <FormSheet visible={!!validationResult} onClose={closeResult} title={resultCfg?.title ?? 'Validación'}>
+        <View style={{ alignItems: 'center', paddingVertical: space[4] }}>
+          {ResultIcon && resultCfg && (
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: resultCfg.color + (c.isDark ? '24' : '18'), justifyContent: 'center', alignItems: 'center', marginBottom: space[4] }}>
+              <ResultIcon size={44} color={resultCfg.color} strokeWidth={2} />
+            </View>
+          )}
+          {resultCfg?.msg ? <Text style={{ fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 20 }}>{resultCfg.msg}</Text> : null}
+          <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: space[6], width: '100%' }]} onPress={closeResult}>
             <Text style={s.btnPrimaryText}>Cerrar</Text>
           </TouchableOpacity>
         </View>
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={s.modalHeader}>
-          <Text style={s.modalTitle}>Editar pedigrí</Text>
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar"
-          >
-            <X size={22} color={c.textFaint} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
-          {/* Padre */}
-          <View style={s.fieldset}>
-            <View style={s.fieldsetHeader}>
-              <Mars size={14} color={sireColor(c.isDark)} strokeWidth={2} />
-              <Text style={[s.fieldsetTitle, { color: sireColor(c.isDark) }]}>PADRE</Text>
-            </View>
-            <HorseSearchField
-              label="Nombre del padre"
-              value={form.sire_name ?? ''}
-              onChange={(v) => setForm((f) => ({ ...f, sire_name: v, sire_id: undefined }))}
-              onSelect={(id, name) => setForm((f) => ({ ...f, sire_id: id, sire_name: name }))}
-            />
-            <Text style={s.fieldLabel}>N° de registro (opcional)</Text>
-            <TextInput style={s.input} value={form.sire_registration_number ?? ''}
-              onChangeText={(v) => setForm((f) => ({ ...f, sire_registration_number: v }))}
-              placeholder="SBA #12345" placeholderTextColor={c.textFaint} />
-          </View>
-
-          {/* Madre */}
-          <View style={s.fieldset}>
-            <View style={s.fieldsetHeader}>
-              <Venus size={14} color={damColor(c.isDark)} strokeWidth={2} />
-              <Text style={[s.fieldsetTitle, { color: damColor(c.isDark) }]}>MADRE</Text>
-            </View>
-            <HorseSearchField
-              label="Nombre de la madre"
-              value={form.dam_name ?? ''}
-              onChange={(v) => setForm((f) => ({ ...f, dam_name: v, dam_id: undefined }))}
-              onSelect={(id, name) => setForm((f) => ({ ...f, dam_id: id, dam_name: name }))}
-            />
-            <Text style={s.fieldLabel}>N° de registro (opcional)</Text>
-            <TextInput style={s.input} value={form.dam_registration_number ?? ''}
-              onChangeText={(v) => setForm((f) => ({ ...f, dam_registration_number: v }))}
-              placeholder="SBA #67890" placeholderTextColor={c.textFaint} />
-          </View>
-
-          {/* Abuelos */}
-          <View style={s.fieldset}>
-            <Text style={s.fieldsetTitle}>ABUELOS (opcional)</Text>
-            <View style={s.grandRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.grandLabel}>Abuelo paterno</Text>
-                <TextInput style={s.inputSm} value={form.paternal_grandsire_name ?? ''}
-                  onChangeText={(v) => setForm((f) => ({ ...f, paternal_grandsire_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.grandLabel}>Abuela paterna</Text>
-                <TextInput style={s.inputSm} value={form.paternal_granddam_name ?? ''}
-                  onChangeText={(v) => setForm((f) => ({ ...f, paternal_granddam_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
-              </View>
-            </View>
-            <View style={s.grandRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.grandLabel}>Abuelo materno</Text>
-                <TextInput style={s.inputSm} value={form.maternal_grandsire_name ?? ''}
-                  onChangeText={(v) => setForm((f) => ({ ...f, maternal_grandsire_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.grandLabel}>Abuela materna</Text>
-                <TextInput style={s.inputSm} value={form.maternal_granddam_name ?? ''}
-                  onChangeText={(v) => setForm((f) => ({ ...f, maternal_granddam_name: v }))}
-                  placeholder="Nombre" placeholderTextColor={c.textFaint} autoCapitalize="words" />
-              </View>
-            </View>
-          </View>
-
-          {(upsert.isError || validate.isError) && (
-            <Text style={s.errorText}>Error al guardar. Intentá de nuevo.</Text>
-          )}
-
-          <View style={s.hintRow}>
-            <Info size={13} color={c.textFaint} strokeWidth={2} style={{ marginTop: 2 }} />
-            <Text style={s.hint}>
-              "Guardar y validar" consulta Stud Book Argentino, SRA y PedigreeQuery para verificar los datos automáticamente.
-            </Text>
-          </View>
-        </ScrollView>
-
-        <View style={s.modalFooter}>
-          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
-            <Text style={s.btnSecondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.btn, s.btnOutline, { flex: 1 }]}
-            onPress={() => handleSave(false)} disabled={isPending}>
-            {upsert.isPending && !validate.isPending
-              ? <ActivityIndicator color={c.brand} size="small" />
-              : <Text style={s.btnOutlineText}>Guardar</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1.4 }]}
-            onPress={() => handleSave(true)} disabled={isPending}>
-            {validate.isPending
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <>
-                  <ShieldCheck size={16} color={colors.white} strokeWidth={2} />
-                  <Text style={s.btnPrimaryText}>Validar</Text>
-                </>}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      </FormSheet>
+    </>
   );
 }
 
@@ -541,16 +585,16 @@ function ValidationBanner({ validations }: { validations: PedigreeValidation[] }
   let Icon: typeof CheckCircle2;
 
   if (anyVerified) {
-    title = 'Pedigrí verificado'; bg = statusBg('verified', c.isDark); color = statusColor('verified', c.isDark); Icon = CheckCircle2;
+    title = 'Pedigrí verificado'; bg = statusBg('verified', c); color = statusColor('verified', c); Icon = CheckCircle2;
     msg = 'Los datos coinciden con registros oficiales.';
   } else if (anyPartial) {
-    title = 'Validación parcial'; bg = statusBg('partial', c.isDark); color = statusColor('partial', c.isDark); Icon = AlertTriangle;
+    title = 'Validación parcial'; bg = statusBg('partial', c); color = statusColor('partial', c); Icon = AlertTriangle;
     msg = 'Algunos datos coinciden. Editá y re-validá para mejorar.';
   } else if (anyDisputed) {
-    title = 'Datos inconsistentes'; bg = statusBg('disputed', c.isDark); color = statusColor('disputed', c.isDark); Icon = XCircle;
+    title = 'Datos inconsistentes'; bg = statusBg('disputed', c); color = statusColor('disputed', c); Icon = XCircle;
     msg = 'Fuentes contradictorias. Requiere revisión manual.';
   } else if (allFailed) {
-    title = 'No encontrado'; bg = statusBg('unverified', c.isDark); color = c.textMuted; Icon = Circle;
+    title = 'No encontrado'; bg = statusBg('unverified', c); color = c.textMuted; Icon = Circle;
     msg = 'Sin coincidencias en los registros. Verificá nombres y números.';
   } else {
     return null;
@@ -568,7 +612,7 @@ function ValidationBanner({ validations }: { validations: PedigreeValidation[] }
           {latest.map((v) => {
             const sourceLabels: Record<string, string> = { studbook_ar: 'Stud Book', sra: 'SRA', pedigreequery: 'PedigreeQuery', manual_admin: 'Admin' };
             const stKey = ({ validated: 'verified', partial: 'partial', disputed: 'disputed', failed: 'unverified', pending: 'pending' } as Record<string, string>)[v.status] ?? 'unverified';
-            const stColor = statusColor(stKey, c.isDark);
+            const stColor = statusColor(stKey, c);
             return (
               <View key={v.source} style={[s.sourceChip, { backgroundColor: stColor + '18', borderColor: stColor + '40' }]}>
                 <Text style={[s.sourceChipText, { color: stColor }]}>{sourceLabels[v.source] ?? v.source}</Text>
@@ -637,6 +681,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   const hasData = hasSire || hasDam;
 
   return (
+    <>
     <ScrollView style={s.root} showsVerticalScrollIndicator={false}>
       {/* Header acciones */}
       <View style={s.header}>
@@ -722,8 +767,9 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
       )}
 
       <View style={{ height: 32 }} />
-      {showForm && <PedigreeFormModal horseId={horseId} onClose={() => setShowForm(false)} />}
     </ScrollView>
+    {showForm && <PedigreeFormModal horseId={horseId} onClose={() => setShowForm(false)} />}
+    </>
   );
 }
 
@@ -790,12 +836,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   docRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   docName: { fontSize: 13, color: c.textMuted, flex: 1 },
 
-  // Modal
+  // Formulario a pantalla completa (reemplaza el Modal a mano)
+  formScreen: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: c.bg,
+  },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: space[5], borderBottomWidth: 1, borderBottomColor: c.border,
+    padding: space[4], gap: space[2],
   },
-  modalTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text },
+  backBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
+  modalTitle: { flex: 1, fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, textAlign: 'center' },
   modalBody: { padding: space[5], gap: 4, paddingBottom: space[10] },
   modalFooter: {
     flexDirection: 'row', gap: space[2], padding: space[4],

@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Gavel, GitBranch, BookOpen, FileText, Receipt, CalendarClock,
+  Gavel, BookOpen, FileText, Receipt, CalendarClock,
   Inbox, Building2, Settings, ShieldCheck, ChevronRight,
   MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, QrCode, type LucideIcon, LogOut, Newspaper } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
@@ -19,7 +19,6 @@ import { Routes, nav } from '../../lib/routes';
 interface MenuItem {
   icon: LucideIcon;
   label: string;
-  desc: string;
   path: string;
   badge?: number;
   iconColor?: string;
@@ -28,7 +27,13 @@ interface MenuItem {
 function MenuRow({ item, onPress, c, s }: { item: MenuItem; onPress: () => void; c: ThemeColors; s: Styles }) {
   const Icon = item.icon;
   return (
-    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.6}>
+    <TouchableOpacity
+      style={s.row}
+      onPress={onPress}
+      activeOpacity={0.6}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+    >
       <View style={s.iconWrap}>
         <Icon size={22} color={c.text} strokeWidth={1.7} />
       </View>
@@ -82,49 +87,36 @@ export default function MasScreen() {
     {
       icon: Newspaper,
       label: 'Muro',
-      desc: 'Novedades y actividad de la comunidad',
       path: '/muro',
     },
     {
       icon: QrCode,
       label: 'Escanear QR',
-      desc: 'Leé el código de un caballo para ver su ficha',
       path: '/escanear',
     },
     ...(isEncargado ? [{
       icon: ClipboardList,
       label: 'Supervisión',
-      desc: 'Actividad de todos los caballos de la caballeriza',
       path: Routes.supervision,
     }] : []),
     {
       icon: Gavel,
       label: 'Remates',
-      desc: 'Comprá y vendé caballos en subastas',
       path: Routes.remates,
-    },
-    {
-      icon: GitBranch,
-      label: 'Árbol genealógico',
-      desc: 'Pedigree global de caballos desde 1990',
-      path: Routes.arbol,
     },
     {
       icon: BookOpen,
       label: 'Padrón de caballos',
-      desc: 'Registro oficial, pedigree y propietarios',
       path: Routes.padron,
     },
     ...(!isProp ? [{
       icon: CalendarClock,
       label: 'Eventos',
-      desc: 'Historial de carreras y actividades',
       path: Routes.tabsEventos,
     }] : []),
     {
       icon: Receipt,
       label: 'Facturación',
-      desc: 'Facturas y pagos de pensión',
       path: Routes.tabsFacturacion,
     },
   ];
@@ -133,37 +125,31 @@ export default function MasScreen() {
     ...(isEstab || isProp ? [{
       icon: FileText,
       label: 'Contratos',
-      desc: 'Contratos de pensión y acuerdos',
       path: Routes.contratos,
     }] : []),
     ...(isEstab || isAdmin ? [{
       icon: Inbox,
       label: 'Solicitudes de pensión',
-      desc: 'Aceptá o rechazá solicitudes entrantes',
       path: Routes.solicitudes,
     }] : []),
     ...(isProp ? [{
       icon: MapPin,
       label: 'Directorio',
-      desc: 'Encontrá establecimientos en HandicApp',
       path: Routes.directorio,
     }] : []),
     ...(!isEstab ? [{
       icon: KeyRound,
       label: 'Unirme a una caballeriza',
-      desc: 'Ingresá con un código para pedir acceso',
       path: Routes.unirme,
     }] : []),
     ...(isEstab || isAdmin ? [{
       icon: Building2,
       label: 'Organización',
-      desc: 'Miembros, plan e invitaciones',
       path: Routes.organizacion,
     }] : []),
     ...(hasReportes ? [{
       icon: BarChart3,
       label: 'Reportes',
-      desc: 'Resumen de caballos, salud y gastos',
       path: Routes.reportes,
     }] : []),
   ];
@@ -172,20 +158,17 @@ export default function MasScreen() {
     {
       icon: CreditCard,
       label: 'Mi plan',
-      desc: 'Tu plan actual y planes disponibles',
       path: Routes.miPlan,
     },
     ...(isAdmin ? [{
       icon: Settings,
       label: 'Configuración de notificaciones',
-      desc: 'Qué tipos de eventos notifican a cada rol',
       path: Routes.notificacionesConfig,
       iconColor: colors.gray500,
     }] : []),
     ...(isAdmin ? [{
       icon: ShieldCheck,
       label: 'Superadmin',
-      desc: 'Métricas, planes y organizaciones',
       path: Routes.superadmin,
     }] : []),
   ];
@@ -278,7 +261,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   rowBody: { flex: 1 },
   rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
-  rowDesc: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   badge: {
     backgroundColor: c.danger,

@@ -76,12 +76,11 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
       <>
         {error ? <Text style={s.modalError}>{error}</Text> : null}
         <View style={s.field}>
-          <Text style={s.fieldLabel}>Nombre</Text>
           <TextInput
             style={s.input}
             value={name}
             onChangeText={setName}
-            placeholder="Tu nombre"
+            placeholder="Nombre"
             placeholderTextColor={c.textFaint}
             autoCapitalize="words"
             textContentType="name"
@@ -89,12 +88,11 @@ function EditProfileModal({ visible, user, onClose, c, s }: {
           />
         </View>
         <View style={s.field}>
-          <Text style={s.fieldLabel}>Email</Text>
           <TextInput
             style={s.input}
             value={email}
             onChangeText={setEmail}
-            placeholder="tu@email.com"
+            placeholder="Email"
             placeholderTextColor={c.textFaint}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -174,14 +172,13 @@ function ChangePasswordModal({ visible, onClose, c, s }: { visible: boolean; onC
           { label: 'Confirmar nueva contraseña', value: confirm, setter: setConfirm, textContentType: 'newPassword' as const },
         ].map((f) => (
           <View key={f.label} style={s.field}>
-            <Text style={s.fieldLabel}>{f.label}</Text>
             <TextInput
               style={s.input}
               value={f.value}
               onChangeText={f.setter}
               secureTextEntry
               placeholderTextColor={c.textFaint}
-              placeholder="••••••••"
+              placeholder={f.label}
               autoComplete="off"
               textContentType={f.textContentType}
             />

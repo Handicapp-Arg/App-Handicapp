@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
   ScrollView, TextInput, Platform, ActivityIndicator, Alert, Pressable,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
-import { Check, X, Clock, List, CalendarDays, MoreVertical, Trash2 } from 'lucide-react-native';
+import { useScrollToTop } from '@react-navigation/native';
+import { Check, X, Clock, List, CalendarDays, MoreVertical, Trash2, Plus } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '../../hooks/use-agenda';
 import { useHorses } from '../../hooks/use-horses';
@@ -19,6 +20,7 @@ import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, touch } from '../../styles/tokens';
+import { hora, diaLargo } from '../../lib/fechas';
 import { useCommonStyles } from '../../styles/common';
 import { useToast } from '../../components/Toast';
 import { ActionSheet } from '../../components/ActionSheet';
@@ -43,8 +45,7 @@ function AppointmentRow({
   const [menuOpen, setMenuOpen] = useState(false);
   if (!appt) return null;
   const meta = APPOINTMENT_TYPES[appt.type] ?? APPOINTMENT_TYPES.otro;
-  const date = new Date(appt.scheduled_at);
-  const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = hora(appt.scheduled_at);
 
   return (
     <SwipeableRow
@@ -118,7 +119,7 @@ function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: ()
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [error, setError] = useState('');
 
-  const timeStr = timeDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = hora(timeDate.toISOString());
 
   // La hoja ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
   useEffect(() => {
@@ -246,10 +247,12 @@ export default function AgendaScreen() {
   const { data: appointments, isLoading, isError, refetch, isRefetching } = useAgenda(viewMode === 'list' ? upcoming : false);
   const complete = useCompleteAppointment();
   const deleteAppt = useDeleteAppointment();
+  const listRef = useRef<FlatList<[string, typeof appointments]>>(null);
+  useScrollToTop(listRef);
 
   const grouped = (appointments ?? []).reduce<Record<string, typeof appointments>>((acc, a) => {
     if (!a) return acc;
-    const day = new Date(a.scheduled_at).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const day = diaLargo(a.scheduled_at);
     return { ...acc, [day]: [...(acc[day] ?? []), a] };
   }, {});
 
@@ -385,6 +388,7 @@ export default function AgendaScreen() {
         </ScrollView>
       ) : (
         <FlatList
+          ref={listRef}
           ListHeaderComponent={Header}
           data={Object.entries(grouped)}
           keyExtractor={([day]) => day}
@@ -408,6 +412,16 @@ export default function AgendaScreen() {
       )}
 
       <CreateModal visible={showCreate} onClose={() => setShowCreate(false)} c={c} s={s} />
+
+      <Pressable
+        style={s.fab}
+        onPress={() => { haptic.medium(); setShowCreate(true); }}
+        accessibilityRole="button"
+        accessibilityLabel="Nuevo turno"
+        hitSlop={8}
+      >
+        <Plus size={26} color={colors.white} strokeWidth={2.5} />
+      </Pressable>
     </View>
   );
 }
@@ -440,4 +454,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   chipTextActive: { color: colors.white },
   errorText: { fontSize: text.sm, color: colors.red500 },
+  fab: {
+    position: 'absolute', right: 20, bottom: 110,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
+    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
+  },
 });

@@ -7,6 +7,7 @@ import { useTrainingMetrics, useUpsertTrainingMetrics } from '../hooks/use-train
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
 import { useTheme } from '../lib/theme';
+import { useToast } from './Toast';
 import { space, text, radius, weight, touch } from '../styles/tokens';
 
 const INTENSITY_LABELS = ['', 'Muy liviano', 'Liviano', 'Moderado', 'Intenso', 'Máximo'];
@@ -22,6 +23,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
   const s = useMemo(() => makeStyles(pal), [pal]);
   const { data: metrics } = useTrainingMetrics(eventId);
   const upsert = useUpsertTrainingMetrics();
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [distance, setDistance] = useState('');
   const [duration, setDuration] = useState('');
@@ -43,15 +45,20 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
   };
 
   const save = async () => {
-    await upsert.mutateAsync({
-      eventId,
-      distance_km: distance ? parseFloat(distance) : undefined,
-      duration_min: duration ? parseInt(duration, 10) : undefined,
-      intensity: intensity > 0 ? intensity : undefined,
-      discipline: discipline.trim() || undefined,
-    });
-    haptic.success();
-    setEditing(false);
+    try {
+      await upsert.mutateAsync({
+        eventId,
+        distance_km: distance ? parseFloat(distance) : undefined,
+        duration_min: duration ? parseInt(duration, 10) : undefined,
+        intensity: intensity > 0 ? intensity : undefined,
+        discipline: discipline.trim() || undefined,
+      });
+      haptic.success();
+      setEditing(false);
+    } catch {
+      haptic.error();
+      toast.error('No se pudieron guardar las métricas. Probá de nuevo.');
+    }
   };
 
   if (!hasData && !canEdit) return null;

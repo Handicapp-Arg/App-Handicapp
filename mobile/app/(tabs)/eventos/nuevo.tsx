@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, ActivityIndicator,
+  TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { AppImage } from '../../../components/AppImage';
 import { X, Camera, Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package } from 'lucide-react-native';
@@ -50,6 +50,7 @@ const makeExpenseCategories = (c: ThemeColors) => [
 
 export default function NuevoEventoScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { c } = useTheme();
@@ -89,6 +90,21 @@ export default function NuevoEventoScreen() {
   };
 
   const canSubmit = !!horseId && !!description.trim() && !createEvent.isPending;
+  const isDirty = !!description.trim() || !!amount.trim() || photoUris.length > 0;
+
+  // Intercepta salir (back del header, gesto o botón físico) y confirma solo
+  // si hay formulario sucio.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
+      if (!isDirty) return;
+      e.preventDefault();
+      Alert.alert('¿Descartar cambios?', 'Vas a perder lo que escribiste.', [
+        { text: 'Seguir editando', style: 'cancel' },
+        { text: 'Descartar', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, isDirty]);
 
   const handleSubmit = async () => {
     if (!horseId) { setError('Seleccioná un caballo'); haptic.error(); return; }

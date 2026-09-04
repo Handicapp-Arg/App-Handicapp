@@ -61,24 +61,22 @@ export default function UnirmeScreen() {
             Ingresá el código que te compartió la caballeriza. El administrador recibirá tu solicitud y te asignará un rol.
           </Text>
 
-          <Text style={s.fieldLabel}>Código *</Text>
           <TextInput
             style={s.input}
             value={code}
             onChangeText={setCode}
-            placeholder="Ej. ABC123"
+            placeholder="Código *, ej. ABC123"
             placeholderTextColor={c.textFaint}
             autoCapitalize="characters"
             autoCorrect={false}
             autoFocus
           />
 
-          <Text style={[s.fieldLabel, { marginTop: space[4] }]}>Mensaje (opcional)</Text>
           <TextInput
-            style={[s.input, s.inputMultiline]}
+            style={[s.input, s.inputMultiline, { marginTop: space[4] }]}
             value={message}
             onChangeText={setMessage}
-            placeholder="Presentate o contá quién sos…"
+            placeholder="Mensaje (opcional): presentate o contá quién sos…"
             placeholderTextColor={c.textFaint}
             multiline
           />

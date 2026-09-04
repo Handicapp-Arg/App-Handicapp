@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, RefreshControl, ScrollView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { useBills, STATUS_META, monthLabel } from '../../../hooks/use-billing';
 import { formatMoney } from '../../../lib/currency';
+import { colors } from '../../../lib/colors';
 import { useAuth } from '../../../lib/auth';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { Routes } from '../../../lib/routes';
@@ -123,6 +124,18 @@ export default function FacturacionScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {isEst && (
+        <Pressable
+          style={s.fab}
+          onPress={() => { haptic.medium(); router.push(Routes.facturacionNueva as never); }}
+          accessibilityRole="button"
+          accessibilityLabel="Nueva factura"
+          hitSlop={8}
+        >
+          <Plus size={26} color={colors.white} strokeWidth={2.5} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -136,4 +149,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   horseName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   period: { fontSize: text.xs, color: c.textMuted },
   total: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
+  fab: {
+    position: 'absolute', right: 20, bottom: 110,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
+    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
+  },
 });

@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, ActivityIndicator,
+  TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { useCreateContract, useLookupUserByEmail } from '../../../hooks/use-contracts';
 import { ScreenHeader } from '../../../components/ScreenHeader';
@@ -12,6 +12,7 @@ import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { useToast } from '../../../components/Toast';
 
 const DEFAULT_BODY = `CONTRATO DE PENSIÓN EQUINA
 
@@ -27,24 +28,61 @@ Firmado digitalmente en HandicApp.`;
 
 export default function NuevoContratoScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const createContract = useCreateContract();
+  const toast = useToast();
 
   const [title, setTitle] = useState('Contrato de Pensión');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [body, setBody] = useState(DEFAULT_BODY);
   const [emailToSearch, setEmailToSearch] = useState('');
+  const [error, setError] = useState('');
   const { data: foundUser, isFetching: searchingUser } = useLookupUserByEmail(emailToSearch);
+
+  const bodyRef = useRef<TextInput>(null);
+
+  const isDirty = ownerEmail.trim().length > 0 || title.trim() !== 'Contrato de Pensión' || body !== DEFAULT_BODY;
+
+  // Dispara la búsqueda del propietario solo, con debounce de 600ms, cuando el
+  // email tipeado ya tiene forma válida — además del botón "Buscar".
+  useEffect(() => {
+    const trimmed = ownerEmail.trim();
+    if (!trimmed.includes('@') || trimmed.length < 5) return;
+    const timer = setTimeout(() => setEmailToSearch(trimmed), 600);
+    return () => clearTimeout(timer);
+  }, [ownerEmail]);
 
   const canSubmit = !!foundUser && !!title.trim() && !createContract.isPending;
 
+  // Intercepta cualquier forma de salir (Cancelar, back del header, gesto o
+  // botón físico) y confirma solo si hay texto tipeado.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
+      if (!isDirty) return;
+      e.preventDefault();
+      Alert.alert('¿Descartar cambios?', 'Vas a perder lo que escribiste.', [
+        { text: 'Seguir editando', style: 'cancel' },
+        { text: 'Descartar', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, isDirty]);
+
   const submit = async () => {
     if (!foundUser) return;
-    await createContract.mutateAsync({ owner_id: foundUser.id, title: title.trim(), body });
-    haptic.success();
-    router.back();
+    setError('');
+    try {
+      await createContract.mutateAsync({ owner_id: foundUser.id, title: title.trim(), body });
+      haptic.success();
+      toast.success('Contrato creado');
+      router.back();
+    } catch {
+      haptic.error();
+      setError('No se pudo crear el contrato. Intentá de nuevo.');
+    }
   };
 
   return (
@@ -58,13 +96,12 @@ export default function NuevoContratoScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        <Text style={s.fieldLabel}>Email del propietario *</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput
-            style={[s.input, { flex: 1 }]}
+            style={[s.input, { flex: 1, height: touch.field }]}
             value={ownerEmail}
             onChangeText={setOwnerEmail}
-            placeholder="propietario@email.com"
+            placeholder="Email del propietario *"
             placeholderTextColor={c.textFaint}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -85,7 +122,7 @@ export default function NuevoContratoScreen() {
           </TouchableOpacity>
         </View>
 
-        {emailToSearch && !searchingUser && (
+        {!!emailToSearch && !searchingUser && (
           foundUser ? (
             <View style={s.userFound}>
               <Check size={18} color={c.success} strokeWidth={2.5} />
@@ -100,16 +137,32 @@ export default function NuevoContratoScreen() {
             </View>
           )
         )}
+        {!foundUser && !emailToSearch && (
+          <Text style={s.hint}>Buscá y confirmá el propietario para poder crear el contrato.</Text>
+        )}
 
-        <Text style={[s.fieldLabel, { marginTop: space[3] }]}>Título *</Text>
-        <TextInput style={s.input} value={title} onChangeText={setTitle} placeholderTextColor={c.textFaint} returnKeyType="next" />
-
-        <Text style={[s.fieldLabel, { marginTop: space[3] }]}>Cuerpo del contrato *</Text>
         <TextInput
-          style={[s.input, s.bodyInput]}
-          value={body} onChangeText={setBody} multiline placeholderTextColor={c.textFaint}
+          style={[s.input, { height: touch.field, marginTop: space[3] }]}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Título *"
+          placeholderTextColor={c.textFaint}
+          returnKeyType="next"
+          onSubmitEditing={() => bodyRef.current?.focus()}
+          blurOnSubmit={false}
+        />
+
+        <TextInput
+          ref={bodyRef}
+          style={[s.input, s.bodyInput, { marginTop: space[3] }]}
+          value={body}
+          onChangeText={setBody}
+          multiline
+          placeholder="Cuerpo del contrato *"
+          placeholderTextColor={c.textFaint}
         />
         <Text style={s.hint}>El propietario podrá firmar o rechazar el contrato desde su app.</Text>
+        {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
@@ -139,6 +192,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   bodyInput: { height: 220, textAlignVertical: 'top', paddingTop: space[3] },
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
+  errorText: { fontSize: text.sm, color: c.danger, marginTop: space[2] },
   searchBtn: { height: touch.field, borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: space[4], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
   searchBtnText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
   userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.successSoft, borderRadius: radius.md, padding: space[3] },

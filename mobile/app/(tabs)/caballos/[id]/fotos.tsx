@@ -12,7 +12,7 @@ import { haptic } from '../../../../lib/haptics';
 import { useToast } from '../../../../components/Toast';
 import { fechaHoraHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text } from '../../../../styles/tokens';
+import { space, text, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { Spinner } from '../../../../components/Spinner';
 import { AppImage } from '../../../../components/AppImage';
@@ -48,12 +48,18 @@ export default function FotosScreen() {
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
                 if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
                 const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
-                if (!result.canceled && result.assets[0]) {
+                if (result.canceled || !result.assets[0]) return;
+                try {
                   await uploadActivityPhoto.mutateAsync({ uri: result.assets[0].uri, activity_type: activityType === 'all' ? 'otro' : activityType });
                   haptic.success();
                   toast.success('Foto agregada');
+                } catch {
+                  haptic.error();
+                  toast.error('No se pudo subir la foto. Probá de nuevo.');
                 }
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Capturar foto"
             >
               <Camera size={15} color={c.surface} strokeWidth={2.2} />
               <Text style={s.captureBtnText}>Capturar</Text>
@@ -122,19 +128,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  emptyText: { fontSize: 13, color: c.textFaint },
+  emptyText: { fontSize: text.sm, color: c.textFaint },
 
   activityTypeRow: { marginBottom: 10, flexGrow: 0 },
-  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.text },
-  captureBtnText: { fontSize: 12, fontWeight: '700', color: c.surface },
-  activityChip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
-  activityChipText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
-  photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  photoWrap: { width: '31%', aspectRatio: 1, position: 'relative' },
-  photoThumb: { width: '100%', height: '100%', borderRadius: 10 },
-  photoBadge: { position: 'absolute', top: 3, left: 3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
-  photoBadgeText: { fontSize: 8, fontWeight: '700' },
-  photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', borderBottomLeftRadius: 10, borderBottomRightRadius: 10, paddingHorizontal: 4, paddingVertical: 3 },
-  photoStampAuthor: { fontSize: 8, fontWeight: '700', color: '#fff' },
-  photoStampTime: { fontSize: 8, fontWeight: '500', color: 'rgba(255,255,255,0.85)' },
+  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: touch.min, borderRadius: 999, paddingHorizontal: space[4], backgroundColor: c.text },
+  captureBtnText: { fontSize: text.sm, fontWeight: '700', color: c.surface },
+  activityChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
+  activityChipText: { fontSize: text.sm, fontWeight: '600', color: c.textMuted },
+  photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  photoWrap: { width: '48%', aspectRatio: 1, position: 'relative' },
+  photoThumb: { width: '100%', height: '100%', borderRadius: 12 },
+  photoBadge: { position: 'absolute', top: space[2], left: space[2], borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
+  photoBadgeText: { fontSize: text.xs, fontWeight: '700' },
+  photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, paddingHorizontal: space[2], paddingVertical: space[1] },
+  photoStampAuthor: { fontSize: text.xs, fontWeight: '700', color: '#fff' },
+  photoStampTime: { fontSize: text.xs, fontWeight: '500', color: 'rgba(255,255,255,0.85)' },
 });

@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, XCircle, Info, Star, MapPin } from 'lucide-react-native';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import { Avatar } from '../../../components/Avatar';
 import { Skeleton } from '../../../components/Skeleton';
 import { ErrorState } from '../../../components/ErrorState';
+import { useToast } from '../../../components/Toast';
 import { useAuction, useAuctionBids, usePlaceBid, useToggleWatch, usePublishAuction } from '../../../hooks/use-auctions';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
@@ -60,6 +62,8 @@ export default function AuctionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -119,6 +123,21 @@ export default function AuctionDetailScreen() {
     }
   };
 
+  const handlePublish = async () => {
+    haptic.medium();
+    try {
+      await publish.mutateAsync(id);
+      haptic.success();
+    } catch {
+      haptic.error();
+      toast.error('No se pudo publicar el remate. Intentá de nuevo.');
+    }
+  };
+
+  const showBidFooter = !isSeller && isActive && isRemate;
+  const showPublishFooter = isSeller && auction.status === 'draft';
+  const showFooter = showBidFooter || showPublishFooter;
+
   return (
     <View style={s.root}>
       <ScreenHeader
@@ -140,20 +159,14 @@ export default function AuctionDetailScreen() {
                 strokeWidth={2}
               />
             </TouchableOpacity>
-          ) : auction.status === 'draft' ? (
-            <TouchableOpacity
-              onPress={() => { haptic.medium(); publish.mutateAsync(id); }}
-              style={s.publishBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Publicar remate"
-            >
-              <Text style={s.publishBtnText}>Publicar</Text>
-            </TouchableOpacity>
           ) : undefined
         }
       />
 
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + (showFooter ? touch.button + space[8] : space[10]) }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Título */}
         <Text style={s.auctionTitle}>{auction.title}</Text>
         <Text style={s.horseName}>{auction.horse?.name}</Text>
@@ -187,36 +200,6 @@ export default function AuctionDetailScreen() {
             </View>
           )}
         </View>
-
-        {/* Acción pujar */}
-        {!isSeller && isActive && isRemate && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Hacer una puja</Text>
-            <Text style={s.bidHint}>Mínimo: {formatARS(minNextBid, auction.currency)}</Text>
-            <View style={s.bidInputRow}>
-              <TextInput
-                style={s.bidInput}
-                placeholder={String(minNextBid)}
-                placeholderTextColor={c.textFaint}
-                keyboardType="numeric"
-                value={bidAmount}
-                onChangeText={setBidAmount}
-              />
-              <TouchableOpacity
-                style={s.bidBtn}
-                onPress={handleBid}
-                disabled={placeBid.isPending}
-                accessibilityRole="button"
-                accessibilityLabel="Confirmar puja"
-              >
-                {placeBid.isPending
-                  ? <ActivityIndicator color={colors.white} size="small" />
-                  : <Text style={s.bidBtnText}>Pujar</Text>}
-              </TouchableOpacity>
-            </View>
-            {bidError ? <Text style={s.bidError}>{bidError}</Text> : null}
-          </View>
-        )}
 
         {/* Descripción */}
         {auction.description && (
@@ -295,6 +278,53 @@ export default function AuctionDetailScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {showBidFooter && (
+        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.bidHint}>Mínimo: {formatARS(minNextBid, auction.currency)}</Text>
+            <View style={s.bidInputRow}>
+              <TextInput
+                style={s.bidInput}
+                placeholder={String(minNextBid)}
+                placeholderTextColor={c.textFaint}
+                keyboardType="numeric"
+                value={bidAmount}
+                onChangeText={setBidAmount}
+              />
+              <TouchableOpacity
+                style={s.bidBtn}
+                onPress={handleBid}
+                disabled={placeBid.isPending}
+                accessibilityRole="button"
+                accessibilityLabel="Confirmar puja"
+              >
+                {placeBid.isPending
+                  ? <ActivityIndicator color={colors.white} size="small" />
+                  : <Text style={s.bidBtnText}>Pujar</Text>}
+              </TouchableOpacity>
+            </View>
+            {bidError ? <Text style={s.bidError}>{bidError}</Text> : null}
+          </View>
+        </View>
+      )}
+
+      {showPublishFooter && (
+        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
+          <TouchableOpacity
+            style={[s.publishBtnFull, publish.isPending && { opacity: 0.6 }]}
+            onPress={handlePublish}
+            disabled={publish.isPending}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Publicar remate"
+          >
+            {publish.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={s.publishBtnFullText}>Publicar</Text>}
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -304,8 +334,9 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   watchBtn: { padding: space[2] },
-  publishBtn: { backgroundColor: c.brand, paddingHorizontal: space[4], borderRadius: radius.lg, minHeight: touch.min, justifyContent: 'center', alignItems: 'center' },
-  publishBtnText: { color: colors.white, fontSize: text.sm, fontWeight: weight.bold },
+  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg },
+  publishBtnFull: { flex: 1, height: touch.button, backgroundColor: c.brand, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center' },
+  publishBtnFullText: { color: colors.white, fontSize: text.md, fontWeight: weight.extrabold },
 
   scroll: { paddingHorizontal: space[4], paddingBottom: 120 },
 

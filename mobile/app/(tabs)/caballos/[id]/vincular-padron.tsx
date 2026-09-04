@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
   ActivityIndicator, Alert, Platform, ActionSheetIOS,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CheckCircle2, Info, Paperclip, FileText,
@@ -37,6 +37,7 @@ export default function VincularPadronScreen() {
   const matchesParam = Array.isArray(params.matches) ? params.matches[0] : params.matches;
 
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -129,6 +130,21 @@ export default function VincularPadronScreen() {
     }
   };
 
+  // El back físico/gesto en el paso "form" vuelve a la lista de coincidencias
+  // en vez de sacarte de la pantalla entera (evita perder el trámite por error).
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
+      if (step !== 'form') return;
+      e.preventDefault();
+      haptic.selection();
+      setStep('list');
+      setDocUri(null);
+      setRegistrationNumber('');
+      setError('');
+    });
+    return unsubscribe;
+  }, [navigation, step]);
+
   const isBusy = uploadDoc.isPending || submitClaim.isPending;
 
   const goToHorse = () => { haptic.light(); nav.replace(router, Routes.caballo(id)); };
@@ -137,7 +153,7 @@ export default function VincularPadronScreen() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <ScreenHeader scrollable showBack title={title} subtitle={horse?.name} />
+      <ScreenHeader scrollable showBack={step !== 'done'} title={title} subtitle={horse?.name} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -196,14 +212,16 @@ export default function VincularPadronScreen() {
               </Text>
             </View>
 
-            <Text style={s.fieldLabel}>Número de registro (opcional)</Text>
             <TextInput
-              style={s.input}
+              style={[s.input, { height: touch.field }]}
               value={registrationNumber}
               onChangeText={setRegistrationNumber}
-              placeholder="Ej: STB-2018-00142"
+              placeholder="Número de registro (opcional), ej: STB-2018-00142"
               placeholderTextColor={c.textFaint}
               autoCapitalize="characters"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={() => handleSendClaim()}
             />
 
             <Text style={s.fieldLabel}>Documento de propiedad</Text>

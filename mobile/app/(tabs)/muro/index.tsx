@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, ScrollView,
   Alert, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useScrollToTop } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { formatDistanceToNow } from 'date-fns';
@@ -39,6 +40,8 @@ import type { FeedPost, FeedComment } from '../../../../packages/shared/src/type
 import { ActionSheet } from '../../../components/ActionSheet';
 import { ErrorState } from '../../../components/ErrorState';
 import { FormSheet } from '../../../components/FormSheet';
+import { useToast } from '../../../components/Toast';
+import { fechaHumana, diaLargo } from '../../../lib/fechas';
 
 /** Reproductor de un video del feed, con expo-video (expo-av está deprecado). */
 function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
@@ -90,14 +93,20 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
   const addComment = useAddComment(postId);
   const deleteComment = useDeleteComment(postId);
   const [text, setText] = useState('');
+  const toast = useToast();
 
   useEffect(() => { if (visible) setText(''); }, [visible]);
 
   const handleSend = async () => {
     if (!text.trim()) return;
     haptic.light();
-    await addComment.mutateAsync(text.trim());
-    setText('');
+    try {
+      await addComment.mutateAsync(text.trim());
+      setText('');
+    } catch {
+      haptic.error();
+      toast.error('No se pudo enviar el comentario');
+    }
   };
 
   return (
@@ -368,17 +377,6 @@ function ComposerTrigger({ user, c, s }: { user: { name: string; avatar_color?: 
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
-/** "Hoy" / "Mañana" / "vie 5" - las fechas crudas se sienten de planilla. */
-function fechaHumana(iso: string): string {
-  const d = new Date(iso);
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-  const dia = new Date(d); dia.setHours(0, 0, 0, 0);
-  const diff = Math.round((dia.getTime() - hoy.getTime()) / 86400000);
-  if (diff === 0) return 'Hoy';
-  if (diff === 1) return 'Mañana';
-  return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
-}
-
 /**
  * Encabezado de Inicio: saludo, acciones rapidas y proximos turnos.
  * Es lo que separa un feed generico de un inicio con proposito (Uber/YPF):
@@ -393,7 +391,7 @@ function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
   const proximos = (turnos ?? []).filter(Boolean).slice(0, 5);
 
   const nombre = (user?.name ?? '').split(' ')[0] || 'Hola';
-  const fecha = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fecha = diaLargo(new Date().toISOString());
 
   const acciones = [
     { label: 'Evento', Icon: CalendarPlus, onPress: () => router.push('/eventos') },
@@ -495,6 +493,8 @@ export default function MuroTab() {
   );
   const [commentPost, setCommentPost] = useState<FeedPost | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const listRef = useRef<FlatList<FeedPost>>(null);
+  useScrollToTop(listRef);
 
   const renderItem = useCallback(({ item, index }: { item: FeedPost; index: number }) => (
     <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
@@ -535,6 +535,7 @@ export default function MuroTab() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={posts}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}

@@ -15,7 +15,7 @@ import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text } from '../../../../styles/tokens';
+import { space, text, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
 import { Avatar } from '../../../../components/Avatar';
@@ -96,11 +96,16 @@ export default function EquipoScreen() {
         text: 'Transferir',
         style: 'destructive',
         onPress: async () => {
-          await transferHorse.mutateAsync({ id, new_owner_id: transferOwnerId });
-          haptic.success();
-          toast.success('Caballo transferido');
-          setShowTransfer(false);
-          setTransferOwnerId('');
+          try {
+            await transferHorse.mutateAsync({ id, new_owner_id: transferOwnerId });
+            haptic.success();
+            toast.success('Caballo transferido');
+            setShowTransfer(false);
+            setTransferOwnerId('');
+          } catch {
+            haptic.error();
+            toast.error('No se pudo transferir el caballo. Probá de nuevo.');
+          }
         },
       },
     ]);
@@ -229,10 +234,15 @@ export default function EquipoScreen() {
               style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedVetId || assignVet.isPending) && { opacity: 0.5 }]}
               disabled={!selectedVetId || assignVet.isPending}
               onPress={async () => {
-                await assignVet.mutateAsync(selectedVetId);
-                haptic.success();
-                toast.success('Veterinario asignado');
-                setShowAssignVet(false);
+                try {
+                  await assignVet.mutateAsync(selectedVetId);
+                  haptic.success();
+                  toast.success('Veterinario asignado');
+                  setShowAssignVet(false);
+                } catch {
+                  haptic.error();
+                  toast.error('No se pudo asignar el veterinario. Probá de nuevo.');
+                }
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
@@ -278,10 +288,15 @@ export default function EquipoScreen() {
               style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedMemberId || assignMember.isPending) && { opacity: 0.5 }]}
               disabled={!selectedMemberId || assignMember.isPending}
               onPress={async () => {
-                await assignMember.mutateAsync(selectedMemberId);
-                haptic.success();
-                toast.success('Miembro asignado');
-                setShowAssignTeam(false);
+                try {
+                  await assignMember.mutateAsync(selectedMemberId);
+                  haptic.success();
+                  toast.success('Miembro asignado');
+                  setShowAssignTeam(false);
+                } catch {
+                  haptic.error();
+                  toast.error('No se pudo asignar. Probá de nuevo.');
+                }
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
@@ -370,17 +385,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], marginBottom: space[6], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  emptyText: { fontSize: 13, color: c.textFaint },
+  emptyText: { fontSize: text.sm, color: c.textFaint },
 
   personRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: 10 },
-  docName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.text },
+  docName: { flex: 1, fontSize: text.base, fontWeight: '500', color: c.text },
 
-  smallBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.text },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
 
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
 });

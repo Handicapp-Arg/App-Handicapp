@@ -6,19 +6,21 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import {
   FileText, Receipt, AlertCircle, File, CheckCircle2, XCircle, Home, Trophy,
-  Award, Lock, Bell, BellOff, ChevronLeft, Stethoscope, UserPlus,
+  Award, Lock, Bell, Stethoscope, UserPlus,
   Users, ArrowUp, MoreVertical, CheckCheck, Check, type LucideIcon,
 } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ListRowSkeleton } from '../../components/Skeleton';
 import { useNotifications, type NotificationItem } from '../../lib/notifications';
 import { clearBadge } from '../../lib/push-notifications';
 import { fechaHumana, hace } from '../../lib/fechas';
 import { haptic } from '../../lib/haptics';
-import { colors } from '../../lib/colors';
+import { Routes } from '../../lib/routes';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight } from '../../styles/tokens';
 import { fontFamily } from '../../styles/fonts';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 import { ActionSheet } from '../../components/ActionSheet';
 import { SwipeableRow } from '../../components/SwipeableRow';
 
@@ -118,8 +120,7 @@ function SectionLabel({ label, s }: { label: string; s: Styles }) {
 /* ─── Main ─── */
 export default function NotificacionesScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { notifications, loading, unread, refresh, markAllRead, markOneRead } = useNotifications();
+  const { notifications, loading, isError, refresh, markAllRead, markOneRead } = useNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -158,54 +159,39 @@ export default function NotificacionesScreen() {
   }
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <View style={s.root}>
       {/* ─── Header ─── */}
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={s.backBtn}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-        >
-          <ChevronLeft size={22} color={c.text} strokeWidth={2} />
-        </TouchableOpacity>
-
-        <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>Notificaciones</Text>
-          {unread > 0 && (
-            <View style={s.badge}>
-              <Text style={s.badgeText}>{unread}</Text>
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => { haptic.light(); setMenuOpen(true); }}
-          style={s.menuBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Más opciones"
-        >
-          <MoreVertical size={22} color={c.text} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        showBack
+        backTo={Routes.mas}
+        title="Notificaciones"
+        right={
+          <TouchableOpacity
+            onPress={() => { haptic.light(); setMenuOpen(true); }}
+            style={s.menuBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Más opciones"
+          >
+            <MoreVertical size={22} color={c.text} strokeWidth={2} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* ─── Lista ─── */}
       {loading && notifications.length === 0 ? (
         <View style={s.list}>
           {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
         </View>
+      ) : isError && notifications.length === 0 ? (
+        <ErrorState onRetry={() => refresh()} />
       ) : notifications.length === 0 ? (
-        <View style={s.centered}>
-          <View style={s.emptyIcon}>
-            <BellOff size={32} color={c.textFaint} strokeWidth={2} />
-          </View>
-          <Text style={s.emptyTitle}>Sin notificaciones</Text>
-          <Text style={s.emptyMsg}>Cuando haya actividad en tus caballos, aparecerá aquí.</Text>
-        </View>
+        <EmptyState
+          icon="notifications-outline"
+          title="Sin notificaciones"
+          message="Cuando haya actividad en tus caballos, aparecerá aquí."
+        />
       ) : (
         <FlatList
           data={rows}
@@ -253,70 +239,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.bg,
   },
 
-  /* Header */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
-    backgroundColor: c.bg,
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: -space[1],
-  },
-  headerCenter: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space[2],
-    marginLeft: space[2],
-  },
-  headerTitle: {
-    fontSize: text.lg,
-    fontWeight: weight.extrabold,
-    fontFamily: fontFamily.extrabold,
-    color: c.text,
-    letterSpacing: -0.3,
-  },
-  badge: {
-    backgroundColor: c.danger,
-    borderRadius: radius.full,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: colors.white,
-    fontSize: text.xs,
-    fontWeight: weight.bold,
-    fontFamily: fontFamily.bold,
-  },
   menuBtn: {
     width: 36,
     height: 36,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  menu: {
-    position: 'absolute',
-    right: space[4],
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    paddingVertical: space[1],
-    minWidth: 230,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
   },
 
   /* Lista */
@@ -398,35 +326,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontFamily: fontFamily.regular,
     color: c.textFaint,
     flexShrink: 0,
-  },
-  /* Empty / Loading */
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: space[3],
-    paddingHorizontal: space[8],
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.full,
-    backgroundColor: c.surfaceAlt,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontSize: text.md,
-    fontWeight: weight.bold,
-    fontFamily: fontFamily.bold,
-    color: c.text,
-    textAlign: 'center',
-  },
-  emptyMsg: {
-    fontSize: text.sm,
-    fontFamily: fontFamily.regular,
-    color: c.textFaint,
-    textAlign: 'center',
-    lineHeight: 20,
   },
 });

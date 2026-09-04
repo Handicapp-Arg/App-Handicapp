@@ -1,7 +1,7 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator,
 } from 'react-native';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { ShieldCheck, Check, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../lib/auth';
@@ -32,6 +32,7 @@ export default function MatriculaScreen() {
   const [province, setProvince] = useState(user?.vet_province ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const provinceRef = useRef<TextInput>(null);
 
   if (!user) return null;
 
@@ -81,6 +82,9 @@ export default function MatriculaScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         <View style={s.section}>
           <View style={s.card}>
@@ -109,17 +113,23 @@ export default function MatriculaScreen() {
                 placeholder="Ej. 12345"
                 placeholderTextColor={c.textFaint}
                 autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => provinceRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
             <View style={s.field}>
               <Text style={s.fieldLabel}>Provincia</Text>
               <TextInput
+                ref={provinceRef}
                 style={s.input}
                 value={province}
                 onChangeText={setProvince}
                 placeholder="Ej. Buenos Aires"
                 placeholderTextColor={c.textFaint}
                 autoCapitalize="words"
+                returnKeyType="go"
+                onSubmitEditing={handleSubmit}
               />
             </View>
 

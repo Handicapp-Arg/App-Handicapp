@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MessageCircle, ArrowUp, X, FileText, Dumbbell, Syringe, Flag } from 'lucide-react-native';
@@ -19,7 +19,7 @@ import { formatCurrency } from '../../../../lib/currency';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight } from '../../../../styles/tokens';
+import { space, text, weight, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
 import { DatePicker } from '../../../../components/DatePicker';
@@ -33,6 +33,20 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
   const { data: comments } = useEventComments(eventId, open);
   const add = useAddEventComment(eventId);
   const del = useDeleteEventComment(eventId);
+  const toast = useToast();
+
+  const sendComment = async () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    haptic.light();
+    try {
+      await add.mutateAsync(trimmed);
+      setText('');
+    } catch {
+      haptic.error();
+      toast.error('No se pudo enviar el comentario. Probá de nuevo.');
+    }
+  };
 
   return (
     <View style={s.commentRoot}>
@@ -68,11 +82,11 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
             </View>
           ))}
           <View style={s.commentInputRow}>
-            <TextInput style={s.commentInput} value={text} onChangeText={setText} placeholder="Escribí un comentario..." placeholderTextColor={c.textFaint} multiline />
+            <TextInput style={s.commentInput} value={text} onChangeText={setText} placeholder="Escribí un comentario..." placeholderTextColor={c.textFaint} multiline returnKeyType="send" onSubmitEditing={sendComment} />
             <TouchableOpacity
               style={[s.commentSend, (!text.trim() || add.isPending) && { opacity: 0.4 }]}
               disabled={!text.trim() || add.isPending}
-              onPress={async () => { haptic.light(); await add.mutateAsync(text.trim()); setText(''); }}
+              onPress={sendComment}
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Enviar comentario"
@@ -219,10 +233,10 @@ export default function HistorialScreen() {
         <Text style={s.fieldLabel}>Tipo de evento</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {([
-            { key: 'nota', label: 'Nota', color: '#374151', Icon: FileText },
-            { key: 'entrenamiento', label: 'Entrenamiento', color: '#a16207', Icon: Dumbbell },
-            { key: 'salud', label: 'Salud', color: '#b91c1c', Icon: Syringe },
-            { key: 'carrera', label: 'Carrera', color: '#92400e', Icon: Flag },
+            { key: 'nota', label: 'Nota', color: c.textMuted, Icon: FileText },
+            { key: 'entrenamiento', label: 'Entrenamiento', color: c.warning, Icon: Dumbbell },
+            { key: 'salud', label: 'Salud', color: c.danger, Icon: Syringe },
+            { key: 'carrera', label: 'Carrera', color: c.goldText, Icon: Flag },
           ] as const).map((t) => {
             const active = newEventType === t.key;
             const iconColor = active ? t.color : c.textMuted;
@@ -276,8 +290,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
   countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  countText: { fontSize: 11, fontWeight: '700', color: c.textMuted },
-  emptyText: { fontSize: 13, color: c.textFaint },
+  countText: { fontSize: text.xs, fontWeight: '700', color: c.textMuted },
+  emptyText: { fontSize: text.sm, color: c.textFaint },
   empty: { alignItems: 'center', paddingVertical: 24 },
 
   /* Eventos */
@@ -285,34 +299,34 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   eventRow: { paddingVertical: space[4], gap: 6, borderBottomWidth: 1, borderBottomColor: c.border },
   eventRowLast: { borderBottomWidth: 0 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  eventDate: { fontSize: 11, color: c.textFaint },
+  eventDate: { fontSize: text.xs, color: c.textFaint },
   eventDesc: { fontSize: text.base, color: c.text, lineHeight: 22 },
-  eventAmount: { fontSize: 14, fontWeight: '700', color: c.text },
+  eventAmount: { fontSize: text.sm, fontWeight: '700', color: c.text },
 
   /* Comentarios */
   commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 8 },
   commentToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  commentToggleText: { fontSize: 11, color: c.textFaint, fontWeight: '600' },
+  commentToggleText: { fontSize: text.sm, color: c.textFaint, fontWeight: '600' },
   commentBody: { marginTop: 8, gap: 8 },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  commentAuthor: { fontSize: 11, fontWeight: '700', color: c.text },
-  commentDate: { fontSize: 10, color: c.textFaint },
-  commentText: { fontSize: 12, color: c.text, marginTop: 2 },
+  commentAuthor: { fontSize: text.sm, fontWeight: '700', color: c.text },
+  commentDate: { fontSize: text.xs, color: c.textFaint },
+  commentText: { fontSize: text.base, color: c.text, marginTop: 2 },
   commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },
-  commentInput: { flex: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: c.text, backgroundColor: c.surfaceAlt, minHeight: 36, maxHeight: 80 },
-  commentSend: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
+  commentInput: { flex: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt, minHeight: touch.min, maxHeight: 96 },
+  commentSend: { width: touch.min, height: touch.min, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
-  smallBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: 11, fontWeight: '600', color: c.text },
-  typeChip: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: c.surfaceAlt },
-  typeChipText: { fontSize: 13, fontWeight: '600', color: c.textMuted },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  typeChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: 20, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
+  typeChipText: { fontSize: text.sm, fontWeight: '600', color: c.textMuted },
 
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: c.text },
-  fieldError: { fontSize: 13, color: colors.red500 },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: c.text, backgroundColor: c.surfaceAlt },
+  fieldLabel: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  fieldError: { fontSize: text.sm, color: colors.red500 },
+  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
 });

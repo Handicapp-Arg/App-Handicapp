@@ -24,6 +24,7 @@ interface NotificationsContextType {
   unread: number;
   notifications: NotificationItem[];
   loading: boolean;
+  isError: boolean;
   refresh: () => Promise<void>;
   markAllRead: () => Promise<void>;
   markOneRead: (id: string) => Promise<void>;
@@ -33,6 +34,7 @@ const NotificationsContext = createContext<NotificationsContextType>({
   unread: 0,
   notifications: [],
   loading: false,
+  isError: false,
   refresh: async () => {},
   markAllRead: async () => {},
   markOneRead: async () => {},
@@ -46,9 +48,9 @@ function deepLinkFor(payload: PushPayload): string | null {
     case 'health_reminder':
       return '/(tabs)/eventos';
     case 'invitation_received':
-      return payload.token ? `/invitacion/${payload.token}` : '/(tabs)/organizacion';
+      return payload.token ? `/invitacion/${payload.token}` : '/organizacion';
     case 'invitation_accepted':
-      return '/(tabs)/organizacion';
+      return '/organizacion';
     case 'boarding_request':
       return '/(tabs)';
     case 'contract_signed':
@@ -66,6 +68,7 @@ export function NotificationsProvider({ children, userId }: { children: React.Re
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   // ─── Cargar notificaciones existentes desde el backend ───
@@ -75,8 +78,9 @@ export function NotificationsProvider({ children, userId }: { children: React.Re
     try {
       const { data } = await api.get<NotificationItem[]>('/notifications');
       setNotifications(data);
+      setIsError(false);
     } catch {
-      /* silencioso — el badge no es crítico */
+      setIsError(true);
     } finally {
       setLoading(false);
     }
@@ -183,7 +187,7 @@ export function NotificationsProvider({ children, userId }: { children: React.Re
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <NotificationsContext.Provider value={{ unread, notifications, loading, refresh, markAllRead, markOneRead }}>
+    <NotificationsContext.Provider value={{ unread, notifications, loading, isError, refresh, markAllRead, markOneRead }}>
       {children}
     </NotificationsContext.Provider>
   );

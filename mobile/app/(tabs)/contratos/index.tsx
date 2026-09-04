@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, RefreshControl } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { Skeleton } from '../../../components/Skeleton';
 import { haptic } from '../../../lib/haptics';
+import { colors } from '../../../lib/colors';
 import { fechaHumana } from '../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight } from '../../../styles/tokens';
@@ -191,6 +192,18 @@ export default function ContratosScreen() {
           )}
         </View>
       </ScrollView>
+
+      {isEstab && (
+        <Pressable
+          style={s.fab}
+          onPress={() => { haptic.medium(); router.push(Routes.contratoNuevo as never); }}
+          accessibilityRole="button"
+          accessibilityLabel="Nuevo contrato"
+          hitSlop={8}
+        >
+          <Plus size={26} color={colors.white} strokeWidth={2.5} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -201,6 +214,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   body: { paddingHorizontal: space[4], paddingTop: space[2], gap: space[4] },
   group: { gap: 0 },
   groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, marginBottom: space[2] },
+  fab: {
+    position: 'absolute', right: 20, bottom: 110,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
+    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
+  },
 });
 
 type CStyles = ReturnType<typeof makeCStyles>;
