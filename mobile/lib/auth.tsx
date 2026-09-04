@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import * as SecureStore from './secure-storage';
+import { borrarCredencialesBiometricas } from './biometria';
 import api, { saveToken, clearToken, getToken, setAuthFailureCallback } from './api';
 import { registerForPushNotifications, savePushToken } from './push-notifications';
 import type { User } from '../../packages/shared/src';
@@ -124,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const rt = await SecureStore.getItemAsync('refreshToken');
     if (rt) api.post('/auth/logout', { refreshToken: rt }).catch(() => {});
     await clearToken();
+    await borrarCredencialesBiometricas();
     setUser(null);
     router.replace('/(auth)/login');
   };

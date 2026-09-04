@@ -17,6 +17,8 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
 import { mostrarCortina, ocultarCortina } from '../../components/IngresoCurtain';
+import { loginBiometrico, guardarCredencialesBiometricas, hayCredencialesGuardadas, biometriaDisponible } from '../../lib/biometria';
+import { ScanFace } from 'lucide-react-native';
 import { BottomSheet } from '../../components/BottomSheet';
 import { HorseshoeH } from '../../components/icons/equine';
 import { fontFamily } from '../../styles/fonts';
@@ -78,6 +80,36 @@ export default function LoginScreen() {
   const [focused, setFocused] = useState<'email' | 'password' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [bioListo, setBioListo] = useState(false);
+
+  const entrarConBiometria = async () => {
+    const creds = await loginBiometrico();
+    if (!creds) return;
+    setLoading(true);
+    mostrarCortina();
+    try {
+      await login(creds.email, creds.password);
+      haptic.success();
+      setTimeout(() => ocultarCortina(), 250);
+    } catch {
+      ocultarCortina();
+      setError('No pudimos ingresar con Face ID. Probá con tu contraseña.');
+      haptic.error();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Al llegar al login: si hay credenciales guardadas, Face ID sale solo.
+  useEffect(() => {
+    (async () => {
+      if ((await biometriaDisponible()) && (await hayCredencialesGuardadas())) {
+        setBioListo(true);
+        void entrarConBiometria();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async () => {
     Keyboard.dismiss();
@@ -88,6 +120,7 @@ export default function LoginScreen() {
     mostrarCortina();
     try {
       await login(email.trim().toLowerCase(), password);
+      void guardarCredencialesBiometricas(email.trim().toLowerCase(), password);
       haptic.success();
       // La navegación al Home ya ocurrió por debajo: revelarla con calma.
       setTimeout(() => ocultarCortina(), 250);
@@ -206,6 +239,18 @@ export default function LoginScreen() {
               }
             </Pressable>
 
+            {bioListo && (
+              <Pressable
+                style={({ pressed }) => [s.bioBtn, pressed && { opacity: 0.7 }]}
+                onPress={() => { haptic.selection(); void entrarConBiometria(); }}
+                accessibilityRole="button"
+                accessibilityLabel="Ingresar con Face ID"
+              >
+                <ScanFace size={20} color={D.brand} strokeWidth={1.8} />
+                <Text style={s.bioBtnText}>Ingresar con Face ID</Text>
+              </Pressable>
+            )}
+
             {__DEV__ && <DevUserPicker onSelect={(e, p) => { setEmail(e); setPassword(p); }} s={s} />}
           </Animated.View>
 
@@ -273,6 +318,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   btnPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.white, fontSize: 16.5, fontWeight: '700', letterSpacing: -0.2 },
+
+  bioBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, minHeight: 48, marginTop: 2,
+  },
+  bioBtnText: { fontSize: 15, fontWeight: '600', color: D.brand, letterSpacing: -0.2 },
 
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
   footerText: { fontSize: 14.5, color: D.textMuted },

@@ -101,9 +101,9 @@ function NotifRow({
             <Text style={[s.rowTitle, !item.read && s.rowTitleUnread]} numberOfLines={1}>
               {item.title}
             </Text>
+            <Text style={s.rowTime}>{formatTime(item.created_at)}</Text>
           </View>
-          <Text style={s.rowMsg} numberOfLines={2}>{item.message}</Text>
-          <Text style={s.rowTime}>{formatTime(item.created_at)}</Text>
+          <Text style={[s.rowMsg, item.read && s.rowMsgRead]} numberOfLines={2}>{item.message}</Text>
         </View>
       </TouchableOpacity>
     </SwipeableRow>
@@ -340,16 +340,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: space[3] + 1,
+    paddingVertical: space[3] + 3,
     paddingHorizontal: space[4],
     gap: space[3],
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
+    width: 42,
+    height: 42,
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -388,13 +388,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: text.sm,
     fontFamily: fontFamily.regular,
     color: c.textMuted,
-    lineHeight: 18,
+    lineHeight: 19,
+  },
+  rowMsgRead: {
+    color: c.textFaint,
   },
   rowTime: {
-    fontSize: text.sm,
+    fontSize: text.xs,
     fontFamily: fontFamily.regular,
     color: c.textFaint,
-    marginTop: 2,
+    flexShrink: 0,
   },
   /* Empty / Loading */
   centered: {
