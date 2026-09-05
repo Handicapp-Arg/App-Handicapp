@@ -24,6 +24,11 @@
         "NSPhotoLibraryUsageDescription": "HandicApp necesita acceso a tu galería para subir fotos de caballos.",
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "HandicApp usa Face ID para que ingreses a tu cuenta de forma segura y sin escribir tu contraseña."
+      },
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
       }
     },
     "android": {

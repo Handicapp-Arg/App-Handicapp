@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import { Stack } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, Text, TextInput } from 'react-native';
 import { useState, useEffect } from 'react';
 
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
@@ -18,6 +18,13 @@ import { configurarRed } from '../lib/network';
 // Antes había DOS pantallas de marca —la nativa y un overlay animado con otro
 // dibujo del logo— y el salto entre ambas se veía como una transición rara.
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Accesibilidad: la app acompaña el tamaño de letra del sistema, con un tope
+// (1.35x) para que los tamaños extremos no rompan filas y botones fijos.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(Text as any).defaultProps = { ...(Text as any).defaultProps, maxFontSizeMultiplier: 1.35 };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, maxFontSizeMultiplier: 1.35 };
 SplashScreen.setOptions({ duration: 320, fade: true });
 import { OfflineBanner } from '../components/OfflineBanner';
 import { IngresoCurtain } from '../components/IngresoCurtain';
