@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Users, XCircle } from 'lucide-react-native';
+import { User, Users, XCircle, Check } from 'lucide-react-native';
 
 import {
   useHorse, useHorseVets, useVeterinarios, useAssignVet, useRemoveVet,
@@ -15,11 +15,13 @@ import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, touch } from '../../../../styles/tokens';
+import { space, text, touch, radius, weight } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
 import { Avatar } from '../../../../components/Avatar';
-import { Spinner } from '../../../../components/Spinner';
+import { EmptyState } from '../../../../components/EmptyState';
+import { ErrorState } from '../../../../components/ErrorState';
+import { ListRowSkeleton } from '../../../../components/Skeleton';
 
 export default function EquipoScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -30,7 +32,7 @@ export default function EquipoScreen() {
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError, refetch } = useHorse(id);
 
   // Vets
   const { data: horseVets } = useHorseVets(id);
@@ -111,7 +113,25 @@ export default function EquipoScreen() {
     ]);
   };
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Equipo y veterinarios" />
+        <ErrorState onRetry={refetch} />
+      </View>
+    );
+  }
+
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Equipo y veterinarios" />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          {[1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -129,7 +149,11 @@ export default function EquipoScreen() {
             )}
           </View>
           {!horseVets?.length ? (
-            <Text style={s.emptyText}>Sin veterinarios asignados</Text>
+            <EmptyState
+              icon="medkit-outline"
+              title="Sin veterinarios asignados"
+              message="Asigná un veterinario para que pueda ver y cargar la sanidad del caballo."
+            />
           ) : (
             <View>
               {horseVets.map((v) => (
@@ -137,7 +161,7 @@ export default function EquipoScreen() {
                   <Avatar name={v.user.name} size={36} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.docName}>{v.user.name}</Text>
-                    <Text style={{ fontSize: 11, color: c.textFaint }}>{v.user.email}</Text>
+                    <Text style={{ fontSize: text.xs, color: c.textFaint }}>{v.user.email}</Text>
                   </View>
                   {can('horses', 'update') && (
                     <TouchableOpacity
@@ -166,7 +190,11 @@ export default function EquipoScreen() {
             )}
           </View>
           {!assignees?.length ? (
-            <Text style={s.emptyText}>Sin personas asignadas. Jinetes y peones solo ven los caballos que les asignes.</Text>
+            <EmptyState
+              icon="people-outline"
+              title="Sin personas asignadas"
+              message="Jinetes y peones solo ven los caballos que les asignes."
+            />
           ) : (
             <View>
               {assignees.map((m) => (
@@ -174,7 +202,7 @@ export default function EquipoScreen() {
                   <Avatar name={m.user.name} size={36} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.docName}>{m.user.name}</Text>
-                    <Text style={{ fontSize: 11, color: c.textFaint }}>{m.user.email}</Text>
+                    <Text style={{ fontSize: text.xs, color: c.textFaint }}>{m.user.email}</Text>
                   </View>
                   {canManageTeam && (
                     <TouchableOpacity
@@ -197,21 +225,21 @@ export default function EquipoScreen() {
           <View style={s.section}>
             <Text style={s.sectionTitle}>Propiedad</Text>
             <TouchableOpacity
-              style={[s.smallBtn, { alignSelf: 'flex-start', backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2' }]}
+              style={[s.smallBtn, { alignSelf: 'flex-start', backgroundColor: c.dangerSoft }]}
               onPress={() => setShowTransfer(true)}
               activeOpacity={0.8}
             >
-              <Text style={[s.smallBtnText, { color: colors.red500 }]}>Transferir caballo</Text>
+              <Text style={[s.smallBtnText, { color: c.danger }]}>Transferir caballo</Text>
             </TouchableOpacity>
             {movements && movements.length > 0 && (
               <View style={{ marginTop: 12, gap: 6 }}>
                 <Text style={s.emptyText}>Historial de movimientos:</Text>
                 {movements.slice(0, 5).map((m) => (
                   <View key={m.id} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
-                    <Text style={{ fontSize: 11, color: c.textFaint }}>
+                    <Text style={{ fontSize: text.xs, color: c.textFaint }}>
                       {fechaHumana(m.created_at)}
                     </Text>
-                    <Text style={{ fontSize: 11, color: c.textMuted, flex: 1 }}>{m.description}</Text>
+                    <Text style={{ fontSize: text.xs, color: c.textMuted, flex: 1 }}>{m.description}</Text>
                   </View>
                 ))}
               </View>
@@ -226,10 +254,6 @@ export default function EquipoScreen() {
         onClose={() => setShowAssignVet(false)}
         title="Asignar veterinario"
         footer={
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignVet(false)} accessibilityRole="button" accessibilityLabel="Cancelar asignación de veterinario">
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedVetId || assignVet.isPending) && { opacity: 0.5 }]}
               disabled={!selectedVetId || assignVet.isPending}
@@ -250,24 +274,27 @@ export default function EquipoScreen() {
             >
               {assignVet.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
             </TouchableOpacity>
-          </>
         }
       >
         {!veterinarios?.length ? (
           <Text style={s.emptyText}>No hay veterinarios registrados en el sistema.</Text>
         ) : (
-          <View style={{ gap: 6 }}>
+          <View>
             {veterinarios
               .filter((v) => !horseVets?.some((a) => a.user_id === v.id))
-              .map((v) => (
+              .map((v, i) => (
                 <TouchableOpacity
                   key={v.id}
-                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedVetId === v.id && { backgroundColor: c.brand }]}
+                  style={[s.optionRow, i > 0 && s.optionRowBorde]}
                   onPress={() => { haptic.selection(); setSelectedVetId(v.id); }}
-                  activeOpacity={0.75}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedVetId === v.id }}
+                  accessibilityLabel={v.name}
                 >
-                  <User size={16} color={selectedVetId === v.id ? colors.white : c.brand} strokeWidth={2} />
-                  <Text style={[s.smallBtnText, selectedVetId === v.id && { color: colors.white }]}>{v.name}</Text>
+                  <User size={16} color={c.textMuted} strokeWidth={2} />
+                  <Text style={s.optionText} numberOfLines={1}>{v.name}</Text>
+                  {selectedVetId === v.id && <Check size={18} color={c.brand} strokeWidth={2.4} />}
                 </TouchableOpacity>
               ))}
           </View>
@@ -280,10 +307,6 @@ export default function EquipoScreen() {
         onClose={() => setShowAssignTeam(false)}
         title="Asignar equipo"
         footer={
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAssignTeam(false)} accessibilityRole="button" accessibilityLabel="Cancelar asignación de equipo">
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={[s.btn, s.btnPrimary, { flex: 1 }, (!selectedMemberId || assignMember.isPending) && { opacity: 0.5 }]}
               disabled={!selectedMemberId || assignMember.isPending}
@@ -304,29 +327,32 @@ export default function EquipoScreen() {
             >
               {assignMember.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Asignar</Text>}
             </TouchableOpacity>
-          </>
         }
       >
-        <Text style={{ fontSize: 12, color: c.textMuted, marginBottom: 4 }}>
+        <Text style={{ fontSize: text.xs, color: c.textMuted, marginBottom: 4 }}>
           Jinetes y peones solo ven los caballos que les asignes.
         </Text>
         {!orgMembers?.length ? (
           <Text style={s.emptyText}>No hay miembros (jinete / peón / encargado) en la organización de este caballo.</Text>
         ) : (
-          <View style={{ gap: 6 }}>
+          <View>
             {orgMembers
               .filter((m) => !assignees?.some((a) => a.user_id === m.user_id))
-              .map((m) => (
+              .map((m, i) => (
                 <TouchableOpacity
                   key={m.user_id}
-                  style={[s.smallBtn, { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }, selectedMemberId === m.user_id && { backgroundColor: c.brand }]}
+                  style={[s.optionRow, i > 0 && s.optionRowBorde]}
                   onPress={() => { haptic.selection(); setSelectedMemberId(m.user_id); }}
-                  activeOpacity={0.75}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedMemberId === m.user_id }}
+                  accessibilityLabel={m.name}
                 >
-                  <Users size={16} color={selectedMemberId === m.user_id ? colors.white : c.brand} strokeWidth={2} />
-                  <Text style={[s.smallBtnText, selectedMemberId === m.user_id && { color: colors.white }]}>
+                  <Users size={16} color={c.textMuted} strokeWidth={2} />
+                  <Text style={s.optionText} numberOfLines={1}>
                     {m.name} · {orgRoleLabel[m.role_in_org] ?? m.role_in_org}
                   </Text>
+                  {selectedMemberId === m.user_id && <Check size={18} color={c.brand} strokeWidth={2.4} />}
                 </TouchableOpacity>
               ))}
           </View>
@@ -339,12 +365,8 @@ export default function EquipoScreen() {
         onClose={() => setShowTransfer(false)}
         title="Transferir propiedad"
         footer={
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowTransfer(false)} accessibilityRole="button" accessibilityLabel="Cancelar transferencia">
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
             <TouchableOpacity
-              style={[s.btn, { flex: 1, backgroundColor: colors.red500, borderRadius: 12, paddingVertical: 12, alignItems: 'center' }, (!transferOwnerId || transferHorse.isPending) && { opacity: 0.5 }]}
+              style={[s.btn, s.btnDanger, { flex: 1 }, (!transferOwnerId || transferHorse.isPending) && { opacity: 0.5 }]}
               disabled={!transferOwnerId || transferHorse.isPending}
               onPress={handleTransfer}
               activeOpacity={0.85}
@@ -353,24 +375,27 @@ export default function EquipoScreen() {
             >
               {transferHorse.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Confirmar</Text>}
             </TouchableOpacity>
-          </>
         }
       >
-        <Text style={{ fontSize: 12, color: c.textMuted }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
+        <Text style={{ fontSize: text.xs, color: c.textMuted }}>Esta acción transfiere la propiedad de {horse.name} y no se puede deshacer.</Text>
         {!propietarios?.length ? (
           <Text style={s.emptyText}>No hay otros propietarios en el sistema.</Text>
         ) : (
-          <View style={{ gap: 6 }}>
+          <View>
             {propietarios
               .filter((p) => p.id !== user?.id)
-              .map((p) => (
+              .map((p, i) => (
                 <TouchableOpacity
                   key={p.id}
-                  style={[s.smallBtn, { alignSelf: 'stretch', paddingVertical: 12 }, transferOwnerId === p.id && { backgroundColor: colors.red500 }]}
+                  style={[s.optionRow, i > 0 && s.optionRowBorde]}
                   onPress={() => { haptic.selection(); setTransferOwnerId(p.id); }}
-                  activeOpacity={0.75}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: transferOwnerId === p.id }}
+                  accessibilityLabel={p.name}
                 >
-                  <Text style={[s.smallBtnText, transferOwnerId === p.id && { color: colors.white }]}>{p.name}</Text>
+                  <Text style={s.optionText} numberOfLines={1}>{p.name}</Text>
+                  {transferOwnerId === p.id && <Check size={18} color={c.brand} strokeWidth={2.4} />}
                 </TouchableOpacity>
               ))}
           </View>
@@ -387,15 +412,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
   emptyText: { fontSize: text.sm, color: c.textFaint },
 
-  personRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: 10 },
-  docName: { flex: 1, fontSize: text.base, fontWeight: '500', color: c.text },
+  personRow: { flexDirection: 'row', alignItems: 'center', minHeight: touch.field, gap: 10 },
+  docName: { flex: 1, fontSize: text.base, fontWeight: weight.medium, color: c.text },
 
-  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
-  btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  /* Filas de selección planas dentro de las hojas: check cuero a la derecha */
+  optionRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: touch.min + 6 },
+  optionRowBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  optionText: { flex: 1, fontSize: text.base, color: c.text },
+
+  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
+  btnDanger: { backgroundColor: c.danger },
+  btnPrimaryText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

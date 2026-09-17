@@ -42,25 +42,21 @@ function DisputeSheet({ visible, onClose, billId }: { visible: boolean; onClose:
       onClose={onClose}
       title="Disputar factura"
       footer={
-        <>
-          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={onClose}>
-            <Text style={button.secondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[button.danger, { flex: 1, borderWidth: 0, backgroundColor: c.danger }, (!reason.trim() || dispute.isPending) && { opacity: 0.6 }]}
-            disabled={!reason.trim() || dispute.isPending}
-            onPress={async () => {
-              await dispute.mutateAsync({ id: billId, reason });
-              haptic.success();
-              onClose();
-            }}
-          >
-            {dispute.isPending
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={button.primaryText}>Confirmar disputa</Text>
-            }
-          </TouchableOpacity>
-        </>
+        // Un solo CTA: la X de la hoja ya cancela.
+        <TouchableOpacity
+          style={[button.danger, { flex: 1, borderWidth: 0, backgroundColor: c.danger }, (!reason.trim() || dispute.isPending) && { opacity: 0.6 }]}
+          disabled={!reason.trim() || dispute.isPending}
+          onPress={async () => {
+            await dispute.mutateAsync({ id: billId, reason });
+            haptic.success();
+            onClose();
+          }}
+        >
+          {dispute.isPending
+            ? <ActivityIndicator color={colors.white} size="small" />
+            : <Text style={button.primaryText}>Confirmar disputa</Text>
+          }
+        </TouchableOpacity>
       }
     >
       <Text style={typography.body}>Explicá el motivo de la disputa para que el establecimiento pueda revisarlo.</Text>
@@ -189,36 +185,39 @@ export default function FacturaDetalleScreen() {
 
       </ScrollView>
 
-      {/* Acciones según rol y estado — barra fija inferior, como remates/[id] */}
+      {/* Acciones según rol y estado — un CTA primario en cuero; lo secundario es link de texto */}
       {showActions && (
         <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
           {isEst && bill.status === 'borrador' && (
             <TouchableOpacity
-              style={[s.actionBtnBlue, { flex: 1 }]}
+              style={s.primaryBtn}
               onPress={handleSend}
+              activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel="Enviar factura al propietario"
             >
-              <Text style={[s.actionBtnText, { color: c.info }]}>Enviar al propietario</Text>
+              <Text style={s.primaryBtnText}>Enviar al propietario</Text>
             </TouchableOpacity>
           )}
           {isProp && bill.status === 'enviada' && (
             <>
               <TouchableOpacity
-                style={[s.actionBtnGreen, { flex: 1 }]}
+                style={s.primaryBtn}
                 onPress={handleApprove}
+                activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel="Aprobar factura"
               >
-                <Text style={[s.actionBtnText, { color: c.success }]}>Aprobar</Text>
+                <Text style={s.primaryBtnText}>Aprobar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.actionBtnRed, { flex: 1 }]}
+                style={s.disputeLink}
                 onPress={() => { haptic.light(); setDisputing(true); }}
+                activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel="Disputar factura"
               >
-                <Text style={[s.actionBtnText, { color: c.danger }]}>Disputar</Text>
+                <Text style={s.disputeLinkText}>Disputar</Text>
               </TouchableOpacity>
             </>
           )}
@@ -241,7 +240,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   statusText: { fontSize: text.sm, fontWeight: weight.semibold },
 
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[3] },
-  itemRowDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
+  itemRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   itemDesc: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   itemMeta: { fontSize: text.xs, color: c.textFaint, marginTop: 2, fontVariant: ['tabular-nums'] },
   itemTotal: { fontSize: text.md, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
@@ -249,9 +248,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   disputeReason: { fontSize: text.sm, color: c.danger, fontStyle: 'italic' },
   notes: { fontSize: text.sm, color: c.textFaint },
 
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg },
-  actionBtnBlue: { backgroundColor: c.infoSoft, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },
-  actionBtnGreen: { backgroundColor: c.successSoft, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },
-  actionBtnRed: { backgroundColor: c.dangerSoft, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },
-  actionBtnText: { fontSize: text.md, fontWeight: weight.bold },
+  // Footer sin borde: solo aire, como eventos/nuevo. CTA ancho completo + link secundario.
+  footer: { paddingHorizontal: space[4], paddingTop: space[3], gap: space[2], backgroundColor: c.bg },
+  primaryBtn: { backgroundColor: c.brand, borderRadius: radius.md, height: touch.button, justifyContent: 'center', alignItems: 'center' },
+  primaryBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  disputeLink: { minHeight: touch.min, justifyContent: 'center', alignItems: 'center' },
+  disputeLinkText: { fontSize: text.md, fontWeight: weight.semibold, color: c.danger },
 });

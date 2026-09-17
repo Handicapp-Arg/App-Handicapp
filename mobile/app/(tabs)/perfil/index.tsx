@@ -1,19 +1,21 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  User, ChevronRight, Phone, ShieldCheck, Users, Crown, type LucideIcon,
+  User, ChevronRight, Phone, ShieldCheck, Users, Crown, Check, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
-import { colors } from '../../../lib/colors';
 import { Routes } from '../../../lib/routes';
 import { Avatar } from '../../../components/Avatar';
 import { RoleBadge } from '../../../components/RoleBadge';
-import { useTheme, type ThemeColors } from '../../../lib/theme';
+import { ScreenHeader } from '../../../components/ScreenHeader';
+import { FilaSelector } from '../../../components/FilaSelector';
+import { BottomSheet } from '../../../components/BottomSheet';
+import { useTheme, type ThemeColors, type ThemePreference } from '../../../lib/theme';
 import { space, text, weight, touch } from '../../../styles/tokens';
 import { usePlanStatus } from '../../../hooks/use-plan';
 import { VetVerifiedBadge, isVetVerified } from '../../../components/VerifiedBadge';
@@ -24,6 +26,12 @@ const LICENSE_LABELS: Record<string, string> = {
   approved: 'Aprobada',
   rejected: 'Rechazada',
 };
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'auto', label: 'Automático' },
+  { value: 'light', label: 'Claro' },
+  { value: 'dark', label: 'Oscuro' },
+];
 
 /* ─── Fila de sección estilo Ajustes ─── */
 function SectionRow({ Icon, label, sub, onPress, c, s }: {
@@ -50,6 +58,7 @@ export default function PerfilScreen() {
   const { c, preference, setPreference } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: planStatus } = usePlanStatus();
+  const [themeSheet, setThemeSheet] = useState(false);
 
   if (!user) return null;
 
@@ -65,6 +74,8 @@ export default function PerfilScreen() {
       : `Gratis · ${planStatus.horse_count}${planStatus.horse_limit ? `/${planStatus.horse_limit}` : ''} caballos`
     : undefined;
 
+  const themeLabel = THEME_OPTIONS.find((o) => o.value === preference)?.label;
+
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <ScrollView
@@ -72,6 +83,8 @@ export default function PerfilScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
+        <ScreenHeader scrollable title="Perfil" />
+
         {/* Hero: identidad — jerarquía intacta */}
         <View style={s.hero}>
           <Avatar name={user.name} avatarColor={user.avatar_color} size={68} ring />
@@ -104,27 +117,14 @@ export default function PerfilScreen() {
             </View>
           )}
 
-          {/* Apariencia — control rápido, se queda inline */}
+          {/* Apariencia — fila con el valor actual, abre la hoja de opciones */}
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Apariencia</Text>
-            <View style={s.themeSegment}>
-              {([['auto','Automático'],['light','Claro'],['dark','Oscuro']] as const).map(([value,label]) => {
-                const active = preference === value;
-                return (
-                  <TouchableOpacity
-                    key={value}
-                    style={[s.themeSegmentBtn, active && s.themeSegmentBtnActive]}
-                    onPress={() => { haptic.selection(); setPreference(value); }}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Tema ${label}`}
-                  >
-                    <Text style={[s.themeSegmentText, active && s.themeSegmentTextActive]}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <FilaSelector
+              primera
+              label="Apariencia"
+              valor={themeLabel}
+              onPress={() => setThemeSheet(true)}
+            />
           </View>
 
           {/* Lista de secciones — se navegan, no se apilan acá */}
@@ -164,6 +164,28 @@ export default function PerfilScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <BottomSheet visible={themeSheet} onClose={() => setThemeSheet(false)} title="Apariencia">
+        <View style={s.themeLista}>
+          {THEME_OPTIONS.map((opt, i) => {
+            const active = preference === opt.value;
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                style={[s.themeItem, i > 0 && s.themeItemBorde]}
+                onPress={() => { haptic.selection(); setPreference(opt.value); setThemeSheet(false); }}
+                activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Tema ${opt.label}`}
+              >
+                <Text style={s.themeItemText}>{opt.label}</Text>
+                {active && <Check size={19} color={c.brand} strokeWidth={2.4} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -173,26 +195,11 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
 
-  themeSegment: {
-    flexDirection: 'row', gap: space[1], padding: 3,
-    backgroundColor: c.surfaceAlt, borderRadius: 14,
-  },
-  themeSegmentBtn: {
-    flex: 1, minHeight: touch.min, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  themeSegmentBtnActive: {
-    backgroundColor: c.surface,
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 }),
-  },
-  themeSegmentText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
-  themeSegmentTextActive: { color: c.text, fontWeight: weight.semibold },
-
   hero: {
     alignItems: 'center',
     gap: space[1] + 2,
     paddingBottom: space[5],
-    paddingTop: space[5],
+    paddingTop: space[2],
     paddingHorizontal: space[5],
   },
   sheet: {
@@ -204,16 +211,29 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   userEmail: { fontSize: text.sm, color: c.textMuted },
 
   section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
-  sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  sectionTitle: {
+    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
+    textTransform: 'uppercase', letterSpacing: 1,
+  },
 
   planRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     minHeight: 52,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
 
   sectionsList: { marginHorizontal: space[5], marginTop: space[5] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   rowIconWrap: { width: 28, alignItems: 'center', flexShrink: 0 },
   rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
-  rowSub: { fontSize: 12, color: c.textFaint, marginTop: 1 },
+  rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
+
+  // Opciones de tema: filas planas sobre la hoja, separadas por hairline.
+  themeLista: { paddingBottom: space[1] },
+  themeItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    minHeight: touch.min + 6, paddingHorizontal: space[1], gap: space[3],
+  },
+  themeItemBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  themeItemText: { fontSize: text.md, color: c.text, letterSpacing: -0.2 },
 });

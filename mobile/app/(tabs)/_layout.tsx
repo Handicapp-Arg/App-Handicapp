@@ -31,6 +31,11 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const styles = useMemo(() => makeStyles(c), [c]);
   const activeName = state.routes[state.index]?.name;
 
+  // Patron nativo (hidesBottomBarWhenPushed): dentro de una pantalla empujada
+  // (formulario, detalle) la barra se oculta y el pie de la pantalla queda libre.
+  const nested = (state.routes[state.index] as any)?.state;
+  const enPantallaInterna = !!nested && typeof nested.index === 'number' && nested.index > 0;
+
 
   const renderTab = (name: string) => {
     const meta = TABS[name];
@@ -60,6 +65,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       </TouchableOpacity>
     );
   };
+
+  if (enPantallaInterna) return null;
 
   return (
     <View style={[styles.wrap, { bottom: insets.bottom + 10 }]} pointerEvents="box-none">

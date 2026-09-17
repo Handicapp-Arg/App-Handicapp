@@ -176,6 +176,27 @@ touch = { min: 44, field: 56, button: 56 }
 - El contenedor scrolleable lleva `automaticallyAdjustKeyboardInsets`,
   `keyboardShouldPersistTaps="handled"` y `keyboardDismissMode="interactive"`.
 
+## Formularios y teclado (ley del 29/08)
+
+Los formularios donde se tipea se rompen con el teclado dentro de las hojas.
+Regla única:
+
+- **Formulario con 3+ campos de texto o tipeo largo = PANTALLA EMPUJADA.**
+  Patrón canónico: `app/(tabs)/eventos/nuevo.tsx` y `app/(tabs)/agenda/nuevo.tsx`
+  — `ScreenHeader showBack`, `ScrollView` con `automaticallyAdjustKeyboardInsets`
+  + `keyboardShouldPersistTaps="handled"` + `keyboardDismissMode="interactive"`,
+  placeholders en vez de labels, `FilaSelector` + `ActionSheet` para selección,
+  guardia `beforeRemove` si el form está sucio, y un solo CTA cuero abajo
+  (`paddingBottom: insets.bottom + space[4]`). Nada de botón Cancelar: el back
+  del header ya cancela. El navbar se oculta solo.
+- **Las hojas quedan para elegir opciones, confirmar, o formularios de 1-2
+  campos cortos** (un peso, un motivo de rechazo, un comentario). Si la hoja es
+  un `BottomSheet` con input, DEBE llevar `avoidKeyboard`; el `FormSheet` ya
+  trae `KeyboardAvoidingView` de fábrica.
+- Otros ejemplos ya convertidos: `caballos/nuevo`, `caballos/[id]/editar`,
+  `caballos/[id]/sanidad-nuevo`, `caballos/[id]/evento-nuevo`,
+  `perfil/editar`, `perfil/contrasena`.
+
 ## Animación
 
 - **Sin rebote.** `Easing.out(Easing.cubic)` a 280ms para entrar, 200ms para salir.

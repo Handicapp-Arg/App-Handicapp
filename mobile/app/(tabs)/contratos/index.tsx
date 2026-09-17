@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Refres
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FileText, Check, X, ChevronRight, Plus } from 'lucide-react-native';
+import { FileText, ChevronRight } from 'lucide-react-native';
 import { useContracts, type Contract } from '../../../hooks/use-contracts';
 import { useAuth } from '../../../lib/auth';
 import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
@@ -81,23 +81,16 @@ function ContractRow({ contract, userId, onPress, isLast, c, cs }: {
         <ChevronRight size={20} color={c.textFaint} strokeWidth={2} />
       </TouchableOpacity>
 
+      {/* Segunda línea informativa en texto plano: el badge de estado ya
+          comunica; acá no hace falta otra caja de color. */}
       {contract.status === 'signed' && (
-        <View style={cs.signedBanner}>
-          <Check size={13} color={c.success} strokeWidth={2.5} />
-          <Text style={cs.signedText}>Firmado por ambas partes</Text>
-        </View>
+        <Text style={cs.noteLine}>Firmado por ambas partes</Text>
       )}
       {partialMsg && (
-        <View style={cs.pendingBanner}>
-          <Check size={13} color={c.warning} strokeWidth={2.5} />
-          <Text style={cs.pendingText}>{partialMsg}</Text>
-        </View>
+        <Text style={cs.noteLine}>{partialMsg}</Text>
       )}
       {contract.status === 'rejected' && contract.rejection_reason && (
-        <View style={cs.rejectedBanner}>
-          <X size={13} color={c.danger} strokeWidth={2.5} />
-          <Text style={cs.rejectedText}>Motivo: {contract.rejection_reason}</Text>
-        </View>
+        <Text style={cs.noteLine} numberOfLines={2}>Motivo: {contract.rejection_reason}</Text>
       )}
     </View>
   );
@@ -124,7 +117,7 @@ export default function ContratosScreen() {
       showBack
       backTo={Routes.mas}
       right={isEstab ? (
-        <HeaderButton label="Nuevo" icon={Plus} onPress={() => { haptic.medium(); router.push(Routes.contratoNuevo as never); }} />
+        <HeaderButton label="Nuevo" onPress={() => { haptic.medium(); router.push(Routes.contratoNuevo as never); }} />
       ) : undefined}
     />
   );
@@ -166,7 +159,7 @@ export default function ContratosScreen() {
             <>
               {pending.length > 0 && (
                 <View style={s.group}>
-                  <Text style={s.groupLabel}>PENDIENTES ({pending.length})</Text>
+                  <Text style={s.groupLabel}>PENDIENTES</Text>
                   {pending.map((ct, index) => (
                     <Animated.View key={ct.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                       <ContractRow contract={ct} userId={user?.id ?? ''}
@@ -192,18 +185,6 @@ export default function ContratosScreen() {
           )}
         </View>
       </ScrollView>
-
-      {isEstab && (
-        <Pressable
-          style={s.fab}
-          onPress={() => { haptic.medium(); router.push(Routes.contratoNuevo as never); }}
-          accessibilityRole="button"
-          accessibilityLabel="Nuevo contrato"
-          hitSlop={8}
-        >
-          <Plus size={26} color={colors.white} strokeWidth={2.5} />
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -214,12 +195,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   body: { paddingHorizontal: space[4], paddingTop: space[2], gap: space[4] },
   group: { gap: 0 },
   groupLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, letterSpacing: 0.8, marginBottom: space[2] },
-  fab: {
-    position: 'absolute', right: 20, bottom: 110,
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
-    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
-  },
 });
 
 type CStyles = ReturnType<typeof makeCStyles>;
@@ -227,7 +202,7 @@ type CStyles = ReturnType<typeof makeCStyles>;
 const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   // Fila plana sobre el fondo de la pantalla: hace push al detalle.
   rowCollapsed: { backgroundColor: 'transparent' },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: space[4], gap: space[3] },
   docIcon: { width: space[8], alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
@@ -238,10 +213,5 @@ const makeCStyles = (c: ThemeColors) => StyleSheet.create({
   statusText: { fontSize: text.xs, fontWeight: weight.bold },
   horseBadge: { borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, backgroundColor: c.surfaceAlt },
   horseText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
-  signedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.successSoft, borderRadius: radius.md, padding: space[3] },
-  signedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.success },
-  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.warningSoft, borderRadius: radius.md, padding: space[3] },
-  pendingText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.warning },
-  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginBottom: space[3], backgroundColor: c.dangerSoft, borderRadius: radius.md, padding: space[3] },
-  rejectedText: { flex: 1, fontSize: text.xs, fontWeight: weight.semibold, color: c.danger },
+  noteLine: { fontSize: text.xs, color: c.textFaint, marginHorizontal: space[4], marginTop: -space[2], marginBottom: space[3] },
 });

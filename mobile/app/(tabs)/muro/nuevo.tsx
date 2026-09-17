@@ -161,8 +161,8 @@ export default function NuevoPostScreen() {
                 onPress={() => setType(t)}
                 activeOpacity={0.8}
               >
-                {t === 'horse_update' && <Tag size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
-                {t === 'announcement' && <Megaphone size={13} color={type === t ? colors.white : c.textMuted} strokeWidth={2} />}
+                {t === 'horse_update' && <Tag size={13} color={type === t ? c.text : c.textMuted} strokeWidth={2} />}
+                {t === 'announcement' && <Megaphone size={13} color={type === t ? c.text : c.textMuted} strokeWidth={2} />}
                 <Text style={[s.typeBtnText, type === t && s.typeBtnTextActive]}>
                   {t === 'general' ? 'General' : t === 'horse_update' ? 'Actualización' : 'Anuncio'}
                 </Text>
@@ -201,6 +201,7 @@ export default function NuevoPostScreen() {
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel="Quitar archivo adjunto"
+                  hitSlop={8}
                 >
                   <X size={14} color={colors.white} strokeWidth={2} />
                 </TouchableOpacity>
@@ -297,10 +298,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[10], gap: space[4] },
 
   typeRow: { flexDirection: 'row', gap: space[2] },
-  typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
-  typeBtnActive: { backgroundColor: c.brand },
+  // El chip activo se marca con superficie neutra + texto pleno (cuero solo en el CTA).
+  typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32, paddingHorizontal: space[3], paddingVertical: space[1] + 2, borderRadius: radius.full, backgroundColor: 'transparent' },
+  typeBtnActive: { backgroundColor: c.surfaceAlt },
   typeBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  typeBtnTextActive: { color: colors.white },
+  typeBtnTextActive: { color: c.text },
 
   composerRow: { flexDirection: 'row', gap: space[3], alignItems: 'flex-start' },
   composerInput: { flex: 1, fontSize: text.md, color: c.text, minHeight: 120, fontFamily: fontFamily.regular },
@@ -310,7 +312,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   imageGrid2: { flexDirection: 'row', flexWrap: 'wrap' },
   imageItem1: { width: '100%', height: 220, borderRadius: radius.lg },
   imageItem2: { width: '49%', height: 140, borderRadius: radius.md },
-  removePhoto: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: radius.full, padding: 3 },
+  removePhoto: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: radius.full, padding: space[2] },
 
   attachRow: { flexDirection: 'row', gap: space[5] },
   photoBtn: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
@@ -319,7 +321,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], backgroundColor: c.surfaceAlt, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3] + 2 },
   tagRowText: { flex: 1, fontSize: text.md, color: c.textMuted, fontWeight: weight.medium, fontFamily: fontFamily.medium },
 
-  selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: 1, borderBottomColor: c.border },
+  selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] + 2, paddingHorizontal: space[2], borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   selectRowText: { fontSize: text.base, color: c.textMuted, fontFamily: fontFamily.medium, flex: 1 },
   selectRowTextActive: { color: c.text, fontFamily: fontFamily.semibold },
   selectThumb: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.surfaceAlt, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', marginRight: space[3] },

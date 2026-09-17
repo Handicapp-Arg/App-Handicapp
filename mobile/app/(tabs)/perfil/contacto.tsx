@@ -66,14 +66,13 @@ export default function ContactoScreen() {
         <View style={s.section}>
           <View style={s.card}>
             <View style={s.field}>
-              <Text style={s.fieldLabel}>Teléfono</Text>
               <View style={s.inputWithIcon}>
                 <Phone size={17} color={c.textFaint} strokeWidth={2} />
                 <TextInput
                   style={s.inputWithIconField}
                   value={phone}
                   onChangeText={setPhone}
-                  placeholder="+54 9 11 ..."
+                  placeholder="Teléfono (+54 9 11 ...)"
                   placeholderTextColor={c.textFaint}
                   keyboardType="phone-pad"
                   autoCapitalize="none"
@@ -107,8 +106,7 @@ export default function ContactoScreen() {
                 value={optIn}
                 onValueChange={handleToggle}
                 disabled={togglingOptIn}
-                trackColor={{ false: c.borderStrong, true: c.brand }}
-                thumbColor={colors.white}
+                trackColor={{ false: c.borderStrong, true: c.success }}
               />
             </View>
           </View>
@@ -130,13 +128,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   accountRowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
   field: { gap: space[1] + 2 },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   fieldHint: { fontSize: text.xs, color: c.textFaint },
 
   inputWithIcon: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
-    paddingHorizontal: space[4], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
   },
   inputWithIconField: { flex: 1, paddingVertical: space[3], fontSize: text.base, color: c.text },
 
@@ -145,11 +142,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingVertical: space[4], alignItems: 'center', justifyContent: 'center',
   },
   saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+  saveBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 
   whatsappRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    borderTopWidth: 1, borderTopColor: c.border, paddingTop: space[3], marginTop: space[1],
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, paddingTop: space[3], marginTop: space[1],
   },
   whatsappIcon: {
     width: 36, height: 36, borderRadius: radius.md,

@@ -8,8 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScrollToTop } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useAuth } from '../../../lib/auth';
 import {
   useFeedPosts, useToggleLike, useDeletePost,
@@ -23,11 +21,11 @@ import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { Avatar as UserAvatar } from '../../../components/Avatar';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
 import { fontFamily } from '../../../styles/fonts';
 import {
   Images, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
-  Eye, EyeOff, Newspaper, Bell,
+  Eye, EyeOff, Bell,
   CalendarPlus, CalendarClock, ScanLine,
 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -38,10 +36,11 @@ import { InlineSearch } from '../../../components/InlineSearch';
 import { VetVerifiedBadge, isVetVerified } from '../../../components/VerifiedBadge';
 import type { FeedPost, FeedComment } from '../../../../packages/shared/src/types';
 import { ActionSheet } from '../../../components/ActionSheet';
+import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { FormSheet } from '../../../components/FormSheet';
 import { useToast } from '../../../components/Toast';
-import { fechaHumana, diaLargo } from '../../../lib/fechas';
+import { fechaHumana, diaLargo, hace } from '../../../lib/fechas';
 
 /** Reproductor de un video del feed, con expo-video (expo-av está deprecado). */
 function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
@@ -62,14 +61,6 @@ function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
 
 function Avatar({ name, colorId, size = 38 }: { name: string; colorId?: string | null; size?: number }) {
   return <UserAvatar name={name} avatarColor={colorId} size={size} />;
-}
-
-function timeAgo(date: string) {
-  try {
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: es });
-  } catch {
-    return '';
-  }
 }
 
 // ─── Comments Sheet ──────────────────────────────────────────────────────────
@@ -146,7 +137,7 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
           {(comments as FeedComment[]).map((cm) => (
             <View key={cm.id} style={s.commentRow}>
               <Avatar name={cm.user?.name ?? 'U'} colorId={cm.user?.avatar_color} size={30} />
-              <View style={s.commentBubble}>
+              <View style={s.commentBody}>
                 <View style={s.commentAuthorRow}>
                   <Text style={s.commentAuthor}>{cm.user?.name}</Text>
                   {isVetVerified(cm.user) && <VetVerifiedBadge />}
@@ -216,7 +207,6 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
   return (
     <View style={[
       s.card,
-      post.is_pinned && s.cardPinned,
       post.is_hidden && s.cardHidden,
     ]}>
       {/* Header */}
@@ -234,7 +224,7 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
             )}
           </View>
           <View style={s.timeAgoRow}>
-            <Text style={s.timeAgo}>{timeAgo(post.created_at)}</Text>
+            <Text style={s.timeAgo}>{hace(post.created_at)}</Text>
             {post.horse && (
               <View style={s.timeAgoHorse}>
                 <Text style={s.timeAgo}>· </Text>
@@ -443,7 +433,7 @@ function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
             accessibilityLabel={label}
           >
             <View style={s.inicioAccionIcon}>
-              <Icon size={22} color={c.brand} strokeWidth={2.1} />
+              <Icon size={22} color={c.text} strokeWidth={2.1} />
             </View>
             <Text style={s.inicioAccionLabel}>{label}</Text>
           </TouchableOpacity>
@@ -553,13 +543,11 @@ export default function MuroTab() {
               : null
           }
           ListEmptyComponent={
-            <View style={s.emptyBox}>
-              <View style={s.emptyIcon}>
-                <Newspaper size={32} color={c.textFaint} strokeWidth={2} />
-              </View>
-              <Text style={s.emptyTitle}>Todavía no hay publicaciones</Text>
-              <Text style={s.emptySub}>Compartí una novedad, un logro o una foto y empezá la conversación con tu comunidad.</Text>
-            </View>
+            <EmptyState
+              icon="newspaper-outline"
+              title="Todavía no hay publicaciones"
+              message="Compartí una novedad, un logro o una foto y empezá la conversación con tu comunidad."
+            />
           }
         />
       )}
@@ -598,7 +586,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
     backgroundColor: c.danger, alignItems: 'center', justifyContent: 'center',
   },
-  inicioBadgeText: { fontSize: 10, fontWeight: weight.extrabold, color: colors.white },
+  inicioBadgeText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.white },
   inicioAcciones: {
     flexDirection: 'row', justifyContent: 'space-between',
     paddingHorizontal: space[5], paddingBottom: space[4],
@@ -606,7 +594,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   inicioAccion: { alignItems: 'center', gap: 6, width: 68 },
   inicioAccionIcon: {
     width: 54, height: 54, borderRadius: radius.full,
-    backgroundColor: c.brandSoft,
+    backgroundColor: c.surfaceAlt,
     alignItems: 'center', justifyContent: 'center',
   },
   inicioAccionLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
@@ -641,21 +629,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   // Card
   card: { backgroundColor: c.surface, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, overflow: 'hidden', ...(c.isDark ? {} : shadow.sm) },
-  cardPinned: { backgroundColor: c.warningSoft },
   cardHidden: { opacity: 0.55 },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], paddingBottom: 0, gap: space[3] },
   authorInfo: { flex: 1 },
   authorRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  authorName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  authorName: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: c.warningSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
-  pinnedText: { fontSize: 10, color: c.warning, fontWeight: weight.semibold },
+  pinnedText: { fontSize: text.xs, color: c.warning, fontWeight: weight.semibold },
   timeAgo: { fontSize: text.xs, color: c.textFaint },
   timeAgoRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 2 },
   timeAgoHorse: { flexDirection: 'row', alignItems: 'center' },
   menuBtn: { padding: 4, marginTop: -2 },
 
-  content: { fontSize: text.base, color: c.text, lineHeight: 22, paddingHorizontal: space[4], paddingVertical: space[3] },
+  content: { fontSize: text.md, color: c.text, lineHeight: 23, paddingHorizontal: space[4], paddingVertical: space[3] },
 
   imageGrid: { overflow: 'hidden', marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.lg, gap: 2 },
   imageGrid1: {},
@@ -664,7 +651,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   imageItem1: { width: '100%', height: 200, borderRadius: radius.lg },
   imageItem2: { width: '49%', height: 120, borderRadius: radius.md },
 
-  actions: { flexDirection: 'row', gap: space[5], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: c.border },
+  actions: { flexDirection: 'row', gap: space[5], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   actionCount: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
   videoPlayer: { width: '100%', height: 220, backgroundColor: '#000', borderRadius: radius.lg },
@@ -673,24 +660,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.xl, padding: space[3], ...(c.isDark ? {} : shadow.sm) },
   composerPlaceholder: { flex: 1, fontSize: text.sm, color: c.textFaint },
 
-  // Comments sheet
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[4], borderBottomWidth: 1, borderBottomColor: c.border },
-  sheetTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  commentsList: { padding: space[4], gap: space[3] },
+  // Comments sheet — comentarios planos sobre el fondo de la hoja, sin burbujas.
   emptyComments: { textAlign: 'center', color: c.textFaint, fontSize: text.sm, paddingVertical: space[6] },
-  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] },
-  commentBubble: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: space[2] },
+  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2], paddingVertical: space[2] },
+  commentBody: { flex: 1 },
   commentAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 },
-  commentAuthor: { fontSize: 11, fontWeight: weight.bold, color: c.text },
-  commentText: { fontSize: text.sm, color: c.text },
+  commentAuthor: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  commentText: { fontSize: text.md, color: c.text, lineHeight: 23 },
   commentDelete: { padding: space[1], marginTop: space[2] },
-  commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: c.border, alignItems: 'flex-end' },
+  commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, alignItems: 'flex-end' },
   commentInputField: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.xl, paddingHorizontal: space[3], paddingVertical: space[2] + 2, fontSize: text.sm, color: c.text, maxHeight: 100 },
-  sendBtn: { backgroundColor: c.brand, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-
-  // Empty
-  emptyBox: { alignItems: 'center', paddingTop: space[16], paddingHorizontal: space[6], gap: space[3] },
-  emptyIcon: { width: 84, height: 84, borderRadius: radius.full, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: space[1] },
-  emptyTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
-  emptySub: { fontSize: text.sm, color: c.textFaint, textAlign: 'center' },
+  sendBtn: { backgroundColor: c.brand, borderRadius: radius.full, width: touch.min, height: touch.min, justifyContent: 'center', alignItems: 'center' },
 });

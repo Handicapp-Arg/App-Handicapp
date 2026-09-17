@@ -208,7 +208,9 @@ export default function MasScreen() {
         accessibilityRole="button"
         accessibilityLabel="Cerrar sesión"
       >
-        <LogOut size={20} color={c.danger} strokeWidth={1.8} />
+        <View style={s.iconWrap}>
+          <LogOut size={22} color={c.danger} strokeWidth={1.7} />
+        </View>
         <Text style={s.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -220,8 +222,9 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   logoutRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: space[2], minHeight: 52, marginTop: space[4],
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: space[4], minHeight: 52, gap: space[3],
+    marginTop: space[2],
   },
   logoutText: { fontSize: text.md, fontWeight: weight.medium, color: c.danger, letterSpacing: -0.2 },
   content: { paddingBottom: 120, gap: space[1] },

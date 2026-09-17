@@ -1,30 +1,33 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShieldCheck, AlertTriangle, XCircle, CalendarClock, Lock, Download, MoreVertical, Trash2, type LucideIcon } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import {
-  useMedicalRecords, useAddMedicalRecord, useDeleteMedicalRecord, useDownloadMedicalPdf, useDownloadHealthCertificate,
-  MEDICAL_TYPE_LABELS, MEDICAL_TYPE_COLORS, SANITARY_DISEASES, healthStatusFromNextDue,
-  type HealthStatus, type CreateMedicalRecordDto,
+  useMedicalRecords, useDeleteMedicalRecord, useDownloadMedicalPdf, useDownloadHealthCertificate,
+  MEDICAL_TYPE_LABELS, makeMedicalTypeColors, SANITARY_DISEASES, healthStatusFromNextDue,
+  type HealthStatus,
 } from '../../../../hooks/use-medical';
 import { useHorse, useWeightRecords, useAddWeightRecord } from '../../../../hooks/use-horses';
 import { usePlanStatus } from '../../../../hooks/use-plan';
 import { useAuth } from '../../../../lib/auth';
 import { haptic } from '../../../../lib/haptics';
 import { DatePicker } from '../../../../components/DatePicker';
-import { Spinner } from '../../../../components/Spinner';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana, vence } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, radius, weight, shadow, touch } from '../../../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
 import { ActionSheet } from '../../../../components/ActionSheet';
+import { EmptyState } from '../../../../components/EmptyState';
+import { ErrorState } from '../../../../components/ErrorState';
+import { ListRowSkeleton } from '../../../../components/Skeleton';
 import { todayISO } from '../../../../hooks/use-routines';
+import { Routes, nav } from '../../../../lib/routes';
 
 function makeHealthStatusMeta(c: ThemeColors): Record<HealthStatus, { dot: string; bg: string; text: string; label: string; Icon: LucideIcon }> {
   return {
@@ -37,16 +40,17 @@ function makeHealthStatusMeta(c: ThemeColors): Record<HealthStatus, { dot: strin
 export default function SanidadScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { can, user } = useAuth();
   const { c } = useTheme();
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
+  const medicalColors = makeMedicalTypeColors(c);
   const healthStatusMeta = useMemo(() => makeHealthStatusMeta(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: medicalRecords } = useMedicalRecords(id);
-  const addMedical = useAddMedicalRecord(id);
   const deleteMedical = useDeleteMedicalRecord(id);
   const { download: downloadPdf, loading: pdfLoading } = useDownloadMedicalPdf(id, horse?.name ?? '');
   const { download: downloadCert, loading: certLoading } = useDownloadHealthCertificate(id, horse?.name ?? '');
@@ -58,12 +62,21 @@ export default function SanidadScreen() {
   const addWeight = useAddWeightRecord(id);
 
   const today = todayISO();
-  const [showAddMedical, setShowAddMedical] = useState(false);
-  const [medicalForm, setMedicalForm] = useState<CreateMedicalRecordDto>({ type: 'vacuna', name: '', date: today });
   const [showAddWeight, setShowAddWeight] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(today);
   const [medMenuRecord, setMedMenuRecord] = useState<{ id: string; name: string } | null>(null);
+
+  // El registro médico (formulario de varios campos) ahora es una pantalla
+  // empujada: ./sanidad-nuevo.tsx. La hoja de peso (1 campo) se queda como hoja.
+  const irANuevoRegistro = (prefill?: { type: string; name: string }) => {
+    haptic.light();
+    const base = Routes.caballoSanidadNuevo(id);
+    const url = prefill
+      ? `${base}?type=${encodeURIComponent(prefill.type)}&name=${encodeURIComponent(prefill.name)}`
+      : base;
+    nav.push(router, url);
+  };
 
   useEffect(() => {
     if (!showAddWeight) return;
@@ -72,7 +85,25 @@ export default function SanidadScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showAddWeight]);
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Sanidad" />
+        <ErrorState onRetry={refetch} />
+      </View>
+    );
+  }
+
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Sanidad" />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          {[1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -85,39 +116,36 @@ export default function SanidadScreen() {
             <ShieldCheck size={14} color={c.brand} strokeWidth={2.4} />
             <Text style={s.healthBookTitle}>Libreta sanitaria</Text>
           </View>
-          {SANITARY_DISEASES.map((d) => {
+          {SANITARY_DISEASES.map((d, i) => {
             const last = medicalRecords?.filter((r) => r.type === 'sanidad').find((r) => d.match.test(r.name)) ?? null;
             const nextDue = last?.next_due ?? null;
             const status = healthStatusFromNextDue(nextDue);
             const meta = healthStatusMeta[status];
             const StatusIcon = meta.Icon;
             return (
-              <View key={d.key} style={s.healthRow}>
-                <View style={[s.healthAccent, { backgroundColor: meta.dot }]} />
-                <View style={s.healthTopRow}>
-                  <View style={[s.healthIconWrap, { backgroundColor: meta.bg }]}>
-                    <StatusIcon size={16} color={meta.text} strokeWidth={2.2} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.healthName} numberOfLines={1}>{d.name}</Text>
-                    <View style={s.healthDueRow}>
-                      <CalendarClock size={12} color={c.textFaint} strokeWidth={2} />
-                      <Text style={s.healthDue} numberOfLines={1}>
-                        {nextDue ? vence(nextDue) : 'Sin registro'}
-                      </Text>
-                    </View>
+              <View key={d.key} style={[s.healthRow, i > 0 && s.healthRowBorde]}>
+                <View style={[s.healthIconWrap, { backgroundColor: meta.bg }]}>
+                  <StatusIcon size={16} color={meta.text} strokeWidth={2.2} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.healthName} numberOfLines={1}>{d.name}</Text>
+                  <View style={s.healthDueRow}>
+                    <CalendarClock size={12} color={c.textFaint} strokeWidth={2} />
+                    <Text style={s.healthDue} numberOfLines={1}>
+                      {nextDue ? vence(nextDue) : 'Sin registro'}
+                    </Text>
                   </View>
                 </View>
-                <View style={s.healthBottomRow}>
+                <View style={s.healthRight}>
                   <View style={[s.healthBadge, { backgroundColor: meta.bg }]}>
                     <View style={[s.healthBadgeDot, { backgroundColor: meta.dot }]} />
                     <Text style={[s.healthBadgeText, { color: meta.text }]}>{meta.label}</Text>
                   </View>
                   {can('horses', 'update') && (
                     <TouchableOpacity
-                      style={s.healthCertifyBtn}
-                      onPress={() => { haptic.light(); setMedicalForm({ type: 'sanidad', name: d.name, date: today }); setShowAddMedical(true); }}
-                      activeOpacity={0.8}
+                      onPress={() => irANuevoRegistro({ type: 'sanidad', name: d.name })}
+                      activeOpacity={0.7}
+                      hitSlop={8}
                       accessibilityRole="button"
                       accessibilityLabel={`Certificar ${d.name}`}
                     >
@@ -163,7 +191,11 @@ export default function SanidadScreen() {
             )}
           </View>
           {!weightRecords?.length ? (
-            <Text style={s.emptyText}>Sin registros de peso</Text>
+            <EmptyState
+              icon="scale-outline"
+              title="Sin registros de peso"
+              message="Registrá el primer peso para seguir la condición del caballo."
+            />
           ) : (
             <View>
               <View style={s.weightLatest}>
@@ -199,14 +231,14 @@ export default function SanidadScreen() {
                   activeOpacity={0.75}
                 >
                   {pdfLoading
-                    ? <ActivityIndicator size="small" color={c.isDark ? '#fca5a5' : '#dc2626'} />
-                    : <><Download size={14} color={c.isDark ? '#fca5a5' : '#dc2626'} strokeWidth={2.2} /><Text style={s.pdfBtnText}>PDF</Text></>
+                    ? <ActivityIndicator size="small" color={c.danger} />
+                    : <><Download size={14} color={c.danger} strokeWidth={2.2} /><Text style={s.pdfBtnText}>PDF</Text></>
                   }
                 </TouchableOpacity>
               )}
               {can('horses', 'update') && (
                 <TouchableOpacity
-                  onPress={() => { haptic.light(); setMedicalForm({ type: 'vacuna', name: '', date: today }); setShowAddMedical(true); }}
+                  onPress={() => irANuevoRegistro()}
                   style={s.smallBtn}
                 >
                   <Text style={s.smallBtnText}>+ Agregar</Text>
@@ -216,11 +248,15 @@ export default function SanidadScreen() {
           </View>
 
           {!medicalRecords?.length ? (
-            <Text style={s.emptyText}>Sin registros médicos. Agregá vacunas, desparasitaciones y tratamientos.</Text>
+            <EmptyState
+              icon="medkit-outline"
+              title="Sin registros médicos"
+              message="Agregá vacunas, desparasitaciones y tratamientos."
+            />
           ) : (
             <View>
               {medicalRecords.map((rec, index) => {
-                const mc = MEDICAL_TYPE_COLORS[rec.type] ?? MEDICAL_TYPE_COLORS.tratamiento;
+                const mc = medicalColors[rec.type] ?? medicalColors.tratamiento;
                 const isLast = index === medicalRecords.length - 1;
                 return (
                   <Animated.View key={rec.id} style={[s.medRow, isLast && s.medRowLast]} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
@@ -272,20 +308,15 @@ export default function SanidadScreen() {
         onClose={() => setShowAddWeight(false)}
         title="Registrar peso"
         footer={
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddWeight(false)} accessibilityRole="button" accessibilityLabel="Cancelar registro de peso">
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, (!newWeight || addWeight.isPending) && { opacity: 0.6 }]}
-              disabled={!newWeight || addWeight.isPending}
-              onPress={async () => { await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate }); setShowAddWeight(false); haptic.success(); toast.success('Peso registrado'); }}
-              accessibilityRole="button"
-              accessibilityLabel="Guardar peso registrado"
-            >
-              {addWeight.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { flex: 1 }, (!newWeight || addWeight.isPending) && { opacity: 0.6 }]}
+            disabled={!newWeight || addWeight.isPending}
+            onPress={async () => { await addWeight.mutateAsync({ weight_kg: newWeight, date: newWeightDate }); setShowAddWeight(false); haptic.success(); toast.success('Peso registrado'); }}
+            accessibilityRole="button"
+            accessibilityLabel="Guardar peso registrado"
+          >
+            {addWeight.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
+          </TouchableOpacity>
         }
       >
         <TextInput
@@ -298,53 +329,6 @@ export default function SanidadScreen() {
           returnKeyType="done"
         />
         <DatePicker label="Fecha" value={newWeightDate} onChange={setNewWeightDate} maxDate={new Date()} />
-      </FormSheet>
-
-      {/* ─── Hoja agregar registro médico ─── */}
-      <FormSheet
-        visible={showAddMedical}
-        onClose={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: today }); }}
-        title="Nuevo registro médico"
-        footer={
-          <>
-            <TouchableOpacity
-              style={[s.btn, s.btnSecondary, { flex: 1 }]}
-              onPress={() => { setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: today }); }}
-              accessibilityRole="button"
-              accessibilityLabel="Cancelar registro médico"
-            >
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, (!medicalForm.name.trim() || addMedical.isPending) && { opacity: 0.5 }]}
-              disabled={!medicalForm.name.trim() || addMedical.isPending}
-              onPress={async () => { await addMedical.mutateAsync(medicalForm); setShowAddMedical(false); setMedicalForm({ type: 'vacuna', name: '', date: today }); haptic.success(); toast.success('Registro médico agregado'); }}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Guardar registro médico"
-            >
-              {addMedical.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
-            </TouchableOpacity>
-          </>
-        }
-      >
-        <Text style={s.fieldLabel}>Tipo</Text>
-        <View style={s.medTypeGrid}>
-          {(['vacuna', 'desparasitacion', 'analisis', 'tratamiento', 'sanidad'] as const).map((t) => {
-            const mc = MEDICAL_TYPE_COLORS[t];
-            const active = medicalForm.type === t;
-            return (
-              <TouchableOpacity key={t} style={[s.medTypeOption, active && { backgroundColor: mc.bg }]} onPress={() => { haptic.selection(); setMedicalForm((p) => ({ ...p, type: t })); }} activeOpacity={0.7}>
-                <Text style={[s.medTypeOptionText, active && { color: mc.text, fontWeight: '700' }]}>{MEDICAL_TYPE_LABELS[t]}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <TextInput style={s.input} value={medicalForm.name} onChangeText={(v) => setMedicalForm((p) => ({ ...p, name: v }))} placeholder="Nombre / producto, ej: Triple viral" placeholderTextColor={c.textFaint} returnKeyType="next" />
-        <DatePicker label="Fecha *" value={medicalForm.date} onChange={(v) => setMedicalForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
-        <DatePicker label="Próxima dosis" value={medicalForm.next_due ?? ''} onChange={(v) => setMedicalForm((p) => ({ ...p, next_due: v || undefined }))} />
-        <TextInput style={s.input} value={medicalForm.brand ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, brand: v || undefined }))} placeholder="Marca / laboratorio (opcional)" placeholderTextColor={c.textFaint} returnKeyType="next" />
-        <TextInput style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 10 }]} value={medicalForm.notes ?? ''} onChangeText={(v) => setMedicalForm((p) => ({ ...p, notes: v || undefined }))} placeholder="Notas / observaciones adicionales" placeholderTextColor={c.textFaint} multiline returnKeyType="done" />
       </FormSheet>
 
       {/* ─── Menú de acciones del registro médico ─── */}
@@ -373,42 +357,39 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], marginBottom: space[6], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  countText: { fontSize: 11, fontWeight: '700', color: c.textMuted },
-  emptyText: { fontSize: 13, color: c.textFaint },
+  countBadge: { backgroundColor: c.surfaceAlt, borderRadius: radius.full, paddingHorizontal: space[2], paddingVertical: 2 },
+  countText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
 
-  /* Libreta sanitaria */
+  /* Libreta sanitaria — filas planas: el ícono de estado + badge comunican todo */
   healthBookHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 6 },
-  healthBookTitle: { fontSize: text.xs, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  healthRow: { backgroundColor: c.surface, borderRadius: 12, paddingLeft: space[4], paddingRight: space[3], paddingVertical: space[3], overflow: 'hidden', marginBottom: space[2], gap: space[3], ...(c.isDark ? {} : shadow.sm) },
-  healthAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
-  healthTopRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  healthBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  healthIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  healthName: { fontSize: text.base, fontWeight: '600', color: c.text },
+  healthBookTitle: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  healthRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
+  healthRowBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  healthIconWrap: { width: 34, height: 34, borderRadius: radius.md - 2, justifyContent: 'center', alignItems: 'center' },
+  healthName: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   healthDueRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   healthDue: { fontSize: text.sm, color: c.textFaint, flexShrink: 1 },
-  healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  healthBadgeDot: { width: 5, height: 5, borderRadius: 999 },
-  healthBadgeText: { fontSize: text.xs, fontWeight: '700' },
-  healthCertifyBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, backgroundColor: c.brandSoft, paddingHorizontal: space[4] },
-  healthCertifyText: { fontSize: text.sm, fontWeight: '700', color: c.brand },
-  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: 12, paddingVertical: space[3], marginTop: 2 },
+  healthRight: { alignItems: 'flex-end', gap: space[2] },
+  healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: space[2], paddingVertical: 3 },
+  healthBadgeDot: { width: 5, height: 5, borderRadius: radius.full },
+  healthBadgeText: { fontSize: text.xs, fontWeight: weight.bold },
+  healthCertifyText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
+  certifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.brand, borderRadius: radius.md, paddingVertical: space[3], marginTop: 2 },
   certifyBtnLocked: { backgroundColor: c.surfaceAlt },
-  certifyBtnText: { fontSize: text.sm, fontWeight: '700', color: colors.white },
+  certifyBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
 
-  /* Peso */
-  weightLatest: { backgroundColor: c.brandSoft, borderRadius: 12, padding: 12, marginBottom: 4 },
-  weightValue: { fontSize: text.xl, fontWeight: '800', color: c.brand },
-  weightCC: { fontSize: text.sm, color: c.brand, marginTop: 2 },
+  /* Peso — el valor destaca por tipografía, sin caja de acento */
+  weightLatest: { paddingVertical: space[3], marginBottom: 4 },
+  weightValue: { fontSize: text.xl, fontWeight: weight.bold, color: c.text },
+  weightCC: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
   weightDate: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
-  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border },
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space[2], borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   weightRowLast: { borderBottomWidth: 0 },
-  weightRowValue: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  weightRowValue: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   weightRowDate: { fontSize: text.xs, color: c.textFaint },
 
   /* Médico */
-  medRow: { paddingVertical: space[3], gap: 6, borderBottomWidth: 1, borderBottomColor: c.border },
+  medRow: { paddingVertical: space[3], gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   medRowLast: { borderBottomWidth: 0 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
@@ -418,21 +399,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   medNextDue: { fontSize: text.xs },
   medBrand: { fontSize: text.xs, color: c.textFaint },
   medNotes: { fontSize: text.xs, color: c.textMuted, fontStyle: 'italic' },
-  medTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  medTypeOption: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: c.surfaceAlt },
-  medTypeOptionText: { fontSize: text.sm, color: c.textMuted },
 
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, minHeight: touch.min, backgroundColor: c.dangerSoft, minWidth: 44, justifyContent: 'center' },
-  pdfBtnText: { fontSize: text.xs, fontWeight: '700', color: c.danger },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: space[3], minHeight: touch.min, backgroundColor: c.dangerSoft, minWidth: touch.min, justifyContent: 'center' },
+  pdfBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: c.danger },
 
-  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[3], backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
-  fieldLabel: { fontSize: text.sm, fontWeight: '600', color: c.text },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  input: { borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
+  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
+  btnPrimaryText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

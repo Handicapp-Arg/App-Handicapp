@@ -51,35 +51,25 @@ export function ActionSheet({
             onPress={() => { haptic.selection(); onClose(); setTimeout(a.onPress, 260); }}
           >
             {a.Icon ? (
-              <a.Icon size={19} color={a.destructiva ? c.danger : c.text} strokeWidth={2} />
+              <a.Icon size={20} color={a.destructiva ? c.danger : c.textMuted} strokeWidth={1.8} />
             ) : null}
             <Text style={[s.itemText, a.destructiva && s.itemTextDanger]}>{a.label}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Pressable style={({ pressed }) => [s.cancelar, pressed && s.itemPressed]} onPress={onClose}>
-        <Text style={s.cancelarText}>Cancelar</Text>
-      </Pressable>
     </BottomSheet>
   );
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  lista: {
-    backgroundColor: c.surfaceAlt, borderRadius: 16, overflow: 'hidden',
-  },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 16 },
-  itemBorde: { borderTopWidth: 1, borderTopColor: c.border },
-  itemPressed: { backgroundColor: c.border },
+  // Filas planas directo sobre la hoja, separadas por lineas finas: la lista
+  // no es una tarjeta dentro de la hoja, es la hoja misma (patron iOS actual).
+  lista: { paddingBottom: 4 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 4, paddingVertical: 15 },
+  itemBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  itemPressed: { backgroundColor: c.surfaceAlt },
   itemDisabled: { opacity: 0.4 },
-  itemText: { fontSize: 16, color: c.text, fontWeight: '500', letterSpacing: -0.2 },
+  itemText: { fontSize: 17, color: c.text, fontWeight: '400', letterSpacing: -0.2 },
   itemTextDanger: { color: c.danger },
-
-  cancelar: {
-    marginTop: 4, height: 54, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: c.surfaceAlt,
-  },
-  cancelarText: { fontSize: 16, fontWeight: '700', color: c.textMuted, letterSpacing: -0.2 },
 });

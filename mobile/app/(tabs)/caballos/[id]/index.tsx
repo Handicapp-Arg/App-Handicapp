@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
-  Platform, TextInput, ActivityIndicator, Alert, ActionSheetIOS, Share,
+  Platform, Alert, ActionSheetIOS, Share,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,7 +18,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { differenceInYears } from 'date-fns';
 
 import {
-  useHorse, useFinancialSummary, useUpdateHorse, useDeleteHorse, useUploadHorseImage, useWeightRecords,
+  useHorse, useFinancialSummary, useDeleteHorse, useUploadHorseImage, useWeightRecords,
   useHorseDocuments, useHorseVets, useHorseAssignees,
 } from '../../../../hooks/use-horses';
 import { useMedicalRecords, SANITARY_DISEASES, healthStatusFromNextDue } from '../../../../hooks/use-medical';
@@ -30,15 +30,13 @@ import { formatMoney } from '../../../../lib/currency';
 import { useAuth } from '../../../../lib/auth';
 import { haptic } from '../../../../lib/haptics';
 import { Routes, nav } from '../../../../lib/routes';
-import { DatePicker } from '../../../../components/DatePicker';
 import { Spinner } from '../../../../components/Spinner';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana, fechaHoraHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight } from '../../../../styles/tokens';
+import { space, text, weight, radius, touch } from '../../../../styles/tokens';
 import { ActionSheet } from '../../../../components/ActionSheet';
-import { FormSheet } from '../../../../components/FormSheet';
 import { BottomSheet } from '../../../../components/BottomSheet';
 import { AppImage } from '../../../../components/AppImage';
 
@@ -48,89 +46,8 @@ const PUBLIC_BASE = process.env.EXPO_PUBLIC_APP_URL ?? 'https://app.handicapp.co
 
 const SEX_LABEL: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
 
-/* ─── EditHorseModal ─── */
-function EditHorseModal({ horse, visible, onClose, c, s }: { horse: NonNullable<ReturnType<typeof useHorse>['data']>; visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
-  const updateHorse = useUpdateHorse();
-  const toast = useToast();
-  const [name, setName] = useState(horse.name);
-  const [birthDate, setBirthDate] = useState(horse.birth_date ?? '');
-  const [microchip, setMicrochip] = useState(horse.microchip ?? '');
-  const [error, setError] = useState('');
-
-  // La hoja ya no se destruye al cerrarse: limpiamos el formulario al abrir.
-  useEffect(() => {
-    if (!visible) return;
-    setName(horse.name);
-    setBirthDate(horse.birth_date ?? '');
-    setMicrochip(horse.microchip ?? '');
-    setError('');
-  }, [visible, horse]);
-
-  const handleSave = async () => {
-    if (!name.trim()) { setError('El nombre es obligatorio'); haptic.error(); return; }
-    setError('');
-    try {
-      await updateHorse.mutateAsync({ id: horse.id, name: name.trim(), birth_date: birthDate || null, microchip: microchip || null });
-      haptic.success();
-      toast.success('Cambios guardados');
-      onClose();
-    } catch {
-      haptic.error();
-      setError('No se pudieron guardar los cambios. Intentá de nuevo.');
-    }
-  };
-
-  return (
-    <FormSheet
-      visible={visible}
-      onClose={onClose}
-      title={`Editar ${horse.name}`}
-      footer={
-        <>
-          <TouchableOpacity
-            style={[s.btn, s.btnSecondary, { flex: 1 }]}
-            onPress={() => { haptic.light(); onClose(); }}
-            accessibilityRole="button"
-            accessibilityLabel="Cancelar edición"
-          >
-            <Text style={s.btnSecondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.btn, s.btnPrimary, { flex: 1 }, updateHorse.isPending && { opacity: 0.6 }]}
-            onPress={handleSave}
-            disabled={updateHorse.isPending}
-            accessibilityRole="button"
-            accessibilityLabel="Guardar cambios del caballo"
-          >
-            {updateHorse.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Guardar</Text>}
-          </TouchableOpacity>
-        </>
-      }
-    >
-      <TextInput
-        style={s.input}
-        value={name}
-        onChangeText={setName}
-        placeholder="Nombre del caballo"
-        placeholderTextColor={c.textFaint}
-        autoCapitalize="words"
-        textContentType="name"
-        returnKeyType="next"
-      />
-      <DatePicker label="Fecha de nacimiento" value={birthDate} onChange={setBirthDate} maxDate={new Date()} />
-      <TextInput
-        style={s.input}
-        value={microchip}
-        onChangeText={(v) => setMicrochip(v.replace(/\D/g, '').slice(0, 15))}
-        placeholder="Microchip (15 dígitos)"
-        placeholderTextColor={c.textFaint}
-        keyboardType="numeric"
-        returnKeyType="done"
-      />
-      {error ? <Text style={s.fieldError}>{error}</Text> : null}
-    </FormSheet>
-  );
-}
+/* La edición del caballo ahora es una pantalla empujada: ./editar.tsx
+   (los formularios con tipeo se rompían con el teclado dentro de las hojas). */
 
 /* ─── SectionRow: fila de navegación estilo Más/Ajustes ─── */
 function SectionRow({ Icon, label, sub, onPress, c, s }: { Icon: LucideIcon; label: string; sub?: string; onPress: () => void; c: ThemeColors; s: Styles }) {
@@ -188,7 +105,6 @@ export default function HorseDetailScreen() {
   const deleteHorse = useDeleteHorse();
   const uploadImage = useUploadHorseImage();
 
-  const [showEdit, setShowEdit] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -432,7 +348,7 @@ export default function HorseDetailScreen() {
         acciones={[
           ...(can('horses', 'update') ? [
             { label: 'Cambiar foto', Icon: Camera, onPress: handlePickImage },
-            { label: 'Editar caballo', Icon: Pencil, onPress: () => setShowEdit(true) },
+            { label: 'Editar caballo', Icon: Pencil, onPress: () => goto('editar') },
           ] : []),
           ...((user?.role === 'propietario' || can('auctions', 'create')) ? [{
             label: 'Publicar en venta',
@@ -449,33 +365,31 @@ export default function HorseDetailScreen() {
       />
 
       {/* ─── Hoja QR ─── */}
-      <BottomSheet visible={showQR} onClose={() => setShowQR(false)} title="Código QR">
+      <BottomSheet visible={showQR} onClose={() => setShowQR(false)} title={horse.name}>
         <View style={{ paddingBottom: insets.bottom + 8 }}>
-          <Text style={s.qrTitle} numberOfLines={1}>{horse.name}</Text>
           <View style={s.qrWrap}>
             <View style={s.qrInner}>
               {horse.public_token && (
-                <QRCode value={`${PUBLIC_BASE}/caballo/${horse.public_token}`} size={200} color="#9d6c35" backgroundColor="#ffffff" />
+                // Patron WhatsApp/Instagram: modulos casi negros (maxima lectura)
+                // y la marca puesta como isotipo al centro, no tiñendo el codigo.
+                <QRCode
+                  value={`${PUBLIC_BASE}/caballo/${horse.public_token}`}
+                  size={200}
+                  color="#1c1917"
+                  backgroundColor={colors.white}
+                  ecl="H"
+                  logo={require('../../../../assets/isotipo.png')}
+                  logoSize={44}
+                  logoBackgroundColor={colors.white}
+                  logoBorderRadius={22}
+                  logoMargin={4}
+                />
               )}
             </View>
           </View>
           <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
           <View style={s.qrActions}>
-            <TouchableOpacity
-              style={s.qrLinkBtn}
-              onPress={async () => {
-                if (!horse.public_token) return;
-                await Clipboard.setStringAsync(`${PUBLIC_BASE}/caballo/${horse.public_token}`);
-                haptic.light();
-                toast.success('Enlace copiado');
-              }}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Copiar enlace público del caballo"
-            >
-              <Copy size={15} color={c.brand} strokeWidth={2.2} />
-              <Text style={s.qrLinkBtnText}>Copiar enlace</Text>
-            </TouchableOpacity>
+            {/* Un solo CTA cuero; copiar es un link de texto secundario */}
             <TouchableOpacity
               style={s.qrShareBtn}
               onPress={async () => {
@@ -494,12 +408,24 @@ export default function HorseDetailScreen() {
               <Share2 size={15} color={colors.white} strokeWidth={2.2} />
               <Text style={s.qrShareBtnText}>Compartir</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={s.qrLinkBtn}
+              onPress={async () => {
+                if (!horse.public_token) return;
+                await Clipboard.setStringAsync(`${PUBLIC_BASE}/caballo/${horse.public_token}`);
+                haptic.light();
+                toast.success('Enlace copiado');
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Copiar enlace público del caballo"
+            >
+              <Copy size={14} color={c.textMuted} strokeWidth={2} />
+              <Text style={s.qrLinkBtnText}>Copiar enlace</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </BottomSheet>
-
-      {/* ─── Hoja editar caballo ─── */}
-      <EditHorseModal horse={horse} visible={showEdit} onClose={() => setShowEdit(false)} c={c} s={s} />
     </ScrollView>
   );
 }
@@ -529,7 +455,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   heroBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   heroBadgeAmber: { backgroundColor: 'rgba(245,158,11,0.35)' },
   heroBadgeVerified: { backgroundColor: 'rgba(16,163,127,0.9)', flexDirection: 'row', alignItems: 'center', gap: 4 },
-  heroBadgeText: { fontSize: 11, fontWeight: '600', color: colors.white },
+  heroBadgeText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.white },
 
   sheet: {
     marginTop: -10,
@@ -544,41 +470,32 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   vitalsLine: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted, textAlign: 'center', marginBottom: space[4] },
 
   /* Alerta sanitaria */
-  alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: space[4], marginBottom: space[4], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: 12 },
+  alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: space[4], marginBottom: space[4], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.md },
   alertBannerDanger: { backgroundColor: c.dangerSoft },
   alertBannerWarning: { backgroundColor: c.warningSoft },
   alertText: { flex: 1, fontSize: text.sm, fontWeight: '700' },
 
   /* Resumen vital */
   summaryCard: { marginHorizontal: space[4], marginBottom: space[6] },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.border },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   summaryRowLast: { borderBottomWidth: 0 },
   summaryValue: { fontSize: text.sm, fontWeight: '700', color: c.text, maxWidth: 140 },
 
   /* Lista de secciones — patrón Más/Ajustes */
   sectionsList: { marginHorizontal: space[4], marginBottom: space[8] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.border },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   rowIconWrap: { width: 28, alignItems: 'center', flexShrink: 0 },
   rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
   rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   /* Hoja QR */
-  qrTitle: { fontSize: text.xl, fontWeight: '800', color: c.text, marginBottom: 4 },
   qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
   qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   qrHint: { textAlign: 'center', fontSize: text.sm, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
-  qrActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  qrLinkBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.surfaceAlt, paddingVertical: 13 },
-  qrLinkBtnText: { fontSize: text.sm, fontWeight: '700', color: c.brand },
-  qrShareBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: 14, backgroundColor: c.brand, paddingVertical: 13 },
-  qrShareBtnText: { fontSize: text.sm, fontWeight: '700', color: colors.white },
+  qrActions: { gap: space[3], marginTop: 14 },
+  qrLinkBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, minHeight: touch.min },
+  qrLinkBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
+  qrShareBtn: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: radius.md, backgroundColor: c.brand, paddingVertical: space[3] },
+  qrShareBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
 
-  /* Formularios (dentro de FormSheet) */
-  fieldError: { fontSize: text.sm, color: colors.red500 },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
 });

@@ -181,32 +181,27 @@ export default function ContratoDetailScreen() {
         onClose={() => setRejecting(false)}
         title="Rechazar contrato"
         footer={
-          <>
-            <TouchableOpacity style={[s.cancelBtn, { flex: 1 }]} onPress={() => setRejecting(false)}>
-              <Text style={s.cancelBtnText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.rejectSubmitBtn, { flex: 1 }, rejectContract.isPending && { opacity: 0.5 }]}
-              disabled={rejectContract.isPending}
-              onPress={async () => {
-                await rejectContract.mutateAsync({ id: contract.id, reason: rejectReason });
-                setRejecting(false);
-              }}
-              activeOpacity={0.85}
-            >
-              {rejectContract.isPending
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={s.submitBtnText}>Confirmar rechazo</Text>
-              }
-            </TouchableOpacity>
-          </>
+          // Un solo CTA destructivo: la X de la hoja ya cancela.
+          <TouchableOpacity
+            style={[s.rejectSubmitBtn, { flex: 1 }, rejectContract.isPending && { opacity: 0.5 }]}
+            disabled={rejectContract.isPending}
+            onPress={async () => {
+              await rejectContract.mutateAsync({ id: contract.id, reason: rejectReason });
+              setRejecting(false);
+            }}
+            activeOpacity={0.85}
+          >
+            {rejectContract.isPending
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={s.submitBtnText}>Rechazar contrato</Text>
+            }
+          </TouchableOpacity>
         }
       >
-        <Text style={s.fieldLabel}>Motivo del rechazo (opcional):</Text>
         <TextInput
           style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
           value={rejectReason} onChangeText={setRejectReason}
-          placeholder="Indicá el motivo..." placeholderTextColor={c.textFaint}
+          placeholder="Motivo del rechazo (opcional)" placeholderTextColor={c.textFaint}
           multiline
         />
       </FormSheet>
@@ -239,15 +234,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   signRole: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
   deleteBtn: { marginHorizontal: space[4], marginTop: space[2], borderRadius: radius.md, backgroundColor: c.surfaceAlt, paddingVertical: space[3], alignItems: 'center' },
   deleteBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg },
+  // Footer sin borde: solo aire, como eventos/nuevo.
+  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], backgroundColor: c.bg },
   signBtn: { flex: 1, height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.success, alignItems: 'center' },
-  signBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
+  signBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
   rejectBtn: { flex: 1, height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.surfaceAlt, alignItems: 'center' },
   rejectBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  cancelBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.surfaceAlt, alignItems: 'center' },
-  cancelBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
   rejectSubmitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.danger, alignItems: 'center' },
 });

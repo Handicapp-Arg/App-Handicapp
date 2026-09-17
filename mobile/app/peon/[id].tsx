@@ -246,7 +246,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   photo: { width: 110, height: 110, borderRadius: radius.full, backgroundColor: c.surfaceAlt },
   photoPlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: c.brand },
-  photoInitial: { fontSize: 52, fontFamily: fontFamily.extrabold, fontWeight: weight.extrabold, color: colors.white },
+  photoInitial: { fontSize: 52, fontFamily: fontFamily.extrabold, fontWeight: weight.semibold, color: colors.white },
   horseName: {
     marginTop: space[3],
     fontSize: 32,

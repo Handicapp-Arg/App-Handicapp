@@ -97,7 +97,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.full,
     paddingHorizontal: space[5],
-    backgroundColor: c.brandSoft,
+    backgroundColor: c.surfaceAlt,
   },
   btnText: {
     fontSize: text.base,

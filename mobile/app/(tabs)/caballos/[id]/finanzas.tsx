@@ -2,32 +2,33 @@ import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import {
-  Banknote, Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package, type LucideIcon,
+  Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package, type LucideIcon,
 } from 'lucide-react-native';
 
 import { useHorse, useFinancialSummary } from '../../../../hooks/use-horses';
 import { useAuth } from '../../../../lib/auth';
 import { formatMoney } from '../../../../lib/currency';
-import { fechaHumana } from '../../../../lib/fechas';
+import { fechaHumana, mesCorto } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, weight } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
-import { Spinner } from '../../../../components/Spinner';
 import { EmptyState } from '../../../../components/EmptyState';
 import { ErrorState } from '../../../../components/ErrorState';
+import { ListRowSkeleton, Skeleton } from '../../../../components/Skeleton';
 
-const EXPENSE_CATEGORY_META: Record<string, { Icon: LucideIcon; color: string; label: string }> = {
-  alimentacion:  { Icon: Wheat,    color: '#16a34a', label: 'Alimentación' },
-  veterinario:   { Icon: Syringe,  color: '#dc2626', label: 'Veterinario' },
-  herradero:     { Icon: Hammer,   color: '#d97706', label: 'Herradero' },
-  entrenamiento: { Icon: Activity, color: '#a16207', label: 'Entrenamiento' },
-  mantenimiento: { Icon: Wrench,   color: '#0284c7', label: 'Mantenimiento' },
-  transporte:    { Icon: Truck,    color: '#0891b2', label: 'Transporte' },
-  otros:         { Icon: Package,  color: '#6b7280', label: 'Otros' },
-};
+/** Colores por categoría con tokens semánticos del theme (legibles en ambos temas). */
+function makeExpenseCategoryMeta(c: ThemeColors): Record<string, { Icon: LucideIcon; color: string; label: string }> {
+  return {
+    alimentacion:  { Icon: Wheat,    color: c.success,   label: 'Alimentación' },
+    veterinario:   { Icon: Syringe,  color: c.danger,    label: 'Veterinario' },
+    herradero:     { Icon: Hammer,   color: c.warning,   label: 'Herradero' },
+    entrenamiento: { Icon: Activity, color: c.info,      label: 'Entrenamiento' },
+    mantenimiento: { Icon: Wrench,   color: c.textMuted, label: 'Mantenimiento' },
+    transporte:    { Icon: Truck,    color: c.info,      label: 'Transporte' },
+    otros:         { Icon: Package,  color: c.textMuted, label: 'Otros' },
+  };
+}
 
 export default function FinanzasScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -37,11 +38,31 @@ export default function FinanzasScreen() {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError: isHorseError, refetch: refetchHorse } = useHorse(id);
   const isJineteOrPeon = user?.role === 'jinete' || user?.role === 'peon';
   const { data: financial, isError, refetch } = useFinancialSummary(id, !isJineteOrPeon);
+  const categoryMeta = useMemo(() => makeExpenseCategoryMeta(c), [c]);
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isHorseError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Finanzas" />
+        <ErrorState onRetry={refetchHorse} />
+      </View>
+    );
+  }
+
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Finanzas" />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          <Skeleton height={72} style={{ marginBottom: space[2] }} />
+          {[1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -75,7 +96,7 @@ export default function FinanzasScreen() {
                 <View style={{ marginTop: space[6] }}>
                   <Text style={s.sectionTitle}>Por categoría</Text>
                   {financial.by_category.map((cat) => {
-                    const meta = EXPENSE_CATEGORY_META[cat.category] ?? { Icon: Package, color: c.textMuted, label: cat.category };
+                    const meta = categoryMeta[cat.category] ?? { Icon: Package, color: c.textMuted, label: cat.category };
                     const MetaIcon = meta.Icon;
                     const pct = financial.total > 0 ? (cat.total / financial.total) * 100 : 0;
                     const maxVal = Math.max(...financial.by_category.map((x) => x.total), 1);
@@ -105,8 +126,7 @@ export default function FinanzasScreen() {
                 <View style={{ marginTop: space[6] }}>
                   <Text style={s.sectionTitle}>Evolución mensual</Text>
                   {(financial.monthly ?? []).slice(0, 6).map((m) => {
-                    const [year, month] = m.month.split('-');
-                    const label = format(new Date(Number(year), Number(month) - 1, 1), 'MMM yy', { locale: es });
+                    const label = mesCorto(m.month);
                     const maxVal = Math.max(...(financial.monthly ?? []).map((x) => x.total), 1);
                     return (
                       <View key={m.month} style={s.barRow}>
@@ -124,7 +144,7 @@ export default function FinanzasScreen() {
                 <View style={{ marginTop: space[6] }}>
                   <Text style={s.sectionTitle}>Últimos gastos</Text>
                   {financial.recent_expenses.map((exp, i, arr) => {
-                    const meta = EXPENSE_CATEGORY_META[exp.expense_category ?? ''] ?? { Icon: Package, color: c.textMuted, label: exp.expense_category ?? '' };
+                    const meta = categoryMeta[exp.expense_category ?? ''] ?? { Icon: Package, color: c.textMuted, label: exp.expense_category ?? '' };
                     const MetaIcon = meta.Icon;
                     const isLast = i === arr.length - 1;
                     return (
@@ -160,7 +180,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   subStatRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: space[3], borderTopWidth: 1, borderTopColor: c.border,
+    paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
   },
   subStatLabel: { fontSize: text.base, color: c.textMuted },
   subStatValue: { fontSize: text.base, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
@@ -183,7 +203,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Últimos gastos */
   expenseRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    paddingVertical: space[3], borderBottomWidth: 1, borderBottomColor: c.border,
+    paddingVertical: space[3], borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
   expenseRowLast: { borderBottomWidth: 0 },
   expenseDesc: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },

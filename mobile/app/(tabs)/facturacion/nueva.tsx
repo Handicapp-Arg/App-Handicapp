@@ -5,23 +5,103 @@ import {
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Plus, Trash2, Check, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useCreateBill } from '../../../hooks/use-billing';
 import { useHorses } from '../../../hooks/use-horses';
 import { formatMoney } from '../../../lib/currency';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import { FormSheet } from '../../../components/FormSheet';
+import { BottomSheet } from '../../../components/BottomSheet';
+import { ActionSheet, type Accion } from '../../../components/ActionSheet';
+import { FilaSelector } from '../../../components/FilaSelector';
 import { Routes } from '../../../lib/routes';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch, shadow } from '../../../styles/tokens';
+import { space, text, radius, weight, touch } from '../../../styles/tokens';
 import { useCommonStyles } from '../../../styles/common';
 import { useToast } from '../../../components/Toast';
 
-const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+const CURRENCY_LABELS: Record<'ARS' | 'USD', string> = {
+  ARS: '$ ARS — Pesos',
+  USD: 'US$ USD — Dólares',
+};
 
 interface DraftItem { description: string; quantity: number; unit_price: number }
+
+/**
+ * Hoja simple de período: flechas de año arriba y grilla plana de meses.
+ * El mes elegido se marca con un Check en cuero — sin chips de color.
+ */
+function PeriodoSheet({ visible, onClose, month, year, onChangeMonth, onChangeYear }: {
+  visible: boolean;
+  onClose: () => void;
+  month: number;
+  year: number;
+  onChangeMonth: (m: number) => void;
+  onChangeYear: (y: number) => void;
+}) {
+  const { c } = useTheme();
+  const s = useMemo(() => makePeriodoStyles(c), [c]);
+  return (
+    <BottomSheet visible={visible} onClose={onClose} title="Período">
+      <View style={s.yearRow}>
+        <TouchableOpacity
+          style={s.yearBtn}
+          onPress={() => { haptic.selection(); onChangeYear(year - 1); }}
+          activeOpacity={0.7}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Año anterior"
+        >
+          <ChevronLeft size={20} color={c.textMuted} strokeWidth={2} />
+        </TouchableOpacity>
+        <Text style={s.yearText}>{year}</Text>
+        <TouchableOpacity
+          style={s.yearBtn}
+          onPress={() => { haptic.selection(); onChangeYear(year + 1); }}
+          activeOpacity={0.7}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Año siguiente"
+        >
+          <ChevronRight size={20} color={c.textMuted} strokeWidth={2} />
+        </TouchableOpacity>
+      </View>
+      <View style={s.mesGrid}>
+        {MESES.map((m, idx) => {
+          const activo = idx + 1 === month;
+          return (
+            <TouchableOpacity
+              key={m}
+              style={s.mesCelda}
+              onPress={() => { haptic.selection(); onChangeMonth(idx + 1); onClose(); }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: activo }}
+              accessibilityLabel={m}
+            >
+              {activo && <Check size={16} color={c.brand} strokeWidth={2.5} />}
+              <Text style={[s.mesText, activo && s.mesTextActivo]}>{m.slice(0, 3)}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </BottomSheet>
+  );
+}
+
+const makePeriodoStyles = (c: ThemeColors) => StyleSheet.create({
+  yearRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[4], paddingVertical: space[1] },
+  yearBtn: { width: touch.min, height: touch.min, alignItems: 'center', justifyContent: 'center' },
+  yearText: { fontSize: text.md, fontWeight: weight.semibold, color: c.text, minWidth: 64, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  mesGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingBottom: space[2] },
+  mesCelda: { width: '25%', minHeight: touch.min, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[1] },
+  mesText: { fontSize: text.md, color: c.textMuted },
+  mesTextActivo: { color: c.text, fontWeight: weight.semibold },
+});
 
 /** Hoja chica de 3 campos — acción rápida legítima de FormSheet, aunque el formulario padre sea pantalla completa. */
 function AddItemSheet({ visible, onClose, onAdd, c }: {
@@ -115,6 +195,7 @@ export default function NuevaFacturaScreen() {
   const [items, setItems] = useState<DraftItem[]>([]);
   const [notes, setNotes] = useState('');
   const [addingItem, setAddingItem] = useState(false);
+  const [sheet, setSheet] = useState<'caballo' | 'periodo' | 'moneda' | null>(null);
 
   const selectedHorse = boardedHorses.find((h) => h.id === horseId);
   const ownerId = selectedHorse?.owner_id ?? '';
@@ -171,23 +252,25 @@ export default function NuevaFacturaScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* Caballo */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Caballo</Text>
-          {boardedHorses.length === 0 ? (
-            <Text style={s.mutedNote}>No tenés caballos en pensión para facturar.</Text>
-          ) : (
-            <View style={s.pickRow}>
-              {boardedHorses.map((h) => {
-                const active = h.id === horseId;
-                return (
-                  <TouchableOpacity key={h.id} style={[s.chip, active && s.chipActive]} onPress={() => { haptic.selection(); setHorseId(h.id); }} activeOpacity={0.8}>
-                    <Text style={[s.chipText, active && s.chipTextActive]}>{h.name}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+        {/* Selección: filas planas patrón Ajustes de iOS (como eventos/nuevo) */}
+        <View>
+          <FilaSelector
+            primera
+            label="Caballo"
+            valor={selectedHorse?.name}
+            placeholder={boardedHorses.length === 0 ? 'No tenés caballos en pensión' : 'Elegir'}
+            onPress={() => { if (boardedHorses.length > 0) setSheet('caballo'); }}
+          />
+          <FilaSelector
+            label="Período"
+            valor={`${MESES[month - 1]} ${year}`}
+            onPress={() => setSheet('periodo')}
+          />
+          <FilaSelector
+            label="Moneda"
+            valor={CURRENCY_LABELS[currency]}
+            onPress={() => setSheet('moneda')}
+          />
         </View>
 
         {/* Propietario (auto) */}
@@ -197,61 +280,6 @@ export default function NuevaFacturaScreen() {
             <Text style={selectedHorse?.owner?.name ? s.ownerName : s.ownerPlaceholder}>
               {selectedHorse?.owner?.name ?? 'Se completa al elegir el caballo'}
             </Text>
-          </View>
-        </View>
-
-        {/* Período */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Período</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
-            {MONTHS.map((m, idx) => {
-              const active = idx + 1 === month;
-              return (
-                <TouchableOpacity key={m} style={[s.chip, active && s.chipActive]} onPress={() => { haptic.selection(); setMonth(idx + 1); }} activeOpacity={0.8}>
-                  <Text style={[s.chipText, active && s.chipTextActive]}>{m}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          <View style={s.stepperRow}>
-            <TouchableOpacity
-              style={s.stepperBtn}
-              onPress={() => { haptic.selection(); setYear((y) => y - 1); }}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Año anterior"
-              hitSlop={8}
-            >
-              <Text style={s.stepperBtnText}>−</Text>
-            </TouchableOpacity>
-            <Text style={s.stepperValue}>{year}</Text>
-            <TouchableOpacity
-              style={s.stepperBtn}
-              onPress={() => { haptic.selection(); setYear((y) => y + 1); }}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Año siguiente"
-              hitSlop={8}
-            >
-              <Text style={s.stepperBtnText}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Moneda */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Moneda</Text>
-          <View style={s.currencyRow}>
-            {(['ARS', 'USD'] as const).map((cur) => {
-              const active = currency === cur;
-              return (
-                <TouchableOpacity key={cur} style={[s.currencyBtn, active && s.currencyBtnActive]} onPress={() => { haptic.selection(); setCurrency(cur); }} activeOpacity={0.8}>
-                  <Text style={[s.currencyBtnText, active && s.currencyBtnTextActive]}>
-                    {cur === 'ARS' ? '$ ARS — Pesos' : 'US$ USD — Dólares'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
           </View>
         </View>
 
@@ -331,6 +359,30 @@ export default function NuevaFacturaScreen() {
         onAdd={(item) => setItems((prev) => [...prev, item])}
         c={c}
       />
+
+      <ActionSheet
+        visible={sheet === 'caballo'}
+        onClose={() => setSheet(null)}
+        title="Caballo"
+        acciones={boardedHorses.map((h): Accion => ({ label: h.name, onPress: () => setHorseId(h.id) }))}
+      />
+      <ActionSheet
+        visible={sheet === 'moneda'}
+        onClose={() => setSheet(null)}
+        title="Moneda"
+        acciones={(['ARS', 'USD'] as const).map((cur): Accion => ({
+          label: CURRENCY_LABELS[cur],
+          onPress: () => setCurrency(cur),
+        }))}
+      />
+      <PeriodoSheet
+        visible={sheet === 'periodo'}
+        onClose={() => setSheet(null)}
+        month={month}
+        year={year}
+        onChangeMonth={setMonth}
+        onChangeYear={setYear}
+      />
     </View>
   );
 }
@@ -342,32 +394,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
   mutedNote: { fontSize: text.sm, color: c.textFaint, fontStyle: 'italic' },
 
-  pickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  chip: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
-  chipActive: { backgroundColor: c.brand },
-  chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
-  chipTextActive: { color: colors.white },
-
   ownerBox: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: c.surfaceAlt },
   ownerName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   ownerPlaceholder: { fontSize: text.sm, color: c.textFaint },
-
-  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  stepperBtn: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
-  stepperBtnText: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
-  stepperValue: { fontSize: text.base, fontWeight: weight.bold, color: c.text, minWidth: 56, textAlign: 'center', fontVariant: ['tabular-nums'] },
-
-  currencyRow: { flexDirection: 'row', gap: space[2] },
-  currencyBtn: { flex: 1, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', backgroundColor: c.surfaceAlt },
-  currencyBtnActive: { backgroundColor: c.brand },
-  currencyBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  currencyBtnTextActive: { color: colors.white },
 
   itemsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   addItemBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   addItemText: { fontSize: text.xs, fontWeight: weight.bold, color: c.brand },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[3] },
-  itemRowDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
+  itemRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   itemDesc: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   itemMeta: { fontSize: text.xs, color: c.textFaint, marginTop: 2, fontVariant: ['tabular-nums'] },
   itemTotal: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
@@ -379,12 +414,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   totalHeroLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   totalHeroValue: { fontSize: text.display, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
 
-  footer: {
-    backgroundColor: c.surface,
-    paddingHorizontal: space[4],
-    paddingTop: space[3],
-    ...(c.isDark ? {} : shadow.sm),
-  },
+  // Footer sin borde ni sombra: solo aire, como eventos/nuevo.
+  footer: { paddingHorizontal: space[4], paddingTop: space[3] },
   submitBtn: { backgroundColor: c.brand, borderRadius: radius.lg, height: touch.button, justifyContent: 'center', alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

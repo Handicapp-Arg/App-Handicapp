@@ -37,24 +37,17 @@ function Countdown({ end, s }: { end: string; s: Styles }) {
   const d = Math.floor(left / 86_400_000);
   const h = Math.floor((left % 86_400_000) / 3_600_000);
   const m = Math.floor((left % 3_600_000) / 60_000);
-  const sec = Math.floor((left % 60_000) / 1_000);
 
   if (left === 0) return <Text style={s.remateClosed}>Remate cerrado</Text>;
 
   // Urgencia visual: cierra en menos de 24h -> se pinta en c.warning.
   const urgent = left < 24 * 60 * 60 * 1000;
 
+  // Texto plano tabular, sin cajas: el dato manda, no el adorno.
   return (
-    <View style={{ flexDirection: 'row', gap: space[2] }}>
-      {[{ v: d, l: 'd' }, { v: h, l: 'h' }, { v: m, l: 'm' }, { v: sec, l: 's' }].map(({ v, l }) => (
-        <View key={l} style={{ alignItems: 'center' }}>
-          <View style={[s.countBox, urgent && s.countBoxUrgent]}>
-            <Text style={s.countNum}>{String(v).padStart(2, '0')}</Text>
-          </View>
-          <Text style={[s.countLabel, urgent && s.countLabelUrgent]}>{l}</Text>
-        </View>
-      ))}
-    </View>
+    <Text style={[s.countText, urgent && s.countTextUrgent]}>
+      {`${String(d).padStart(2, '0')}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`}
+    </Text>
   );
 }
 
@@ -249,7 +242,7 @@ export default function AuctionDetailScreen() {
         {/* Historial pujas: filas de lista (patrón Más), no tarjetas con sombra */}
         {isRemate && bids && bids.length > 0 && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Historial de pujas ({bids.length})</Text>
+            <Text style={s.sectionTitle}>Historial de pujas</Text>
             {bids.slice(0, 10).map((b, index, arr) => (
               <Animated.View key={b.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
                 <View style={[s.bidRow, index < arr.length - 1 && s.bidRowDivider]}>
@@ -334,9 +327,10 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   watchBtn: { padding: space[2] },
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg },
+  // Footer sin borde: solo aire, como eventos/nuevo.
+  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], backgroundColor: c.bg },
   publishBtnFull: { flex: 1, height: touch.button, backgroundColor: c.brand, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center' },
-  publishBtnFullText: { color: colors.white, fontSize: text.md, fontWeight: weight.extrabold },
+  publishBtnFullText: { color: colors.white, fontSize: text.md, fontWeight: weight.semibold },
 
   scroll: { paddingHorizontal: space[4], paddingBottom: 120 },
 
@@ -354,11 +348,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   remateClosed: { color: c.danger, fontWeight: weight.bold },
 
-  countBox: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: 8, paddingVertical: 6, minWidth: 36, alignItems: 'center' },
-  countBoxUrgent: { backgroundColor: c.warning },
-  countNum: { color: colors.white, fontSize: text.lg, fontWeight: weight.extrabold },
-  countLabel: { fontSize: text.xs, color: c.textFaint, marginTop: 2, textTransform: 'uppercase' },
-  countLabelUrgent: { color: c.warning, fontWeight: weight.bold },
+  countText: { fontSize: text.lg, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
+  countTextUrgent: { color: c.warning },
 
   bidHint: { fontSize: text.sm, color: c.textFaint, marginBottom: space[2], marginTop: space[1] },
   bidInputRow: { flexDirection: 'row', gap: space[2] },
@@ -371,7 +362,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     height: touch.field, backgroundColor: c.brand, borderRadius: radius.lg,
     paddingHorizontal: space[5], justifyContent: 'center', alignItems: 'center',
   },
-  bidBtnText: { color: colors.white, fontWeight: weight.bold, fontSize: text.md },
+  bidBtnText: { color: colors.white, fontWeight: weight.semibold, fontSize: text.md },
   bidError: { color: c.danger, fontSize: text.xs, marginTop: space[1] },
 
   section: { marginBottom: space[4] },
@@ -397,9 +388,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bidAmountActive: { color: c.success },
   bidWinningTag: { fontSize: text.xs, fontWeight: weight.semibold, color: c.success, marginTop: 1 },
 
+  // Sin borde duro: el fondo suave + el texto en warning ya comunican.
   legalBox: {
     flexDirection: 'row', gap: space[2], alignItems: 'flex-start',
-    backgroundColor: c.warningSoft, borderWidth: 1, borderColor: c.warning,
+    backgroundColor: c.warningSoft,
     borderRadius: radius.xl, padding: space[4], marginTop: space[2],
   },
   legalText: { flex: 1, fontSize: text.xs, color: c.warning, lineHeight: 16 },

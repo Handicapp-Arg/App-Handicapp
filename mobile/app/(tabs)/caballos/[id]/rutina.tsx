@@ -5,16 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Sunrise, Sun, Moon, Droplets, Sprout, Activity, HeartPulse, CheckCircle2, User, Info, type LucideIcon,
 } from 'lucide-react-native';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 import { useHorse } from '../../../../hooks/use-horses';
 import { useRoutines, useUpsertRoutine, ROUTINE_ITEMS, todayISO } from '../../../../hooks/use-routines';
 import { haptic } from '../../../../lib/haptics';
+import { hora, diaInicial } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, weight, touch, radius } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
-import { Spinner } from '../../../../components/Spinner';
+import { ErrorState } from '../../../../components/ErrorState';
+import { ListRowSkeleton } from '../../../../components/Skeleton';
 
 /** Íconos de la rutina diaria — lucide con color (en vez de emojis). */
 const ROUTINE_ICON: Record<string, { Icon: LucideIcon; color: string }> = {
@@ -34,13 +34,31 @@ export default function RutinaScreen() {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: routines } = useRoutines(id);
   const upsertRoutine = useUpsertRoutine(id);
   const today = todayISO();
   const todayRoutine = routines?.find((r) => r.date === today);
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Rutina" />
+        <ErrorState onRetry={refetch} />
+      </View>
+    );
+  }
+
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Rutina" />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          {[1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -79,7 +97,7 @@ export default function RutinaScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={checked ? `${label}, hecho` : label}
                 >
-                  <View style={[s.routineIconWrap, { backgroundColor: checked ? (c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4') : c.surface }]}>
+                  <View style={[s.routineIconWrap, { backgroundColor: checked ? c.successSoft : c.surface }]}>
                     <RIcon size={18} color={ri?.color ?? c.textFaint} strokeWidth={2} />
                   </View>
                   <Text style={[s.routineLabel, checked && s.routineLabelChecked]}>{label}</Text>
@@ -95,9 +113,7 @@ export default function RutinaScreen() {
               <User size={12} color={c.textFaint} strokeWidth={2} />
               <Text style={s.routineAuthorText}>
                 Cargó {todayRoutine.filler.name}
-                {todayRoutine.created_at
-                  ? ` · ${format(new Date(todayRoutine.created_at), 'HH:mm', { locale: es })}`
-                  : ''}
+                {todayRoutine.created_at ? ` · ${hora(todayRoutine.created_at)}` : ''}
               </Text>
             </View>
           )}
@@ -110,7 +126,7 @@ export default function RutinaScreen() {
                 {[...routines].reverse().map((r) => {
                   const completedCount = ROUTINE_ITEMS.filter(({ key }) => r[key]).length;
                   const pct = completedCount / ROUTINE_ITEMS.length;
-                  const dayLabel = format(new Date(`${r.date}T12:00:00`), 'EEEEE', { locale: es });
+                  const dayLabel = diaInicial(r.date);
                   const isToday = r.date === today;
                   return (
                     <View key={r.date} style={s.routineTrendDay}>
@@ -143,13 +159,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     minHeight: 60, borderRadius: radius.lg, paddingHorizontal: space[3], paddingVertical: space[2],
     backgroundColor: c.surfaceAlt,
   },
-  routineItemChecked: { backgroundColor: c.isDark ? 'rgba(34,197,94,0.14)' : '#f0fdf4' },
+  routineItemChecked: { backgroundColor: c.successSoft },
   routineIconWrap: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  routineLabel: { flex: 1, fontSize: text.base, fontWeight: '500', color: c.textMuted },
-  routineLabelChecked: { color: c.isDark ? '#86efac' : '#15803d', fontWeight: weight.semibold },
+  routineLabel: { flex: 1, fontSize: text.base, fontWeight: weight.medium, color: c.textMuted },
+  routineLabelChecked: { color: c.success, fontWeight: weight.semibold },
   routineAuthor: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10 },
-  routineAuthorText: { fontSize: 11, color: c.textFaint, fontWeight: weight.medium },
-  routineTrend: { marginTop: 12, backgroundColor: c.surfaceAlt, borderRadius: 12, padding: space[3] },
+  routineAuthorText: { fontSize: text.xs, color: c.textFaint, fontWeight: weight.medium },
+  // Tendencia aplanada: vive directo sobre el fondo, sin caja.
+  routineTrend: { marginTop: space[3] },
   routineTrendTitle: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   routineTrendDays: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 52 },
   routineTrendDay: { alignItems: 'center', gap: 4, flex: 1 },

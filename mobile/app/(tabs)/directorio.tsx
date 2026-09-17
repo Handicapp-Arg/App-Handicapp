@@ -6,7 +6,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Search, XCircle } from 'lucide-react-native';
+import { Check, Clock, Search, XCircle } from 'lucide-react-native';
 import api from '../../lib/api';
 import { useHorses } from '../../hooks/use-horses';
 import { useAuth } from '../../lib/auth';
@@ -90,22 +90,17 @@ function RequestModal({
       onClose={onClose}
       title="Solicitar alojamiento"
       footer={
-        <>
-          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose} activeOpacity={0.8}>
-            <Text style={s.btnSecondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.btn, s.btnPrimary, { flex: 1 }, (!horseId || !available.length || create.isPending) && { opacity: 0.5 }]}
-            disabled={!horseId || !available.length || create.isPending}
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-          >
-            {create.isPending
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={s.btnPrimaryText}>Enviar solicitud</Text>
-            }
-          </TouchableOpacity>
-        </>
+        <TouchableOpacity
+          style={[s.btn, s.btnPrimary, { flex: 1 }, (!horseId || !available.length || create.isPending) && { opacity: 0.5 }]}
+          disabled={!horseId || !available.length || create.isPending}
+          onPress={handleSubmit}
+          activeOpacity={0.85}
+        >
+          {create.isPending
+            ? <ActivityIndicator color={colors.white} size="small" />
+            : <Text style={s.btnPrimaryText}>Enviar solicitud</Text>
+          }
+        </TouchableOpacity>
       }
     >
       <>
@@ -121,20 +116,25 @@ function RequestModal({
         {!available.length ? (
           <Text style={s.emptyText}>No tenés caballos disponibles para alojar en este establecimiento.</Text>
         ) : (
-          <View style={s.horseList}>
-            {available.map((h) => {
+          <View>
+            {available.map((h, i) => {
               const pending = alreadyRequested(h.id);
+              const active = horseId === h.id;
               return (
                 <TouchableOpacity
                   key={h.id}
-                  style={[s.horseItem, horseId === h.id && s.horseItemActive, pending && { opacity: 0.5 }]}
+                  style={[s.horseItem, i > 0 && s.horseItemBorde, pending && { opacity: 0.5 }]}
                   onPress={() => { if (!pending) { haptic.selection(); setHorseId(h.id); } }}
-                  activeOpacity={0.75}
+                  activeOpacity={0.6}
                   disabled={!!pending}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={h.name}
                 >
-                  <Text style={[s.horseItemText, horseId === h.id && s.horseItemTextActive]}>
+                  <Text style={s.horseItemText}>
                     {h.name}{pending ? ' (pendiente)' : ''}
                   </Text>
+                  {active && <Check size={19} color={c.brand} strokeWidth={2.4} />}
                 </TouchableOpacity>
               );
             })}
@@ -142,7 +142,7 @@ function RequestModal({
         )}
 
         <TextInput
-          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10, marginTop: 14 }]}
+          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: space[2] + 2, marginTop: space[3] }]}
           value={message}
           onChangeText={setMessage}
           placeholder="Mensaje (opcional): presentate brevemente..."
@@ -263,9 +263,7 @@ export default function DirectorioScreen() {
                 </View>
                 {isPropietario && (
                   hasPending ? (
-                    <View style={s.pendingChip}>
-                      <Text style={s.pendingChipText}>Pendiente</Text>
-                    </View>
+                    <Text style={s.pendingPlain}>Pendiente</Text>
                   ) : (
                     <TouchableOpacity
                       style={s.requestBtn}
@@ -295,33 +293,29 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   spinner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: c.borderStrong, borderTopColor: c.brand },
-  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: c.goldSoft, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], borderWidth: 1, borderColor: c.goldBorder },
+  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: space[4], marginTop: space[3], backgroundColor: c.goldSoft, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2] },
   pendingText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.goldText },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.field },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginHorizontal: space[4], marginVertical: space[3], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: space[3], height: touch.field },
   searchInput: { flex: 1, fontSize: text.sm, color: c.text, height: touch.field },
   list: { paddingBottom: 120 },
   itemWrap: { marginHorizontal: space[4] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, paddingHorizontal: space[4] },
   rowName: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
-  requestBtn: { borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: 12, minHeight: touch.min, justifyContent: 'center' },
-  requestBtnText: { fontSize: 11, fontWeight: weight.bold, color: colors.white },
-  pendingChip: { borderRadius: radius.full, backgroundColor: c.goldSoft, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: c.goldBorder },
-  pendingChipText: { fontSize: 10, fontWeight: weight.semibold, color: c.goldText },
-  divider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
+  // "Solicitar" como acción de texto: el cuero queda para el CTA de la hoja.
+  requestBtn: { minHeight: touch.min, paddingHorizontal: space[2], justifyContent: 'center' },
+  requestBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
+  pendingPlain: { fontSize: text.xs, color: c.textFaint },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginHorizontal: space[4] },
   // Sheet de solicitud (FormSheet)
   modalDesc: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   emptyText: { fontSize: text.xs, color: c.textFaint },
-  horseList: { gap: 8 },
-  horseItem: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: c.surfaceAlt },
-  horseItemActive: { backgroundColor: c.brand },
-  horseItemText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  horseItemTextActive: { color: colors.white },
+  horseItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], minHeight: touch.min + 6, paddingHorizontal: space[1] },
+  horseItemBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  horseItemText: { flex: 1, fontSize: text.md, color: c.text, letterSpacing: -0.2 },
   input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: radius.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
+  btnPrimaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
 });

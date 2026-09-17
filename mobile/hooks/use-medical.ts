@@ -35,13 +35,18 @@ export const MEDICAL_TYPE_LABELS: Record<string, string> = {
   sanidad: 'Sanidad',
 };
 
-export const MEDICAL_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  vacuna:        { bg: '#f0fdf4', text: '#15803d' },
-  desparasitacion: { bg: '#fff7ed', text: '#c2410c' },
-  analisis:      { bg: '#eff6ff', text: '#1d4ed8' },
-  tratamiento:   { bg: '#fef2f2', text: '#b91c1c' },
-  sanidad:       { bg: '#f0fdfa', text: '#0f766e' },
-};
+// Colores por tipo desde el theme (funcionan en claro y oscuro), no hex fijos.
+export const makeMedicalTypeColors = (c: {
+  successSoft: string; success: string; warningSoft: string; warning: string;
+  infoSoft: string; info: string; dangerSoft: string; danger: string;
+  surfaceAlt: string; textMuted: string;
+}): Record<string, { bg: string; text: string }> => ({
+  vacuna:          { bg: c.successSoft, text: c.success },
+  desparasitacion: { bg: c.warningSoft, text: c.warning },
+  analisis:        { bg: c.infoSoft,    text: c.info },
+  tratamiento:     { bg: c.dangerSoft,  text: c.danger },
+  sanidad:         { bg: c.surfaceAlt,  text: c.textMuted },
+});
 
 // Libreta sanitaria: enfermedades oficiales SENASA con su vigencia (días).
 export const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [

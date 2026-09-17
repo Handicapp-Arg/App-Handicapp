@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, weight, radius } from '../styles/tokens';
+import { space, text, weight, radius, touch } from '../styles/tokens';
 import { fontFamily } from '../styles/fonts';
 
 interface ScreenHeaderProps {
@@ -98,7 +98,7 @@ export function HeaderButton({
       {Icon && (
         <Icon
           size={14}
-          color={variant === 'ghost' ? c.brand : colors.white}
+          color={c.text}
           strokeWidth={2}
           style={{ marginRight: 4 }}
         />
@@ -130,17 +130,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     gap: space[2],
   },
   backBtn: {
-    width: 32,
-    height: 32,
+    width: touch.min,
+    height: touch.min,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: -space[1],
+    marginLeft: -space[2],
   },
   titleBlock: { flex: 1 },
   title: {
     fontSize: text.xl,
-    fontWeight: weight.extrabold,
+    fontWeight: weight.bold,
     fontFamily: fontFamily.semibold,
     letterSpacing: -0.6,
   },
@@ -153,14 +153,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   headerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radius.md,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
+    paddingHorizontal: space[4],
+    minHeight: touch.min,
   },
-  headerBtnPrimary: { backgroundColor: c.brand },
+  headerBtnPrimary: { backgroundColor: c.surfaceAlt },
   headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.borderStrong },
   headerBtnDisabled: { opacity: 0.4 },
-  headerBtnText: { fontSize: text.sm, fontWeight: weight.bold, fontFamily: fontFamily.bold },
-  headerBtnTextPrimary: { color: colors.white },
-  headerBtnTextGhost: { color: c.brand },
+  headerBtnText: { fontSize: text.sm, fontWeight: weight.medium, fontFamily: fontFamily.medium },
+  headerBtnTextPrimary: { color: c.text },
+  headerBtnTextGhost: { color: c.text },
 });

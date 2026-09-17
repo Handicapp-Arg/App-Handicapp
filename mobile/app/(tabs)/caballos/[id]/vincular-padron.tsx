@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  CheckCircle2, Info, Paperclip, FileText,
+  CheckCircle2, Info, Paperclip, FileText, ChevronRight,
 } from 'lucide-react-native';
 
 import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../../hooks/use-horse-records';
@@ -176,29 +176,35 @@ export default function VincularPadronScreen() {
         {step === 'list' && (
           <>
             <Text style={s.hint}>Encontramos estos ejemplares en el padrón oficial. Si alguno es tu caballo, reclamalo para verificarlo.</Text>
-            {matches.map((r) => (
-              <View key={r.id} style={s.matchRow}>
-                <View style={s.matchInfo}>
-                  <Text style={s.matchName}>{r.name}</Text>
-                  <View style={s.matchMeta}>
-                    {r.birth_year && <Text style={s.matchDetail}>{r.birth_year}</Text>}
-                    {r.sex && <Text style={s.matchDetail}>{r.sex}</Text>}
-                    {r.breed && <Text style={s.matchDetail}>{r.breed}</Text>}
-                    {r.color && <Text style={s.matchDetail}>{r.color}</Text>}
-                  </View>
-                  <View style={s.matchSourceRow}>
-                    <FileText size={11} color={c.textFaint} strokeWidth={2} />
-                    <Text style={s.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
-                    {r.ownership_status === 'pending_claim' && (
-                      <Text style={s.matchPending}>· Reclamo pendiente</Text>
+            <View>
+              {matches.map((r, i) => (
+                <TouchableOpacity
+                  key={r.id}
+                  style={[s.matchRow, i > 0 && s.matchRowBorde]}
+                  onPress={() => handleSelectRecord(r)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Reclamar ${r.name}`}
+                >
+                  <View style={s.matchInfo}>
+                    <Text style={s.matchName}>{r.name}</Text>
+                    {[r.birth_year, r.sex, r.breed, r.color].filter(Boolean).length > 0 && (
+                      <Text style={s.matchDetail} numberOfLines={1}>
+                        {[r.birth_year, r.sex, r.breed, r.color].filter(Boolean).join(' · ')}
+                      </Text>
                     )}
+                    <View style={s.matchSourceRow}>
+                      <FileText size={11} color={c.textFaint} strokeWidth={2} />
+                      <Text style={s.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
+                      {r.ownership_status === 'pending_claim' && (
+                        <Text style={s.matchPending}>· Reclamo pendiente</Text>
+                      )}
+                    </View>
                   </View>
-                </View>
-                <TouchableOpacity style={s.claimBtn} onPress={() => handleSelectRecord(r)} activeOpacity={0.85}>
-                  <Text style={s.claimBtnText}>Reclamar</Text>
+                  <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
                 </TouchableOpacity>
-              </View>
-            ))}
+              ))}
+            </View>
           </>
         )}
 
@@ -251,21 +257,22 @@ export default function VincularPadronScreen() {
 
       {step === 'list' && (
         <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-          <TouchableOpacity style={[s.submitBtn, { flex: 1 }]} onPress={goToHorse} activeOpacity={0.85}>
-            <Text style={s.submitBtnText}>Omitir por ahora</Text>
+          {/* Salida secundaria como link de texto, no como CTA cuero */}
+          <TouchableOpacity
+            style={s.skipLink}
+            onPress={goToHorse}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Omitir vinculación por ahora"
+          >
+            <Text style={s.skipLinkText}>Omitir por ahora</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {step === 'form' && (
         <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-          <TouchableOpacity
-            style={[s.cancelBtn, { flex: 1 }]}
-            onPress={() => { haptic.selection(); setStep('list'); setDocUri(null); setRegistrationNumber(''); setError(''); }}
-            activeOpacity={0.8}
-          >
-            <Text style={s.cancelBtnText}>Volver</Text>
-          </TouchableOpacity>
+          {/* Un solo CTA: el back del header/gesto ya vuelve a la lista */}
           <TouchableOpacity
             style={[s.submitBtn, { flex: 1 }, isBusy && { opacity: 0.6 }]}
             onPress={handleSendClaim}
@@ -296,16 +303,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   body: { paddingHorizontal: space[4], paddingTop: space[1], paddingBottom: space[8], gap: space[3] },
   hint: { fontSize: text.sm, color: c.textMuted, lineHeight: 19, marginBottom: space[1] },
 
-  matchRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surfaceAlt, borderRadius: radius.lg, padding: space[4] },
-  matchInfo: { flex: 1, gap: 4 },
-  matchName: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  matchMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  matchDetail: { fontSize: text.xs, color: c.textMuted, backgroundColor: c.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  /* Coincidencias: filas planas, toda la fila navega */
+  matchRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], minHeight: touch.field },
+  matchRowBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  matchInfo: { flex: 1, gap: 2 },
+  matchName: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  matchDetail: { fontSize: text.sm, color: c.textMuted },
   matchSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  matchSource: { fontSize: 11, color: c.textFaint },
-  matchPending: { fontSize: 11, color: colors.amber600 },
-  claimBtn: { backgroundColor: c.brand, borderRadius: radius.md, paddingHorizontal: space[4], minHeight: touch.min, minWidth: 84, alignItems: 'center', justifyContent: 'center' },
-  claimBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  matchSource: { fontSize: text.xs, color: c.textFaint },
+  matchPending: { fontSize: text.xs, color: c.warning },
 
   matchSubtitle: { fontSize: text.sm, color: c.textFaint },
   infoBox: { flexDirection: 'row', gap: space[2], alignItems: 'flex-start', backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
@@ -317,19 +323,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   docPickerBtn: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: c.surfaceAlt },
   docPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[6], gap: 6 },
   docPlaceholderText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
-  docPlaceholderSub: { fontSize: 10, color: c.textFaint },
+  docPlaceholderSub: { fontSize: text.xs, color: c.textFaint },
   docPreviewRow: { flexDirection: 'row', alignItems: 'center', padding: space[3], gap: space[3] },
   docThumb: { width: 56, height: 56, borderRadius: radius.md },
   docPickedText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  docPickedSub: { fontSize: 11, color: c.textFaint, marginTop: 2 },
+  docPickedSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
   doneWrap: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
   doneTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
   doneSub: { fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
 
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border },
-  cancelBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.surfaceAlt, alignItems: 'center' },
-  cancelBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
+  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3] },
+  skipLink: { flex: 1, minHeight: touch.min, justifyContent: 'center', alignItems: 'center' },
+  skipLinkText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
   submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

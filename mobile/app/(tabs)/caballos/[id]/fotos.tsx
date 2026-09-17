@@ -10,12 +10,15 @@ import { useHorse } from '../../../../hooks/use-horses';
 import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../../hooks/use-activity-photos';
 import { haptic } from '../../../../lib/haptics';
 import { useToast } from '../../../../components/Toast';
+import { colors } from '../../../../lib/colors';
 import { fechaHoraHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, touch } from '../../../../styles/tokens';
+import { space, text, touch, radius, weight } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
-import { Spinner } from '../../../../components/Spinner';
 import { AppImage } from '../../../../components/AppImage';
+import { EmptyState } from '../../../../components/EmptyState';
+import { ErrorState } from '../../../../components/ErrorState';
+import { Skeleton } from '../../../../components/Skeleton';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -27,12 +30,32 @@ export default function FotosScreen() {
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
   const [activityType, setActivityType] = useState('all');
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Fotos" />
+        <ErrorState onRetry={refetch} />
+      </View>
+    );
+  }
+
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Fotos" />
+        <View style={{ paddingHorizontal: space[4], flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} width="48%" height={160} borderRadius={radius.md} />
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -61,7 +84,7 @@ export default function FotosScreen() {
               accessibilityRole="button"
               accessibilityLabel="Capturar foto"
             >
-              <Camera size={15} color={c.surface} strokeWidth={2.2} />
+              <Camera size={15} color={c.text} strokeWidth={2.2} />
               <Text style={s.captureBtnText}>Capturar</Text>
             </TouchableOpacity>
           </View>
@@ -84,7 +107,11 @@ export default function FotosScreen() {
             ))}
           </ScrollView>
           {!activityPhotos?.length ? (
-            <Text style={s.emptyText}>Las fotos tomadas incluyen sello de fecha y autor verificado.</Text>
+            <EmptyState
+              icon="paw-outline"
+              title="Sin fotos verificadas"
+              message="Las fotos tomadas incluyen sello de fecha y autor verificado."
+            />
           ) : (
             <View style={s.photosGrid}>
               {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).map((p, index) => {
@@ -128,19 +155,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  emptyText: { fontSize: text.sm, color: c.textFaint },
-
   activityTypeRow: { marginBottom: 10, flexGrow: 0 },
-  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: touch.min, borderRadius: 999, paddingHorizontal: space[4], backgroundColor: c.text },
-  captureBtnText: { fontSize: text.sm, fontWeight: '700', color: c.surface },
-  activityChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
-  activityChipText: { fontSize: text.sm, fontWeight: '600', color: c.textMuted },
+  // Igual que los "smallBtn" de las pantallas hermanas: neutro, sin invertir.
+  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: touch.min, borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
+  captureBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  activityChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[3], backgroundColor: c.surfaceAlt },
+  activityChipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   photoWrap: { width: '48%', aspectRatio: 1, position: 'relative' },
-  photoThumb: { width: '100%', height: '100%', borderRadius: 12 },
+  photoThumb: { width: '100%', height: '100%', borderRadius: radius.md },
   photoBadge: { position: 'absolute', top: space[2], left: space[2], borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
-  photoBadgeText: { fontSize: text.xs, fontWeight: '700' },
-  photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, paddingHorizontal: space[2], paddingVertical: space[1] },
-  photoStampAuthor: { fontSize: text.xs, fontWeight: '700', color: '#fff' },
-  photoStampTime: { fontSize: text.xs, fontWeight: '500', color: 'rgba(255,255,255,0.85)' },
+  photoBadgeText: { fontSize: text.xs, fontWeight: weight.bold },
+  photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderBottomLeftRadius: radius.md, borderBottomRightRadius: radius.md, paddingHorizontal: space[2], paddingVertical: space[1] },
+  photoStampAuthor: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
+  photoStampTime: { fontSize: text.xs, fontWeight: weight.medium, color: 'rgba(255,255,255,0.85)' },
 });

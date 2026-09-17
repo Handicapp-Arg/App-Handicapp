@@ -22,8 +22,8 @@ export const makeLayout = (c: ThemeColors) => StyleSheet.create({
 export const makeTypography = (c: ThemeColors) => StyleSheet.create({
   pageTitle: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
   sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  bodyLg: { fontSize: text.base, color: c.textMuted, lineHeight: 22 },
-  body: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
+  bodyLg: { fontSize: text.md, color: c.textMuted, lineHeight: 24 },
+  body: { fontSize: text.base, color: c.textMuted, lineHeight: 22 },
   caption: { fontSize: text.xs, color: c.textFaint },
   label: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   link: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
@@ -129,9 +129,9 @@ export const makeButton = (c: ThemeColors) => StyleSheet.create({
     justifyContent: 'center' as const,
     backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2',
   },
-  primaryText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white, letterSpacing: -0.2 },
+  primaryText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white, letterSpacing: -0.2 },
   secondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted, letterSpacing: -0.2 },
-  dangerText: { fontSize: text.md, fontWeight: weight.bold, color: c.isDark ? '#f87171' : colors.red700 },
+  dangerText: { fontSize: text.md, fontWeight: weight.semibold, color: c.danger },
 });
 
 export const makeModal = (c: ThemeColors) => StyleSheet.create({

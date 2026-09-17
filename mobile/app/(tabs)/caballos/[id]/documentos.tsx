@@ -12,10 +12,12 @@ import { haptic } from '../../../../lib/haptics';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, touch } from '../../../../styles/tokens';
+import { space, text, touch, radius, weight } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { FormSheet } from '../../../../components/FormSheet';
-import { Spinner } from '../../../../components/Spinner';
+import { EmptyState } from '../../../../components/EmptyState';
+import { ErrorState } from '../../../../components/ErrorState';
+import { ListRowSkeleton } from '../../../../components/Skeleton';
 
 export default function DocumentosScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -26,7 +28,7 @@ export default function DocumentosScreen() {
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: documents } = useHorseDocuments(id);
   const uploadDoc = useUploadDocument(id);
   const deleteDoc = useDeleteDocument(id);
@@ -79,7 +81,25 @@ export default function DocumentosScreen() {
     }
   };
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Documentos" />
+        <ErrorState onRetry={refetch} />
+      </View>
+    );
+  }
+
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Documentos" />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          {[1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -95,7 +115,11 @@ export default function DocumentosScreen() {
             )}
           </View>
           {!documents?.length ? (
-            <Text style={s.emptyText}>Sin documentos adjuntos</Text>
+            <EmptyState
+              icon="document-text-outline"
+              title="Sin documentos adjuntos"
+              message="Subí certificados, estudios y papeles del caballo para tenerlos siempre a mano."
+            />
           ) : (
             <View>
               {documents.map((doc) => (
@@ -127,21 +151,16 @@ export default function DocumentosScreen() {
         onClose={() => setShowUploadDoc(false)}
         title="Subir documento"
         footer={
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowUploadDoc(false)} accessibilityRole="button" accessibilityLabel="Cancelar subida de documento">
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, uploadDoc.isPending && { opacity: 0.5 }]}
-              disabled={uploadDoc.isPending}
-              onPress={handlePickDocument}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Seleccionar archivo para subir"
-            >
-              {uploadDoc.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Seleccionar</Text>}
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity
+            style={[s.btn, s.btnPrimary, { flex: 1 }, uploadDoc.isPending && { opacity: 0.5 }]}
+            disabled={uploadDoc.isPending}
+            onPress={handlePickDocument}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Seleccionar archivo para subir"
+          >
+            {uploadDoc.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Seleccionar</Text>}
+          </TouchableOpacity>
         }
       >
         <TextInput
@@ -153,7 +172,7 @@ export default function DocumentosScreen() {
           autoCapitalize="sentences"
           returnKeyType="done"
         />
-        <Text style={{ fontSize: 11, color: c.textFaint }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
+        <Text style={{ fontSize: text.xs, color: c.textFaint }}>Seleccioná una imagen de tu galería para adjuntarla.</Text>
       </FormSheet>
     </View>
   );
@@ -164,19 +183,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  emptyText: { fontSize: text.sm, color: c.textFaint },
+  personRow: { flexDirection: 'row', alignItems: 'center', minHeight: touch.field, gap: 10 },
+  docIcon: { width: 36, height: 36, borderRadius: radius.md - 2, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  docName: { flex: 1, fontSize: text.base, fontWeight: weight.medium, color: c.text },
 
-  personRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: 10 },
-  docIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
-  docName: { flex: 1, fontSize: text.base, fontWeight: '500', color: c.text },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
-  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
-
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  input: { borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
+  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
+  btnPrimaryText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

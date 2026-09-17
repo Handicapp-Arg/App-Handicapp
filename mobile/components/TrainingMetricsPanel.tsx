@@ -6,7 +6,7 @@ import {
 import { useTrainingMetrics, useUpsertTrainingMetrics } from '../hooks/use-training-metrics';
 import { haptic } from '../lib/haptics';
 import { colors } from '../lib/colors';
-import { useTheme } from '../lib/theme';
+import { useTheme, type ThemeColors } from '../lib/theme';
 import { useToast } from './Toast';
 import { space, text, radius, weight, touch } from '../styles/tokens';
 
@@ -19,8 +19,7 @@ interface Props {
 
 export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
   const { c } = useTheme();
-  const pal = c.isDark ? YELLOW_DARK : YELLOW;
-  const s = useMemo(() => makeStyles(pal), [pal]);
+  const s = useMemo(() => makeStyles(c), [c]);
   const { data: metrics } = useTrainingMetrics(eventId);
   const upsert = useUpsertTrainingMetrics();
   const toast = useToast();
@@ -63,6 +62,13 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
 
   if (!hasData && !canEdit) return null;
 
+  // Pares label/valor planos, sin panel de fondo.
+  const metricPairs: { label: string; value: string; sub?: string }[] = [];
+  if (metrics?.distance_km != null) metricPairs.push({ label: 'Distancia', value: `${metrics.distance_km} km` });
+  if (metrics?.duration_min != null) metricPairs.push({ label: 'Duración', value: `${metrics.duration_min} min` });
+  if (metrics?.intensity != null) metricPairs.push({ label: 'Intensidad', value: `${metrics.intensity}/5`, sub: INTENSITY_LABELS[metrics.intensity] });
+  if (metrics?.discipline) metricPairs.push({ label: 'Disciplina', value: metrics.discipline });
+
   return (
     <View style={s.container}>
       <View style={s.titleRow}>
@@ -82,32 +88,16 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
 
       {!editing ? (
         hasData ? (
-          <View style={s.dataRow}>
-            {metrics?.distance_km != null && (
-              <View style={s.statItem}>
-                <Text style={s.statLabel}>Distancia</Text>
-                <Text style={s.statValue}>{metrics.distance_km} km</Text>
+          <View>
+            {metricPairs.map((m, i) => (
+              <View key={m.label} style={[s.metricRow, i > 0 && s.metricBorde]}>
+                <Text style={s.metricLabel}>{m.label}</Text>
+                <Text style={s.metricValue}>
+                  {m.value}
+                  {m.sub ? <Text style={s.metricSub}>  {m.sub}</Text> : null}
+                </Text>
               </View>
-            )}
-            {metrics?.duration_min != null && (
-              <View style={s.statItem}>
-                <Text style={s.statLabel}>Duración</Text>
-                <Text style={s.statValue}>{metrics.duration_min} min</Text>
-              </View>
-            )}
-            {metrics?.intensity != null && (
-              <View style={s.statItem}>
-                <Text style={s.statLabel}>Intensidad</Text>
-                <Text style={s.statValue}>{metrics.intensity}/5</Text>
-                <Text style={s.statSub}>{INTENSITY_LABELS[metrics.intensity]}</Text>
-              </View>
-            )}
-            {metrics?.discipline && (
-              <View style={s.statItem}>
-                <Text style={s.statLabel}>Disciplina</Text>
-                <Text style={s.statValue}>{metrics.discipline}</Text>
-              </View>
-            )}
+            ))}
           </View>
         ) : (
           <Text style={s.empty}>Sin métricas registradas</Text>
@@ -123,7 +113,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
                 value={distance}
                 onChangeText={setDistance}
                 placeholder="0.0"
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -134,7 +124,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
                 value={duration}
                 onChangeText={setDuration}
                 placeholder="60"
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={c.textFaint}
                 keyboardType="number-pad"
               />
             </View>
@@ -158,7 +148,7 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
                     {n === 0 ? '—' : String(n)}
                   </Text>
                   {n > 0 && (
-                    <Text style={[s.intensitySubText, intensity === n && { color: colors.white }]}>
+                    <Text style={[s.intensitySubText, intensity === n && { color: c.surface }]}>
                       {INTENSITY_LABELS[n]}
                     </Text>
                   )}
@@ -175,22 +165,13 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
               value={discipline}
               onChangeText={setDiscipline}
               placeholder="Salto, doma, polo..."
-              placeholderTextColor={colors.gray400}
+              placeholderTextColor={c.textFaint}
               autoCapitalize="sentences"
             />
           </View>
 
-          {/* Acciones */}
+          {/* Un solo CTA; cancelar es un link de texto */}
           <View style={s.formActions}>
-            <TouchableOpacity
-              onPress={() => setEditing(false)}
-              activeOpacity={0.7}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Cancelar edición de métricas"
-            >
-              <Text style={s.cancelLink}>Cancelar</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={[s.saveBtn, upsert.isPending && { opacity: 0.6 }]}
               onPress={save}
@@ -205,6 +186,15 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
                 : <Text style={s.saveBtnText}>Guardar</Text>
               }
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setEditing(false)}
+              activeOpacity={0.7}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar edición de métricas"
+            >
+              <Text style={s.cancelLink}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -212,77 +202,51 @@ export function TrainingMetricsPanel({ eventId, canEdit }: Props) {
   );
 }
 
-const YELLOW = {
-  bg: '#fffbeb',
-  border: '#fde68a',
-  title: '#92400e',
-  label: '#b45309',
-  value: '#78350f',
-  link: '#d97706',
-  btnBg: '#d97706',
-  empty: '#d97706',
-  inputBg: '#ffffff',
-  inputBorder: '#fde68a',
-};
-
-const YELLOW_DARK: typeof YELLOW = {
-  bg: 'rgba(217,119,6,0.12)',
-  border: 'rgba(217,119,6,0.35)',
-  title: '#fcd34d',
-  label: '#fbbf24',
-  value: '#fde68a',
-  link: '#fbbf24',
-  btnBg: '#b45309',
-  empty: '#fbbf24',
-  inputBg: 'rgba(217,119,6,0.10)',
-  inputBorder: 'rgba(217,119,6,0.40)',
-};
-
-const makeStyles = (p: typeof YELLOW) => StyleSheet.create({
-  container: {
-    backgroundColor: p.bg,
-    borderWidth: 1,
-    borderColor: p.border,
-    borderRadius: radius.md,
-    padding: space[3],
-    marginTop: space[2],
-    gap: space[2],
-  },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  // Sin panel: las métricas viven planas sobre el fondo del evento.
+  container: { marginTop: space[2], gap: space[2] },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: text.xs, fontWeight: weight.bold, color: p.title, textTransform: 'uppercase', letterSpacing: 0.5 },
-  editLink: { fontSize: text.xs, fontWeight: weight.semibold, color: p.link },
-  dataRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
-  statItem: { gap: 1 },
-  statLabel: { fontSize: 10, fontWeight: weight.semibold, color: p.label, textTransform: 'uppercase', letterSpacing: 0.4 },
-  statValue: { fontSize: text.sm, fontWeight: weight.bold, color: p.value },
-  statSub: { fontSize: 10, color: p.label },
-  empty: { fontSize: text.xs, color: p.empty },
+  title: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  editLink: { fontSize: text.xs, fontWeight: weight.semibold, color: c.brand },
+
+  metricRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: space[2], gap: space[3],
+  },
+  metricBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  metricLabel: { fontSize: text.sm, color: c.textMuted },
+  metricValue: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  metricSub: { fontSize: text.xs, fontWeight: weight.regular, color: c.textFaint },
+  empty: { fontSize: text.xs, color: c.textFaint },
+
   form: { gap: space[3] },
   formRow: { flexDirection: 'row', gap: space[2] },
-  formField: { flex: 1, gap: 4 },
-  fieldLabel: { fontSize: 10, fontWeight: weight.bold, color: p.label, textTransform: 'uppercase', letterSpacing: 0.4 },
+  formField: { flex: 1, gap: space[1] },
+  fieldLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
   input: {
     borderRadius: radius.sm,
     paddingHorizontal: space[3], paddingVertical: space[2],
-    fontSize: text.sm, color: p.value, backgroundColor: p.inputBg,
+    fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt,
   },
-  intensityRow: { gap: space[2], paddingVertical: 4 },
+  intensityRow: { gap: space[2], paddingVertical: space[1] },
   intensityBtn: {
     borderRadius: radius.sm,
     paddingHorizontal: space[3], paddingVertical: space[2],
-    backgroundColor: p.inputBg, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
     minWidth: 52, minHeight: touch.min,
   },
-  intensityBtnActive: { backgroundColor: p.btnBg },
-  intensityBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: p.value },
-  intensityBtnTextActive: { color: colors.white },
-  intensitySubText: { fontSize: 9, color: p.label, marginTop: 1 },
-  formActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space[4] },
-  cancelLink: { fontSize: text.xs, color: colors.gray500 },
+  // Selección neutra invertida (texto sobre fondo c.text), sin cuero.
+  intensityBtnActive: { backgroundColor: c.text },
+  intensityBtnText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
+  intensityBtnTextActive: { color: c.surface },
+  intensitySubText: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
+  formActions: { gap: space[3], alignItems: 'center' },
+  cancelLink: { fontSize: text.sm, color: c.textMuted },
   saveBtn: {
-    borderRadius: radius.sm, backgroundColor: p.btnBg,
-    paddingHorizontal: space[4], minHeight: touch.min,
+    alignSelf: 'stretch',
+    borderRadius: radius.sm, backgroundColor: c.brand,
+    minHeight: touch.min,
     alignItems: 'center', justifyContent: 'center',
   },
-  saveBtnText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
+  saveBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
 });

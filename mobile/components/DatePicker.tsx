@@ -179,11 +179,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   // iOS modal
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: space[5], paddingVertical: space[3] + 2,
-    borderBottomWidth: 1, borderBottomColor: c.border,
+    paddingHorizontal: space[2], paddingVertical: space[2],
   },
   title: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   cancelText: { fontSize: text.base, color: c.textMuted },
-  confirmText: { fontSize: text.base, fontWeight: weight.bold, color: c.brand },
+  confirmText: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   picker: { height: 216 },
 });

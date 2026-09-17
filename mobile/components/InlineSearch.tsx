@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Search, ChevronRight, Calendar, Stethoscope, type LucideIcon } from 'lucide-react-native';
 import { HorseIcon } from './icons/equine';
 import { useSearch } from '../hooks/use-search';
+import { fechaHumana } from '../lib/fechas';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, touch } from '../styles/tokens';
 import { Routes, nav } from '../lib/routes';
@@ -129,7 +130,7 @@ export function InlineSearch({ topInset, onClose }: { topInset: number; onClose:
                 <ResultRow
                   icon={Calendar}
                   title={e.description}
-                  subtitle={[e.type, e.date ? new Date(e.date).toLocaleDateString('es-AR') : undefined].filter(Boolean).join(' · ')}
+                  subtitle={[e.type, e.date ? fechaHumana(e.date) : undefined].filter(Boolean).join(' · ')}
                   onPress={() => go(() => nav.push(router, Routes.tabsEventos))}
                   c={c}
                   s={s}

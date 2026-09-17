@@ -14,17 +14,10 @@ import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Skeleton } from '../../components/Skeleton';
 import { space, text, weight, radius, shadow } from '../../styles/tokens';
+import { diaLargo } from '../../lib/fechas';
 import { fontFamily } from '../../styles/fonts';
 import type { Horse } from '../../../packages/shared/src';
 import { AppImage } from '../../components/AppImage';
-
-const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-function fechaLarga(): string {
-  const d = new Date();
-  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
-}
 
 function HorseRowSkeleton({ s }: { s: Styles }) {
   return (
@@ -69,7 +62,7 @@ export default function PeonHome() {
     <View style={[s.screen, { paddingTop: insets.top + space[4] }]}>
       <View style={s.header}>
         <Text style={s.hello} numberOfLines={2}>¡Hola, {firstName}!</Text>
-        <Text style={s.date}>{fechaLarga()}</Text>
+        <Text style={s.date}>{diaLargo(new Date().toISOString())}</Text>
         <Text style={s.subtitle}>Registrá las tareas del día</Text>
       </View>
 
@@ -177,7 +170,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   photoPlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: c.brand },
   // 40: mayor que text.display a propósito, para que la inicial se lea de lejos en la miniatura.
-  photoInitial: { fontSize: 40, fontFamily: fontFamily.extrabold, fontWeight: weight.extrabold, color: colors.white },
+  photoInitial: { fontSize: 40, fontFamily: fontFamily.extrabold, fontWeight: weight.semibold, color: colors.white },
   cardName: {
     flex: 1,
     marginLeft: space[4],

@@ -40,7 +40,7 @@ export default function FacturacionScreen() {
   const isEst = user?.role === 'establecimiento';
 
   const headerRight = isEst
-    ? <HeaderButton label="Nueva factura" icon={Plus} onPress={() => { haptic.light(); router.push(Routes.facturacionNueva as never); }} />
+    ? <HeaderButton label="Nueva factura" onPress={() => { haptic.light(); router.push(Routes.facturacionNueva as never); }} />
     : undefined;
 
   return (
@@ -124,35 +124,17 @@ export default function FacturacionScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-
-      {isEst && (
-        <Pressable
-          style={s.fab}
-          onPress={() => { haptic.medium(); router.push(Routes.facturacionNueva as never); }}
-          accessibilityRole="button"
-          accessibilityLabel="Nueva factura"
-          hitSlop={8}
-        >
-          <Plus size={26} color={colors.white} strokeWidth={2.5} />
-        </Pressable>
-      )}
     </View>
   );
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: space[4] },
-  billDivider: { borderBottomWidth: 1, borderBottomColor: c.border },
+  billDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3, alignSelf: 'flex-start' },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: text.xs, fontWeight: weight.semibold },
-  horseName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
+  horseName: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   period: { fontSize: text.xs, color: c.textMuted },
-  total: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
-  fab: {
-    position: 'absolute', right: 20, bottom: 110,
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
-    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
-  },
+  total: { fontSize: text.lg, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
 });

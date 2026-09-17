@@ -24,6 +24,8 @@ export const AUTH_DARK = {
   brand: '#c69456',
   danger: '#f0938a',
   dangerBg: 'rgba(239,68,68,0.16)',
+  success: '#86efac',
+  successBg: 'rgba(34,197,94,0.16)',
 } as const;
 
 /** Fondo del mundo auth: gradiente negro + grano de película + status bar clara. */

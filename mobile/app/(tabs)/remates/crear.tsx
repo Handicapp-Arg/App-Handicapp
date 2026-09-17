@@ -6,46 +6,24 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, Tag, Gavel, Calendar, ChevronRight, Clock, AlertCircle } from 'lucide-react-native';
-import { HorseIcon } from '../../../components/icons/equine';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import { BottomSheet } from '../../../components/BottomSheet';
+import { ActionSheet, type Accion } from '../../../components/ActionSheet';
+import { FilaSelector } from '../../../components/FilaSelector';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { useHorses } from '../../../hooks/use-horses';
 import { useCreateAuction } from '../../../hooks/use-auctions';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../../styles/tokens';
-import type { Horse } from '../../../../packages/shared/src';
+import { space, text, radius, weight } from '../../../styles/tokens';
+import { fechaHumana } from '../../../lib/fechas';
 
 type AuctionType = 'venta_directa' | 'remate';
 type Currency = 'ARS' | 'USD';
 
-function HorseSelector({ horses, selected, onSelect, s }: {
-  horses: Horse[];
-  selected: string;
-  onSelect: (id: string, name: string) => void;
-  s: Styles;
-}) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horseChipRow}>
-      {horses.map((h) => {
-        const active = selected === h.id;
-        return (
-          <TouchableOpacity
-            key={h.id}
-            style={[s.horseChip, active && s.horseChipActive]}
-            onPress={() => { haptic.selection(); onSelect(h.id, h.name); }}
-            activeOpacity={0.75}
-          >
-            {active && <Check size={13} color={colors.white} strokeWidth={2.5} />}
-            <Text style={[s.horseChipText, active && s.horseChipTextActive]}>{h.name}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
-  );
-}
+// Horarios de cierre habituales de un remate.
+const HORAS_CIERRE = [10, 14, 18, 20, 22];
 
 function TypeOption({ type, selected, onSelect, isLast, c, s }: {
   type: AuctionType;
@@ -105,6 +83,7 @@ export default function CrearRemateScreen() {
   const [hasHealthCert, setHasHealthCert] = useState(false);
   const [hasOwnershipDocs, setHasOwnershipDocs] = useState(false);
   const [error, setError] = useState('');
+  const [sheet, setSheet] = useState<'caballo' | 'hora' | null>(null);
 
   const handleHorseSelect = (id: string, name: string) => {
     setHorseId(id);
@@ -186,23 +165,14 @@ export default function CrearRemateScreen() {
           automaticallyAdjustKeyboardInsets
           keyboardDismissMode="interactive"
         >
-          {/* Caballo y tipo de venta */}
-          <View style={s.section}>
-            <Text style={s.sectionLabel}>¿Cuál caballo querés vender?</Text>
-            {myHorses.length === 0 ? (
-              <View style={s.emptyHorses}>
-                <HorseIcon size={32} color={c.textFaint} />
-                <Text style={s.emptyHorsesText}>No tenés caballos registrados</Text>
-              </View>
-            ) : (
-              <HorseSelector
-                horses={myHorses}
-                selected={horseId}
-                onSelect={handleHorseSelect}
-                s={s}
-              />
-            )}
-          </View>
+          {/* Caballo: fila de selección patrón Ajustes (como eventos/nuevo) */}
+          <FilaSelector
+            primera
+            label="Caballo"
+            valor={myHorses.find((h) => h.id === horseId)?.name}
+            placeholder={myHorses.length === 0 ? 'No tenés caballos' : 'Elegir'}
+            onPress={() => { if (myHorses.length > 0) setSheet('caballo'); }}
+          />
 
           <View style={s.section}>
             <Text style={s.sectionLabel}>Tipo de publicación</Text>
@@ -257,9 +227,7 @@ export default function CrearRemateScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.dateTriggerLabel, !endDate && { color: c.textFaint }]}>
-                    {endDate
-                      ? endDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
-                      : 'Elegí una fecha'}
+                    {endDate ? fechaHumana(endDate.toISOString()) : 'Elegí una fecha'}
                   </Text>
                   {endDate && (
                     <Text style={s.dateTriggerSub}>Tocá para cambiar</Text>
@@ -314,29 +282,20 @@ export default function CrearRemateScreen() {
                 </BottomSheet>
               )}
 
-              {/* Horario de cierre — chips predefinidos */}
+              {/* Horario de cierre — fila de selección + hoja de opciones */}
               {endDate && (
                 <View style={s.timeSection}>
-                  <Text style={s.timeSectionLabel}>Hora de cierre</Text>
-                  <View style={s.timeChips}>
-                    {[10, 14, 18, 20, 22].map((h) => (
-                      <TouchableOpacity
-                        key={h}
-                        style={[s.timeChip, endHour === h && s.timeChipActive]}
-                        onPress={() => { haptic.selection(); setEndHour(h); }}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[s.timeChipText, endHour === h && s.timeChipTextActive]}>
-                          {`${String(h).padStart(2, '0')}:00`}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  <FilaSelector
+                    primera
+                    label="Hora de cierre"
+                    valor={`${String(endHour).padStart(2, '0')}:00`}
+                    onPress={() => setSheet('hora')}
+                  />
                   {/* Resumen fecha+hora: texto plano, sin caja */}
                   <View style={s.dateTimeSummary}>
-                    <Clock size={14} color={c.brand} strokeWidth={2} />
+                    <Clock size={14} color={c.textMuted} strokeWidth={2} />
                     <Text style={s.dateTimeSummaryText}>
-                      Cierra el {endDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} a las {String(endHour).padStart(2, '0')}:00 hs
+                      Cierra {fechaHumana(endDate.toISOString())} a las {String(endHour).padStart(2, '0')}:00 hs
                     </Text>
                   </View>
                 </View>
@@ -429,6 +388,22 @@ export default function CrearRemateScreen() {
           </Text>
         </View>
       </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={sheet === 'caballo'}
+        onClose={() => setSheet(null)}
+        title="Caballo"
+        acciones={myHorses.map((h): Accion => ({ label: h.name, onPress: () => handleHorseSelect(h.id, h.name) }))}
+      />
+      <ActionSheet
+        visible={sheet === 'hora'}
+        onClose={() => setSheet(null)}
+        title="Hora de cierre"
+        acciones={HORAS_CIERRE.map((h): Accion => ({
+          label: `${String(h).padStart(2, '0')}:00`,
+          onPress: () => setEndHour(h),
+        }))}
+      />
     </View>
   );
 }
@@ -446,19 +421,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   groupStart: { marginTop: space[3] },
   sectionLabel: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
 
-  /* Horse selector: fila horizontal de chips (patrón facturacion/nueva) */
-  horseChipRow: { flexDirection: 'row', gap: space[2] },
-  horseChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2] + 2,
-    backgroundColor: c.surfaceAlt,
-  },
-  horseChipActive: { backgroundColor: c.brand },
-  horseChipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  horseChipTextActive: { color: colors.white },
-  emptyHorses: { alignItems: 'center', padding: space[8], gap: space[3] },
-  emptyHorsesText: { fontSize: text.sm, color: c.textFaint },
-
   /* Type options: filas planas, separadas con hairline (patrón Más) */
   typeOption: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
@@ -472,16 +434,15 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   typeRadio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: c.borderStrong, justifyContent: 'center', alignItems: 'center' },
   typeRadioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.white },
 
-  /* Price */
+  /* Price — segmented neutro para la moneda (como eventos/nuevo) */
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   currencyToggle: {
-    flexDirection: 'row', borderRadius: radius.lg, overflow: 'hidden',
-    backgroundColor: c.surfaceAlt,
+    flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: 3,
   },
-  currencyBtn: { paddingHorizontal: space[4], paddingVertical: space[3] },
-  currencyBtnActive: { backgroundColor: c.brand },
-  currencyBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
-  currencyBtnTextActive: { color: colors.white },
+  currencyBtn: { paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.md - 3, justifyContent: 'center' },
+  currencyBtnActive: { backgroundColor: c.surface },
+  currencyBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
+  currencyBtnTextActive: { color: c.text },
   priceInput: {
     flex: 1, fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text,
     backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb', borderRadius: radius.xl,
@@ -510,30 +471,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   pickerHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: space[5], paddingVertical: space[4],
-    borderBottomWidth: 1, borderBottomColor: c.border,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
   pickerTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
   pickerCancel: { fontSize: text.base, color: c.textMuted },
   pickerConfirm: { fontSize: text.base, fontWeight: weight.bold, color: c.brand },
 
-  /* Time chips */
-  timeSection: { gap: space[2], marginTop: space[1] },
-  timeSectionLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  timeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  timeChip: {
-    paddingHorizontal: space[4], paddingVertical: space[2] + 2,
-    borderRadius: radius.full,
-    backgroundColor: c.surfaceAlt,
-  },
-  timeChipActive: { backgroundColor: c.brand },
-  timeChipText: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
-  timeChipTextActive: { color: colors.white },
+  /* Hora de cierre */
+  timeSection: { marginTop: space[1] },
 
   dateTimeSummary: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     marginTop: space[1],
   },
-  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.brand },
+  dateTimeSummaryText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
 
   /* Checks: filas planas, separadas con hairline */
   checkRow: {
@@ -549,28 +500,25 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   checkboxActive: { backgroundColor: c.success, borderColor: c.success },
   checkLabel: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, flex: 1 },
 
-  /* Error */
+  /* Error — sin borde duro, el fondo suave alcanza */
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: space[2],
     backgroundColor: c.dangerSoft, borderRadius: radius.lg,
-    padding: space[3], borderWidth: 1, borderColor: c.danger,
+    padding: space[3],
   },
   errorText: { fontSize: text.sm, color: c.danger, flex: 1 },
 
-  /* Footer */
+  /* Footer sin borde ni sombra: solo aire, como eventos/nuevo */
   footer: {
-    backgroundColor: c.surface,
     paddingHorizontal: space[4],
     paddingTop: space[3],
-    ...(c.isDark ? {} : shadow.sm),
   },
   publishBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: space[2], backgroundColor: c.brand,
     borderRadius: radius.xl, paddingVertical: space[4],
-    ...shadow.sm,
   },
   publishBtnDisabled: { backgroundColor: c.borderStrong },
-  publishBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+  publishBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
   draftNote: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[2], lineHeight: 16 },
 });

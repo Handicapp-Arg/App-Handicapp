@@ -46,8 +46,8 @@ export default function NuevoContratoScreen() {
 
   const isDirty = ownerEmail.trim().length > 0 || title.trim() !== 'Contrato de Pensión' || body !== DEFAULT_BODY;
 
-  // Dispara la búsqueda del propietario solo, con debounce de 600ms, cuando el
-  // email tipeado ya tiene forma válida — además del botón "Buscar".
+  // Dispara la búsqueda del propietario sola, con debounce de 600ms, cuando el
+  // email tipeado ya tiene forma válida.
   useEffect(() => {
     const trimmed = ownerEmail.trim();
     if (!trimmed.includes('@') || trimmed.length < 5) return;
@@ -96,12 +96,13 @@ export default function NuevoContratoScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        {/* La búsqueda corre sola con debounce: no hace falta botón Buscar */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
           <TextInput
             style={[s.input, { flex: 1, height: touch.field }]}
             value={ownerEmail}
             onChangeText={setOwnerEmail}
-            placeholder="Email del propietario *"
+            placeholder="Email del propietario"
             placeholderTextColor={c.textFaint}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -109,17 +110,7 @@ export default function NuevoContratoScreen() {
             returnKeyType="search"
             onSubmitEditing={() => setEmailToSearch(ownerEmail.trim())}
           />
-          <TouchableOpacity
-            style={[s.searchBtn, searchingUser && { opacity: 0.6 }]}
-            onPress={() => setEmailToSearch(ownerEmail.trim())}
-            disabled={searchingUser}
-            activeOpacity={0.8}
-          >
-            {searchingUser
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={s.searchBtnText}>Buscar</Text>
-            }
-          </TouchableOpacity>
+          {searchingUser && <ActivityIndicator color={c.textFaint} size="small" />}
         </View>
 
         {!!emailToSearch && !searchingUser && (
@@ -145,7 +136,7 @@ export default function NuevoContratoScreen() {
           style={[s.input, { height: touch.field, marginTop: space[3] }]}
           value={title}
           onChangeText={setTitle}
-          placeholder="Título *"
+          placeholder="Título"
           placeholderTextColor={c.textFaint}
           returnKeyType="next"
           onSubmitEditing={() => bodyRef.current?.focus()}
@@ -158,25 +149,23 @@ export default function NuevoContratoScreen() {
           value={body}
           onChangeText={setBody}
           multiline
-          placeholder="Cuerpo del contrato *"
+          placeholder="Cuerpo del contrato"
           placeholderTextColor={c.textFaint}
         />
         <Text style={s.hint}>El propietario podrá firmar o rechazar el contrato desde su app.</Text>
         {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
+      {/* Un solo CTA: el back del header ya cancela */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <TouchableOpacity style={[s.cancelBtn, { flex: 1 }]} onPress={() => router.back()}>
-          <Text style={s.cancelBtnText}>Cancelar</Text>
-        </TouchableOpacity>
         <TouchableOpacity
-          style={[s.submitBtn, { flex: 1 }, !canSubmit && { opacity: 0.5 }]}
+          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
           disabled={!canSubmit}
           onPress={submit}
           activeOpacity={0.85}
         >
           {createContract.isPending
-            ? <ActivityIndicator color="#fff" size="small" />
+            ? <ActivityIndicator color={colors.white} size="small" />
             : <Text style={s.submitBtnText}>Crear contrato</Text>
           }
         </TouchableOpacity>
@@ -193,16 +182,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   bodyInput: { height: 220, textAlignVertical: 'top', paddingTop: space[3] },
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
   errorText: { fontSize: text.sm, color: c.danger, marginTop: space[2] },
-  searchBtn: { height: touch.field, borderRadius: radius.md, backgroundColor: c.brand, paddingHorizontal: space[4], justifyContent: 'center', alignItems: 'center', minWidth: 70 },
-  searchBtnText: { fontSize: text.md, fontWeight: weight.bold, color: colors.white },
   userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.successSoft, borderRadius: radius.md, padding: space[3] },
   userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: c.success },
   userFoundRole: { fontSize: text.xs, color: c.textMuted, textTransform: 'capitalize' },
   userNotFound: { backgroundColor: c.dangerSoft, borderRadius: radius.md, padding: space[3] },
   userNotFoundText: { fontSize: text.xs, color: c.danger },
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border },
-  cancelBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.surfaceAlt, alignItems: 'center' },
-  cancelBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
+  // Footer sin borde: solo aire, como eventos/nuevo.
+  footer: { paddingHorizontal: space[4], paddingTop: space[3] },
   submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

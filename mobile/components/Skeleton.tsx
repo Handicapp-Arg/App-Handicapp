@@ -163,13 +163,13 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   base: { backgroundColor: c.borderStrong, overflow: 'hidden' },
-  card: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: c.border },
+  card: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, overflow: 'hidden' },
   eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: c.surface, marginBottom: 2 },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: c.surface, marginBottom: 8, borderRadius: radius.lg },
   post: { backgroundColor: c.surface, borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12 },
   postHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsRow: { flexDirection: 'row', gap: 12 },
   homePad: { padding: 16, gap: 0 },
-  reportStat: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.border, padding: 12 },
-  reportCard: { backgroundColor: c.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: c.border, padding: 16 },
+  reportStat: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, padding: 12 },
+  reportCard: { backgroundColor: c.surface, borderRadius: radius.xl, padding: 16 },
 });

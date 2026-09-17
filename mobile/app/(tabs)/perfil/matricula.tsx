@@ -2,7 +2,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator,
 } from 'react-native';
 import { useState, useMemo, useRef } from 'react';
-import { ShieldCheck, Check, Camera } from 'lucide-react-native';
+import { ShieldCheck, Check, Camera, ChevronRight } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../lib/auth';
 import api from '../../../lib/api';
@@ -89,8 +89,8 @@ export default function MatriculaScreen() {
         <View style={s.section}>
           <View style={s.card}>
             <View style={s.statusRow}>
-              <View style={s.statusIcon}>
-                <ShieldCheck size={17} color={c.brand} strokeWidth={2.1} />
+              <View style={s.rowIconWrap}>
+                <ShieldCheck size={20} color={c.text} strokeWidth={1.7} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={s.statusLabel}>Estado de tu matrícula</Text>
@@ -104,34 +104,28 @@ export default function MatriculaScreen() {
               </View>
             </View>
 
-            <View style={s.field}>
-              <Text style={s.fieldLabel}>Número de matrícula</Text>
-              <TextInput
-                style={s.input}
-                value={number}
-                onChangeText={setNumber}
-                placeholder="Ej. 12345"
-                placeholderTextColor={c.textFaint}
-                autoCapitalize="none"
-                returnKeyType="next"
-                onSubmitEditing={() => provinceRef.current?.focus()}
-                blurOnSubmit={false}
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={s.fieldLabel}>Provincia</Text>
-              <TextInput
-                ref={provinceRef}
-                style={s.input}
-                value={province}
-                onChangeText={setProvince}
-                placeholder="Ej. Buenos Aires"
-                placeholderTextColor={c.textFaint}
-                autoCapitalize="words"
-                returnKeyType="go"
-                onSubmitEditing={handleSubmit}
-              />
-            </View>
+            <TextInput
+              style={s.input}
+              value={number}
+              onChangeText={setNumber}
+              placeholder="Número de matrícula"
+              placeholderTextColor={c.textFaint}
+              autoCapitalize="none"
+              returnKeyType="next"
+              onSubmitEditing={() => provinceRef.current?.focus()}
+              blurOnSubmit={false}
+            />
+            <TextInput
+              ref={provinceRef}
+              style={s.input}
+              value={province}
+              onChangeText={setProvince}
+              placeholder="Provincia"
+              placeholderTextColor={c.textFaint}
+              autoCapitalize="words"
+              returnKeyType="go"
+              onSubmitEditing={handleSubmit}
+            />
 
             {(photoUri || user.vet_license_url) && (
               <View style={s.previewRow}>
@@ -143,11 +137,20 @@ export default function MatriculaScreen() {
               </View>
             )}
 
-            <TouchableOpacity style={s.photoBtn} onPress={pickPhoto} activeOpacity={0.8}>
-              <Camera size={16} color={c.text} strokeWidth={2} />
-              <Text style={s.photoBtnText}>
-                {photoUri ? 'Cambiar foto' : user.vet_license_url ? 'Cambiar foto' : 'Subir foto de la matrícula'}
+            <TouchableOpacity
+              style={s.photoRow}
+              onPress={pickPhoto}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel={photoUri || user.vet_license_url ? 'Cambiar foto de la matrícula' : 'Subir foto de la matrícula'}
+            >
+              <View style={s.rowIconWrap}>
+                <Camera size={20} color={c.text} strokeWidth={1.7} />
+              </View>
+              <Text style={s.photoRowText}>
+                {photoUri || user.vet_license_url ? 'Cambiar foto' : 'Subir foto de la matrícula'}
               </Text>
+              <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -175,18 +178,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { paddingHorizontal: space[5], marginTop: space[5] },
   card: { gap: space[3] },
 
-  accountRowLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  accountRowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
   accountRowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
 
+  rowIconWrap: { width: 28, alignItems: 'center', flexShrink: 0 },
   statusRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3],
+    minHeight: 52, paddingBottom: space[2],
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
-  statusIcon: {
-    width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
-  },
-  statusLabel: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  statusLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
   statusSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -195,31 +196,31 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   badgeDot: { width: 6, height: 6, borderRadius: 3 },
   badgeText: { fontSize: text.xs, fontWeight: weight.bold },
 
-  field: { gap: space[1] + 2 },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   input: {
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.lg,
     paddingHorizontal: space[4], paddingVertical: space[3],
-    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt,
   },
 
   previewRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[2],
+    minHeight: 52, paddingVertical: space[2],
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
   previewImg: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: c.border },
 
-  photoBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2],
-    borderRadius: radius.md,
-    paddingVertical: space[3], backgroundColor: c.surfaceAlt,
+  photoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    minHeight: 52,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
-  photoBtnText: { fontSize: text.sm, fontWeight: weight.medium, color: c.text },
+  photoRowText: { flex: 1, fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
 
   saveBtn: {
     backgroundColor: c.brand, borderRadius: radius.lg,
     paddingVertical: space[4], alignItems: 'center', justifyContent: 'center',
+    marginTop: space[2],
   },
   saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+  saveBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

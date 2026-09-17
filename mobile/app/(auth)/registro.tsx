@@ -11,7 +11,6 @@ import { useAuth } from '../../lib/auth';
 import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { HorseshoeH } from '../../components/icons/equine';
 import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
 import { BottomSheet } from '../../components/BottomSheet';
 import { useInvitationByToken, ROLE_LABELS } from '../../hooks/use-organizations';
@@ -92,7 +91,7 @@ export default function RegistroScreen() {
         <ScrollView
           contentContainerStyle={[
             s.scroll,
-            { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 28 },
+            { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 28 },
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
@@ -101,7 +100,7 @@ export default function RegistroScreen() {
         >
           {/* Marca */}
           <Animated.View style={s.header} entering={FadeIn.duration(500)}>
-            <BrandMark size={72} />
+            <BrandMark size={116} />
           </Animated.View>
 
           {/* Título */}
@@ -197,11 +196,13 @@ export default function RegistroScreen() {
               <Pressable
                 style={({ pressed }) => [s.inputWrap, s.selectField, pressed && s.selectPressed]}
                 onPress={() => { haptic.selection(); Keyboard.dismiss(); setRoleModal(true); }}
+                accessibilityRole="button"
+                accessibilityLabel={`Tipo de cuenta: ${ROLE_INFO[role]?.label ?? 'sin elegir'}`}
               >
-                <View style={s.selectTexts}>
-                  <Text style={s.selectHint}>Tipo de cuenta</Text>
-                  <Text style={s.selectValue}>{ROLE_INFO[role]?.label ?? 'Elegí una opción'}</Text>
-                </View>
+                {/* Una sola línea, como cualquier campo: el placeholder se vuelve el valor. */}
+                <Text style={[s.selectValue, !ROLE_INFO[role] && s.selectPlaceholder]} numberOfLines={1}>
+                  {ROLE_INFO[role]?.label ?? 'Tipo de cuenta'}
+                </Text>
                 <ChevronDown size={19} color={D.textFaint} strokeWidth={2} />
               </Pressable>
             )}
@@ -231,24 +232,29 @@ export default function RegistroScreen() {
       </KeyboardAvoidingView>
 
       <BottomSheet visible={roleModal} onClose={() => setRoleModal(false)} title="Tipo de cuenta">
-        {roles.map((r) => {
-          const info = ROLE_INFO[r.name];
-          const active = role === r.name;
-          return (
-            <TouchableOpacity
-              key={r.id}
-              style={[s.roleOption, active && s.roleOptionActive]}
-              onPress={() => { haptic.selection(); setRole(r.name); setRoleModal(false); }}
-              activeOpacity={0.85}
-            >
-              <View style={s.flex}>
-                <Text style={s.roleOptionLabel}>{info?.label ?? r.name}</Text>
-                {info?.desc ? <Text style={s.roleOptionDesc}>{info.desc}</Text> : null}
-              </View>
-              {active && <Check size={19} color={c.brand} strokeWidth={2.5} />}
-            </TouchableOpacity>
-          );
-        })}
+        <View style={s.roleLista}>
+          {roles.map((r, i) => {
+            const info = ROLE_INFO[r.name];
+            const active = role === r.name;
+            return (
+              <TouchableOpacity
+                key={r.id}
+                style={[s.roleOption, i > 0 && s.roleOptionBorde]}
+                onPress={() => { haptic.selection(); setRole(r.name); setRoleModal(false); }}
+                activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={info?.label ?? r.name}
+              >
+                <View style={s.flex}>
+                  <Text style={s.roleOptionLabel}>{info?.label ?? r.name}</Text>
+                  {info?.desc ? <Text style={s.roleOptionDesc}>{info.desc}</Text> : null}
+                </View>
+                {active && <Check size={19} color={c.brand} strokeWidth={2.4} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </BottomSheet>
     </View>
   );
@@ -273,7 +279,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   form: { gap: 12 },
 
   inviteBox: {
-    backgroundColor: 'rgba(198,148,86,0.14)', borderRadius: 12, padding: 13,
+    backgroundColor: D.field, borderRadius: 12, padding: 13,
   },
   inviteText: { fontSize: 13.5, color: D.textMuted, lineHeight: 19 },
   inviteStrong: { fontWeight: '700', color: D.text },
@@ -298,11 +304,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: 16.5, color: D.text, letterSpacing: -0.2,
   },
 
-  selectField: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  selectField: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8 },
   selectPressed: { opacity: 0.85 },
-  selectTexts: { flex: 1 },
-  selectHint: { fontSize: 11.5, color: D.textFaint, marginBottom: 1 },
-  selectValue: { fontSize: 15.5, fontWeight: '600', color: D.text, letterSpacing: -0.2 },
+  selectValue: { flex: 1, fontSize: 16.5, color: D.text, letterSpacing: -0.2 },
+  selectPlaceholder: { color: D.textFaint },
 
   btn: {
     backgroundColor: D.brand, borderRadius: 14, height: 56,
@@ -316,11 +321,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   footerText: { fontSize: 14.5, color: D.textMuted },
   link: { fontSize: 14.5, fontWeight: '700', color: D.brand },
 
+  // Roles como filas planas sobre la hoja (que ya es theme-aware), con hairline.
+  roleLista: { paddingBottom: 4 },
   roleOption: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 15,
-    borderRadius: 14, backgroundColor: c.surfaceAlt,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 14, paddingHorizontal: 4,
   },
-  roleOptionActive: { backgroundColor: c.brandSoft },
-  roleOptionLabel: { fontSize: 15.5, fontWeight: '700', color: c.text, letterSpacing: -0.2 },
+  roleOptionBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  roleOptionLabel: { fontSize: 15.5, fontWeight: '600', color: c.text, letterSpacing: -0.2 },
   roleOptionDesc: { fontSize: 12.5, color: c.textMuted, marginTop: 2, lineHeight: 17 },
 });

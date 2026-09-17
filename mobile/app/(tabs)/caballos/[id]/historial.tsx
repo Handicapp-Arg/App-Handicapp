@@ -1,14 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MessageCircle, ArrowUp, X, FileText, Dumbbell, Syringe, Flag } from 'lucide-react-native';
+import { MessageCircle, ArrowUp, X } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useHorse } from '../../../../hooks/use-horses';
-import { useEventsByHorse, useCreateEvent } from '../../../../hooks/use-events';
+import { useEventsByHorse } from '../../../../hooks/use-events';
 import { useEventComments, useAddEventComment, useDeleteEventComment } from '../../../../hooks/use-event-comments';
-import { todayISO } from '../../../../hooks/use-routines';
 import { TrainingMetricsPanel } from '../../../../components/TrainingMetricsPanel';
 import { EventTypeBadge } from '../../../../components/EventTypeBadge';
 import { Avatar } from '../../../../components/Avatar';
@@ -19,11 +18,12 @@ import { formatCurrency } from '../../../../lib/currency';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight, touch } from '../../../../styles/tokens';
+import { space, text, weight, touch, radius } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
-import { FormSheet } from '../../../../components/FormSheet';
-import { DatePicker } from '../../../../components/DatePicker';
-import { Spinner } from '../../../../components/Spinner';
+import { EmptyState } from '../../../../components/EmptyState';
+import { ErrorState } from '../../../../components/ErrorState';
+import { EventRowSkeleton } from '../../../../components/Skeleton';
+import { Routes, nav } from '../../../../lib/routes';
 import type { Event } from '../../../../../packages/shared/src';
 
 /* ─── EventCommentThread ─── */
@@ -124,52 +124,34 @@ function EventCard({ event, currentUserId, canEdit, isLast, c, s }: { event: Eve
 export default function HistorialScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { can, user } = useAuth();
   const { c } = useTheme();
-  const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { data: horse, isLoading } = useHorse(id);
+  const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: events } = useEventsByHorse(id);
-  const createEvent = useCreateEvent();
-  const today = todayISO();
 
-  const [showAddEvent, setShowAddEvent] = useState(false);
-  const [newEventType, setNewEventType] = useState<'salud' | 'entrenamiento' | 'carrera' | 'nota'>('nota');
-  const [newEventDesc, setNewEventDesc] = useState('');
-  const [newEventDate, setNewEventDate] = useState(today);
-  const [newEventError, setNewEventError] = useState('');
+  if (isError && !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Historial" />
+        <ErrorState onRetry={refetch} />
+      </View>
+    );
+  }
 
-  useEffect(() => {
-    if (!showAddEvent) return;
-    setNewEventType('nota');
-    setNewEventDesc('');
-    setNewEventDate(today);
-    setNewEventError('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAddEvent]);
-
-  const handleAddEvent = async () => {
-    if (!newEventDesc.trim()) { setNewEventError('La descripción es obligatoria'); haptic.error(); return; }
-    setNewEventError('');
-    try {
-      await createEvent.mutateAsync({
-        type: newEventType,
-        description: newEventDesc.trim(),
-        date: newEventDate,
-        horse_id: id,
-      });
-      haptic.success();
-      toast.success('Evento agregado');
-      setShowAddEvent(false);
-    } catch {
-      haptic.error();
-      setNewEventError('No se pudo guardar el evento.');
-    }
-  };
-
-  if (isLoading || !horse) return <Spinner />;
+  if (isLoading || !horse) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack title="Historial" />
+        <View style={{ paddingVertical: space[2] }}>
+          {[1, 2, 3, 4, 5].map((i) => <EventRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
 
   const sortedEvents = [...(events ?? [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -186,13 +168,19 @@ export default function HistorialScreen() {
               )}
             </View>
             {can('events', 'create') && (
-              <TouchableOpacity onPress={() => { haptic.light(); setShowAddEvent(true); }} style={s.smallBtn}>
+              // El formulario de nuevo evento ahora es una pantalla empujada:
+              // ./evento-nuevo.tsx (el caballo va implícito en la ruta).
+              <TouchableOpacity onPress={() => { haptic.light(); nav.push(router, Routes.caballoEventoNuevo(id)); }} style={s.smallBtn}>
                 <Text style={s.smallBtnText}>+ Agregar</Text>
               </TouchableOpacity>
             )}
           </View>
           {sortedEvents.length === 0 ? (
-            <View style={s.empty}><Text style={s.emptyText}>Sin eventos registrados</Text></View>
+            <EmptyState
+              icon="newspaper-outline"
+              title="Sin eventos registrados"
+              message="Registrá notas, entrenamientos, salud y carreras para armar el historial."
+            />
           ) : (
             <View style={s.eventsList}>
               {sortedEvents.map((ev, index) => (
@@ -204,79 +192,6 @@ export default function HistorialScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* ─── Hoja agregar evento ─── */}
-      <FormSheet
-        visible={showAddEvent}
-        onClose={() => setShowAddEvent(false)}
-        title="Registrar evento"
-        footer={
-          <>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => setShowAddEvent(false)} accessibilityRole="button" accessibilityLabel="Cancelar registro de evento">
-              <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { flex: 1 }, createEvent.isPending && { opacity: 0.6 }]}
-              onPress={handleAddEvent}
-              disabled={createEvent.isPending}
-              accessibilityRole="button"
-              accessibilityLabel="Guardar evento"
-            >
-              {createEvent.isPending
-                ? <ActivityIndicator color={colors.white} size="small" />
-                : <Text style={s.btnPrimaryText}>Guardar</Text>
-              }
-            </TouchableOpacity>
-          </>
-        }
-      >
-        <Text style={s.fieldLabel}>Tipo de evento</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {([
-            { key: 'nota', label: 'Nota', color: c.textMuted, Icon: FileText },
-            { key: 'entrenamiento', label: 'Entrenamiento', color: c.warning, Icon: Dumbbell },
-            { key: 'salud', label: 'Salud', color: c.danger, Icon: Syringe },
-            { key: 'carrera', label: 'Carrera', color: c.goldText, Icon: Flag },
-          ] as const).map((t) => {
-            const active = newEventType === t.key;
-            const iconColor = active ? t.color : c.textMuted;
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[
-                  s.typeChip,
-                  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-                  active && { backgroundColor: c.isDark ? t.color + '26' : t.color + '18' },
-                ]}
-                onPress={() => { haptic.selection(); setNewEventType(t.key); }}
-                activeOpacity={0.7}
-              >
-                <t.Icon size={14} color={iconColor} strokeWidth={2} />
-                <Text style={[s.typeChipText, active && { color: t.color }]}>{t.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <DatePicker label="Fecha" value={newEventDate} onChange={setNewEventDate} maxDate={new Date()} />
-
-        <TextInput
-          style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
-          value={newEventDesc}
-          onChangeText={setNewEventDesc}
-          placeholder={
-            newEventType === 'nota' ? 'Ej: El caballo come bien, buen estado general' :
-            newEventType === 'entrenamiento' ? 'Ej: Galope 1200m, tiempo 1:14, buena respuesta' :
-            newEventType === 'salud' ? 'Ej: Vacunación influenza equina Dr. García' :
-            'Ej: Gran Premio Palermo 1200m - 3° puesto'
-          }
-          placeholderTextColor={c.textFaint}
-          multiline
-          autoCapitalize="sentences"
-          returnKeyType="done"
-        />
-        {newEventError ? <Text style={s.fieldError}>{newEventError}</Text> : null}
-      </FormSheet>
     </View>
   );
 }
@@ -289,22 +204,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
-  countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  countText: { fontSize: text.xs, fontWeight: '700', color: c.textMuted },
-  emptyText: { fontSize: text.sm, color: c.textFaint },
-  empty: { alignItems: 'center', paddingVertical: 24 },
+  countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: space[2], paddingVertical: 2 },
+  countText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
 
   /* Eventos */
   eventsList: { gap: 0 },
-  eventRow: { paddingVertical: space[4], gap: 6, borderBottomWidth: 1, borderBottomColor: c.border },
+  eventRow: { paddingVertical: space[4], gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   eventRowLast: { borderBottomWidth: 0 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eventDate: { fontSize: text.xs, color: c.textFaint },
   eventDesc: { fontSize: text.base, color: c.text, lineHeight: 22 },
-  eventAmount: { fontSize: text.sm, fontWeight: '700', color: c.text },
+  eventAmount: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
 
   /* Comentarios */
-  commentRoot: { marginTop: 8, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 8 },
+  commentRoot: { marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, paddingTop: 8 },
   commentToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   commentToggleText: { fontSize: text.sm, color: c.textFaint, fontWeight: '600' },
   commentBody: { marginTop: 8, gap: 8 },
@@ -313,20 +226,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   commentDate: { fontSize: text.xs, color: c.textFaint },
   commentText: { fontSize: text.base, color: c.text, marginTop: 2 },
   commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },
-  commentInput: { flex: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt, minHeight: touch.min, maxHeight: 96 },
-  commentSend: { width: touch.min, height: touch.min, borderRadius: 10, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
+  commentInput: { flex: 1, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[2], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt, minHeight: touch.min, maxHeight: 96 },
+  commentSend: { width: touch.min, height: touch.min, borderRadius: radius.md, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center' },
 
-  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: 999, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
-  smallBtnText: { fontSize: text.sm, fontWeight: '600', color: c.text },
-  typeChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: 20, paddingHorizontal: 12, backgroundColor: c.surfaceAlt },
-  typeChipText: { fontSize: text.sm, fontWeight: '600', color: c.textMuted },
-
-  fieldLabel: { fontSize: text.sm, fontWeight: '600', color: c.text },
-  fieldError: { fontSize: text.sm, color: colors.red500 },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: c.brand },
-  btnPrimaryText: { fontSize: text.base, fontWeight: '700', color: colors.white },
-  btnSecondary: { backgroundColor: c.surfaceAlt },
-  btnSecondaryText: { fontSize: text.base, fontWeight: '600', color: c.textMuted },
+  smallBtn: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[3], backgroundColor: c.surfaceAlt },
+  smallBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 });

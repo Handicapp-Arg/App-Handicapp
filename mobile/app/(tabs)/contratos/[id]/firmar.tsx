@@ -98,12 +98,10 @@ export default function FirmarContratoScreen() {
         <Text style={s.hint}>Al confirmar, la firma quedará registrada con fecha y hora.</Text>
       </View>
 
+      {/* Un solo CTA: el back del header ya cancela */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <PressableScale style={[s.cancelBtn, { flex: 1 }]} onPress={() => router.back()}>
-          <Text style={s.cancelBtnText}>Cancelar</Text>
-        </PressableScale>
         <PressableScale
-          style={[s.submitBtn, { flex: 1 }, (!signedName.trim() || signContract.isPending) && { opacity: 0.5 }]}
+          style={[s.submitBtn, (!signedName.trim() || signContract.isPending) && { opacity: 0.5 }]}
           disabled={!signedName.trim() || signContract.isPending}
           onPress={() => signatureRef.current?.readSignature()}
         >
@@ -126,9 +124,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   clearLink: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
   signPad: { flex: 1, borderRadius: radius.md, backgroundColor: c.surfaceAlt, overflow: 'hidden', minHeight: 260 },
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: c.border },
-  cancelBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.surfaceAlt, alignItems: 'center' },
-  cancelBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
+  // Footer sin borde: solo aire, como eventos/nuevo.
+  footer: { paddingHorizontal: space[4], paddingTop: space[3] },
   submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.success, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.extrabold, color: colors.white },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

@@ -11,8 +11,10 @@ import api from '../../lib/api';
 import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { HorseshoeH } from '../../components/icons/equine';
 import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
+
+/** Verde de éxito del mundo auth (siempre oscuro): AUTH_DARK no expone success
+ *  y los tokens del theme (c.*) quedan prohibidos acá. */
 import { fontFamily } from '../../styles/fonts';
 
 export default function OlvideContrasenaScreen() {
@@ -63,13 +65,13 @@ export default function OlvideContrasenaScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Animated.View style={s.header} entering={FadeIn.duration(500)}>
-            <BrandMark size={96} />
+            <BrandMark size={116} />
           </Animated.View>
 
           {sent ? (
             <Animated.View style={s.sentBox} entering={FadeInDown.duration(450)}>
               <View style={s.checkCircle}>
-                <Check size={30} color={c.isDark ? '#86efac' : '#15803d'} strokeWidth={2.5} />
+                <Check size={30} color={D.success} strokeWidth={2.5} />
               </View>
               <Text style={s.titleCenter}>Revisá tu email</Text>
               <Text style={s.subtitleCenter}>
@@ -130,7 +132,7 @@ export default function OlvideContrasenaScreen() {
             activeOpacity={0.7}
             hitSlop={6}
           >
-            <ArrowLeft size={16} color={c.brand} strokeWidth={2} />
+            <ArrowLeft size={16} color={D.brand} strokeWidth={2} />
             <Text style={s.link}>Volver al inicio de sesión</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -158,14 +160,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sentBox: { alignItems: 'center', gap: 14 },
   checkCircle: {
     width: 64, height: 64, borderRadius: 999,
-    backgroundColor: c.isDark ? 'rgba(34,197,94,0.16)' : '#f0fdf4',
+    backgroundColor: D.successBg,
     justifyContent: 'center', alignItems: 'center',
   },
   titleCenter: {
     fontSize: 28, fontWeight: '700', fontFamily: fontFamily.semibold,
     letterSpacing: -0.7, color: D.text, textAlign: 'center',
   },
-  subtitleCenter: { fontSize: 15, color: c.textMuted, textAlign: 'center', lineHeight: 21 },
+  subtitleCenter: { fontSize: 15, color: D.textMuted, textAlign: 'center', lineHeight: 21 },
 
   form: { gap: 12 },
 

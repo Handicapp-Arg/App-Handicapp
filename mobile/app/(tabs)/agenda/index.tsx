@@ -1,31 +1,28 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
-  ScrollView, TextInput, Platform, ActivityIndicator, Alert, Pressable,
+  ScrollView, Alert, Pressable,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useScrollToTop } from '@react-navigation/native';
-import { Check, X, Clock, List, CalendarDays, MoreVertical, Trash2, Plus } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Check, X, Clock, List, CalendarDays, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAgenda, useCreateAppointment, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '../../hooks/use-agenda';
-import { useHorses } from '../../hooks/use-horses';
-import { DatePicker } from '../../components/DatePicker';
-import { MonthCalendar } from '../../components/MonthCalendar';
-import { ScreenHeader, HeaderButton } from '../../components/ScreenHeader';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { EventRowSkeleton } from '../../components/Skeleton';
-import { haptic } from '../../lib/haptics';
-import { colors } from '../../lib/colors';
-import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, touch } from '../../styles/tokens';
-import { hora, diaLargo } from '../../lib/fechas';
-import { useCommonStyles } from '../../styles/common';
-import { useToast } from '../../components/Toast';
-import { ActionSheet } from '../../components/ActionSheet';
-import { FormSheet } from '../../components/FormSheet';
-import { SwipeableRow } from '../../components/SwipeableRow';
+import { useAgenda, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES } from '../../../hooks/use-agenda';
+import { MonthCalendar } from '../../../components/MonthCalendar';
+import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
+import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
+import { EventRowSkeleton } from '../../../components/Skeleton';
+import { haptic } from '../../../lib/haptics';
+import { colors } from '../../../lib/colors';
+import { useTheme, type ThemeColors } from '../../../lib/theme';
+import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { hora, diaLargo } from '../../../lib/fechas';
+import { useCommonStyles } from '../../../styles/common';
+import { useToast } from '../../../components/Toast';
+import { ActionSheet } from '../../../components/ActionSheet';
+import { SwipeableRow } from '../../../components/SwipeableRow';
 
 function AppointmentRow({
   appt,
@@ -66,7 +63,12 @@ function AppointmentRow({
         },
       ]}
     >
-      <View style={[s.apptRow, !isLast && s.apptRowDivider, appt.completed && { opacity: 0.5 }]}>
+      <Pressable
+        style={({ pressed }) => [s.apptRow, !isLast && s.apptRowDivider, appt.completed && { opacity: 0.5 }, pressed && { backgroundColor: c.surfaceAlt }]}
+        onPress={() => { haptic.selection(); setMenuOpen(true); }}
+        accessibilityRole="button"
+        accessibilityLabel={`Turno ${appt.title}`}
+      >
         <Text style={s.apptTime}>{timeStr}</Text>
         <View style={[s.typeDot, { backgroundColor: meta.color }]} />
         <View style={s.apptBody}>
@@ -75,15 +77,6 @@ function AppointmentRow({
             {appt.horse ? `${appt.horse.name} · ` : ''}{meta.label}{appt.completed ? ' · Completado' : ''}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => { haptic.selection(); setMenuOpen(true); }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel="Más opciones del turno"
-        >
-          <MoreVertical size={18} color={c.textFaint} strokeWidth={2} />
-        </TouchableOpacity>
-
         <ActionSheet
           visible={menuOpen}
           onClose={() => setMenuOpen(false)}
@@ -101,146 +94,18 @@ function AppointmentRow({
             },
           ]}
         />
-      </View>
+      </Pressable>
     </SwipeableRow>
   );
 }
 
-function CreateModal({ visible, onClose, c, s }: { visible: boolean; onClose: () => void; c: ThemeColors; s: Styles }) {
-  const { typography, modal: modalStyle, button, input: inputStyle } = useCommonStyles();
-  const { data: horses } = useHorses();
-  const create = useCreateAppointment();
-  const toast = useToast();
-  const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
-  const [type, setType] = useState('veterinario');
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
-  const [timeDate, setTimeDate] = useState(() => { const d = new Date(); d.setHours(9, 0, 0, 0); return d; });
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [error, setError] = useState('');
-
-  const timeStr = hora(timeDate.toISOString());
-
-  // La hoja ya no se destruye al cerrarse, así que el formulario se limpia al abrir.
-  useEffect(() => {
-    if (!visible) return;
-    setTitle(''); setDate(''); setError(''); setType('veterinario');
-    setHorseId(horses?.[0]?.id ?? '');
-    const d = new Date(); d.setHours(9, 0, 0, 0); setTimeDate(d);
-  }, [visible]);
-
-
-  const handleSubmit = async () => {
-    if (!horseId || !title.trim() || !date) { setError('Completá todos los campos obligatorios'); haptic.error(); return; }
-    setError('');
-    const dt = new Date(date + 'T12:00:00');
-    dt.setHours(timeDate.getHours(), timeDate.getMinutes());
-    try {
-      await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString() });
-      haptic.success();
-      toast.success('Turno agendado');
-      onClose();
-    } catch {
-      haptic.error();
-      setError('No se pudo agendar el turno. Intentá de nuevo.');
-    }
-  };
-
-  return (
-    <FormSheet
-      visible={visible}
-      onClose={onClose}
-      title="Nuevo turno"
-      footer={
-        <>
-          <TouchableOpacity style={[button.secondary, { flex: 1 }]} onPress={() => { haptic.light(); onClose(); }}>
-            <Text style={button.secondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[button.primary, { flex: 1 }, create.isPending && { opacity: 0.6 }]}
-            onPress={handleSubmit}
-            disabled={create.isPending}
-          >
-            {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={button.primaryText}>Crear turno</Text>}
-          </TouchableOpacity>
-        </>
-      }
-    >
-      <>
-          {/* Caballo */}
-          <View style={{ gap: space[2] }}>
-            <Text style={typography.label}>Caballo *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
-              {horses?.map((h) => (
-                <TouchableOpacity key={h.id}
-                  style={[s.chip, horseId === h.id && s.chipActive]}
-                  onPress={() => { haptic.selection(); setHorseId(h.id); }}
-                >
-                  <Text style={[s.chipText, horseId === h.id && s.chipTextActive]}>{h.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Tipo — fila compacta, un turno puede ser de herrador u otro */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[2] }}>
-            {Object.entries(APPOINTMENT_TYPES).map(([v, m]) => (
-              <TouchableOpacity
-                key={v}
-                style={[s.chip, type === v && s.chipActive]}
-                onPress={() => { haptic.selection(); setType(v); }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: type === v }}
-              >
-                <Text style={[s.chipText, type === v && s.chipTextActive]}>{m.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Título */}
-          <View style={{ gap: space[2] }}>
-            <Text style={typography.label}>Título *</Text>
-            <TextInput style={inputStyle.base} value={title} onChangeText={setTitle} placeholder="Ej: Control anual" placeholderTextColor={c.textFaint} />
-          </View>
-
-          {/* Fecha y hora */}
-          <DatePicker label="Fecha *" value={date} onChange={setDate} />
-          <View style={{ gap: space[2] }}>
-            <Text style={typography.label}>Hora</Text>
-            <Pressable
-              onPress={() => { haptic.selection(); setShowTimePicker(true); }}
-              style={[inputStyle.base, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-            >
-              <Text style={{ fontSize: text.base, color: c.text }}>{timeStr}</Text>
-              <Clock size={18} color={c.textFaint} strokeWidth={2} />
-            </Pressable>
-            {showTimePicker && (
-              <DateTimePicker
-                value={timeDate}
-                mode="time"
-                is24Hour
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_, selected) => {
-                  setShowTimePicker(Platform.OS === 'ios');
-                  if (selected) setTimeDate(selected);
-                }}
-              />
-            )}
-          </View>
-
-          {error ? <Text style={s.errorText}>{error}</Text> : null}
-      </>
-    </FormSheet>
-  );
-}
-
 export default function AgendaScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const { layout } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
   const [upcoming, setUpcoming] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
@@ -276,49 +141,26 @@ export default function AgendaScreen() {
         scrollable
         title="Agenda"
         right={
-          <HeaderButton
-            label="+ Turno"
-            onPress={() => { haptic.medium(); setShowCreate(true); }}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+            {/* Alternar lista/mes con un solo icono, como Calendario de iOS */}
+            <TouchableOpacity
+              style={s.headerIconBtn}
+              onPress={() => { haptic.selection(); setViewMode(viewMode === 'list' ? 'calendar' : 'list'); }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={viewMode === 'list' ? 'Ver como calendario' : 'Ver como lista'}
+            >
+              {viewMode === 'list'
+                ? <CalendarDays size={17} color={c.text} strokeWidth={1.9} />
+                : <List size={17} color={c.text} strokeWidth={1.9} />}
+            </TouchableOpacity>
+            <HeaderButton
+              label="Turno"
+              onPress={() => { haptic.medium(); router.push('/(tabs)/agenda/nuevo' as never); }}
+            />
+          </View>
         }
       />
-
-      {/* Barra: Lista/Mes + (solo en lista) Próximos/Todos, en una línea */}
-      <View style={s.toolbar}>
-        <View style={s.viewToggle}>
-          <TouchableOpacity
-            style={[s.viewBtn, viewMode === 'list' && s.viewBtnActive]}
-            onPress={() => { haptic.selection(); setViewMode('list'); }}
-            activeOpacity={0.85}
-          >
-            <List size={18} color={viewMode === 'list' ? c.text : c.textMuted} strokeWidth={2.2} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.viewBtn, viewMode === 'calendar' && s.viewBtnActive]}
-            onPress={() => { haptic.selection(); setViewMode('calendar'); }}
-            activeOpacity={0.85}
-          >
-            <CalendarDays size={18} color={viewMode === 'calendar' ? c.text : c.textMuted} strokeWidth={2.2} />
-          </TouchableOpacity>
-        </View>
-
-        {viewMode === 'list' && (
-          <View style={s.toggle}>
-            {(['upcoming', 'all'] as const).map((v) => (
-              <TouchableOpacity
-                key={v}
-                style={[s.toggleBtn, upcoming === (v === 'upcoming') && s.toggleBtnActive]}
-                onPress={() => { haptic.selection(); setUpcoming(v === 'upcoming'); }}
-                activeOpacity={0.8}
-              >
-                <Text style={[s.toggleText, upcoming === (v === 'upcoming') && s.toggleTextActive]}>
-                  {v === 'upcoming' ? 'Próximos' : 'Todos'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
     </>
   );
 
@@ -382,8 +224,8 @@ export default function AgendaScreen() {
             icon="calendar-outline"
             title={upcoming ? 'No hay turnos próximos' : 'Sin turnos registrados'}
             message={upcoming ? 'No tenés turnos programados. Creá el primero.' : 'Los turnos veterinarios y de servicio aparecerán aquí.'}
-            actionLabel="+ Crear turno"
-            onAction={() => { haptic.medium(); setShowCreate(true); }}
+            actionLabel="Crear turno"
+            onAction={() => { haptic.medium(); router.push('/(tabs)/agenda/nuevo' as never); }}
           />
         </ScrollView>
       ) : (
@@ -408,20 +250,18 @@ export default function AgendaScreen() {
           )}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={
+            <TouchableOpacity
+              style={s.pasadosLink}
+              onPress={() => { haptic.selection(); setUpcoming(!upcoming); }}
+              activeOpacity={0.7}
+            >
+              <Text style={s.pasadosLinkText}>{upcoming ? 'Ver turnos anteriores' : 'Solo próximos'}</Text>
+            </TouchableOpacity>
+          }
         />
       )}
 
-      <CreateModal visible={showCreate} onClose={() => setShowCreate(false)} c={c} s={s} />
-
-      <Pressable
-        style={s.fab}
-        onPress={() => { haptic.medium(); setShowCreate(true); }}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo turno"
-        hitSlop={8}
-      >
-        <Plus size={26} color={colors.white} strokeWidth={2.5} />
-      </Pressable>
     </View>
   );
 }
@@ -429,15 +269,12 @@ export default function AgendaScreen() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingTop: space[1], paddingBottom: space[2], gap: space[2] },
-  toggle: { flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.full, padding: 3 },
-  toggleBtn: { paddingHorizontal: space[4], minHeight: touch.min, justifyContent: 'center', alignItems: 'center', borderRadius: radius.full },
-  toggleBtnActive: { backgroundColor: c.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 },
-  toggleText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  toggleTextActive: { color: c.text },
-  viewToggle: { flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.full, padding: 3 },
-  viewBtn: { alignItems: 'center', justifyContent: 'center', minHeight: touch.min, paddingHorizontal: space[4], borderRadius: radius.full },
-  viewBtnActive: { backgroundColor: c.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 },
+  headerIconBtn: {
+    width: 34, height: 34, borderRadius: 17, backgroundColor: c.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  pasadosLink: { alignItems: 'center', paddingVertical: space[4] },
+  pasadosLinkText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
   viewText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
   viewTextActive: { color: c.text },
   calHint: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', paddingVertical: space[6] },
@@ -449,15 +286,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   apptTitle: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   apptMeta: { fontSize: text.xs, color: c.textFaint, textTransform: 'capitalize' },
   apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold, width: 46, fontVariant: ['tabular-nums'] },
-  chip: { borderRadius: radius.full, paddingHorizontal: space[4], paddingVertical: space[2], backgroundColor: c.surfaceAlt },
-  chipActive: { backgroundColor: c.brand },
-  chipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  chipTextActive: { color: colors.white },
   errorText: { fontSize: text.sm, color: colors.red500 },
-  fab: {
-    position: 'absolute', right: 20, bottom: 110,
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
-    shadowColor: c.brand, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 4,
-  },
 });

@@ -89,6 +89,7 @@ export function FormSheet({
                 <View>
                   <View style={s.grabber} />
                   <View style={s.header}>
+                    <View style={s.closeBtnSpacer} />
                     <Text style={s.title} numberOfLines={1}>{title}</Text>
                     <View style={s.closeBtnSpacer} />
                   </View>
@@ -139,7 +140,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14,
   },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: c.text, letterSpacing: -0.5 },
+  title: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: c.text, letterSpacing: -0.3 },
   closeBtnSpacer: { width: 32, height: 32 },
   closeBtn: {
     position: 'absolute', top: 14, right: 20,

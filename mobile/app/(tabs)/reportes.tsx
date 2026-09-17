@@ -16,7 +16,7 @@ import { space, text, radius, weight, shadow } from '../../styles/tokens';
 import { Routes } from '../../lib/routes';
 import { useReportSummary, type ReportSummary } from '../../hooks/use-reports';
 import { ReportSkeleton } from '../../components/Skeleton';
-import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 import { formatMoney } from '../../lib/currency';
 import { fechaHoraHumana, vence } from '../../lib/fechas';
 
@@ -185,7 +185,23 @@ function ExpensesCard({ expenses, c, s }: { expenses: ReportSummary['expenses'];
 }
 
 function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming']; c: ThemeColors; s: Styles }) {
-  const hasItems = upcoming.appointments.length > 0 || upcoming.medical.length > 0;
+  // Una sola lista plana (turnos + vencimientos médicos) con separador hairline,
+  // en lugar de cajitas surfaceAlt apiladas.
+  const filas = [
+    ...upcoming.appointments.map((a) => ({
+      key: `turno-${a.id}`, Icon: CalendarClock, tint: c.brand, soft: c.brandSoft,
+      title: a.title,
+      sub: `${a.horse_name} · ${APPOINTMENT_LABELS[a.type] ?? a.type}`,
+      date: fechaHoraHumana(a.scheduled_at),
+    })),
+    ...upcoming.medical.map((m) => ({
+      key: `medico-${m.id}`, Icon: Stethoscope, tint: c.success, soft: c.successSoft,
+      title: m.name,
+      sub: m.horse_name,
+      date: vence(m.next_due),
+    })),
+  ];
+
   return (
     <View style={s.card}>
       <View style={s.cardHead}>
@@ -193,33 +209,18 @@ function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming'];
         <Text style={s.cardTitle}>Próximos vencimientos</Text>
       </View>
 
-      {!hasItems && <Text style={s.emptyText}>No hay turnos ni vencimientos próximos.</Text>}
+      {filas.length === 0 && <Text style={s.emptyText}>No hay turnos ni vencimientos próximos.</Text>}
 
-      {upcoming.appointments.map((a) => (
-        <View key={a.id} style={s.upRow}>
-          <View style={[s.upIcon, { backgroundColor: c.brandSoft }]}>
-            <CalendarClock size={15} color={c.brand} strokeWidth={2} />
+      {filas.map((f, i) => (
+        <View key={f.key} style={[s.upRow, i > 0 && s.upRowDivider]}>
+          <View style={[s.upIcon, { backgroundColor: f.soft }]}>
+            <f.Icon size={15} color={f.tint} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.upTitle} numberOfLines={1}>{a.title}</Text>
-            <Text style={s.upSub} numberOfLines={1}>
-              {a.horse_name} · {APPOINTMENT_LABELS[a.type] ?? a.type}
-            </Text>
+            <Text style={s.upTitle} numberOfLines={1}>{f.title}</Text>
+            <Text style={s.upSub} numberOfLines={1}>{f.sub}</Text>
           </View>
-          <Text style={s.upDate}>{fechaHoraHumana(a.scheduled_at)}</Text>
-        </View>
-      ))}
-
-      {upcoming.medical.map((m) => (
-        <View key={m.id} style={s.upRow}>
-          <View style={[s.upIcon, { backgroundColor: c.successSoft }]}>
-            <Stethoscope size={15} color={c.success} strokeWidth={2} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.upTitle} numberOfLines={1}>{m.name}</Text>
-            <Text style={s.upSub} numberOfLines={1}>{m.horse_name}</Text>
-          </View>
-          <Text style={s.upDate}>{vence(m.next_due)}</Text>
+          <Text style={s.upDate}>{f.date}</Text>
         </View>
       ))}
     </View>
@@ -268,12 +269,7 @@ export default function ReportesScreen() {
         ) : status === 403 ? (
           <NoPlanState c={c} s={s} />
         ) : error ? (
-          <EmptyState
-            icon="cloud-offline-outline"
-            title="No pudimos cargar tus reportes"
-            message="Revisá tu conexión e intentá de nuevo en un momento."
-            tint={c.danger}
-          />
+          <ErrorState onRetry={refetch} titulo="No pudimos cargar tus reportes" />
         ) : data ? (
           <>
             <Animated.View style={s.statRow} entering={FadeInDown.duration(320)}>
@@ -358,11 +354,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: space[2], height: 112, marginTop: space[2] },
   chartCol: { flex: 1, alignItems: 'center', gap: space[1] + 1, height: '100%' },
-  chartValRow: { height: 12, alignSelf: 'stretch', justifyContent: 'flex-end', alignItems: 'center' },
-  chartVal: { fontSize: 9, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
+  chartValRow: { height: 16, alignSelf: 'stretch', justifyContent: 'flex-end', alignItems: 'center' },
+  chartVal: { fontSize: text.xs, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
   chartBarTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
   chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
-  chartLbl: { fontSize: text.xs - 1, color: c.textFaint, textTransform: 'capitalize' },
+  chartLbl: { fontSize: text.xs, color: c.textFaint, textTransform: 'capitalize' },
 
   catSection: { marginTop: space[5], paddingTop: space[4], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, gap: space[3] },
   catRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -371,12 +367,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   catTrack: { height: 6, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
   catFill: { height: '100%', borderRadius: radius.full },
 
-  /* Upcoming */
+  /* Upcoming — filas planas con hairline, sin cajas */
   upRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surfaceAlt, borderRadius: radius.md,
-    padding: space[3], marginBottom: space[2],
+    paddingVertical: space[3],
   },
+  upRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
   upIcon: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   upTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   upSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },

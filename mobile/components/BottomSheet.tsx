@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, type ReactNode } from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -160,9 +161,21 @@ export function BottomSheet({
             <GestureDetector gesture={pan}>
               <View style={s.dragArea}>
                 <View style={s.grabber} />
-                {title ? <Text style={s.title}>{title}</Text> : null}
+                {title ? (
+                  <View style={s.titleRow}>
+                    <View style={s.closeSpacer} />
+                    <Text style={s.title} numberOfLines={1}>{title}</Text>
+                    <View style={s.closeSpacer} />
+                  </View>
+                ) : null}
               </View>
             </GestureDetector>
+            {/* Fuera del GestureDetector para que el pan no le robe el tap. */}
+            {title ? (
+              <Pressable onPress={onClose} hitSlop={10} style={s.closeBtn} accessibilityRole="button" accessibilityLabel="Cerrar">
+                <X size={18} color={c.textMuted} strokeWidth={2} />
+              </Pressable>
+            ) : null}
             {children}
           </Animated.View>
         </Contenedor>
@@ -187,8 +200,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: 40, height: 4, borderRadius: 2,
     backgroundColor: c.borderStrong, alignSelf: 'center', marginBottom: 8,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   title: {
-    fontSize: 17, fontWeight: '800', color: c.text,
-    marginBottom: 4, paddingHorizontal: 4, letterSpacing: -0.3,
+    flex: 1, textAlign: 'center',
+    fontSize: 17, fontWeight: '600', color: c.text, letterSpacing: -0.3,
+  },
+  closeSpacer: { width: 30, height: 30 },
+  closeBtn: {
+    position: 'absolute', top: 16, right: 16,
+    width: 30, height: 30, borderRadius: 999,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.surfaceAlt,
+    zIndex: 1,
   },
 });

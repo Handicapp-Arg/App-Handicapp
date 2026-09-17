@@ -104,6 +104,32 @@ export function diaLargo(iso: string | null | undefined): string {
 }
 
 /**
+ * Mes corto para etiquetas de gráficos/ejes: "sep 26". Acepta tanto un mes
+ * solo ("2026-09") como una fecha completa.
+ *
+ * Ante una fecha inválida devuelve `''`.
+ */
+export function mesCorto(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const soloMes = /^\d{4}-\d{2}$/.test(iso);
+  const d = aFecha(soloMes ? `${iso}-01` : iso);
+  if (!d) return '';
+  return format(d, 'MMM yy', { locale: es });
+}
+
+/**
+ * Inicial del día de la semana ("l", "m", "x"...) para gráficos compactos
+ * (barras de los últimos días).
+ *
+ * Ante una fecha inválida devuelve `''`.
+ */
+export function diaInicial(iso: string | null | undefined): string {
+  const d = aFecha(iso);
+  if (!d) return '';
+  return format(d, 'EEEEE', { locale: es });
+}
+
+/**
  * Vencimiento humano para fechas de "próximo vencimiento" (vacunas,
  * desparasitaciones, etc.): "Vence hoy", "Vence mañana", "Vence en 12 días"
  * o, si ya pasó, "Vencida ayer" / "Vencida hace 3 días".

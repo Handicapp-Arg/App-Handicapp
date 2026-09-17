@@ -5,10 +5,9 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
-  Check, Rocket, Zap, Crown, Building2, Lock, Users, ArrowRight,
+  Check, Rocket, Zap, Crown, Building2, Lock, ArrowRight,
   BarChart3, ClipboardPlus, Sprout,
 } from 'lucide-react-native';
-import { HorseIcon } from '../../components/icons/equine';
 import { WhatsappLogo } from '../../components/icons/WhatsappLogo';
 import { PaymentMethods } from '../../components/PaymentMethods';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -136,19 +135,6 @@ function FeatureGlyph({
   }
 }
 
-function FeatureChip({
-  label, featureKey, c, s,
-}: { label: string; featureKey?: string; c: ThemeColors; s: Styles }) {
-  return (
-    <View style={s.chip}>
-      {featureKey === 'whatsapp'
-        ? <WhatsappLogo size={14} />
-        : <FeatureGlyph featureKey={featureKey} accent={c.brand} size={12} />}
-      <Text style={s.chipText}>{label}</Text>
-    </View>
-  );
-}
-
 /** Fila de feature con ícono con significado del color del tier (soporta fondo oscuro). */
 function FeatureRow({
   label, featureKey, accent, soft, textColor, s,
@@ -194,32 +180,15 @@ function PlanCardInner({
 
   return (
     <>
-      {/* Franja de acento superior */}
-      <View style={[s.accentStripe, { backgroundColor: accent }]} />
-
-      {/* Badge esquina: plan actual o "Más elegido" */}
-      {current ? (
-        <View style={[s.cornerBadge, { backgroundColor: c.brand }]}>
-          <Text style={s.cornerBadgeText}>Tu plan</Text>
-        </View>
-      ) : m.badge ? (
-        <View style={[s.cornerBadge, { backgroundColor: c.brand }]}>
-          <Text style={s.cornerBadgeText}>{m.badge}</Text>
-        </View>
-      ) : null}
-
-      {/* Encabezado: ícono del tier + nombre */}
+      {/* Encabezado: ícono del tier + nombre; el estado va como texto bajo el nombre */}
       <View style={s.cardHead}>
-        <View style={[s.tierIcon, {
-          backgroundColor: soft,
-          borderColor: accent + '33',
-        }]}>
+        <View style={[s.tierIcon, { backgroundColor: soft }]}>
           <Icon size={20} color={accent} strokeWidth={2.2} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[s.planName, { color: c.text }]}>{plan.name}</Text>
-          <Text style={[s.tierKindLabel, { color: accent }]}>
-            {TIER_KIND_LABEL[kind].toUpperCase()}
+          <Text style={s.tierKindLabel}>
+            {current ? 'Tu plan' : m.badge ?? TIER_KIND_LABEL[kind]}
           </Text>
         </View>
       </View>
@@ -238,95 +207,69 @@ function PlanCardInner({
         )}
       </View>
 
-      {/* Límites como chips */}
-      <View style={s.limitChips}>
-        <View style={[s.limitChip, { backgroundColor: soft }]}>
-          <HorseIcon size={13} color={accent} />
-          <Text style={[s.limitChipText, { color: c.text }]}>{horseLabel}</Text>
-        </View>
+      {/* Límites y features: una sola forma, checklist de filas */}
+      <View style={s.featList}>
+        <FeatureRow label={horseLabel} accent={accent} soft={soft} textColor={c.textMuted} s={s} />
         {staffLabel && (
-          <View style={[s.limitChip, { backgroundColor: soft }]}>
-            <Users size={13} color={accent} strokeWidth={2.4} />
-            <Text style={[s.limitChipText, { color: c.text }]}>{staffLabel}</Text>
-          </View>
+          <FeatureRow label={staffLabel} accent={accent} soft={soft} textColor={c.textMuted} s={s} />
+        )}
+        {plan.features.slice(0, 3).map((f) => (
+          <FeatureRow
+            key={f} label={featureLabel(f)} featureKey={f}
+            accent={accent} soft={soft} textColor={c.textMuted} s={s}
+          />
+        ))}
+        {plan.features.length > 3 && (
+          <Text style={s.masBeneficios}>y {plan.features.length - 3} beneficios más</Text>
         )}
       </View>
 
-      {/* Features como checklist con el color del tier */}
-      {plan.features.length > 0 && (
-        <View style={[s.featList, { borderTopColor: c.border }]}>
-          {plan.features.slice(0, 3).map((f) => (
-            <FeatureRow
-              key={f} label={featureLabel(f)} featureKey={f}
-              accent={accent} soft={soft} textColor={c.textMuted} s={s}
-            />
-          ))}
-          {plan.features.length > 3 && (
-            <Text style={s.masBeneficios}>y {plan.features.length - 3} beneficios más</Text>
-          )}
-        </View>
-      )}
-
-      {/* CTA */}
+      {/* CTA: cuero solo en el plan destacado; el resto en superficie neutra */}
       {current ? (
-        <View style={[s.statePill, { backgroundColor: soft }]}>
-          <Text style={[s.statePillText, { color: c.textMuted }]}>
-            Plan actual
-          </Text>
-        </View>
+        <Text style={s.stateText}>Plan actual</Text>
       ) : kind === 'enterprise' ? (
         <Pressable
           onPress={() => { haptic.medium(); Linking.openURL(SALES_MAILTO); }}
           style={({ pressed }) => [
             s.subBtn,
-            { backgroundColor: c.brand },
+            { backgroundColor: m.featured ? c.brand : c.surfaceAlt },
             pressed && { opacity: 0.75 },
           ]}
         >
-          <Text style={[s.subBtnText, { color: colors.white }]}>
+          <Text style={[s.subBtnText, { color: m.featured ? colors.white : c.text }]}>
             Contactar ventas
           </Text>
-          <ArrowRight size={16} color={colors.white} strokeWidth={2.6} />
+          <ArrowRight size={16} color={m.featured ? colors.white : c.text} strokeWidth={2.6} />
         </Pressable>
       ) : paid ? (
         <Pressable
           onPress={() => { haptic.medium(); onSubscribe(plan); }}
           style={({ pressed }) => [
             s.subBtn,
-            { backgroundColor: c.brand },
+            { backgroundColor: m.featured ? c.brand : c.surfaceAlt },
             pressed && { opacity: 0.75 },
           ]}
         >
-          <Text style={[s.subBtnText, { color: colors.white }]}>
+          <Text style={[s.subBtnText, { color: m.featured ? colors.white : c.text }]}>
             Suscribirme
           </Text>
-          <ArrowRight size={16} color={colors.white} strokeWidth={2.6} />
+          <ArrowRight size={16} color={m.featured ? colors.white : c.text} strokeWidth={2.6} />
         </Pressable>
       ) : (
-        <View style={[s.statePill, { backgroundColor: soft }]}>
-          <Text style={[s.statePillText, { color: c.textFaint }]}>Incluido</Text>
-        </View>
+        <Text style={s.stateText}>Incluido</Text>
       )}
     </>
   );
 }
 
-/** Wrapper de la card: superficie sólida theme-aware; el destacado (Pro) lleva realce. */
+/** Wrapper de la card: superficie sólida theme-aware con sombra suave, sin realces. */
 function PlanCard({
   plan, current, onSubscribe, c, s,
 }: {
   plan: Plan; current: boolean; onSubscribe: (p: Plan) => void; c: ThemeColors; s: Styles;
 }) {
-  const kind = tierKindOf(plan);
-  const m = tierMetaOf(kind, c);
-
-  const frameStyle = [
-    s.planCard,
-    m.featured && s.planCardFeatured,
-  ];
-
   return (
-    <View style={frameStyle}>
+    <View style={s.planCard}>
       <PlanCardInner plan={plan} current={current} onSubscribe={onSubscribe} c={c} s={s} />
     </View>
   );
@@ -406,9 +349,7 @@ function CheckoutSheet({
         <>
           {/* Resumen del plan */}
           <View style={[s.summaryCard, { backgroundColor: m.soft }]}>
-            <View style={[s.tierIcon, {
-              backgroundColor: c.surface, borderColor: m.accent + '44',
-            }]}>
+            <View style={[s.tierIcon, { backgroundColor: c.surface }]}>
               <Icon size={20} color={m.accent} strokeWidth={2.2} />
             </View>
             <View style={{ flex: 1 }}>
@@ -500,8 +441,8 @@ export default function MiPlanScreen() {
         ) : (
           <Animated.View entering={FadeInDown.duration(320)} style={s.currentCard}>
             <View style={s.currentHeader}>
-              <View style={[s.currentIcon, { backgroundColor: c.brand }]}>
-                <CurrentIcon size={20} color={colors.white} strokeWidth={2.2} />
+              <View style={s.currentIcon}>
+                <CurrentIcon size={22} color={c.text} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.currentPlanName}>{status.label}</Text>
@@ -537,11 +478,16 @@ export default function MiPlanScreen() {
               )}
             </View>
 
-            {/* Features activas */}
+            {/* Features activas — misma forma que las cards: checklist de filas */}
             <Text style={s.featTitle}>Funciones incluidas</Text>
             {status.features.length > 0 ? (
-              <View style={s.chipRow}>
-                {status.features.map((f) => <FeatureChip key={f} label={featureLabel(f)} featureKey={f} c={c} s={s} />)}
+              <View style={{ gap: space[2] + 2 }}>
+                {status.features.map((f) => (
+                  <FeatureRow
+                    key={f} label={featureLabel(f)} featureKey={f}
+                    accent={currentMeta.accent} soft={currentMeta.soft} textColor={c.textMuted} s={s}
+                  />
+                ))}
               </View>
             ) : (
               <Text style={s.emptyText}>Tu plan actual no incluye funciones adicionales.</Text>
@@ -589,7 +535,7 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   masBeneficios: { fontSize: text.sm, color: c.textFaint, marginTop: 2, marginLeft: 30 },
   root: { flex: 1, backgroundColor: c.bg },
-  content: { padding: space[4], paddingBottom: 120 },
+  content: { paddingHorizontal: space[5], paddingTop: space[4], paddingBottom: 120 },
 
   sectionTitle: {
     fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
@@ -605,8 +551,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Plan actual — aplanado: vive directo sobre c.bg, el ícono en cuero es el acento */
   currentCard: { gap: space[4] },
   currentHeader: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  // Sin fondo: el glifo solo alcanza (cuero reservado para el CTA).
   currentIcon: {
-    width: 44, height: 44, borderRadius: radius.md,
+    width: 44, height: 44,
     alignItems: 'center', justifyContent: 'center',
   },
   currentPlanName: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
@@ -624,56 +571,31 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   featTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: c.surfaceAlt, borderRadius: radius.full,
-    paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 1,
-  },
-  chipText: { fontSize: text.xs, fontWeight: weight.semibold, color: c.text },
-
-  /* ─── Plan cards con identidad ─── */
+  /* ─── Plan cards: superficie + sombra suave, sin franjas ni badges flotantes ─── */
   planCard: {
     backgroundColor: c.surface, borderRadius: radius.xl,
     padding: space[4], paddingTop: space[5], gap: space[3],
     overflow: 'hidden', ...shadow.sm,
   },
-  planCardFeatured: {
-    transform: [{ scale: 1.015 }], ...shadow.md,
-  },
-  accentStripe: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-  },
-  cornerBadge: {
-    position: 'absolute', top: space[3], right: space[3],
-    borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: 3,
-    zIndex: 2,
-  },
-  cornerBadgeText: {
-    fontSize: 10, fontWeight: weight.bold, color: colors.white, letterSpacing: 0.4,
-  },
 
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   tierIcon: {
-    width: 42, height: 42, borderRadius: radius.md, borderWidth: 1,
+    width: 42, height: 42, borderRadius: radius.md,
     alignItems: 'center', justifyContent: 'center',
   },
   planName: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text },
-  tierKindLabel: { fontSize: 10, fontWeight: weight.bold, letterSpacing: 0.6, marginTop: 1 },
+  tierKindLabel: {
+    fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted,
+    letterSpacing: 0.2, marginTop: 1,
+  },
 
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] },
   priceBig: { fontSize: text['2xl'], fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   priceUnit: { fontSize: text.sm, fontWeight: weight.medium, color: c.textFaint },
 
-  limitChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  limitChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderRadius: radius.full, paddingHorizontal: space[2] + 2, paddingVertical: space[1] + 2,
-  },
-  limitChipText: { fontSize: text.xs, fontWeight: weight.semibold },
-
   featList: {
-    gap: space[2] + 2, marginTop: space[1], paddingTop: space[3], borderTopWidth: 1,
+    gap: space[2] + 2, marginTop: space[1], paddingTop: space[3],
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
   },
   featRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] + 2 },
   featCheck: {
@@ -682,18 +604,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   featRowText: { flex: 1, fontSize: text.sm, color: c.textMuted },
 
-  statePill: {
-    marginTop: space[1], borderRadius: radius.md,
-    paddingVertical: space[2] + 2, alignItems: 'center',
+  stateText: {
+    marginTop: space[1], paddingVertical: space[2] + 2,
+    textAlign: 'center', fontSize: text.sm, fontWeight: weight.medium, color: c.textFaint,
   },
-  statePillText: { fontSize: text.sm, fontWeight: weight.semibold },
 
   subBtn: {
     marginTop: space[1], flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: space[2], borderRadius: radius.md,
     paddingHorizontal: space[5], paddingVertical: space[3],
   },
-  subBtnText: { fontSize: text.sm, fontWeight: weight.bold },
+  subBtnText: { fontSize: text.sm, fontWeight: weight.semibold },
   subError: { fontSize: text.xs, fontWeight: weight.medium, color: c.danger, textAlign: 'center' },
 
   /* Sello de confianza */
@@ -711,7 +632,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg, padding: space[3],
   },
   summaryName: { fontSize: text.md, fontWeight: weight.extrabold, color: c.text },
-  summaryTier: { fontSize: 10, fontWeight: weight.bold, letterSpacing: 0.6, marginTop: 1 },
+  summaryTier: { fontSize: text.xs, fontWeight: weight.semibold, letterSpacing: 0.2, marginTop: 1 },
   summaryPrice: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.3, fontVariant: ['tabular-nums'] },
   summaryUnit: { fontSize: text.xs, color: c.textFaint },
 
@@ -727,5 +648,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.brand, borderRadius: radius.md, paddingVertical: space[3] + 2,
     ...shadow.sm,
   },
-  payBtnText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
+  payBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

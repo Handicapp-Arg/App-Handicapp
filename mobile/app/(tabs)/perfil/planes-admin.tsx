@@ -3,12 +3,17 @@ import {
 } from 'react-native';
 import { useState, useMemo } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ChevronDown } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import { colors } from '../../../lib/colors';
+import { haptic } from '../../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, touch } from '../../../styles/tokens';
 import { useAdminPlanUsers, useAdminSetPlan, type AdminPlanUser } from '../../../hooks/use-plan';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { FilaSelector } from '../../../components/FilaSelector';
+import { BottomSheet } from '../../../components/BottomSheet';
+import { EmptyState } from '../../../components/EmptyState';
+import { ListRowSkeleton } from '../../../components/Skeleton';
 import { fechaHumana } from '../../../lib/fechas';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -54,36 +59,36 @@ function AdminUserRow({ u, onActivate, onRevoke, isPending, c, s }: {
       {isPro && expiresStr && <Text style={s.adminExpires}>Vence: {expiresStr}</Text>}
       {!isPro && (
         <>
-          <TouchableOpacity
-            onPress={() => setShowMonths((p) => !p)}
-            style={[s.monthsToggle, s.monthsToggleRow]}
-            accessibilityRole="button"
-            accessibilityLabel="Elegir duración del plan Pro"
-          >
-            <Text style={s.monthsToggleText}>Duración: {months} {months === 1 ? 'mes' : 'meses'}</Text>
-            <ChevronDown size={16} color={c.textMuted} strokeWidth={2} />
-          </TouchableOpacity>
-          {showMonths && (
-            <View style={s.monthsGrid}>
-              {MONTHS_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => { setMonths(opt.value); setShowMonths(false); }}
-                  style={[s.monthsOption, months === opt.value && s.monthsOptionActive]}
-                >
-                  <Text style={[s.monthsOptionText, months === opt.value && s.monthsOptionTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <FilaSelector
+            primera
+            label="Duración"
+            valor={MONTHS_OPTIONS.find((o) => o.value === months)?.label}
+            onPress={() => setShowMonths(true)}
+          />
           <TouchableOpacity style={s.activateBtn} onPress={() => onActivate(u.id, months)} disabled={isPending} activeOpacity={0.85}>
             {isPending
               ? <ActivityIndicator size="small" color={colors.white} />
               : <Text style={s.activateBtnText}>Activar Pro</Text>
             }
           </TouchableOpacity>
+          <BottomSheet visible={showMonths} onClose={() => setShowMonths(false)} title="Duración del plan Pro">
+            <View style={s.monthsLista}>
+              {MONTHS_OPTIONS.map((opt, i) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[s.monthsItem, i > 0 && s.monthsItemBorde]}
+                  onPress={() => { haptic.selection(); setMonths(opt.value); setShowMonths(false); }}
+                  activeOpacity={0.6}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: months === opt.value }}
+                  accessibilityLabel={opt.label}
+                >
+                  <Text style={s.monthsItemText}>{opt.label}</Text>
+                  {months === opt.value && <Check size={19} color={c.brand} strokeWidth={2.4} />}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </BottomSheet>
         </>
       )}
       {isPro && (
@@ -137,9 +142,15 @@ export default function PlanesAdminScreen() {
             clearButtonMode="while-editing"
           />
           {loadingAdminUsers ? (
-            <ActivityIndicator size="small" color={c.brand} style={{ marginTop: space[3] }} />
+            <View style={{ marginTop: space[2] }}>
+              {Array.from({ length: 6 }).map((_, i) => <ListRowSkeleton key={i} />)}
+            </View>
           ) : !filteredAdminUsers?.length ? (
-            <Text style={s.emptyText}>No hay usuarios registrados.</Text>
+            <EmptyState
+              icon="people-outline"
+              title={adminSearch ? 'Sin resultados' : 'Sin usuarios'}
+              message={adminSearch ? `No encontramos usuarios para "${adminSearch}".` : 'No hay usuarios registrados.'}
+            />
           ) : (
             <View style={{ gap: space[3] }}>
               {filteredAdminUsers.map((u, index) => (
@@ -169,11 +180,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
   sectionSubtitle: { fontSize: text.sm, color: c.textMuted },
-  emptyText: { fontSize: text.sm, color: c.textFaint },
   searchInput: {
     borderWidth: 1, borderColor: 'transparent', borderRadius: radius.md,
     paddingHorizontal: space[4], paddingVertical: space[3],
-    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt,
   },
 
   adminRow: {
@@ -182,34 +192,26 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
   },
   adminRowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
-  adminRowName: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
-  adminRowEmail: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
-  adminRowMeta: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
-  adminExpires: { fontSize: text.xs, color: c.textFaint },
+  adminRowName: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  adminRowEmail: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
+  adminRowMeta: { fontSize: text.sm, color: c.textFaint, marginTop: 2 },
+  adminExpires: { fontSize: text.sm, color: c.textFaint },
   planPill: { borderRadius: radius.full, paddingHorizontal: space[3], paddingVertical: space[1] },
   planPillFree: { backgroundColor: c.surfaceAlt },
   planPillPro: { backgroundColor: c.goldSoft },
-  planPillText: { fontSize: text.xs, fontWeight: weight.bold },
+  planPillText: { fontSize: text.xs, fontWeight: weight.semibold },
   planPillTextFree: { color: c.textMuted },
   planPillTextPro: { color: c.goldText },
-  monthsToggle: {
-    borderRadius: radius.md,
-    paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
-    justifyContent: 'center', backgroundColor: c.surfaceAlt,
+  // Opciones de duración: filas planas sobre la hoja, separadas por hairline.
+  monthsLista: { paddingBottom: space[1] },
+  monthsItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    minHeight: touch.min + 6, paddingHorizontal: space[1], gap: space[3],
   },
-  monthsToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  monthsToggleText: { fontSize: text.sm, color: c.text },
-  monthsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  monthsOption: {
-    borderRadius: radius.md,
-    paddingHorizontal: space[3], paddingVertical: space[3], minHeight: touch.min,
-    justifyContent: 'center', backgroundColor: c.surfaceAlt,
-  },
-  monthsOptionActive: { backgroundColor: c.brandSoft },
-  monthsOptionText: { fontSize: text.sm, color: c.textMuted },
-  monthsOptionTextActive: { color: c.brand, fontWeight: weight.semibold },
+  monthsItemBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  monthsItemText: { fontSize: text.md, color: c.text, letterSpacing: -0.2 },
   activateBtn: { backgroundColor: c.brand, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
-  activateBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  activateBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
   revokeBtn: {
     borderRadius: radius.md,
     paddingVertical: space[3], alignItems: 'center', backgroundColor: c.surfaceAlt,

@@ -71,7 +71,7 @@ function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: numb
   const bg  = statusBg(st, c);
 
   return (
-    <View style={[n.node, { width, backgroundColor: bg, borderColor: dim ? c.borderStrong : col + '50', opacity: dim ? 0.7 : 1 }]}>
+    <View style={[n.node, { width, backgroundColor: bg, opacity: dim ? 0.7 : 1 }]}>
       {data.status && data.status !== 'unverified' && (
         <View style={[n.statusDot, { backgroundColor: col }]} />
       )}
@@ -145,7 +145,7 @@ function PedigreeTree({ horseName, pedigree }: {
       <View style={n.gen}>
         <View style={[n.node, n.nodeHorse, { width: w1 }]}>
           <View style={n.horseIconWrap}>
-            <HorseHeadIcon size={22} color={colors.white} />
+            <HorseHeadIcon size={22} color={c.textMuted} />
           </View>
           <Text style={n.horseName}>{horseName}</Text>
           <Text style={n.horseLabel}>CABALLO</Text>
@@ -240,22 +240,24 @@ const makeN = (c: ThemeColors) => StyleSheet.create({
   hLine: { height: 2, flex: 1, backgroundColor: c.border },
 
   node: {
-    borderRadius: 12, borderWidth: 1.5, borderColor: c.borderStrong,
+    borderRadius: 12,
     padding: 10, gap: 3, position: 'relative', overflow: 'hidden',
   },
-  nodeEmpty: { backgroundColor: c.surfaceAlt, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', minHeight: 52 },
+  nodeEmpty: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center', minHeight: 52 },
   emptyText: { color: c.textFaint, fontSize: 18 },
   statusDot: { position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: 4 },
   name: { fontSize: 12, fontWeight: '700', color: c.text, lineHeight: 16 },
   reg: { fontSize: 10, color: c.textFaint },
 
+  // El nodo del caballo es neutro: superficie del theme, sin cuero ni borde.
   nodeHorse: {
-    backgroundColor: c.brand, borderColor: c.brand,
     alignItems: 'center', gap: 4, paddingVertical: 14,
+    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+    backgroundColor: c.isDark ? c.surfaceAlt : c.surface,
   },
-  horseIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  horseName: { fontSize: 15, fontWeight: '800', color: colors.white, textAlign: 'center' },
-  horseLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: 1, textTransform: 'uppercase' },
+  horseIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+  horseName: { fontSize: 15, fontWeight: '600', color: c.text, textAlign: 'center' },
+  horseLabel: { fontSize: 9, fontWeight: '700', color: c.textFaint, letterSpacing: 1, textTransform: 'uppercase' },
 
   parentLabel: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 4 },
   parentLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
@@ -850,7 +852,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   modalBody: { padding: space[5], gap: 4, paddingBottom: space[10] },
   modalFooter: {
     flexDirection: 'row', gap: space[2], padding: space[4],
-    borderTopWidth: 1, borderTopColor: c.border,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
   },
 
   fieldset: { backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[4] - 2, gap: 4, marginBottom: space[3] },
@@ -874,7 +876,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     overflow: 'hidden', marginTop: 4,
     ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
   },
-  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: space[3], minHeight: touch.min, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: c.border },
+  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: space[3], minHeight: touch.min, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   dropdownName: { fontSize: text.base, color: c.text, fontWeight: weight.medium },
   dropdownReg: { fontSize: text.sm, color: c.textFaint },
   errorText: { fontSize: text.sm, color: c.danger, marginTop: space[2] },

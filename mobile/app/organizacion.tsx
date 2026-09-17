@@ -93,19 +93,15 @@ function InviteModal({ visible, orgId, onClose, c, s }: { visible: boolean; orgI
       onClose={onClose}
       title="Invitar miembro"
       footer={
-        <>
-          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
-            <Text style={s.btnSecondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.btn, s.btnPrimary, { flex: 1 }, (!email.trim() || create.isPending) && { opacity: 0.5 }]}
-            disabled={!email.trim() || create.isPending}
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-          >
-            {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Generar</Text>}
-          </TouchableOpacity>
-        </>
+        // Un solo CTA: la X de la hoja ya cancela.
+        <TouchableOpacity
+          style={[s.btn, s.btnPrimary, { flex: 1 }, (!email.trim() || create.isPending) && { opacity: 0.5 }]}
+          disabled={!email.trim() || create.isPending}
+          onPress={handleSubmit}
+          activeOpacity={0.85}
+        >
+          {create.isPending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Generar</Text>}
+        </TouchableOpacity>
       }
     >
       <TextInput
@@ -162,19 +158,15 @@ function ApproveJoinModal({
       onClose={onClose}
       title="Aprobar ingreso"
       footer={
-        <>
-          <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
-            <Text style={s.btnSecondaryText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.btn, s.btnPrimary, { flex: 1 }, pending && { opacity: 0.5 }]}
-            disabled={pending}
-            onPress={() => onConfirm(role)}
-            activeOpacity={0.85}
-          >
-            {pending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Aprobar</Text>}
-          </TouchableOpacity>
-        </>
+        // Un solo CTA: la X de la hoja ya cancela.
+        <TouchableOpacity
+          style={[s.btn, s.btnPrimary, { flex: 1 }, pending && { opacity: 0.5 }]}
+          disabled={pending}
+          onPress={() => onConfirm(role)}
+          activeOpacity={0.85}
+        >
+          {pending ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={s.btnPrimaryText}>Aprobar</Text>}
+        </TouchableOpacity>
       }
     >
       <Text style={{ fontSize: text.sm, color: c.textMuted, marginBottom: 4 }}>
