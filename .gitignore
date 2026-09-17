@@ -11,3 +11,8 @@ uploads/
 # Capturas de QA / preview (no versionar)
 qa-*.png
 .playwright-mcp/
+
+# Capturas sueltas de pruebas/QA en la raíz
+/*.png
+/*.jpeg
+/*.jpg
