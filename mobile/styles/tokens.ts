@@ -131,3 +131,20 @@ export const weight = {
  * para leer dos líneas es desperdiciarla.
  */
 export const photoScrim = ['transparent', 'rgba(21,20,15,0.2)', 'rgba(21,20,15,0.78)'] as const;
+
+/**
+ * Ancho exacto de una celda en una grilla de N columnas.
+ *
+ * En porcentaje no se puede: `width: '31.5%'` no sabe cuánto ocupan los
+ * espacios entre celdas, así que tres celdas del 31.5% MÁS dos espacios de
+ * 10px se pasan del ancho por uno o dos píxeles y la última cae a la fila
+ * siguiente. Se ve como una grilla de dos columnas con un hueco al costado.
+ */
+export function anchoCelda(
+  anchoDisponible: number,
+  columnas: number,
+  gap: number,
+  paddingLateral: number,
+): number {
+  return (anchoDisponible - paddingLateral * 2 - gap * (columnas - 1)) / columnas;
+}

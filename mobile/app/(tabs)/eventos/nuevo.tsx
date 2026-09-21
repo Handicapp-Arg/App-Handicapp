@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  TextInput, ActivityIndicator, Alert,
+  TextInput, ActivityIndicator, Alert, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
@@ -25,7 +25,7 @@ import { haptic } from '../../../lib/haptics';
 import { CURRENCY_OPTIONS, type Currency } from '../../../lib/currency';
 import { colors, makeEventTypeColors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../styles/tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow, anchoCelda } from '../../../styles/tokens';
 import { useToast } from '../../../components/Toast';
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'tarea', 'carrera', 'gasto', 'nota'] as const;
@@ -69,6 +69,9 @@ export default function NuevoEventoScreen() {
   const { user } = useAuth();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
+  // Tres por fila, medidas en píxeles y no en porcentaje (ver `anchoCelda`).
+  const { width: anchoPantalla } = useWindowDimensions();
+  const anchoTipo = anchoCelda(anchoPantalla, 3, space[2] + 2, space[4] + 2);
   const eventTypeColors = makeEventTypeColors(c);
   const typeOpts = visibleTypeOptions(user?.role);
   const { data: horses } = useHorses();
@@ -175,7 +178,7 @@ export default function NuevoEventoScreen() {
               return (
                 <PressableScale
                   key={t}
-                  style={[s.tipo, activo && s.tipoActivo]}
+                  style={[s.tipo, { width: anchoTipo }, activo && s.tipoActivo]}
                   onPress={() => { haptic.selection(); setType(t); }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: activo }}
@@ -351,8 +354,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* ─── Grilla de tipos ──────────────────────────────────────────────────── */
   grillaTipos: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 2 },
   tipo: {
-    // Tres por fila: 33% menos el gap de 10.
-    width: '31.5%',
+    // El ancho lo calcula la pantalla con `anchoCelda`: en porcentaje, tres
+    // celdas más sus dos espacios se pasaban por un pixel y la tercera caía.
     height: 84, borderRadius: radius.card,
     alignItems: 'center', justifyContent: 'center', gap: space[2],
     paddingHorizontal: space[1],

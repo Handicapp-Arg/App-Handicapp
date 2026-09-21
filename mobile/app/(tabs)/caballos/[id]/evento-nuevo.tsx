@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TextInput, ActivityIndicator, Alert,
+  TextInput, ActivityIndicator, Alert, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
@@ -22,7 +22,7 @@ import { haptic } from '../../../../lib/haptics';
 import { colors } from '../../../../lib/colors';
 import { CURRENCY_OPTIONS, type Currency } from '../../../../lib/currency';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../../styles/tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow, anchoCelda } from '../../../../styles/tokens';
 import { entradaFila } from '../../../../styles/motion';
 import { useCommonStyles } from '../../../../styles/common';
 
@@ -64,6 +64,10 @@ export default function EventoNuevoScreen() {
   const { c } = useTheme();
   const { input: inputStyle } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
+  // Tres por fila, en píxeles: el 31.5% se pasaba por un pixel y la tercera
+  // celda caía a la fila siguiente (ver `anchoCelda`).
+  const { width: anchoPantalla } = useWindowDimensions();
+  const anchoCelda3 = anchoCelda(anchoPantalla, 3, space[2] + 2, space[4]);
   const toast = useToast();
 
   // El caballo viene implícito por la ruta: no hace falta selector.
@@ -182,7 +186,7 @@ export default function EventoNuevoScreen() {
               const activo = type === t.key;
               const Icono = t.Icon;
               return (
-                <Animated.View key={t.key} entering={entradaFila(i)} style={s.celda3}>
+                <Animated.View key={t.key} entering={entradaFila(i)} style={[s.celda3, { width: anchoCelda3 }]}>
                   <PressableScale
                     style={[s.tarjetaOpcion, activo ? s.opcionActiva : s.opcionInactiva]}
                     onPress={() => { haptic.selection(); setType(t.key); }}
@@ -208,7 +212,7 @@ export default function EventoNuevoScreen() {
                 const activo = expenseCategory === cat.value;
                 const Icono = cat.Icon;
                 return (
-                  <Animated.View key={cat.value} entering={entradaFila(i)} style={s.celda3}>
+                  <Animated.View key={cat.value} entering={entradaFila(i)} style={[s.celda3, { width: anchoCelda3 }]}>
                     <PressableScale
                       style={[s.tarjetaOpcion, activo ? s.opcionActiva : s.opcionInactiva]}
                       onPress={() => { haptic.selection(); setExpenseCategory(activo ? '' : cat.value); }}
@@ -281,7 +285,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   /* Grillas de opciones: tres columnas, la elegida pasa a tinta. */
   grilla: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 2 },
-  celda3: { width: '31.5%' },
+  celda3: {},
   tarjetaOpcion: { height: 84, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center', gap: space[2], paddingHorizontal: space[2] },
   opcionActiva: { backgroundColor: c.text },
   opcionInactiva: { backgroundColor: c.surface, ...(c.isDark ? {} : shadow.sm) },
