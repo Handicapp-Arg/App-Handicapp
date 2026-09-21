@@ -360,8 +360,7 @@ export default function EventosScreen() {
         </ScrollView>
       ) : null}
 
-      {/* El `key` remonta el feed al cambiar de caballo: ver FeedEventos. */}
-      <FeedEventos key={horseId || 'todos'} horseId={horseId} c={c} s={s} />
+      <FeedEventos horseId={horseId} c={c} s={s} />
     </View>
   );
 }

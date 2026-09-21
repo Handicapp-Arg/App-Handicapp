@@ -34,15 +34,34 @@ export function useAllEvents(params?: { type?: string; horse_id?: string }) {
     staleTime: 15_000,
   });
 
-  // Acumular páginas en un efecto para no llamar setState durante el render
+  /**
+   * Acumular páginas en un efecto para no llamar setState durante el render.
+   *
+   * La página 1 REEMPLAZA en lugar de sumar. Antes solo sumaba, así que al
+   * cambiar de filtro los eventos del filtro anterior seguían en la lista y
+   * parecía que el filtro no hacía nada: los nuevos se agregaban abajo, fuera
+   * de la pantalla. Funcionaba solo si quien usa el hook se acordaba de
+   * remontar el componente entero, que es una trampa esperando a la próxima
+   * pantalla que lo use.
+   */
   useEffect(() => {
     if (!query.data) return;
+    const pagina = query.data.data;
     setAllItems((prev) => {
-      const existingIds = new Set(prev.map((e) => e.id));
-      const newItems = query.data!.data.filter((e) => !existingIds.has(e.id));
-      return newItems.length > 0 ? [...prev, ...newItems] : prev;
+      if (page === 1) return pagina;
+      const existentes = new Set(prev.map((e) => e.id));
+      const nuevos = pagina.filter((e) => !existentes.has(e.id));
+      return nuevos.length > 0 ? [...prev, ...nuevos] : prev;
     });
-  }, [query.data]);
+  }, [query.data, page]);
+
+  // Cambió el filtro: se vuelve a la primera página y se limpia lo acumulado,
+  // sin depender de que el componente se remonte.
+  const filtro = JSON.stringify(params ?? {});
+  useEffect(() => {
+    setPage(1);
+    setAllItems([]);
+  }, [filtro]);
 
   const hasMore = query.data ? allItems.length < query.data.total : true;
 
