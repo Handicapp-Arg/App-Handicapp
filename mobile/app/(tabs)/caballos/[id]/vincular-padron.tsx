@@ -1,33 +1,47 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
+  View, Text, StyleSheet, ScrollView, TextInput,
   ActivityIndicator, Alert, Platform, ActionSheetIOS,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  CheckCircle2, Info, Paperclip, FileText, ChevronRight,
-} from 'lucide-react-native';
+import Animated from 'react-native-reanimated';
+import { Check, CheckCircle2, ChevronRight, Camera, Search } from 'lucide-react-native';
 
 import { useSubmitClaim, useUploadClaimDocument, type HorseRecord } from '../../../../hooks/use-horse-records';
 import { useHorse } from '../../../../hooks/use-horses';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { PressableScale } from '../../../../components/PressableScale';
 import { AppImage } from '../../../../components/AppImage';
+import { EmptyState } from '../../../../components/EmptyState';
 import { haptic } from '../../../../lib/haptics';
 import { colors } from '../../../../lib/colors';
 import { Routes, nav } from '../../../../lib/routes';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../../styles/tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../../styles/tokens';
+import { entradaFila } from '../../../../styles/motion';
+
+const SEX_LABEL: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
 
 const SOURCE_LABELS: Record<string, string> = {
-  studbook_ar: 'Studbook AR',
+  studbook_ar: 'Stud Book AR',
   sra: 'SRA',
   aqha: 'AQHA',
   allbreed: 'AllBreed',
   pedigreequery: 'PedigreeQuery',
   manual: 'Manual',
 };
+
+/** Los tres datos que sirven para decidir si un registro es tu caballo. */
+function Dato({ etiqueta, valor, s }: { etiqueta: string; valor: string; s: Styles }) {
+  return (
+    <View style={{ flexShrink: 1 }}>
+      <Text style={s.datoEtiqueta}>{etiqueta}</Text>
+      <Text style={s.datoValor} numberOfLines={1}>{valor}</Text>
+    </View>
+  );
+}
 
 export default function VincularPadronScreen() {
   const params = useLocalSearchParams<{ id: string; matches?: string; microchip?: string; birthDate?: string }>();
@@ -37,7 +51,6 @@ export default function VincularPadronScreen() {
   const matchesParam = Array.isArray(params.matches) ? params.matches[0] : params.matches;
 
   const router = useRouter();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -54,10 +67,12 @@ export default function VincularPadronScreen() {
     }
   }, [matchesParam]);
 
-  const [step, setStep] = useState<'list' | 'form' | 'done'>('list');
-  const [selectedRecord, setSelectedRecord] = useState<HorseRecord | null>(null);
+  // Una sola pantalla en vez de la escalera lista → formulario → listo: elegir
+  // el registro, adjuntar y enviar son un mismo trámite y se ven de una.
+  const [enviado, setEnviado] = useState(false);
+  const [elegido, setElegido] = useState<HorseRecord | null>(null);
   const [docUri, setDocUri] = useState<string | null>(null);
-  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [registro, setRegistro] = useState('');
   const [error, setError] = useState('');
 
   const pickDoc = async (source: 'camera' | 'gallery') => {
@@ -75,13 +90,14 @@ export default function VincularPadronScreen() {
   };
 
   const handlePickDoc = () => {
+    haptic.light();
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         { options: ['Cancelar', 'Tomar foto', 'Elegir de galería'], cancelButtonIndex: 0 },
         (i) => { if (i === 1) pickDoc('camera'); else if (i === 2) pickDoc('gallery'); },
       );
     } else {
-      Alert.alert('Documento', '¿Cómo querés adjuntar el documento?', [
+      Alert.alert('Certificado', '¿Cómo querés adjuntarlo?', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Tomar foto', onPress: () => pickDoc('camera') },
         { text: 'Elegir de galería', onPress: () => pickDoc('gallery') },
@@ -89,19 +105,20 @@ export default function VincularPadronScreen() {
     }
   };
 
-  const handleSelectRecord = (record: HorseRecord) => {
+  const elegir = (record: HorseRecord) => {
     haptic.selection();
-    setSelectedRecord(record);
-    setDocUri(null);
-    setRegistrationNumber('');
     setError('');
-    setStep('form');
+    // Volver a tocar el elegido lo suelta: no hace falta un botón de deshacer.
+    setElegido((prev) => (prev?.id === record.id ? null : record));
   };
 
-  const handleSendClaim = async () => {
-    if (!selectedRecord) return;
-    if (!docUri && !registrationNumber.trim()) {
-      setError('Subí un documento o ingresá el número de registro para continuar.');
+  const enviar = async () => {
+    if (!elegido) {
+      setError('Elegí primero cuál de los registros es tu caballo.');
+      return;
+    }
+    if (!docUri && !registro.trim()) {
+      setError('Subí el certificado o ingresá el número de registro para continuar.');
       return;
     }
     setError('');
@@ -114,228 +131,305 @@ export default function VincularPadronScreen() {
         document_public_id = uploaded.public_id;
       }
       await submitClaim.mutateAsync({
-        horse_record_id: selectedRecord.id,
+        horse_record_id: elegido.id,
         horse_id: id,
         microchip: microchip || undefined,
         claimed_birth_date: birthDate || undefined,
-        registration_number: registrationNumber.trim() || undefined,
+        registration_number: registro.trim() || undefined,
         document_url,
         document_public_id,
       });
       haptic.success();
-      setStep('done');
+      setEnviado(true);
     } catch {
       haptic.error();
       setError('No se pudo enviar el reclamo. Intentá de nuevo.');
     }
   };
 
-  // El back físico/gesto en el paso "form" vuelve a la lista de coincidencias
-  // en vez de sacarte de la pantalla entera (evita perder el trámite por error).
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
-      if (step !== 'form') return;
-      e.preventDefault();
-      haptic.selection();
-      setStep('list');
-      setDocUri(null);
-      setRegistrationNumber('');
-      setError('');
-    });
-    return unsubscribe;
-  }, [navigation, step]);
+  const ocupado = uploadDoc.isPending || submitClaim.isPending;
+  const irAlCaballo = () => { haptic.light(); nav.replace(router, Routes.caballo(id)); };
 
-  const isBusy = uploadDoc.isPending || submitClaim.isPending;
-
-  const goToHorse = () => { haptic.light(); nav.replace(router, Routes.caballo(id)); };
-
-  const title = step === 'done' ? '¡Reclamo enviado!' : step === 'form' ? 'Validar posesión' : 'Posibles coincidencias';
+  if (enviado) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable title="Vincular al padrón" subtitle={horse?.name} />
+        <View style={s.listoWrap}>
+          <View style={s.listoIcono}>
+            <CheckCircle2 size={44} color={c.brand} strokeWidth={1.9} />
+          </View>
+          <Text style={s.listoTitulo}>Reclamo enviado</Text>
+          <Text style={s.listoTexto}>
+            Vamos a revisar la documentación y te avisamos cuando {horse?.name ?? 'tu caballo'} quede
+            vinculado al registro oficial.
+          </Text>
+        </View>
+        <View style={[s.pie, { paddingBottom: insets.bottom + space[4] }]}>
+          <PressableScale style={s.cta} onPress={irAlCaballo} accessibilityRole="button">
+            <Text style={s.ctaTexto}>Listo</Text>
+          </PressableScale>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <ScreenHeader scrollable showBack={step !== 'done'} title={title} subtitle={horse?.name} />
+      <ScreenHeader scrollable showBack title="Vincular al padrón" subtitle={horse?.name} />
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={s.body}
+        contentContainerStyle={s.cuerpo}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         keyboardDismissMode="interactive"
       >
-        {step === 'done' && (
-          <View style={s.doneWrap}>
-            <CheckCircle2 size={52} color={c.success} strokeWidth={2} />
-            <Text style={s.doneTitle}>¡Reclamo enviado!</Text>
-            <Text style={s.doneSub}>
-              Vamos a validar la documentación y te avisamos cuando tu caballo quede vinculado al registro oficial del padrón.
-            </Text>
-          </View>
-        )}
+        <Text style={s.intro}>
+          Si tu caballo está inscripto, vinculalo y traés su pedigrí, su fecha y su número oficial.
+        </Text>
 
-        {step === 'list' && (
+        {/* Lo que buscamos en el padrón fue el nombre del caballo: se muestra
+            como campo lleno, no editable, para que se entienda de dónde salen
+            los resultados de abajo. */}
+        <View style={s.busqueda}>
+          <Search size={18} color={c.textFaint} strokeWidth={1.9} />
+          <Text style={s.busquedaTexto} numberOfLines={1}>{horse?.name ?? 'Tu caballo'}</Text>
+        </View>
+
+        {matches.length === 0 ? (
+          <EmptyState
+            icon="search-outline"
+            title="Sin coincidencias"
+            message="No encontramos ejemplares parecidos en el padrón oficial. Puede estar con otro nombre o sin inscribir."
+          />
+        ) : (
           <>
-            <Text style={s.hint}>Encontramos estos ejemplares en el padrón oficial. Si alguno es tu caballo, reclamalo para verificarlo.</Text>
-            <View>
-              {matches.map((r, i) => (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[s.matchRow, i > 0 && s.matchRowBorde]}
-                  onPress={() => handleSelectRecord(r)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Reclamar ${r.name}`}
-                >
-                  <View style={s.matchInfo}>
-                    <Text style={s.matchName}>{r.name}</Text>
-                    {[r.birth_year, r.sex, r.breed, r.color].filter(Boolean).length > 0 && (
-                      <Text style={s.matchDetail} numberOfLines={1}>
-                        {[r.birth_year, r.sex, r.breed, r.color].filter(Boolean).join(' · ')}
-                      </Text>
+            <Text style={s.seccion}>Posibles coincidencias</Text>
+
+            {matches.map((r, i) => {
+              const on = elegido?.id === r.id;
+              const vitales = [
+                r.birth_year != null ? String(r.birth_year) : null,
+                r.sex ? SEX_LABEL[r.sex].toLowerCase() : null,
+                SOURCE_LABELS[r.registration_source as string] ?? r.registration_source,
+              ].filter(Boolean).join(' · ');
+
+              return (
+                <Animated.View key={r.id} entering={entradaFila(i)}>
+                  <PressableScale
+                    style={on ? s.tarjeta : [s.fila, i > 0 && s.filaBorde]}
+                    onPress={() => elegir(r)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={`Elegir el registro de ${r.name}`}
+                  >
+                    {on ? (
+                      <>
+                        <View style={s.tarjetaCabecera}>
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={s.tarjetaNombre} numberOfLines={1}>{r.name}</Text>
+                            <Text style={s.tarjetaFuente}>
+                              {SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}
+                              {r.ownership_status === 'pending_claim' ? ' · reclamo pendiente' : ''}
+                            </Text>
+                          </View>
+                          <Check size={20} color={c.brand} strokeWidth={2.4} />
+                        </View>
+                        <View style={s.tarjetaDatos}>
+                          {r.birth_year != null && <Dato etiqueta="Nació" valor={String(r.birth_year)} s={s} />}
+                          {r.sex && <Dato etiqueta="Sexo" valor={SEX_LABEL[r.sex]} s={s} />}
+                          {r.sire_name && <Dato etiqueta="Padre" valor={r.sire_name} s={s} />}
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={s.filaNombre} numberOfLines={1}>{r.name}</Text>
+                          {vitales ? <Text style={s.filaVitales} numberOfLines={1}>{vitales}</Text> : null}
+                        </View>
+                        <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />
+                      </>
                     )}
-                    <View style={s.matchSourceRow}>
-                      <FileText size={11} color={c.textFaint} strokeWidth={2} />
-                      <Text style={s.matchSource}>{SOURCE_LABELS[r.registration_source as string] ?? r.registration_source ?? 'Padrón'}</Text>
-                      {r.ownership_status === 'pending_claim' && (
-                        <Text style={s.matchPending}>· Reclamo pendiente</Text>
-                      )}
+                  </PressableScale>
+                </Animated.View>
+              );
+            })}
+
+            {/* La prueba solo se pide cuando ya hay un registro elegido: antes
+                de eso no hay nada que probar y la pantalla sería un formulario. */}
+            {elegido && (
+              <Animated.View entering={entradaFila(matches.length)} style={{ gap: space[3] }}>
+                <PressableScale
+                  style={s.certificado}
+                  onPress={handlePickDoc}
+                  accessibilityRole="button"
+                  accessibilityLabel={docUri ? 'Cambiar el certificado adjunto' : 'Subir el certificado'}
+                >
+                  {docUri ? (
+                    <AppImage source={{ uri: docUri }} style={s.certificadoMiniatura} />
+                  ) : (
+                    <View style={s.certificadoIcono}>
+                      <Camera size={19} color={c.textMuted} strokeWidth={1.9} />
                     </View>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.certificadoTitulo}>
+                      {docUri ? 'Certificado adjunto' : 'Subir el certificado'}
+                    </Text>
+                    <Text style={s.certificadoSub}>
+                      {docUri ? 'Tocá para cambiarlo' : 'Acelera la verificación'}
+                    </Text>
                   </View>
-                  <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {docUri
+                    ? <Check size={19} color={c.brand} strokeWidth={2.4} />
+                    : <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />}
+                </PressableScale>
+
+                <TextInput
+                  style={s.input}
+                  value={registro}
+                  onChangeText={setRegistro}
+                  placeholder="Número de registro (si no tenés el certificado)"
+                  placeholderTextColor={c.textFaint}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={enviar}
+                />
+              </Animated.View>
+            )}
           </>
         )}
 
-        {step === 'form' && selectedRecord && (
-          <>
-            <Text style={s.matchSubtitle}>{selectedRecord.name}</Text>
-            <View style={s.infoBox}>
-              <Info size={16} color={c.textMuted} strokeWidth={2} />
-              <Text style={s.infoText}>
-                Necesitamos al menos un documento oficial o el número de registro para validar la posesión.
-              </Text>
-            </View>
+        {error ? <Text style={s.error}>{error}</Text> : null}
 
-            <TextInput
-              style={[s.input, { height: touch.field }]}
-              value={registrationNumber}
-              onChangeText={setRegistrationNumber}
-              placeholder="Número de registro (opcional), ej: STB-2018-00142"
-              placeholderTextColor={c.textFaint}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              returnKeyType="done"
-              onSubmitEditing={() => handleSendClaim()}
-            />
-
-            <Text style={s.fieldLabel}>Documento de propiedad</Text>
-            <TouchableOpacity style={s.docPickerBtn} onPress={handlePickDoc} activeOpacity={0.8}>
-              {docUri ? (
-                <View style={s.docPreviewRow}>
-                  <AppImage source={{ uri: docUri }} style={s.docThumb} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.docPickedText}>Documento adjunto</Text>
-                    <Text style={s.docPickedSub}>Tocá para cambiar</Text>
-                  </View>
-                  <CheckCircle2 size={20} color={c.success} strokeWidth={2} />
-                </View>
-              ) : (
-                <View style={s.docPlaceholder}>
-                  <Paperclip size={28} color={c.textFaint} strokeWidth={2} />
-                  <Text style={s.docPlaceholderText}>Adjuntar certificado</Text>
-                  <Text style={s.docPlaceholderSub}>Foto del certificado del Studbook, DNE u otro</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {error ? <Text style={s.errorText}>{error}</Text> : null}
-          </>
-        )}
+        <PressableScale
+          style={s.omitir}
+          onPress={irAlCaballo}
+          accessibilityRole="button"
+          accessibilityLabel="Omitir la vinculación por ahora"
+        >
+          <Text style={s.omitirTexto}>Omitir por ahora</Text>
+        </PressableScale>
       </ScrollView>
 
-      {step === 'list' && (
-        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-          {/* Salida secundaria como link de texto, no como CTA cuero */}
-          <TouchableOpacity
-            style={s.skipLink}
-            onPress={goToHorse}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Omitir vinculación por ahora"
-          >
-            <Text style={s.skipLinkText}>Omitir por ahora</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {step === 'form' && (
-        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-          {/* Un solo CTA: el back del header/gesto ya vuelve a la lista */}
-          <TouchableOpacity
-            style={[s.submitBtn, { flex: 1 }, isBusy && { opacity: 0.6 }]}
-            onPress={handleSendClaim}
-            disabled={isBusy}
-            activeOpacity={0.85}
-          >
-            {isBusy
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={s.submitBtnText}>Enviar reclamo</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {step === 'done' && (
-        <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-          <TouchableOpacity style={[s.submitBtn, { flex: 1 }]} onPress={goToHorse} activeOpacity={0.85}>
-            <Text style={s.submitBtnText}>Listo</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={[s.pie, { paddingBottom: insets.bottom + space[4] }]}>
+        <PressableScale
+          style={[s.cta, (!elegido || ocupado) && s.ctaApagado]}
+          onPress={enviar}
+          disabled={ocupado}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: ocupado, busy: ocupado }}
+          accessibilityLabel="Vincular este registro"
+        >
+          {ocupado
+            ? <ActivityIndicator color={colors.white} size="small" />
+            : <Text style={s.ctaTexto}>Vincular este registro</Text>}
+        </PressableScale>
+        <Text style={s.piePie}>Lo revisa un administrador antes de quedar firme</Text>
+      </View>
     </View>
   );
 }
 
+type Styles = ReturnType<typeof makeStyles>;
+
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  body: { paddingHorizontal: space[4], paddingTop: space[1], paddingBottom: space[8], gap: space[3] },
-  hint: { fontSize: text.sm, color: c.textMuted, lineHeight: 19, marginBottom: space[1] },
+  cuerpo: { paddingHorizontal: space[4], paddingBottom: space[8] },
 
-  /* Coincidencias: filas planas, toda la fila navega */
-  matchRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], minHeight: touch.field },
-  matchRowBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
-  matchInfo: { flex: 1, gap: 2 },
-  matchName: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
-  matchDetail: { fontSize: text.sm, color: c.textMuted },
-  matchSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  matchSource: { fontSize: text.xs, color: c.textFaint },
-  matchPending: { fontSize: text.xs, color: c.warning },
+  intro: { fontSize: text.base, color: c.textMuted, lineHeight: 22 },
 
-  matchSubtitle: { fontSize: text.sm, color: c.textFaint },
-  infoBox: { flexDirection: 'row', gap: space[2], alignItems: 'flex-start', backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space[3] },
-  infoText: { flex: 1, fontSize: text.xs, color: c.textMuted, lineHeight: 17 },
-  fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  errorText: { fontSize: text.sm, color: c.danger },
+  busqueda: {
+    marginTop: space[5],
+    height: touch.min + 4,
+    borderRadius: radius.thumb,
+    backgroundColor: c.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[2] + 2,
+    paddingHorizontal: space[4],
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  busquedaTexto: { flex: 1, fontSize: text.base, color: c.text },
 
-  docPickerBtn: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: c.surfaceAlt },
-  docPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[6], gap: 6 },
-  docPlaceholderText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
-  docPlaceholderSub: { fontSize: text.xs, color: c.textFaint },
-  docPreviewRow: { flexDirection: 'row', alignItems: 'center', padding: space[3], gap: space[3] },
-  docThumb: { width: 56, height: 56, borderRadius: radius.md },
-  docPickedText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  docPickedSub: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  seccion: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint, marginTop: space[5], marginBottom: space[3] },
 
-  doneWrap: { alignItems: 'center', paddingVertical: space[10], gap: space[3] },
-  doneTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text },
-  doneSub: { fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
+  /* Sin elegir: fila plana, la lista se lee de un vistazo */
+  fila: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[4] },
+  filaBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  filaNombre: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  filaVitales: { fontSize: text.sm, color: c.textMuted, marginTop: 3 },
 
-  footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3] },
-  skipLink: { flex: 1, minHeight: touch.min, justifyContent: 'center', alignItems: 'center' },
-  skipLinkText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  /* Elegido: sube a tarjeta con el contorno de la marca. El verde marca la
+     decisión tomada, que es la acción de esta pantalla. */
+  tarjeta: {
+    backgroundColor: c.surface,
+    borderRadius: radius.card,
+    padding: space[4],
+    marginVertical: space[2],
+    borderWidth: 2,
+    borderColor: c.brand,
+    ...(c.isDark ? {} : shadow.lg),
+  },
+  tarjetaCabecera: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  tarjetaNombre: { fontSize: text.lg - 4, fontWeight: weight.semibold, color: c.text },
+  tarjetaFuente: { fontSize: text.sm, color: c.textMuted, marginTop: 3 },
+  tarjetaDatos: { flexDirection: 'row', gap: space[5], marginTop: space[3] },
+  datoEtiqueta: { fontSize: text.xs, color: c.textFaint },
+  datoValor: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, marginTop: 2 },
+
+  certificado: {
+    marginTop: space[5],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    backgroundColor: c.surface,
+    borderRadius: radius.button,
+    padding: space[3] + 2,
+    ...(c.isDark ? {} : shadow.md),
+  },
+  certificadoIcono: {
+    width: 40, height: 40, borderRadius: radius.md + 2, backgroundColor: c.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  certificadoMiniatura: { width: 40, height: 40, borderRadius: radius.md + 2, flexShrink: 0 },
+  certificadoTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  certificadoSub: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
+
+  input: {
+    height: touch.field,
+    borderRadius: radius.field,
+    paddingHorizontal: space[4],
+    fontSize: text.base,
+    color: c.text,
+    backgroundColor: c.surfaceAlt,
+  },
+
+  error: { fontSize: text.sm, color: c.danger, marginTop: space[4] },
+
+  omitir: { minHeight: touch.min, marginTop: space[5], alignItems: 'center', justifyContent: 'center' },
+  omitirTexto: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted },
+
+  pie: { paddingHorizontal: space[4], paddingTop: space[3] },
+  cta: {
+    height: touch.button,
+    borderRadius: radius.button,
+    backgroundColor: c.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(c.isDark ? {} : brandShadow(c.brand)),
+  },
+  ctaApagado: { opacity: 0.45, shadowOpacity: 0 },
+  ctaTexto: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  piePie: { textAlign: 'center', fontSize: text.sm, color: c.textFaint, marginTop: space[3] },
+
+  listoWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space[6], gap: space[3] },
+  listoIcono: {
+    width: 84, height: 84, borderRadius: radius.card,
+    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center', marginBottom: space[2],
+  },
+  listoTitulo: { fontSize: text.xl, fontWeight: weight.bold, color: c.text, letterSpacing: -0.6 },
+  listoTexto: { fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 23 },
 });

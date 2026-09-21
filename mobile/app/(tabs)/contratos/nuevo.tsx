@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,8 +11,9 @@ import { ScreenHeader } from '../../../components/ScreenHeader';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { space, text, radius, weight, touch, brandShadow } from '../../../styles/tokens';
 import { useToast } from '../../../components/Toast';
+import { PressableScale } from '../../../components/PressableScale';
 
 const DEFAULT_BODY = `CONTRATO DE PENSIÓN EQUINA
 
@@ -158,17 +159,18 @@ export default function NuevoContratoScreen() {
 
       {/* Un solo CTA: el back del header ya cancela */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <TouchableOpacity
+        <PressableScale
           style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
           disabled={!canSubmit}
-          onPress={submit}
-          activeOpacity={0.85}
+          onPress={() => { haptic.medium(); void submit(); }}
+          accessibilityRole="button"
+          accessibilityLabel="Crear el contrato"
         >
           {createContract.isPending
             ? <ActivityIndicator color={colors.white} size="small" />
             : <Text style={s.submitBtnText}>Crear contrato</Text>
           }
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </View>
   );
@@ -178,17 +180,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[2] },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
+  input: { borderRadius: radius.field, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
   bodyInput: { height: 220, textAlignVertical: 'top', paddingTop: space[3] },
-  hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
+  hint: { fontSize: text.sm, color: c.textFaint, marginTop: space[2] },
   errorText: { fontSize: text.sm, color: c.danger, marginTop: space[2] },
-  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.successSoft, borderRadius: radius.md, padding: space[3] },
-  userFoundName: { fontSize: text.sm, fontWeight: weight.bold, color: c.success },
+  userFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.successSoft, borderRadius: radius.field, padding: space[3] },
+  userFoundName: { fontSize: text.base, fontWeight: weight.bold, color: c.success },
   userFoundRole: { fontSize: text.xs, color: c.textMuted, textTransform: 'capitalize' },
-  userNotFound: { backgroundColor: c.dangerSoft, borderRadius: radius.md, padding: space[3] },
-  userNotFoundText: { fontSize: text.xs, color: c.danger },
+  userNotFound: { backgroundColor: c.dangerSoft, borderRadius: radius.field, padding: space[3] },
+  userNotFoundText: { fontSize: text.sm, color: c.danger },
   // Footer sin borde: solo aire, como eventos/nuevo.
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.button, backgroundColor: c.brand, alignItems: 'center', ...(c.isDark ? {} : brandShadow(c.brand)) },
+  submitBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

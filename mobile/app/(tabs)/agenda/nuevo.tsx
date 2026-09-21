@@ -1,32 +1,46 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
-  TextInput, ActivityIndicator, Alert, Platform,
+  View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Clock } from 'lucide-react-native';
+import {
+  Clock, Stethoscope, Hammer, Trophy, Bug, Syringe, Dumbbell, MoreHorizontal,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { useCreateAppointment, APPOINTMENT_TYPES } from '../../../hooks/use-agenda';
 import { useHorses } from '../../../hooks/use-horses';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader } from '../../../components/ScreenHeader';
-import { ActionSheet } from '../../../components/ActionSheet';
-import { FilaSelector } from '../../../components/FilaSelector';
+import { AppImage } from '../../../components/AppImage';
+import { PressableScale } from '../../../components/PressableScale';
+import { HorseshoeH } from '../../../components/icons/equine';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../styles/tokens';
 import { hora } from '../../../lib/fechas';
-import { useCommonStyles } from '../../../styles/common';
 import { useToast } from '../../../components/Toast';
+
+/** Un ícono por tipo de turno: la grilla se elige de un vistazo, sin leer. */
+const ICONO_TIPO: Record<string, LucideIcon> = {
+  veterinario: Stethoscope,
+  herrador: Hammer,
+  competencia: Trophy,
+  desparasitacion: Bug,
+  vacuna: Syringe,
+  entrenamiento: Dumbbell,
+  otro: MoreHorizontal,
+};
+
+const TIPOS = Object.keys(APPOINTMENT_TYPES);
 
 export default function NuevoTurnoScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
-  const { input: inputStyle } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: horses } = useHorses();
   const create = useCreateAppointment();
@@ -39,17 +53,17 @@ export default function NuevoTurnoScreen() {
   const [timeDate, setTimeDate] = useState(() => { const d = new Date(); d.setHours(9, 0, 0, 0); return d; });
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [error, setError] = useState('');
-  const [selector, setSelector] = useState<'caballo' | 'tipo' | null>(null);
 
   const timeStr = hora(timeDate.toISOString());
-  const horseSel = horses?.find((h) => h.id === horseId);
 
   useEffect(() => {
     if (!horseId && horses?.[0]?.id) setHorseId(horses[0].id);
   }, [horses]);
 
   const isDirty = !!title.trim() || !!date;
-  const canSubmit = !!horseId && !!title.trim() && !!date && !create.isPending;
+  // El título deja de ser obligatorio en la UI: si no se escribe nada, vale el
+  // nombre del tipo elegido ("Veterinario"). El backend igual recibe un title.
+  const canSubmit = !!horseId && !!date && !create.isPending;
 
   // Tras guardar con exito el back es programatico: el guardia no debe frenarlo.
   const guardadoRef = useRef(false);
@@ -68,12 +82,13 @@ export default function NuevoTurnoScreen() {
   }, [navigation, isDirty]);
 
   const handleSubmit = async () => {
-    if (!horseId || !title.trim() || !date) { setError('Completá todos los campos'); haptic.error(); return; }
+    if (!horseId || !date) { setError('Elegí el caballo y el día'); haptic.error(); return; }
     setError('');
     const dt = new Date(date + 'T12:00:00');
     dt.setHours(timeDate.getHours(), timeDate.getMinutes());
+    const titulo = title.trim() || APPOINTMENT_TYPES[type]?.label || 'Turno';
     try {
-      await create.mutateAsync({ horse_id: horseId, type, title, scheduled_at: dt.toISOString() });
+      await create.mutateAsync({ horse_id: horseId, type, title: titulo, scheduled_at: dt.toISOString() });
       haptic.success();
       guardadoRef.current = true;
       toast.success('Turno agendado');
@@ -95,92 +110,188 @@ export default function NuevoTurnoScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* Título primero, con placeholder en vez de label */}
-        <TextInput
-          style={inputStyle.base}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="¿Qué turno es? Ej: Control anual"
-          placeholderTextColor={c.textFaint}
-        />
-
-        {/* Filas de selección, patrón Ajustes de iOS */}
-        <View>
-          <FilaSelector
-            primera
-            label="Caballo"
-            valor={horseSel?.name}
-            onPress={() => setSelector('caballo')}
-          />
-          <FilaSelector
-            label="Tipo"
-            valor={APPOINTMENT_TYPES[type]?.label}
-            onPress={() => setSelector('tipo')}
-          />
+        {/* ─── Para qué: grilla de tipos, la decisión que ordena todo lo demás ── */}
+        <View style={s.seccion}>
+          <Text style={s.rotulo}>Para qué</Text>
+          <View style={s.grillaTipos}>
+            {TIPOS.map((t) => {
+              const Icono = ICONO_TIPO[t] ?? MoreHorizontal;
+              const activo = type === t;
+              return (
+                <PressableScale
+                  key={t}
+                  style={[s.tipo, activo && s.tipoActivo]}
+                  onPress={() => { haptic.selection(); setType(t); }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activo }}
+                  accessibilityLabel={APPOINTMENT_TYPES[t].label}
+                >
+                  <Icono size={21} color={activo ? c.bg : c.textMuted} strokeWidth={1.9} />
+                  <Text style={[s.tipoTexto, activo && s.tipoTextoActivo]} numberOfLines={1}>
+                    {APPOINTMENT_TYPES[t].label}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
         </View>
 
-        <DatePicker label="Fecha" value={date} onChange={setDate} />
+        {/* ─── Para qué caballo: se elige por la foto, no por una lista ───────── */}
+        <View style={s.seccion}>
+          <Text style={s.rotulo}>Para qué caballo</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.filaCaballos}
+          >
+            {(horses ?? []).map((h) => {
+              const activo = horseId === h.id;
+              return (
+                <PressableScale
+                  key={h.id}
+                  style={[s.caballo, activo && s.caballoActivo]}
+                  onPress={() => { haptic.selection(); setHorseId(h.id); }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activo }}
+                  accessibilityLabel={h.name}
+                >
+                  {h.image_url ? (
+                    <AppImage source={{ uri: h.image_url }} style={s.caballoFoto} />
+                  ) : (
+                    <View style={[s.caballoFoto, s.caballoFotoVacia]}>
+                      <HorseshoeH size={26} color={c.textFaint} />
+                    </View>
+                  )}
+                  <Text style={[s.caballoNombre, activo && s.caballoNombreActivo]} numberOfLines={1}>
+                    {h.name}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-        {/* Hora */}
-        <Pressable
-          onPress={() => { haptic.selection(); setShowTimePicker(true); }}
-          style={[inputStyle.base, s.horaRow]}
-        >
-          <Text style={{ fontSize: text.base, color: c.text }}>{timeStr}</Text>
-          <Clock size={18} color={c.textFaint} strokeWidth={1.8} />
-        </Pressable>
-        {showTimePicker && (
-          <DateTimePicker
-            value={timeDate}
-            mode="time"
-            is24Hour
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(_, selected) => {
-              setShowTimePicker(Platform.OS === 'ios');
-              if (selected) setTimeDate(selected);
-            }}
-          />
-        )}
+        {/* ─── Cuándo ─────────────────────────────────────────────────────────── */}
+        <View style={s.seccion}>
+          <Text style={s.rotulo}>Cuándo</Text>
+          <DatePicker label="Día" value={date} onChange={setDate} />
+
+          <PressableScale
+            onPress={() => { haptic.selection(); setShowTimePicker(true); }}
+            style={s.horaBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`Hora: ${timeStr}`}
+          >
+            <Text style={s.horaLabel}>Hora</Text>
+            <Text style={s.horaValor}>{timeStr}</Text>
+            <Clock size={18} color={c.textFaint} strokeWidth={1.8} />
+          </PressableScale>
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={timeDate}
+              mode="time"
+              is24Hour
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(_, selected) => {
+                setShowTimePicker(Platform.OS === 'ios');
+                if (selected) setTimeDate(selected);
+              }}
+            />
+          )}
+        </View>
+
+        {/* Campo libre, sin rótulo: el placeholder describe. Es opcional. */}
+        <TextInput
+          style={s.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Con quién o qué detalle (opcional)"
+          placeholderTextColor={c.textFaint}
+          returnKeyType="done"
+        />
 
         {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
+      {/* Un solo CTA verde: el acento de la pantalla vive acá y en ningún otro lado. */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <TouchableOpacity
-          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
+        <PressableScale
+          style={[s.submitBtn, !canSubmit && s.submitBtnOff]}
           disabled={!canSubmit}
           onPress={handleSubmit}
-          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Guardar el turno"
         >
           {create.isPending
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.submitBtnText}>Crear turno</Text>
+            : <Text style={s.submitBtnText}>Guardar el turno</Text>
           }
-        </TouchableOpacity>
+        </PressableScale>
       </View>
-
-      <ActionSheet
-        visible={selector === 'caballo'}
-        onClose={() => setSelector(null)}
-        title="Caballo"
-        acciones={(horses ?? []).map((h) => ({ label: h.name, onPress: () => setHorseId(h.id) }))}
-      />
-      <ActionSheet
-        visible={selector === 'tipo'}
-        onClose={() => setSelector(null)}
-        title="Tipo de turno"
-        acciones={Object.entries(APPOINTMENT_TYPES).map(([v, m]) => ({ label: m.label, onPress: () => setType(v) }))}
-      />
     </View>
   );
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
-  horaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  body: { paddingHorizontal: space[4] + 2, paddingTop: space[2], paddingBottom: space[10], gap: space[6] },
+  seccion: { gap: space[3] },
+  rotulo: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
+
+  /* ─── Grilla de tipos ──────────────────────────────────────────────────── */
+  grillaTipos: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 1 },
+  tipo: {
+    // Cuatro por fila: (100% - 3 gaps) / 4. El gap es 9, así que 25% menos ~7.
+    width: '23%',
+    height: 78, borderRadius: radius.button,
+    alignItems: 'center', justifyContent: 'center', gap: space[1] + 3,
+    paddingHorizontal: space[1],
+    backgroundColor: c.surface,
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  // Selección invertida (negro), no verde: el verde es guardar.
+  tipoActivo: { backgroundColor: c.text },
+  tipoTexto: { fontSize: text.xs, fontWeight: weight.medium, color: c.textMuted },
+  tipoTextoActivo: { color: c.bg, fontWeight: weight.semibold },
+
+  /* ─── Caballos ─────────────────────────────────────────────────────────── */
+  filaCaballos: { gap: space[2] + 2, paddingVertical: space[1] },
+  caballo: {
+    width: 108, borderRadius: radius.button, padding: space[2] + 2, gap: space[2],
+    alignItems: 'center', backgroundColor: c.surface,
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  // Anillo en vez de fondo de color: marca la elección sin pintar la tarjeta.
+  caballoActivo: { borderWidth: 2, borderColor: c.text, padding: space[2] },
+  caballoFoto: { width: '100%', height: 58, borderRadius: radius.md + 2 },
+  caballoFotoVacia: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  caballoNombre: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
+  caballoNombreActivo: { color: c.text, fontWeight: weight.semibold },
+
+  /* ─── Hora ─────────────────────────────────────────────────────────────── */
+  horaBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    minHeight: touch.field, borderRadius: radius.field,
+    paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
+  },
+  horaLabel: { flex: 1, fontSize: text.base, color: c.textMuted },
+  horaValor: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
+
+  input: {
+    height: touch.field, borderRadius: radius.field,
+    paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
+    fontSize: text.md, color: c.text,
+  },
   errorText: { fontSize: text.sm, color: c.danger },
-  footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+
+  footer: { paddingHorizontal: space[4] + 2, paddingTop: space[3] },
+  submitBtn: {
+    height: touch.button, borderRadius: radius.button,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.brand,
+    ...(c.isDark ? {} : brandShadow(c.brand)),
+  },
+  submitBtnOff: { opacity: 0.45 },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white, letterSpacing: -0.2 },
 });

@@ -18,9 +18,10 @@ import { Routes } from '../../../lib/routes';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { space, text, radius, weight, touch, brandShadow } from '../../../styles/tokens';
 import { useCommonStyles } from '../../../styles/common';
 import { useToast } from '../../../components/Toast';
+import { PressableScale } from '../../../components/PressableScale';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -242,8 +243,7 @@ export default function NuevaFacturaScreen() {
   };
 
   return (
-    <View style={s.root}>
-      <ScreenHeader title="Nueva factura" showBack />
+    <View style={[s.root, { paddingTop: insets.top }]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.content}
@@ -252,6 +252,8 @@ export default function NuevaFacturaScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
+        <ScreenHeader scrollable title="Nueva factura" showBack />
+
         {/* Selección: filas planas patrón Ajustes de iOS (como eventos/nuevo) */}
         <View>
           <FilaSelector
@@ -340,17 +342,18 @@ export default function NuevaFacturaScreen() {
 
       {/* Footer fijo */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <TouchableOpacity
+        <PressableScale
           style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
           disabled={!canSubmit}
-          onPress={handleSubmit}
-          activeOpacity={0.85}
+          onPress={() => { void handleSubmit(); }}
+          accessibilityRole="button"
+          accessibilityLabel="Crear el borrador de la factura"
         >
           {createBill.isPending
             ? <ActivityIndicator color={colors.white} size="small" />
             : <Text style={s.submitBtnText}>Crear borrador</Text>
           }
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <AddItemSheet
@@ -389,33 +392,33 @@ export default function NuevaFacturaScreen() {
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  content: { padding: space[4], gap: space[6] },
+  content: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[6] },
   section: { gap: space[2] },
-  sectionTitle: { fontSize: text.sm, fontWeight: weight.bold, color: c.textMuted },
-  mutedNote: { fontSize: text.sm, color: c.textFaint, fontStyle: 'italic' },
+  sectionTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
+  mutedNote: { fontSize: text.base, color: c.textFaint },
 
-  ownerBox: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: c.surfaceAlt },
-  ownerName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  ownerPlaceholder: { fontSize: text.sm, color: c.textFaint },
+  ownerBox: { borderRadius: radius.field, paddingHorizontal: space[4], paddingVertical: space[3], backgroundColor: c.surfaceAlt },
+  ownerName: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  ownerPlaceholder: { fontSize: text.base, color: c.textFaint },
 
   itemsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   addItemBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addItemText: { fontSize: text.xs, fontWeight: weight.bold, color: c.brand },
+  addItemText: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[3] },
   itemRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
-  itemDesc: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  itemDesc: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
   itemMeta: { fontSize: text.xs, color: c.textFaint, marginTop: 2, fontVariant: ['tabular-nums'] },
-  itemTotal: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
+  itemTotal: { fontSize: text.base, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
   removeItemBtn: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
 
-  textarea: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.md, color: c.text, backgroundColor: c.surfaceAlt, height: 100, textAlignVertical: 'top' },
+  textarea: { borderRadius: radius.field, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.md, color: c.text, backgroundColor: c.surfaceAlt, height: 100, textAlignVertical: 'top' },
 
   totalHero: { alignItems: 'center', paddingVertical: space[6], gap: space[1] },
-  totalHeroLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  totalHeroValue: { fontSize: text.display, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  totalHeroLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
+  totalHeroValue: { fontSize: text.display, fontWeight: weight.bold, color: c.text, letterSpacing: -1.2, fontVariant: ['tabular-nums'] },
 
   // Footer sin borde ni sombra: solo aire, como eventos/nuevo.
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { backgroundColor: c.brand, borderRadius: radius.lg, height: touch.button, justifyContent: 'center', alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  submitBtn: { backgroundColor: c.brand, borderRadius: radius.button, height: touch.button, justifyContent: 'center', alignItems: 'center', ...(c.isDark ? {} : brandShadow(c.brand)) },
+  submitBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

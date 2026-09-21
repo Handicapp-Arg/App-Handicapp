@@ -14,7 +14,6 @@ import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
 import { mostrarCortina, ocultarCortina } from '../../components/IngresoCurtain';
 import { loginBiometrico, guardarCredencialesBiometricas, hayCredencialesGuardadas, biometriaDisponible } from '../../lib/biometria';

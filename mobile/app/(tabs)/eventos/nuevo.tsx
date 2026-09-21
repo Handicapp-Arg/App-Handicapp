@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
+  View, Text, StyleSheet, ScrollView, Pressable,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { AppImage } from '../../../components/AppImage';
 import {
   X, Camera, Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package,
   HeartPulse, Dumbbell, ClipboardList, Trophy, Receipt, StickyNote,
+  type LucideIcon,
 } from 'lucide-react-native';
 import { useCreateEvent } from '../../../hooks/use-events';
 import { useHorses } from '../../../hooks/use-horses';
@@ -18,17 +19,18 @@ import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader } from '../../../components/ScreenHeader';
 import { ActionSheet, type Accion } from '../../../components/ActionSheet';
 import { FilaSelector } from '../../../components/FilaSelector';
+import { PressableScale } from '../../../components/PressableScale';
+import { HorseshoeH } from '../../../components/icons/equine';
 import { haptic } from '../../../lib/haptics';
 import { CURRENCY_OPTIONS, type Currency } from '../../../lib/currency';
 import { colors, makeEventTypeColors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../styles/tokens';
-import { useCommonStyles } from '../../../styles/common';
+import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../styles/tokens';
 import { useToast } from '../../../components/Toast';
 
 const TYPE_OPTIONS = ['salud', 'entrenamiento', 'tarea', 'carrera', 'gasto', 'nota'] as const;
 
-const TYPE_ICONS: Record<string, typeof HeartPulse> = {
+const TYPE_ICONS: Record<string, LucideIcon> = {
   salud: HeartPulse,
   entrenamiento: Dumbbell,
   tarea: ClipboardList,
@@ -66,7 +68,6 @@ export default function NuevoEventoScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { c } = useTheme();
-  const { input: inputStyle } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
   const eventTypeColors = makeEventTypeColors(c);
   const typeOpts = visibleTypeOptions(user?.role);
@@ -83,7 +84,7 @@ export default function NuevoEventoScreen() {
   const [currency, setCurrency] = useState<Currency>('ARS');
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [error, setError] = useState('');
-  const [sheet, setSheet] = useState<'caballo' | 'tipo' | 'categoria' | null>(null);
+  const [sheet, setSheet] = useState<'categoria' | null>(null);
 
   // Si los caballos llegan después del primer render, preseleccionar el primero.
   useEffect(() => {
@@ -122,8 +123,8 @@ export default function NuevoEventoScreen() {
   }, [navigation, isDirty]);
 
   const handleSubmit = async () => {
-    if (!horseId) { setError('Seleccioná un caballo'); haptic.error(); return; }
-    if (!description.trim()) { setError('Escribí una descripción'); haptic.error(); return; }
+    if (!horseId) { setError('Elegí un caballo'); haptic.error(); return; }
+    if (!description.trim()) { setError('Contá qué pasó'); haptic.error(); return; }
     setError('');
     try {
       await createEvent.mutateAsync({
@@ -146,15 +147,6 @@ export default function NuevoEventoScreen() {
   const horseSel = horses?.find((h) => h.id === horseId);
   const catSel = EXPENSE_CATEGORIES.find((cat) => cat.value === expenseCategory);
 
-  const accionesCaballo: Accion[] = (horses ?? []).map((h) => ({
-    label: h.name,
-    onPress: () => setHorseId(h.id),
-  }));
-  const accionesTipo: Accion[] = typeOpts.map((t) => ({
-    label: eventTypeColors[t]?.label ?? t,
-    Icon: TYPE_ICONS[t],
-    onPress: () => setType(t),
-  }));
   const accionesCategoria: Accion[] = EXPENSE_CATEGORIES.map((cat) => ({
     label: cat.label,
     Icon: cat.Icon,
@@ -163,7 +155,8 @@ export default function NuevoEventoScreen() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <ScreenHeader scrollable showBack title="Nuevo evento" />
+      {/* El caballo elegido es el contexto de la pantalla: va de subtítulo. */}
+      <ScreenHeader scrollable showBack title="Cargar algo" subtitle={horseSel?.name} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.body}
@@ -172,70 +165,118 @@ export default function NuevoEventoScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* Filas de selección, patrón Ajustes de iOS */}
-        <View style={s.selGrupo}>
-          <FilaSelector
-            primera
-            label="Caballo"
-            valor={horseSel?.name}
-            placeholder="Elegir"
-            onPress={() => setSheet('caballo')}
-          />
-          <FilaSelector
-            label="Tipo"
-            valor={eventTypeColors[type]?.label ?? type}
-            placeholder="Elegir"
-            onPress={() => setSheet('tipo')}
-          />
-          {type === 'gasto' && (
+        {/* ─── Qué pasó: la grilla es la primera decisión ─────────────────────── */}
+        <View style={s.seccion}>
+          <Text style={s.rotulo}>Qué pasó</Text>
+          <View style={s.grillaTipos}>
+            {typeOpts.map((t) => {
+              const Icono = TYPE_ICONS[t] ?? StickyNote;
+              const activo = type === t;
+              return (
+                <PressableScale
+                  key={t}
+                  style={[s.tipo, activo && s.tipoActivo]}
+                  onPress={() => { haptic.selection(); setType(t); }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activo }}
+                  accessibilityLabel={eventTypeColors[t]?.label ?? t}
+                >
+                  <Icono size={21} color={activo ? c.bg : c.textMuted} strokeWidth={1.9} />
+                  <Text style={[s.tipoTexto, activo && s.tipoTextoActivo]} numberOfLines={1}>
+                    {eventTypeColors[t]?.label ?? t}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ─── Caballo: se elige por la foto, igual que en el turno nuevo ─────── */}
+        <View style={s.seccion}>
+          <Text style={s.rotulo}>De qué caballo</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filaCaballos}>
+            {(horses ?? []).map((h) => {
+              const activo = horseId === h.id;
+              return (
+                <PressableScale
+                  key={h.id}
+                  style={[s.caballo, activo && s.caballoActivo]}
+                  onPress={() => { haptic.selection(); setHorseId(h.id); }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activo }}
+                  accessibilityLabel={h.name}
+                >
+                  {h.image_url ? (
+                    <AppImage source={{ uri: h.image_url }} style={s.caballoFoto} />
+                  ) : (
+                    <View style={[s.caballoFoto, s.caballoFotoVacia]}>
+                      <HorseshoeH size={26} color={c.textFaint} />
+                    </View>
+                  )}
+                  <Text style={[s.caballoNombre, activo && s.caballoNombreActivo]} numberOfLines={1}>
+                    {h.name}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* El relato es el corazón del evento: campo grande, sin rótulo. */}
+        <TextInput
+          style={s.textarea}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Contá qué pasó. Por ejemplo: comió todo, buen ánimo, salió al potrero temprano."
+          placeholderTextColor={c.textFaint}
+          multiline
+          textAlignVertical="top"
+        />
+
+        <View style={s.seccion}>
+          <Text style={s.rotulo}>Cuándo</Text>
+          <DatePicker label="Día" value={date} onChange={setDate} />
+        </View>
+
+        {/* Monto y categoría: solo para gastos */}
+        {type === 'gasto' && (
+          <View style={s.seccion}>
+            <Text style={s.rotulo}>Cuánto</Text>
+            <View style={s.montoRow}>
+              <View style={s.monedaToggle}>
+                {CURRENCY_OPTIONS.map((opt) => (
+                  <PressableScale
+                    key={opt.value}
+                    style={[s.monedaBtn, currency === opt.value && s.monedaBtnActiva]}
+                    onPress={() => { haptic.selection(); setCurrency(opt.value); }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: currency === opt.value }}
+                    accessibilityLabel={`Moneda ${opt.label}`}
+                  >
+                    <Text style={[s.monedaText, currency === opt.value && s.monedaTextActiva]}>
+                      {opt.label}
+                    </Text>
+                  </PressableScale>
+                ))}
+              </View>
+              <TextInput
+                style={s.input}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="Monto"
+                placeholderTextColor={c.textFaint}
+                keyboardType="decimal-pad"
+              />
+            </View>
             <FilaSelector
+              primera
               label="Categoría"
               valor={catSel?.label}
               placeholder="Elegir"
               onPress={() => setSheet('categoria')}
             />
-          )}
-        </View>
-
-        <DatePicker label="Fecha" value={date} onChange={setDate} />
-
-        {/* Monto: solo para gastos */}
-        {type === 'gasto' && (
-          <View style={s.montoRow}>
-            <View style={s.monedaToggle}>
-              {CURRENCY_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[s.monedaBtn, currency === opt.value && s.monedaBtnActiva]}
-                  onPress={() => { haptic.selection(); setCurrency(opt.value); }}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[s.monedaText, currency === opt.value && s.monedaTextActiva]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={[inputStyle.base, { flex: 1 }]}
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Monto"
-              placeholderTextColor={c.textFaint}
-              keyboardType="decimal-pad"
-            />
           </View>
         )}
-
-        {/* Descripción al final, como notas de un evento de Calendario */}
-        <TextInput
-          style={[inputStyle.multiline, s.descInput]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="¿Qué pasó?"
-          placeholderTextColor={c.textFaint}
-          multiline
-        />
 
         {/* Adjuntos: fila nativa; las miniaturas aparecen solo si hay fotos */}
         <View>
@@ -257,15 +298,15 @@ export default function NuevoEventoScreen() {
               {photoUris.map((uri, i) => (
                 <View key={uri} style={s.photoThumb}>
                   <AppImage source={{ uri }} style={s.photoImg} />
-                  <TouchableOpacity
+                  <Pressable
                     style={s.photoRemove}
                     onPress={() => { haptic.light(); setPhotoUris((p) => p.filter((_, idx) => idx !== i)); }}
-                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     accessibilityRole="button"
                     accessibilityLabel="Quitar foto"
                   >
                     <X size={12} color={colors.white} strokeWidth={2.5} />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               ))}
             </ScrollView>
@@ -275,33 +316,22 @@ export default function NuevoEventoScreen() {
         {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
-      {/* Un solo CTA: el cuero vive acá y en ningún otro lado */}
+      {/* Un solo CTA: el verde vive acá y en ningún otro lado */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <TouchableOpacity
-          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
+        <PressableScale
+          style={[s.submitBtn, !canSubmit && s.submitBtnOff]}
           disabled={!canSubmit}
           onPress={handleSubmit}
-          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Cargar el evento"
         >
           {createEvent.isPending
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.submitBtnText}>Crear evento</Text>
+            : <Text style={s.submitBtnText}>Cargar</Text>
           }
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
-      <ActionSheet
-        visible={sheet === 'caballo'}
-        onClose={() => setSheet(null)}
-        title="Caballo"
-        acciones={accionesCaballo}
-      />
-      <ActionSheet
-        visible={sheet === 'tipo'}
-        onClose={() => setSheet(null)}
-        title="Tipo de evento"
-        acciones={accionesTipo}
-      />
       <ActionSheet
         visible={sheet === 'categoria'}
         onClose={() => setSheet(null)}
@@ -314,28 +344,80 @@ export default function NuevoEventoScreen() {
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
-  descInput: { minHeight: 96 },
-  selGrupo: { },
-  montoRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  monedaToggle: {
-    flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: 3,
+  body: { paddingHorizontal: space[4] + 2, paddingTop: space[2], paddingBottom: space[10], gap: space[6] },
+  seccion: { gap: space[3] },
+  rotulo: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
+
+  /* ─── Grilla de tipos ──────────────────────────────────────────────────── */
+  grillaTipos: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 2 },
+  tipo: {
+    // Tres por fila: 33% menos el gap de 10.
+    width: '31.5%',
+    height: 84, borderRadius: radius.card,
+    alignItems: 'center', justifyContent: 'center', gap: space[2],
+    paddingHorizontal: space[1],
+    backgroundColor: c.surface,
+    ...(c.isDark ? {} : shadow.sm),
   },
-  monedaBtn: { paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.md - 3 },
+  // Selección invertida (negro), no verde: el verde es guardar.
+  tipoActivo: { backgroundColor: c.text },
+  tipoTexto: { fontSize: text.sm - 1, fontWeight: weight.medium, color: c.textMuted },
+  tipoTextoActivo: { color: c.bg, fontWeight: weight.semibold },
+
+  /* ─── Caballos ─────────────────────────────────────────────────────────── */
+  filaCaballos: { gap: space[2] + 2, paddingVertical: space[1] },
+  caballo: {
+    width: 108, borderRadius: radius.button, padding: space[2] + 2, gap: space[2],
+    alignItems: 'center', backgroundColor: c.surface,
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  caballoActivo: { borderWidth: 2, borderColor: c.text, padding: space[2] },
+  caballoFoto: { width: '100%', height: 58, borderRadius: radius.md + 2 },
+  caballoFotoVacia: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  caballoNombre: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
+  caballoNombreActivo: { color: c.text, fontWeight: weight.semibold },
+
+  /* ─── Campos ───────────────────────────────────────────────────────────── */
+  textarea: {
+    minHeight: 132, borderRadius: radius.card,
+    paddingHorizontal: space[4] + 2, paddingTop: space[4], paddingBottom: space[4],
+    backgroundColor: c.surfaceAlt,
+    fontSize: text.md, lineHeight: 24, color: c.text,
+  },
+  input: {
+    flex: 1, height: touch.field, borderRadius: radius.field,
+    paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
+    fontSize: text.md, color: c.text,
+  },
+  montoRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  monedaToggle: { flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.field, padding: 3 },
+  monedaBtn: { paddingHorizontal: space[3], paddingVertical: space[2] + 2, borderRadius: radius.field - 3 },
   monedaBtnActiva: { backgroundColor: c.surface },
   monedaText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
   monedaTextActiva: { color: c.text },
   errorText: { fontSize: text.sm, color: c.danger },
-  photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
+
+  /* ─── Fotos ────────────────────────────────────────────────────────────── */
+  photoThumb: { width: 72, height: 72, borderRadius: radius.thumb, overflow: 'hidden', position: 'relative' },
   photoImg: { width: '100%', height: '100%' },
-  photoRemove: { position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
+  photoRemove: {
+    position: 'absolute', top: 3, right: 3, width: 20, height: 20, borderRadius: radius.full,
+    backgroundColor: c.overlay, justifyContent: 'center', alignItems: 'center',
+  },
   fotosRow: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     minHeight: touch.min + 6,
   },
   fotosRowText: { flex: 1, fontSize: text.md, color: c.text },
   fotosRowCount: { fontSize: text.sm, color: c.textFaint },
-  footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+
+  footer: { paddingHorizontal: space[4] + 2, paddingTop: space[3] },
+  submitBtn: {
+    height: touch.button, borderRadius: radius.button,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.brand,
+    ...(c.isDark ? {} : brandShadow(c.brand)),
+  },
+  submitBtnOff: { opacity: 0.45 },
+  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white, letterSpacing: -0.2 },
 });

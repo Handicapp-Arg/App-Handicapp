@@ -118,3 +118,13 @@ export const weight = {
   bold: '700' as const,
   extrabold: '800' as const,
 };
+
+/**
+ * Velo oscuro que se tiende sobre una foto para que el texto encima se lea.
+ *
+ * No vive en el theme y no cambia con el modo claro/oscuro: abajo hay una
+ * imagen, no una superficie de la app, y una foto es igual de clara de noche.
+ * Va con `LinearGradient` y no con un color plano porque apagar la foto entera
+ * para leer dos líneas es desperdiciarla.
+ */
+export const photoScrim = ['transparent', 'rgba(21,20,15,0.2)', 'rgba(21,20,15,0.78)'] as const;

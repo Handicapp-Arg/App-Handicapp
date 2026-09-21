@@ -27,8 +27,9 @@ export type ThemeColors = {
   successSoft: string; // fondo verde sutil
   warning: string;     // ámbar — atención / pendiente
   warningSoft: string; // fondo ámbar sutil
-  info: string;        // azul — informativo / neutro-frío
+  info: string;        // azul — informativo / neutro-frío, y la línea PATERNA del pedigrí
   infoSoft: string;    // fondo azul sutil
+  dam: string;         // la línea MATERNA del pedigrí
   overlay: string;     // fondo de modales
   isDark: boolean;
 };
@@ -57,6 +58,7 @@ const light: ThemeColors = {
   success: '#17715a', successSoft: '#e8f3ed',
   warning: '#c89a2b', warningSoft: '#f8f1df',
   info: '#3b4b8c',    infoSoft: '#eff1f7',
+  dam: '#b2557a',
   overlay: 'rgba(21,20,15,0.35)',
   isDark: false,
 };
@@ -83,6 +85,7 @@ const dark: ThemeColors = {
   success: '#5fc08f', successSoft: 'rgba(95,192,143,0.15)',
   warning: '#e0b450', warningSoft: 'rgba(224,180,80,0.15)',
   info: '#8a9ad8',    infoSoft: 'rgba(138,154,216,0.15)',
+  dam: '#d98cae',
   overlay: 'rgba(0,0,0,0.6)',
   isDark: true,
 };

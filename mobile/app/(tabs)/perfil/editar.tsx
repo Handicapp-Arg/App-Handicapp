@@ -3,16 +3,19 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 
 import { useAuth } from '../../../lib/auth';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { Avatar } from '../../../components/Avatar';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../styles/tokens';
 import { useCommonStyles } from '../../../styles/common';
+import { entradaFila } from '../../../styles/motion';
+import { space, text } from '../../../styles/tokens';
 
 /** Editar datos personales — pantalla empujada, patrón Ajustes de iOS. */
 export default function EditarPerfilScreen() {
@@ -20,12 +23,13 @@ export default function EditarPerfilScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
-  const { input: inputStyle } = useCommonStyles();
+  const { input: inputStyle, button, typography } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
   const { user, updateProfile } = useAuth();
 
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const [focus, setFocus] = useState<'name' | 'email' | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   // Al guardar con éxito salimos con back: el guardia de descarte no debe interceptar.
@@ -68,7 +72,7 @@ export default function EditarPerfilScreen() {
 
   return (
     <View style={s.root}>
-      <ScreenHeader showBack title="Editar perfil" />
+      <ScreenHeader showBack title="Mis datos" />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.body}
@@ -77,35 +81,50 @@ export default function EditarPerfilScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        <TextInput
-          style={inputStyle.base}
-          value={name}
-          onChangeText={setName}
-          placeholder="Nombre"
-          placeholderTextColor={c.textFaint}
-          autoCapitalize="words"
-          textContentType="name"
-          returnKeyType="next"
-        />
-        <TextInput
-          style={inputStyle.base}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor={c.textFaint}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          textContentType="emailAddress"
-          returnKeyType="go"
-          onSubmitEditing={handleSave}
-        />
-        {error ? <Text style={s.errorText}>{error}</Text> : null}
+        {/* El avatar acompaña lo que se está tipeando (las iniciales cambian
+            con el nombre). La foto no se sube: el back solo guarda el color,
+            que se elige en la pantalla anterior. */}
+        <Animated.View entering={entradaFila(0)} style={s.avatarRow}>
+          <Avatar name={name || user.name} avatarColor={user.avatar_color} size={74} />
+          <Text style={s.avatarHint}>Tus iniciales y tu color son cómo te ve el resto.</Text>
+        </Animated.View>
+
+        <Animated.View entering={entradaFila(1)} style={s.campos}>
+          <Text style={typography.sectionEyebrow}>Quién sos</Text>
+          <TextInput
+            style={[inputStyle.base, focus === 'name' && inputStyle.focused]}
+            value={name}
+            onChangeText={setName}
+            onFocus={() => setFocus('name')}
+            onBlur={() => setFocus(null)}
+            placeholder="Nombre"
+            placeholderTextColor={c.textFaint}
+            autoCapitalize="words"
+            textContentType="name"
+            returnKeyType="next"
+          />
+          <TextInput
+            style={[inputStyle.base, focus === 'email' && inputStyle.focused]}
+            value={email}
+            onChangeText={setEmail}
+            onFocus={() => setFocus('email')}
+            onBlur={() => setFocus(null)}
+            placeholder="Email"
+            placeholderTextColor={c.textFaint}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            textContentType="emailAddress"
+            returnKeyType="go"
+            onSubmitEditing={handleSave}
+          />
+          {error ? <Text style={s.errorText}>{error}</Text> : null}
+        </Animated.View>
       </ScrollView>
 
-      {/* Un solo CTA: el cuero vive acá y en ningún otro lado */}
+      {/* Un solo CTA: el verde vive acá y en ningún otro lado */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
         <TouchableOpacity
-          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
+          style={[button.primary, !canSubmit && { opacity: 0.5 }]}
           disabled={!canSubmit}
           onPress={handleSave}
           activeOpacity={0.85}
@@ -114,7 +133,7 @@ export default function EditarPerfilScreen() {
         >
           {saving
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.submitBtnText}>Guardar cambios</Text>
+            : <Text style={button.primaryText}>Guardar</Text>
           }
         </TouchableOpacity>
       </View>
@@ -124,9 +143,10 @@ export default function EditarPerfilScreen() {
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
+  body: { paddingHorizontal: space[5], paddingTop: space[4], paddingBottom: space[8] },
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
+  avatarHint: { flex: 1, fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
+  campos: { marginTop: space[7], gap: space[3] },
   errorText: { fontSize: text.sm, color: c.danger },
-  footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  footer: { paddingHorizontal: space[5], paddingTop: space[3] },
 });

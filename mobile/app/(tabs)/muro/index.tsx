@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, ScrollView,
+  View, Text, FlatList, TextInput,
+  StyleSheet, ActivityIndicator,
   Alert, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,23 +15,26 @@ import {
   useTogglePin, useToggleHide,
 } from '../../../hooks/use-feed';
 import { useAgenda, APPOINTMENT_TYPES } from '../../../hooks/use-agenda';
+import { useHorses } from '../../../hooks/use-horses';
+import { useBills, monthLabel } from '../../../hooks/use-billing';
 import { useNotifications } from '../../../lib/notifications';
 import { Routes } from '../../../lib/routes';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
+import { formatMoney } from '../../../lib/currency';
 import { Avatar as UserAvatar } from '../../../components/Avatar';
+import { PressableScale } from '../../../components/PressableScale';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
+import { entradaFila } from '../../../styles/motion';
 import { fontFamily } from '../../../styles/fonts';
 import {
-  Images, Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
-  Eye, EyeOff, Bell,
-  CalendarPlus, CalendarClock, ScanLine,
+  Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
+  Eye, EyeOff, Bell, Plus, ChevronRight, FileText,
 } from 'lucide-react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { HorseIcon } from '../../../components/icons/equine';
+import Animated from 'react-native-reanimated';
 import { AppImage } from '../../../components/AppImage';
-import { PostSkeleton } from '../../../components/Skeleton';
+import { Skeleton } from '../../../components/Skeleton';
 import { InlineSearch } from '../../../components/InlineSearch';
 import { VetVerifiedBadge, isVetVerified } from '../../../components/VerifiedBadge';
 import type { FeedPost, FeedComment } from '../../../../packages/shared/src/types';
@@ -40,7 +43,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { FormSheet } from '../../../components/FormSheet';
 import { useToast } from '../../../components/Toast';
-import { fechaHumana, diaLargo, hace } from '../../../lib/fechas';
+import { fechaHumana, diaLargo, hace, hora, vence } from '../../../lib/fechas';
 
 /** Reproductor de un video del feed, con expo-video (expo-av está deprecado). */
 function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
@@ -83,22 +86,24 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
   const { data: comments = [], isLoading } = useFeedComments(postId);
   const addComment = useAddComment(postId);
   const deleteComment = useDeleteComment(postId);
-  const [text, setText] = useState('');
+  const [borrador, setBorrador] = useState('');
   const toast = useToast();
 
-  useEffect(() => { if (visible) setText(''); }, [visible]);
+  useEffect(() => { if (visible) setBorrador(''); }, [visible]);
 
   const handleSend = async () => {
-    if (!text.trim()) return;
+    if (!borrador.trim()) return;
     haptic.light();
     try {
-      await addComment.mutateAsync(text.trim());
-      setText('');
+      await addComment.mutateAsync(borrador.trim());
+      setBorrador('');
     } catch {
       haptic.error();
       toast.error('No se pudo enviar el comentario');
     }
   };
+
+  const puedeEnviar = !!borrador.trim() && !addComment.isPending;
 
   return (
     <FormSheet
@@ -111,20 +116,19 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
             style={s.commentInputField}
             placeholder="Escribí un comentario…"
             placeholderTextColor={c.textFaint}
-            value={text}
-            onChangeText={setText}
+            value={borrador}
+            onChangeText={setBorrador}
             multiline
           />
-          <TouchableOpacity
+          <PressableScale
             onPress={handleSend}
-            disabled={!text.trim() || addComment.isPending}
-            activeOpacity={0.75}
-            style={[s.sendBtn, (!text.trim() || addComment.isPending) && { opacity: 0.4 }]}
+            disabled={!puedeEnviar}
+            style={[s.sendBtn, !puedeEnviar && s.deshabilitado]}
             accessibilityRole="button"
             accessibilityLabel="Enviar comentario"
           >
             <Send size={16} color={colors.white} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       }
     >
@@ -145,16 +149,15 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
                 <Text style={s.commentText}>{cm.content}</Text>
               </View>
               {(cm.user_id === currentUserId || isAdmin) && (
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => { haptic.light(); deleteComment.mutate(cm.id); }}
-                  activeOpacity={0.7}
                   style={s.commentDelete}
                   accessibilityRole="button"
                   accessibilityLabel="Eliminar comentario"
                   hitSlop={8}
                 >
                   <Trash2 size={14} color={c.textFaint} strokeWidth={2} />
-                </TouchableOpacity>
+                </PressableScale>
               )}
             </View>
           ))}
@@ -164,8 +167,119 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
   );
 }
 
-// ─── Post Card ───────────────────────────────────────────────────────────────
-function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
+// ─── Pendientes (tarjeta invertida) ──────────────────────────────────────────
+
+/** Un pendiente ya normalizado: sale de datos reales (sanidad vencida o factura). */
+type Pendiente = {
+  id: string;
+  titulo: string;
+  detalle: string;
+  /** Foto del caballo, cuando el pendiente tiene una. */
+  fotoUrl?: string | null;
+  accion: string;
+  /** El principal se marca con el chip sólido; el resto con el chip velado. */
+  solido: boolean;
+  onPress: () => void;
+};
+
+/**
+ * Chip sobre la tarjeta invertida. El "velado" no usa un rgba literal: apila un
+ * velo del color del fondo con opacidad, así funciona igual en claro y oscuro
+ * (donde la tarjeta invertida pasa a ser crema sobre negro).
+ */
+function ChipInverso({ label, solido, onPress, s }: {
+  label: string; solido: boolean; onPress: () => void; s: Styles;
+}) {
+  return (
+    <PressableScale
+      onPress={() => { haptic.selection(); onPress(); }}
+      style={[s.chipInv, solido && s.chipInvSolido]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      {!solido && <View style={[StyleSheet.absoluteFill, s.velo]} />}
+      <Text style={[s.chipInvText, solido && s.chipInvTextSolido]}>{label}</Text>
+    </PressableScale>
+  );
+}
+
+function TarjetaPendientes({ pendientes, c, s }: { pendientes: Pendiente[]; c: ThemeColors; s: Styles }) {
+  return (
+    <View style={s.pendientes}>
+      <View style={s.pendientesHead}>
+        <View style={s.puntoAlerta} />
+        <Text style={s.pendientesHeadText}>
+          {pendientes.length === 1 ? '1 cosa para resolver' : `${pendientes.length} cosas para resolver`}
+        </Text>
+      </View>
+
+      {pendientes.map((p, i) => (
+        <View key={p.id}>
+          {i > 0 && <View style={s.divisorInv} />}
+          <View style={s.pendienteFila}>
+            {p.fotoUrl ? (
+              <AppImage source={{ uri: p.fotoUrl }} style={s.pendienteThumb} contentFit="cover" />
+            ) : (
+              <View style={[s.pendienteThumb, s.pendienteThumbVacio]}>
+                <View style={[StyleSheet.absoluteFill, s.velo]} />
+                <FileText size={20} color={c.bg} strokeWidth={1.9} />
+              </View>
+            )}
+            <View style={s.pendienteTexto}>
+              <Text style={s.pendienteTitulo} numberOfLines={1}>{p.titulo}</Text>
+              {!!p.detalle && <Text style={s.pendienteDetalle} numberOfLines={1}>{p.detalle}</Text>}
+            </View>
+            <ChipInverso label={p.accion} solido={p.solido} onPress={p.onPress} s={s} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Próximo turno ───────────────────────────────────────────────────────────
+
+function TarjetaProximoTurno({ turno, onPress, c, s }: {
+  turno: NonNullable<ReturnType<typeof useAgenda>['data']>[number];
+  onPress: () => void;
+  c: ThemeColors;
+  s: Styles;
+}) {
+  const meta = APPOINTMENT_TYPES[turno.type] ?? APPOINTMENT_TYPES.otro;
+  // El título lo escribe el usuario: si repite la etiqueta del tipo, no lo
+  // mostramos dos veces.
+  const bajada = [turno.title !== meta.label ? turno.title : '', fechaHumana(turno.scheduled_at)]
+    .filter(Boolean).join(' · ');
+
+  return (
+    <PressableScale
+      onPress={() => { haptic.selection(); onPress(); }}
+      style={s.turno}
+      accessibilityRole="button"
+      accessibilityLabel={`Próximo turno: ${meta.label}${turno.horse ? `, ${turno.horse.name}` : ''}`}
+    >
+      <View style={s.turnoHora}>
+        <Text style={s.turnoHoraText}>{hora(turno.scheduled_at)}</Text>
+      </View>
+      <View style={s.turnoTexto}>
+        <Text style={s.turnoTitulo} numberOfLines={1}>
+          {meta.label}{turno.horse ? ` · ${turno.horse.name}` : ''}
+        </Text>
+        {!!bajada && <Text style={s.turnoBajada} numberOfLines={1}>{bajada}</Text>}
+      </View>
+      <ChevronRight size={17} color={c.textFaint} strokeWidth={2.3} />
+    </PressableScale>
+  );
+}
+
+// ─── Fila del muro ───────────────────────────────────────────────────────────
+
+/**
+ * Una novedad del muro: miniatura a la izquierda, texto al costado. Es una fila
+ * sobre el lienzo, no una tarjeta: la publicación no es un objeto autónomo, es
+ * una línea del día (regla "el fondo es el lienzo").
+ */
+function FilaMuro({ post, currentUserId, isAdmin, onComment, c, s }: {
   post: FeedPost;
   currentUserId: string;
   isAdmin: boolean;
@@ -180,6 +294,8 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isOwner = post.author_id === currentUserId;
+  const fotos = post.image_urls ?? [];
+  const videos = post.video_urls ?? [];
 
   // El corazón responde al toque, no a la red: si el servidor rechaza, vuelve atrás.
   const [likeLocal, setLikeLocal] = useState<{ liked: boolean; total: number } | null>(null);
@@ -204,17 +320,40 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
     setMenuOpen(false);
   };
 
+  const meta = [
+    post.author?.name ?? 'Usuario',
+    post.horse?.name ?? '',
+    hace(post.created_at),
+  ].filter(Boolean).join(' · ');
+
   return (
-    <View style={[
-      s.card,
-      post.is_hidden && s.cardHidden,
-    ]}>
-      {/* Header */}
-      <View style={s.cardHeader}>
-        <Avatar name={post.author?.name ?? 'U'} colorId={post.author?.avatar_color} />
-        <View style={s.authorInfo}>
-          <View style={s.authorRow}>
-            <Text style={s.authorName}>{post.author?.name ?? 'Usuario'}</Text>
+    <View style={[s.fila, post.is_hidden && s.filaOculta]}>
+      <PressableScale
+        onPress={() => { haptic.light(); onComment(post); }}
+        style={s.filaCuerpo}
+        accessibilityRole="button"
+        accessibilityLabel={`Publicación de ${post.author?.name ?? 'un usuario'}`}
+      >
+        {/* Miniatura: la primera foto; si no hay, la identidad del autor. */}
+        {fotos.length > 0 ? (
+          <View style={s.filaThumbWrap}>
+            <AppImage source={{ uri: fotos[0] }} style={s.filaThumb} contentFit="cover" />
+            {fotos.length > 1 && (
+              <View style={s.filaThumbMas}>
+                <Text style={s.filaThumbMasText}>+{fotos.length - 1}</Text>
+              </View>
+            )}
+          </View>
+        ) : (
+          <UserAvatar name={post.author?.name ?? 'U'} avatarColor={post.author?.avatar_color} size={62} />
+        )}
+
+        <View style={s.filaTexto}>
+          <View style={s.filaTituloRow}>
+            <Text style={s.filaContenido} numberOfLines={4}>{post.content}</Text>
+          </View>
+
+          <View style={s.filaMetaRow}>
             {isVetVerified(post.author) && <VetVerifiedBadge />}
             {post.is_pinned && (
               <View style={s.pinnedBadge}>
@@ -222,99 +361,63 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
                 <Text style={s.pinnedText}>Fijado</Text>
               </View>
             )}
-          </View>
-          <View style={s.timeAgoRow}>
-            <Text style={s.timeAgo}>{hace(post.created_at)}</Text>
-            {post.horse && (
-              <View style={s.timeAgoHorse}>
-                <Text style={s.timeAgo}>· </Text>
-                <HorseIcon size={12} color={c.textFaint} />
-                <Text style={s.timeAgo}> {post.horse.name}</Text>
-              </View>
-            )}
+            <Text style={s.filaMeta} numberOfLines={1}>{meta}</Text>
           </View>
         </View>
+      </PressableScale>
 
-        {(isOwner || isAdmin) && (
-          <TouchableOpacity
-            onPress={() => { haptic.selection(); setMenuOpen(true); }}
-            activeOpacity={0.7}
-            style={s.menuBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Más opciones de la publicación"
-            hitSlop={8}
-          >
-            <MoreHorizontal size={18} color={c.textFaint} strokeWidth={2} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Content */}
-      <Text style={s.content}>{post.content}</Text>
-
-      {/* Images */}
-      {post.image_urls && post.image_urls.length > 0 && (
-        <View style={[
-          s.imageGrid,
-          post.image_urls.length === 1 ? s.imageGrid1 : s.imageGrid2,
-        ]}>
-          {post.image_urls.slice(0, 4).map((url, i) => (
-            <AppImage
-              key={i}
-              source={{ uri: url }}
-              style={[
-                s.imageItem,
-                post.image_urls!.length === 1 ? s.imageItem1 : s.imageItem2,
-              ]}
-              contentFit="cover"
-            />
-          ))}
-        </View>
-      )}
-
-      {/* Videos */}
-      {post.video_urls && post.video_urls.length > 0 && (
-        <View style={{ marginHorizontal: space[4], marginBottom: space[3], gap: space[2] }}>
-          {post.video_urls.map((url, i) => (
+      {/* Videos: no entran en una miniatura de 62, van debajo del texto. */}
+      {videos.length > 0 && (
+        <View style={s.filaVideos}>
+          {videos.map((url, i) => (
             <FeedVideo key={i} uri={url} style={s.videoPlayer} contentFit="contain" />
           ))}
         </View>
       )}
 
-      {/* Actions */}
-      <View style={s.actions}>
-        <TouchableOpacity
+      <View style={s.filaAcciones}>
+        <PressableScale
           onPress={handleLike}
-          activeOpacity={0.7}
-          style={s.actionBtn}
+          style={s.accionBtn}
+          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={liked ? 'Quitar me gusta' : 'Me gusta'}
         >
           <Heart
-            size={20}
+            size={17}
             color={liked ? c.danger : c.textFaint}
             fill={liked ? c.danger : 'none'}
             strokeWidth={2}
           />
           {totalLikes > 0 && (
-            <Text style={[s.actionCount, liked && { color: c.danger }]}>
-              {totalLikes}
-            </Text>
+            <Text style={[s.accionCount, liked && { color: c.danger }]}>{totalLikes}</Text>
           )}
-        </TouchableOpacity>
+        </PressableScale>
 
-        <TouchableOpacity
+        <PressableScale
           onPress={() => { haptic.light(); onComment(post); }}
-          activeOpacity={0.7}
-          style={s.actionBtn}
+          style={s.accionBtn}
+          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Ver comentarios"
         >
-          <MessageCircle size={19} color={c.textFaint} strokeWidth={2} />
+          <MessageCircle size={17} color={c.textFaint} strokeWidth={2} />
           {post.comments_count > 0 && (
-            <Text style={s.actionCount}>{post.comments_count}</Text>
+            <Text style={s.accionCount}>{post.comments_count}</Text>
           )}
-        </TouchableOpacity>
+        </PressableScale>
+
+        {(isOwner || isAdmin) && (
+          <PressableScale
+            onPress={() => { haptic.selection(); setMenuOpen(true); }}
+            style={[s.accionBtn, s.accionMenu]}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Más opciones de la publicación"
+          >
+            <MoreHorizontal size={18} color={c.textFaint} strokeWidth={2} />
+          </PressableScale>
+        )}
       </View>
 
       <ActionSheet
@@ -345,129 +448,117 @@ function PostItem({ post, currentUserId, isAdmin, onComment, c, s }: {
   );
 }
 
-// ─── Composer (disparador) ───────────────────────────────────────────────────
-// El formulario en sí vive en pantalla completa (muro/nuevo.tsx); acá solo
-// queda la fila que dispara el push.
-function ComposerTrigger({ user, c, s }: { user: { name: string; avatar_color?: string | null }; c: ThemeColors; s: Styles }) {
-  const router = useRouter();
+/** Misma silueta que `FilaMuro`: miniatura 62 + dos líneas + meta. */
+function FilaMuroSkeleton({ s }: { s: Styles }) {
   return (
-    <TouchableOpacity
-      style={s.composerClosed}
-      onPress={() => { haptic.selection(); router.push(Routes.muroNuevo as never); }}
-      activeOpacity={0.8}
-      accessibilityRole="button"
-      accessibilityLabel="Crear publicación"
-    >
-      <Avatar name={user.name} colorId={user.avatar_color} size={34} />
-      <Text style={s.composerPlaceholder}>¿Qué querés compartir?</Text>
-      <Images size={20} color={c.textFaint} strokeWidth={2} />
-    </TouchableOpacity>
+    <View style={s.fila}>
+      <View style={s.filaCuerpo}>
+        <Skeleton width={62} height={62} borderRadius={radius.xl} />
+        <View style={s.filaTexto}>
+          <Skeleton height={14} width="92%" />
+          <Skeleton height={14} width="64%" style={{ marginTop: 6 }} />
+          <Skeleton height={11} width="45%" style={{ marginTop: 10 }} />
+        </View>
+      </View>
+    </View>
   );
 }
 
-// ─── Main screen ─────────────────────────────────────────────────────────────
+// ─── Encabezado del Inicio ───────────────────────────────────────────────────
 
 /**
- * Encabezado de Inicio: saludo, acciones rapidas y proximos turnos.
- * Es lo que separa un feed generico de un inicio con proposito (Uber/YPF):
- * la primera pantalla te saluda, te ofrece lo que viniste a hacer y te
- * adelanta lo que se viene.
+ * Encabezado de Inicio: saludo, lo que hay para resolver y el próximo turno.
+ * Es lo que separa un feed genérico de un inicio con propósito: la primera
+ * pantalla te saluda, te dice qué está pendiente y qué se viene.
  */
 function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
   const router = useRouter();
   const { user } = useAuth();
   const { unread } = useNotifications();
   const { data: turnos } = useAgenda(true);
-  const proximos = (turnos ?? []).filter(Boolean).slice(0, 5);
+  const { data: caballos } = useHorses();
+  const { data: facturas } = useBills();
 
   const nombre = (user?.name ?? '').split(' ')[0] || 'Hola';
   const fecha = diaLargo(new Date().toISOString());
+  const proximoTurno = (turnos ?? []).filter(Boolean)[0];
 
-  const acciones = [
-    { label: 'Evento', Icon: CalendarPlus, onPress: () => router.push('/eventos') },
-    { label: 'Turno', Icon: CalendarClock, onPress: () => router.push('/agenda') },
-    { label: 'Escanear', Icon: ScanLine, onPress: () => router.push('/escanear') },
-    { label: 'Caballos', Icon: HorseIcon, onPress: () => router.push('/caballos') },
-  ];
+  // Los pendientes salen de datos reales: sanidad en rojo (viene en el listado
+  // de caballos) y facturas enviadas sin responder. Si no hay nada, la tarjeta
+  // no se dibuja — no inventamos un "todo en orden" que el backend no afirma.
+  const pendientes = useMemo<Pendiente[]>(() => {
+    const deSanidad: Pendiente[] = (caballos ?? [])
+      .filter((h) => h.health?.status === 'rojo')
+      .map((h) => ({
+        id: `sanidad-${h.id}`,
+        titulo: `${h.name}, ${h.health!.name}`,
+        detalle: vence(h.health!.next_due),
+        fotoUrl: h.image_url,
+        accion: 'Resolver',
+        solido: true,
+        onPress: () => router.push(Routes.caballo(h.id) as never),
+      }));
+
+    const deFacturas: Pendiente[] = (facturas ?? [])
+      .filter((b) => b.status === 'enviada')
+      .map((b) => ({
+        id: `factura-${b.id}`,
+        titulo: `Factura de ${monthLabel(b.month, b.year)}`,
+        detalle: [b.horse?.name, formatMoney(b.total, b.currency)].filter(Boolean).join(' · '),
+        accion: 'Ver',
+        solido: false,
+        onPress: () => router.push(Routes.factura(b.id) as never),
+      }));
+
+    return [...deSanidad, ...deFacturas].slice(0, 3);
+  }, [caballos, facturas, router]);
 
   return (
     <View>
-      {/* Saludo */}
-      <View style={s.inicioTop}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.inicioHola}>Hola, {nombre}</Text>
-          <Text style={s.inicioFecha}>{fecha}</Text>
+      <View style={s.saludo}>
+        <View style={s.saludoTexto}>
+          <Text style={s.saludoFecha}>{fecha}</Text>
+          <Text style={s.saludoHola}>Hola, {nombre}</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => { haptic.selection(); router.push('/notificaciones'); }}
-          hitSlop={8}
-          style={s.inicioBell}
+        <PressableScale
+          onPress={() => { haptic.selection(); router.push(Routes.notificaciones as never); }}
+          style={s.campana}
           accessibilityRole="button"
-          accessibilityLabel={unread > 0 ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}
+          accessibilityLabel={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
         >
-          <Bell size={23} color={c.text} strokeWidth={2} />
-          {unread > 0 && (
-            <View style={s.inicioBadge}>
-              <Text style={s.inicioBadgeText}>{unread > 9 ? '9+' : unread}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => { haptic.selection(); router.push('/perfil'); }}
-          accessibilityRole="button"
-          accessibilityLabel="Mi perfil"
-        >
-          <UserAvatar name={user?.name ?? ''} avatarColor={user?.avatar_color} size={40} />
-        </TouchableOpacity>
+          <Bell size={21} color={c.text} strokeWidth={1.9} />
+          {unread > 0 && <View style={s.campanaPunto} />}
+        </PressableScale>
       </View>
 
-      {/* Acciones rápidas */}
-      <View style={s.inicioAcciones}>
-        {acciones.map(({ label, Icon, onPress }) => (
-          <TouchableOpacity
-            key={label}
-            style={s.inicioAccion}
-            onPress={() => { haptic.selection(); onPress(); }}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={label}
-          >
-            <View style={s.inicioAccionIcon}>
-              <Icon size={22} color={c.text} strokeWidth={2.1} />
-            </View>
-            <Text style={s.inicioAccionLabel}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Próximos turnos */}
-      {proximos.length > 0 && (
-        <View style={s.inicioTurnos}>
-          <View style={s.inicioTurnosHead}>
-            <Text style={s.inicioSeccion}>Próximos turnos</Text>
-            <TouchableOpacity onPress={() => { haptic.selection(); router.push('/agenda'); }} hitSlop={6}>
-              <Text style={s.inicioVerTodo}>Ver agenda</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.inicioTurnosRow}>
-            {proximos.map((t) => {
-              const meta = APPOINTMENT_TYPES[t!.type] ?? APPOINTMENT_TYPES.otro;
-              return (
-                <TouchableOpacity
-                  key={t!.id}
-                  style={s.inicioTurno}
-                  onPress={() => { haptic.selection(); router.push('/agenda'); }}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[s.inicioTurnoDia, { color: meta.color }]}>{fechaHumana(t!.scheduled_at)}</Text>
-                  <Text style={s.inicioTurnoTitulo} numberOfLines={1}>{t!.title}</Text>
-                  {t!.horse && <Text style={s.inicioTurnoCaballo} numberOfLines={1}>{t!.horse.name}</Text>}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+      {pendientes.length > 0 && (
+        <View style={s.bloque}>
+          <TarjetaPendientes pendientes={pendientes} c={c} s={s} />
         </View>
       )}
+
+      {proximoTurno && (
+        <View style={s.bloque}>
+          <TarjetaProximoTurno
+            turno={proximoTurno}
+            onPress={() => router.push(Routes.tabsAgenda as never)}
+            c={c}
+            s={s}
+          />
+        </View>
+      )}
+
+      <View style={s.seccion}>
+        <Text style={s.seccionTitulo}>Novedades</Text>
+        <PressableScale
+          onPress={() => { haptic.selection(); router.push(Routes.muroNuevo as never); }}
+          style={s.seccionBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Crear publicación"
+        >
+          <Plus size={20} color={c.text} strokeWidth={2.1} />
+        </PressableScale>
+      </View>
     </View>
   );
 }
@@ -487,8 +578,8 @@ export default function MuroTab() {
   useScrollToTop(listRef);
 
   const renderItem = useCallback(({ item, index }: { item: FeedPost; index: number }) => (
-    <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-      <PostItem
+    <Animated.View entering={entradaFila(index)}>
+      <FilaMuro
         post={item}
         currentUserId={user?.id ?? ''}
         isAdmin={isAdmin}
@@ -499,16 +590,7 @@ export default function MuroTab() {
     </Animated.View>
   ), [user?.id, isAdmin, c, s]);
 
-  const Navbar = <InicioHeader c={c} s={s} />;
-
-  const ListHeader = (
-    <View>
-      {Navbar}
-      <View style={{ paddingHorizontal: space[4], paddingBottom: space[3], paddingTop: space[2] }}>
-        {user && <ComposerTrigger user={user} c={c} s={s} />}
-      </View>
-    </View>
-  );
+  const Encabezado = <InicioHeader c={c} s={s} />;
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -516,12 +598,10 @@ export default function MuroTab() {
         <ErrorState onRetry={() => refresh()} />
       ) : isLoading ? (
         <View>
-          {Navbar}
-          <View style={{ paddingTop: space[2] }}>
-            <PostSkeleton />
-            <PostSkeleton />
-            <PostSkeleton />
-          </View>
+          {Encabezado}
+          <FilaMuroSkeleton s={s} />
+          <FilaMuroSkeleton s={s} />
+          <FilaMuroSkeleton s={s} />
         </View>
       ) : (
         <FlatList
@@ -529,7 +609,7 @@ export default function MuroTab() {
           data={posts}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          ListHeaderComponent={ListHeader}
+          ListHeaderComponent={Encabezado}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
@@ -552,7 +632,6 @@ export default function MuroTab() {
         />
       )}
 
-      {/* Comments sheet */}
       <CommentsSheet
         visible={!!commentPost}
         post={commentPost}
@@ -573,94 +652,126 @@ export default function MuroTab() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  // --- Inicio ---------------------------------------------------------------
-  inicioTop: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[3],
-  },
-  inicioHola: { fontSize: text.xl, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.6, fontFamily: fontFamily.semibold },
-  inicioFecha: { fontSize: text.sm, color: c.textFaint, marginTop: 1, textTransform: 'capitalize' },
-  inicioBell: { position: 'relative', padding: 4 },
-  inicioBadge: {
-    position: 'absolute', top: 0, right: -2,
-    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
-    backgroundColor: c.danger, alignItems: 'center', justifyContent: 'center',
-  },
-  inicioBadgeText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.white },
-  inicioAcciones: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    paddingHorizontal: space[5], paddingBottom: space[4],
-  },
-  inicioAccion: { alignItems: 'center', gap: 6, width: 68 },
-  inicioAccionIcon: {
-    width: 54, height: 54, borderRadius: radius.full,
-    backgroundColor: c.surfaceAlt,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  inicioAccionLabel: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
-  inicioTurnos: { paddingBottom: space[3] },
-  inicioTurnosHead: {
-    flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
-    paddingHorizontal: space[4], marginBottom: space[2],
-  },
-  inicioSeccion: { fontSize: text.base, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
-  inicioVerTodo: { fontSize: text.sm, fontWeight: weight.bold, color: c.brand },
-  inicioTurnosRow: { paddingHorizontal: space[4], gap: space[2] + 2 },
-  inicioTurno: {
-    width: 150, borderRadius: radius.lg, padding: space[3],
-    backgroundColor: c.surface,
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
-  },
-  inicioTurnoDia: { fontSize: text.xs, fontWeight: weight.extrabold, textTransform: 'uppercase', letterSpacing: 0.4 },
-  inicioTurnoTitulo: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, marginTop: 3 },
-  inicioTurnoCaballo: { fontSize: text.xs, color: c.textMuted, marginTop: 1 },
-
   root: { flex: 1, backgroundColor: c.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingBottom: 120 },
+  bloque: { paddingHorizontal: space[4], paddingTop: space[4] },
+  deshabilitado: { opacity: 0.4 },
+  /** Velo del color del fondo: reemplaza cualquier rgba literal sobre la tarjeta invertida. */
+  velo: { backgroundColor: c.bg, opacity: 0.13, borderRadius: radius.full },
 
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[4], paddingVertical: space[3] },
-  navTitle: { fontSize: text.xl, fontWeight: weight.semibold, fontFamily: fontFamily.semibold, color: c.text, letterSpacing: -0.3 },
-  navActions: { flexDirection: 'row', alignItems: 'center', gap: space[5] },
+  // --- Saludo ---------------------------------------------------------------
+  saludo: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: space[3],
+    paddingHorizontal: space[4], paddingTop: space[3],
+  },
+  saludoTexto: { flex: 1 },
+  saludoFecha: { fontSize: text.sm, color: c.textMuted, textTransform: 'capitalize', fontFamily: fontFamily.regular },
+  saludoHola: {
+    fontSize: text['2xl'], fontWeight: weight.bold, color: c.text,
+    letterSpacing: -1.1, marginTop: space[1], fontFamily: fontFamily.semibold,
+  },
+  campana: {
+    width: 46, height: 46, borderRadius: radius.thumb,
+    backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center',
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  campanaPunto: {
+    position: 'absolute', top: 9, right: 10,
+    width: 9, height: 9, borderRadius: radius.full,
+    backgroundColor: c.danger,
+    // El anillo del color de la tarjeta despega el punto del ícono.
+    borderWidth: 2.5, borderColor: c.surface,
+  },
 
-  // Avatar
-  avatar: { backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText: { color: colors.white, fontWeight: weight.bold },
+  // --- Pendientes (superficie invertida) -----------------------------------
+  pendientes: { backgroundColor: c.text, borderRadius: radius.sheet, padding: space[4] + 2 },
+  pendientesHead: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  puntoAlerta: { width: 7, height: 7, borderRadius: radius.full, backgroundColor: c.danger },
+  pendientesHeadText: { fontSize: text.sm, color: c.textFaint, fontFamily: fontFamily.regular },
+  divisorInv: { height: 1, backgroundColor: c.bg, opacity: 0.1, marginVertical: space[3] + 2 },
+  pendienteFila: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[3] + 2 },
+  pendienteThumb: { width: 44, height: 44, borderRadius: radius.thumb - 1, overflow: 'hidden' },
+  pendienteThumbVacio: { alignItems: 'center', justifyContent: 'center' },
+  pendienteTexto: { flex: 1, minWidth: 0 },
+  pendienteTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.bg, fontFamily: fontFamily.semibold },
+  pendienteDetalle: { fontSize: text.sm, color: c.textFaint, marginTop: 2, fontFamily: fontFamily.regular },
+  chipInv: {
+    height: 34, paddingHorizontal: space[3] + 1, borderRadius: radius.full,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  chipInvSolido: { backgroundColor: c.bg },
+  chipInvText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.bg, fontFamily: fontFamily.semibold },
+  chipInvTextSolido: { color: c.text },
 
-  // Card
-  card: { backgroundColor: c.surface, marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.xl, overflow: 'hidden', ...(c.isDark ? {} : shadow.sm) },
-  cardHidden: { opacity: 0.55 },
+  // --- Próximo turno --------------------------------------------------------
+  turno: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: c.surface, borderRadius: radius['2xl'],
+    paddingHorizontal: space[4], paddingVertical: space[4] - 1,
+    ...(c.isDark ? {} : shadow.md),
+  },
+  turnoHora: {
+    width: 46, height: 46, borderRadius: radius.thumb,
+    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
+  },
+  turnoHoraText: {
+    fontSize: 15, fontWeight: weight.bold, color: c.brand,
+    fontVariant: ['tabular-nums'], fontFamily: fontFamily.bold,
+  },
+  turnoTexto: { flex: 1, minWidth: 0 },
+  turnoTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, fontFamily: fontFamily.semibold },
+  turnoBajada: { fontSize: text.sm, color: c.textMuted, marginTop: 2, fontFamily: fontFamily.regular },
 
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: space[4], paddingBottom: 0, gap: space[3] },
-  authorInfo: { flex: 1 },
-  authorRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  authorName: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
-  pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: c.warningSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
+  // --- Sección Novedades ----------------------------------------------------
+  seccion: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: space[4], paddingTop: space[6], paddingBottom: space[3],
+  },
+  seccionTitulo: {
+    fontSize: text.md, fontWeight: weight.bold, color: c.text,
+    letterSpacing: -0.4, fontFamily: fontFamily.semibold,
+  },
+  seccionBtn: {
+    width: touch.min, height: touch.min, borderRadius: radius.thumb,
+    backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center',
+    ...(c.isDark ? {} : shadow.sm),
+  },
+
+  // --- Fila del muro --------------------------------------------------------
+  fila: { paddingHorizontal: space[4], paddingBottom: space[5] },
+  filaOculta: { opacity: 0.55 },
+  filaCuerpo: { flexDirection: 'row', gap: space[3] + 1, alignItems: 'flex-start' },
+  filaThumbWrap: { width: 62, height: 62, borderRadius: radius.xl, overflow: 'hidden' },
+  filaThumb: { width: '100%', height: '100%' },
+  filaThumbMas: {
+    position: 'absolute', right: 0, bottom: 0,
+    paddingHorizontal: 6, paddingVertical: 2,
+    borderTopLeftRadius: radius.sm, backgroundColor: c.overlay,
+  },
+  filaThumbMasText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
+  filaTexto: { flex: 1, minWidth: 0, paddingTop: 2 },
+  filaTituloRow: { flexDirection: 'row', alignItems: 'center' },
+  filaContenido: { flex: 1, fontSize: text.base, color: c.text, lineHeight: 21, fontFamily: fontFamily.regular },
+  filaMetaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 5 },
+  filaMeta: { fontSize: text.xs, color: c.textFaint, fontFamily: fontFamily.regular },
+  pinnedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: c.warningSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full,
+  },
   pinnedText: { fontSize: text.xs, color: c.warning, fontWeight: weight.semibold },
-  timeAgo: { fontSize: text.xs, color: c.textFaint },
-  timeAgoRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 2 },
-  timeAgoHorse: { flexDirection: 'row', alignItems: 'center' },
-  menuBtn: { padding: 4, marginTop: -2 },
+  filaVideos: { marginTop: space[3], marginLeft: 62 + space[3] + 1, gap: space[2] },
+  // El video se recuesta sobre surfaceAlt (no sobre negro literal) para que la
+  // caja funcione igual en claro y en oscuro.
+  videoPlayer: { width: '100%', height: 200, backgroundColor: c.surfaceAlt, borderRadius: radius.lg },
+  filaAcciones: {
+    flexDirection: 'row', alignItems: 'center', gap: space[5],
+    marginTop: space[2], marginLeft: 62 + space[3] + 1,
+  },
+  accionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  accionMenu: { marginLeft: 'auto' },
+  accionCount: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textFaint },
 
-  content: { fontSize: text.md, color: c.text, lineHeight: 23, paddingHorizontal: space[4], paddingVertical: space[3] },
-
-  imageGrid: { overflow: 'hidden', marginHorizontal: space[4], marginBottom: space[3], borderRadius: radius.lg, gap: 2 },
-  imageGrid1: {},
-  imageGrid2: { flexDirection: 'row', flexWrap: 'wrap' },
-  imageItem: {},
-  imageItem1: { width: '100%', height: 200, borderRadius: radius.lg },
-  imageItem2: { width: '49%', height: 120, borderRadius: radius.md },
-
-  actions: { flexDirection: 'row', gap: space[5], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionCount: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
-  videoPlayer: { width: '100%', height: 220, backgroundColor: '#000', borderRadius: radius.lg },
-
-  // Composer closed (disparador de la pantalla completa)
-  composerClosed: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: c.surface, borderRadius: radius.xl, padding: space[3], ...(c.isDark ? {} : shadow.sm) },
-  composerPlaceholder: { flex: 1, fontSize: text.sm, color: c.textFaint },
-
-  // Comments sheet — comentarios planos sobre el fondo de la hoja, sin burbujas.
+  // --- Hoja de comentarios --------------------------------------------------
   emptyComments: { textAlign: 'center', color: c.textFaint, fontSize: text.sm, paddingVertical: space[6] },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2], paddingVertical: space[2] },
   commentBody: { flex: 1 },
@@ -668,7 +779,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   commentAuthor: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   commentText: { fontSize: text.md, color: c.text, lineHeight: 23 },
   commentDelete: { padding: space[1], marginTop: space[2] },
-  commentInput: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, alignItems: 'flex-end' },
-  commentInputField: { flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.xl, paddingHorizontal: space[3], paddingVertical: space[2] + 2, fontSize: text.sm, color: c.text, maxHeight: 100 },
-  sendBtn: { backgroundColor: c.brand, borderRadius: radius.full, width: touch.min, height: touch.min, justifyContent: 'center', alignItems: 'center' },
+  commentInput: {
+    flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3],
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, alignItems: 'flex-end',
+  },
+  commentInputField: {
+    flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.field,
+    paddingHorizontal: space[3], paddingVertical: space[2] + 2,
+    fontSize: text.md, color: c.text, maxHeight: 100,
+  },
+  sendBtn: {
+    backgroundColor: c.brand, borderRadius: radius.full,
+    width: touch.min, height: touch.min, justifyContent: 'center', alignItems: 'center',
+  },
 });

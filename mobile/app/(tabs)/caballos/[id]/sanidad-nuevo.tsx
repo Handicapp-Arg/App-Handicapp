@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { ShieldCheck, Syringe, Bug, Microscope, Pill, type LucideIcon } from 'lucide-react-native';
+import Animated from 'react-native-reanimated';
 
 import {
   useAddMedicalRecord, MEDICAL_TYPE_LABELS, type CreateMedicalRecordDto,
@@ -14,13 +15,13 @@ import { useHorse } from '../../../../hooks/use-horses';
 import { todayISO } from '../../../../hooks/use-routines';
 import { DatePicker } from '../../../../components/DatePicker';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
-import { ActionSheet } from '../../../../components/ActionSheet';
-import { FilaSelector } from '../../../../components/FilaSelector';
+import { PressableScale } from '../../../../components/PressableScale';
 import { useToast } from '../../../../components/Toast';
 import { haptic } from '../../../../lib/haptics';
 import { colors } from '../../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../../styles/tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../../styles/tokens';
+import { entradaFila } from '../../../../styles/motion';
 import { useCommonStyles } from '../../../../styles/common';
 
 const MEDICAL_TYPES = ['vacuna', 'desparasitacion', 'analisis', 'tratamiento', 'sanidad'] as const;
@@ -55,7 +56,6 @@ export default function SanidadNuevoScreen() {
   const today = todayISO();
 
   const [form, setForm] = useState<CreateMedicalRecordDto>({ type: initialType, name: initialName, date: today });
-  const [showTipoSheet, setShowTipoSheet] = useState(false);
   const [error, setError] = useState('');
   // Al guardar con éxito salimos con back: el guardia de descarte no debe interceptar.
   const guardado = useRef(false);
@@ -92,7 +92,7 @@ export default function SanidadNuevoScreen() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <ScreenHeader scrollable showBack title="Nuevo registro médico" subtitle={horse?.name} />
+      <ScreenHeader scrollable showBack title="Registrar sanidad" subtitle={horse?.name} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.body}
@@ -101,33 +101,55 @@ export default function SanidadNuevoScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* Fila de selección, patrón Ajustes de iOS */}
+        {/* ─── Qué le hiciste: el tipo se elige de un vistazo, no en una hoja ─── */}
         <View>
-          <FilaSelector
-            primera
-            label="Tipo"
-            valor={MEDICAL_TYPE_LABELS[form.type]}
-            onPress={() => setShowTipoSheet(true)}
-          />
+          <Text style={s.rotulo}>Qué le hiciste</Text>
+          <View style={s.grilla}>
+            {MEDICAL_TYPES.map((t, i) => {
+              const activo = form.type === t;
+              const Icono = MEDICAL_TYPE_ICONS[t];
+              return (
+                <Animated.View key={t} entering={entradaFila(i)} style={s.grillaCelda}>
+                  <PressableScale
+                    style={[s.tipoBtn, activo ? s.tipoBtnActivo : s.tipoBtnInactivo]}
+                    onPress={() => { haptic.selection(); setForm((p) => ({ ...p, type: t })); }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: activo }}
+                    accessibilityLabel={MEDICAL_TYPE_LABELS[t]}
+                  >
+                    <View style={[s.tipoIcono, activo ? s.tipoIconoActivo : s.tipoIconoInactivo]}>
+                      <Icono size={17} color={activo ? c.text : c.textMuted} strokeWidth={1.9} />
+                    </View>
+                    <Text style={[s.tipoLabel, activo && s.tipoLabelActivo]} numberOfLines={1}>
+                      {MEDICAL_TYPE_LABELS[t]}
+                    </Text>
+                  </PressableScale>
+                </Animated.View>
+              );
+            })}
+          </View>
         </View>
 
         <TextInput
           style={inputStyle.base}
           value={form.name}
           onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
-          placeholder="Nombre / producto, ej: Triple viral"
+          placeholder="Qué se aplicó, ej: Influenza equina"
           placeholderTextColor={c.textFaint}
           returnKeyType="next"
         />
 
-        <DatePicker label="Fecha *" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
-        <DatePicker label="Próxima dosis" value={form.next_due ?? ''} onChange={(v) => setForm((p) => ({ ...p, next_due: v || undefined }))} />
+        {/* Filas de selección: cuándo se hizo y cuándo vuelve a vencer. */}
+        <View>
+          <DatePicker label="Cuándo" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} maxDate={new Date()} />
+          <DatePicker label="Vuelve a vencer" value={form.next_due ?? ''} onChange={(v) => setForm((p) => ({ ...p, next_due: v || undefined }))} />
+        </View>
 
         <TextInput
           style={inputStyle.base}
           value={form.brand ?? ''}
           onChangeText={(v) => setForm((p) => ({ ...p, brand: v || undefined }))}
-          placeholder="Marca / laboratorio (opcional)"
+          placeholder="Marca o laboratorio (opcional)"
           placeholderTextColor={c.textFaint}
           returnKeyType="next"
         />
@@ -135,7 +157,7 @@ export default function SanidadNuevoScreen() {
           style={[inputStyle.multiline, { minHeight: 96 }]}
           value={form.notes ?? ''}
           onChangeText={(v) => setForm((p) => ({ ...p, notes: v || undefined }))}
-          placeholder="Notas / observaciones adicionales"
+          placeholder="Notas u observaciones"
           placeholderTextColor={c.textFaint}
           multiline
         />
@@ -143,42 +165,49 @@ export default function SanidadNuevoScreen() {
         {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
-      {/* Un solo CTA: el cuero vive acá y en ningún otro lado */}
+      {/* Un solo CTA: el verde vive acá y en ningún otro lado. */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
-        <TouchableOpacity
-          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
+        <PressableScale
+          style={[s.cta, !canSubmit && { opacity: 0.5 }]}
           disabled={!canSubmit}
           onPress={handleSubmit}
-          activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Guardar registro médico"
         >
           {addMedical.isPending
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.submitBtnText}>Guardar</Text>
-          }
-        </TouchableOpacity>
+            : <Text style={s.ctaText}>Guardar</Text>}
+        </PressableScale>
       </View>
-
-      <ActionSheet
-        visible={showTipoSheet}
-        onClose={() => setShowTipoSheet(false)}
-        title="Tipo de registro"
-        acciones={MEDICAL_TYPES.map((t) => ({
-          label: MEDICAL_TYPE_LABELS[t],
-          Icon: MEDICAL_TYPE_ICONS[t],
-          onPress: () => setForm((p) => ({ ...p, type: t })),
-        }))}
-      />
     </View>
   );
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
+  body: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[8], gap: space[5] },
+  rotulo: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint, marginBottom: space[3] },
+
+  /* Grilla de tipos: dos columnas, el elegido pasa a tinta. */
+  grilla: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 2 },
+  grillaCelda: { width: '48%' },
+  tipoBtn: { height: 76, borderRadius: radius.button, flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[4] },
+  tipoBtnActivo: { backgroundColor: c.text },
+  tipoBtnInactivo: { backgroundColor: c.surface, ...(c.isDark ? {} : shadow.sm) },
+  tipoIcono: { width: 34, height: 34, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  // Sobre la tarjeta de tinta el recuadro se pinta con el fondo de pantalla y
+  // el ícono con la tinta: el par se invierte solo al cambiar de tema.
+  tipoIconoActivo: { backgroundColor: c.bg },
+  tipoIconoInactivo: { backgroundColor: c.surfaceAlt },
+  tipoLabel: { flex: 1, fontSize: text.sm + 1, fontWeight: weight.medium, color: c.textMuted },
+  tipoLabelActivo: { color: c.bg, fontWeight: weight.semibold },
+
   errorText: { fontSize: text.sm, color: c.danger },
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
-  submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
+  cta: {
+    height: touch.button, borderRadius: radius.button, backgroundColor: c.brand,
+    alignItems: 'center', justifyContent: 'center',
+    ...(c.isDark ? {} : brandShadow(c.brand)),
+  },
+  ctaText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

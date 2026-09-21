@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, ActivityIndicator, Pressable, Linking,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import {
   Check, Rocket, Zap, Crown, Building2, Lock, ArrowRight,
   BarChart3, ClipboardPlus, Sprout,
@@ -11,11 +11,14 @@ import {
 import { WhatsappLogo } from '../../components/icons/WhatsappLogo';
 import { PaymentMethods } from '../../components/PaymentMethods';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Skeleton } from '../../components/Skeleton';
 import { useAuth } from '../../lib/auth';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import { useCommonStyles } from '../../styles/common';
+import { entradaFila } from '../../styles/motion';
 import { Routes } from '../../lib/routes';
 import { formatMoney } from '../../lib/currency';
 import {
@@ -49,9 +52,6 @@ function roleTargetFor(role?: string): PlanRoleTarget {
   if (role === 'haras') return 'haras';
   return 'propietario';
 }
-
-const fmtPrice = (ars: number) =>
-  ars > 0 ? `${formatMoney(ars)}/mes` : 'Gratis';
 
 /* ─────────────────────────────────────────────────────────────
  * IDENTIDAD POR TIER
@@ -402,6 +402,7 @@ function CheckoutSheet({
 export default function MiPlanScreen() {
   const { user } = useAuth();
   const { c } = useTheme();
+  const { typography } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
 
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null);
@@ -419,7 +420,6 @@ export default function MiPlanScreen() {
   const currentMeta = currentPlan
     ? tierMetaOf(tierKindOf(currentPlan), c)
     : tierMetaOf('free', c);
-  const CurrentIcon = currentMeta.Icon;
 
   const usagePct = status && status.horse_limit
     ? Math.min(1, status.horse_count / status.horse_limit)
@@ -429,37 +429,56 @@ export default function MiPlanScreen() {
     ? vence(status.plan_expires_at)
     : null;
 
+  // El tope de equipo lo sabe el CATÁLOGO, no el status: el recuento real de
+  // gente no lo expone ningún endpoint, así que mostramos el tope y nada más.
+  const staffLimit = currentPlan?.staff_limit ?? null;
+
   return (
     <View style={s.root}>
-      <ScreenHeader title="Mi Plan" showBack backTo={Routes.mas} />
+      <ScreenHeader title="Mi plan" showBack backTo={Routes.mas} />
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* Plan actual */}
-        <Text style={s.sectionTitle}>Plan actual</Text>
+        {/* Hero invertido: el dato hero es el nombre del plan, nada más.
+            `c.text` de fondo y `c.bg` de tinta se dan vuelta solos en oscuro. */}
         {loadingStatus || !status ? (
-          <View style={s.loadingBox}><ActivityIndicator color={c.brand} /></View>
+          // Misma silueta que la tarjeta real: si no, al cargar salta todo.
+          <Skeleton height={168} borderRadius={radius.sheet} />
         ) : (
-          <Animated.View entering={FadeInDown.duration(320)} style={s.currentCard}>
-            <View style={s.currentHeader}>
-              <View style={s.currentIcon}>
-                <CurrentIcon size={22} color={c.text} strokeWidth={2} />
-              </View>
+          <Animated.View entering={entradaFila(0)} style={s.heroCard}>
+            <View style={s.heroTop}>
               <View style={{ flex: 1 }}>
-                <Text style={s.currentPlanName}>{status.label}</Text>
-                <Text style={s.currentPlanSub}>
-                  {status.price_ars > 0 ? fmtPrice(status.price_ars) : 'Plan gratuito'}
-                  {expires ? ` · ${expires}` : ''}
+                <Text style={s.heroEyebrow}>Tu plan</Text>
+                <Text style={s.heroPlan} numberOfLines={1}>{status.label}</Text>
+              </View>
+              <View style={s.heroChip}>
+                <Text style={s.heroChipText}>
+                  {status.price_ars > 0 ? 'Activo' : 'Gratis'}
                 </Text>
               </View>
             </View>
 
-            {/* Uso de caballos */}
-            <View style={s.usageBlock}>
+            {status.price_ars > 0 && (
+              <View style={s.heroPrecioRow}>
+                <Text style={s.heroPrecio}>{formatMoney(status.price_ars)}</Text>
+                <Text style={s.heroPrecioUnidad}>por mes</Text>
+              </View>
+            )}
+            {expires ? <Text style={s.heroVence}>{expires}</Text> : null}
+          </Animated.View>
+        )}
+
+        {/* Lo que estás usando */}
+        {status && (
+          <Animated.View entering={entradaFila(1)} style={s.bloque}>
+            <Text style={typography.sectionEyebrow}>Lo que estás usando</Text>
+
+            <View style={s.usoItem}>
               <View style={s.usageRow}>
                 <Text style={s.usageLabel}>Caballos</Text>
                 <Text style={s.usageValue}>
-                  {status.horse_count}
-                  {status.horse_limit == null ? ' · ilimitado' : ` / ${status.horse_limit}`}
+                  {status.horse_limit == null
+                    ? `${status.horse_count} · sin tope`
+                    : `${status.horse_count} de ${status.horse_limit}`}
                 </Text>
               </View>
               <View style={s.progressTrack}>
@@ -478,14 +497,27 @@ export default function MiPlanScreen() {
               )}
             </View>
 
-            {/* Features activas — misma forma que las cards: checklist de filas */}
-            <Text style={s.featTitle}>Funciones incluidas</Text>
+            {staffLimit != null && staffLimit > 0 && (
+              <View style={s.usoItem}>
+                <View style={s.usageRow}>
+                  <Text style={s.usageLabel}>Gente en tu equipo</Text>
+                  <Text style={s.usageValue}>hasta {staffLimit}</Text>
+                </View>
+              </View>
+            )}
+          </Animated.View>
+        )}
+
+        {/* Incluye */}
+        {status && (
+          <Animated.View entering={entradaFila(2)} style={s.bloque}>
+            <Text style={typography.sectionEyebrow}>Incluye</Text>
             {status.features.length > 0 ? (
-              <View style={{ gap: space[2] + 2 }}>
+              <View style={{ gap: space[3] }}>
                 {status.features.map((f) => (
                   <FeatureRow
                     key={f} label={featureLabel(f)} featureKey={f}
-                    accent={currentMeta.accent} soft={currentMeta.soft} textColor={c.textMuted} s={s}
+                    accent={currentMeta.accent} soft={currentMeta.soft} textColor={c.text} s={s}
                   />
                 ))}
               </View>
@@ -496,33 +528,39 @@ export default function MiPlanScreen() {
         )}
 
         {/* Catálogo del rol */}
-        <Text style={[s.sectionTitle, { marginTop: space[6] }]}>Planes disponibles</Text>
-        {loadingCatalog ? (
-          <View style={s.loadingBox}><ActivityIndicator color={c.brand} /></View>
-        ) : myPlans.length === 0 ? (
-          <Text style={s.emptyText}>No hay planes disponibles para tu rol por ahora.</Text>
-        ) : (
-          <>
+        <View style={s.bloque}>
+          <Text style={typography.sectionEyebrow}>Planes disponibles</Text>
+          {loadingCatalog ? (
+            // Dos tarjetas fantasma con la altura de las reales.
             <View style={{ gap: space[3] }}>
-              {myPlans.map((p, i) => (
-                <Animated.View key={p.id} entering={FadeInDown.duration(320).delay(Math.min(i, 6) * 50)}>
-                  <PlanCard
-                    plan={p}
-                    current={status?.plan === p.tier_key}
-                    onSubscribe={setCheckoutPlan}
-                    c={c} s={s}
-                  />
-                </Animated.View>
-              ))}
+              <Skeleton height={230} borderRadius={radius.xl} />
+              <Skeleton height={230} borderRadius={radius.xl} />
             </View>
+          ) : myPlans.length === 0 ? (
+            <Text style={s.emptyText}>No hay planes disponibles para tu rol por ahora.</Text>
+          ) : (
+            <>
+              <View style={{ gap: space[3] }}>
+                {myPlans.map((p, i) => (
+                  <Animated.View key={p.id} entering={entradaFila(i + 3)}>
+                    <PlanCard
+                      plan={p}
+                      current={status?.plan === p.tier_key}
+                      onSubscribe={setCheckoutPlan}
+                      c={c} s={s}
+                    />
+                  </Animated.View>
+                ))}
+              </View>
 
-            {/* Sello de confianza: medios de pago */}
-            <View style={s.trustSeal}>
-              <PaymentMethods size="sm" style={{ justifyContent: 'center' }} />
-              <Text style={s.payHint}>Pagás con tarjeta vía MercadoPago</Text>
-            </View>
-          </>
-        )}
+              {/* Sello de confianza: medios de pago */}
+              <View style={s.trustSeal}>
+                <PaymentMethods size="sm" style={{ justifyContent: 'center' }} />
+                <Text style={s.payHint}>Pagás con tarjeta vía MercadoPago</Text>
+              </View>
+            </>
+          )}
+        </View>
       </ScrollView>
 
       <CheckoutSheet visible={!!checkoutPlan} plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} c={c} s={s} />
@@ -535,41 +573,47 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   masBeneficios: { fontSize: text.sm, color: c.textFaint, marginTop: 2, marginLeft: 30 },
   root: { flex: 1, backgroundColor: c.bg },
-  content: { paddingHorizontal: space[5], paddingTop: space[4], paddingBottom: 120 },
+  content: { paddingHorizontal: space[5], paddingTop: space[3], paddingBottom: 140 },
 
-  sectionTitle: {
-    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
-    textTransform: 'uppercase', letterSpacing: 1,
-    marginBottom: space[3], paddingHorizontal: space[1],
+  emptyText: { fontSize: text.sm, color: c.textFaint },
+
+  /* Hero invertido: un solo dato grande, el nombre del plan. */
+  heroCard: {
+    backgroundColor: c.text, borderRadius: radius.sheet,
+    padding: space[5], gap: space[1],
   },
-
-  loadingBox: {
-    height: 100, alignItems: 'center', justifyContent: 'center',
+  heroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
+  heroEyebrow: { fontSize: text.xs, color: c.textMuted },
+  heroPlan: {
+    fontSize: text.display, fontWeight: weight.bold, color: c.bg,
+    letterSpacing: -1.4, marginTop: 3,
   },
-  emptyText: { fontSize: text.sm, color: c.textFaint, paddingHorizontal: space[1] },
-
-  /* Plan actual — aplanado: vive directo sobre c.bg, el ícono en cuero es el acento */
-  currentCard: { gap: space[4] },
-  currentHeader: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  // Sin fondo: el glifo solo alcanza (cuero reservado para el CTA).
-  currentIcon: {
-    width: 44, height: 44,
+  // Chip sobre superficie invertida: fondo del color del fondo de pantalla,
+  // texto en verde. Se da vuelta solo en oscuro, igual que la tarjeta.
+  heroChip: {
+    height: 28, paddingHorizontal: space[3],
+    borderRadius: radius.full, backgroundColor: c.bg,
     alignItems: 'center', justifyContent: 'center',
   },
-  currentPlanName: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
-  currentPlanSub: { fontSize: text.xs, color: c.textMuted, marginTop: 2 },
+  heroChipText: { fontSize: text.xs, fontWeight: weight.bold, color: c.brand },
+  heroPrecioRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] + 2, marginTop: space[4] },
+  heroPrecio: {
+    fontSize: text.xl, fontWeight: weight.bold, color: c.bg,
+    letterSpacing: -1, fontVariant: ['tabular-nums'],
+  },
+  heroPrecioUnidad: { fontSize: text.sm, color: c.textMuted },
+  heroVence: { fontSize: text.xs, color: c.textMuted, marginTop: space[1] + 2 },
 
-  usageBlock: { gap: space[2] },
-  usageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  usageLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  usageValue: { fontSize: text.sm, color: c.textMuted, fontVariant: ['tabular-nums'] },
+  bloque: { marginTop: space[7], gap: space[3] },
+  usoItem: { gap: space[2] },
+  usageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: space[3] },
+  usageLabel: { flex: 1, fontSize: text.md, fontWeight: weight.medium, color: c.text },
+  usageValue: { fontSize: text.base, color: c.textMuted, fontVariant: ['tabular-nums'] },
   progressTrack: {
-    height: 8, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden',
+    height: 8, borderRadius: radius.full, backgroundColor: c.border, overflow: 'hidden',
   },
   progressFill: { height: '100%', borderRadius: radius.full },
   limitWarn: { fontSize: text.xs, fontWeight: weight.medium, color: c.danger },
-
-  featTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
   /* ─── Plan cards: superficie + sombra suave, sin franjas ni badges flotantes ─── */
   planCard: {

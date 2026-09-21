@@ -1,26 +1,27 @@
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'lucide-react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Camera, ShieldCheck } from 'lucide-react-native';
+import Animated from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useHorse } from '../../../../hooks/use-horses';
-import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES } from '../../../../hooks/use-activity-photos';
+import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES, type ActivityPhoto } from '../../../../hooks/use-activity-photos';
 import { haptic } from '../../../../lib/haptics';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
-import { fechaHoraHumana } from '../../../../lib/fechas';
+import { fechaHumana, hora } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, touch, radius, weight } from '../../../../styles/tokens';
+import { space, text, touch, radius, weight, shadow, photoScrim } from '../../../../styles/tokens';
+import { entradaFila } from '../../../../styles/motion';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { PressableScale } from '../../../../components/PressableScale';
 import { AppImage } from '../../../../components/AppImage';
 import { EmptyState } from '../../../../components/EmptyState';
 import { ErrorState } from '../../../../components/ErrorState';
 import { Skeleton } from '../../../../components/Skeleton';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 /** Cuántas fotos se muestran por tanda. */
 const PAGINA = 12;
@@ -41,9 +42,43 @@ export default function FotosScreen() {
   // se muestra de a tandas para no montar cientos de fotos remotas de una.
   const [visibles, setVisibles] = useState(PAGINA);
 
-  const fotosFiltradas = (activityPhotos ?? []).filter((p) => activityType === 'all' || p.activity_type === activityType);
+  const fotosFiltradas = useMemo(
+    () => (activityPhotos ?? []).filter((p) => activityType === 'all' || p.activity_type === activityType),
+    [activityPhotos, activityType],
+  );
   const fotosVisibles = fotosFiltradas.slice(0, visibles);
   const hayMas = fotosFiltradas.length > fotosVisibles.length;
+
+  /** Las fotos se agrupan por día ("Hoy", "Ayer", "vie 5 sep"): así se lee un diario. */
+  const grupos = useMemo(() => {
+    const out: { label: string; fotos: ActivityPhoto[] }[] = [];
+    fotosVisibles.forEach((p) => {
+      const label = fechaHumana(p.taken_at) || 'Sin fecha';
+      const ultimo = out[out.length - 1];
+      if (ultimo && ultimo.label === label) ultimo.fotos.push(p);
+      else out.push({ label, fotos: [p] });
+    });
+    return out;
+  }, [fotosVisibles]);
+
+  const sacarFoto = async () => {
+    haptic.light();
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
+    if (result.canceled || !result.assets[0]) return;
+    try {
+      await uploadActivityPhoto.mutateAsync({
+        uri: result.assets[0].uri,
+        activity_type: activityType === 'all' ? 'otro' : activityType,
+      });
+      haptic.success();
+      toast.success('Foto agregada');
+    } catch {
+      haptic.error();
+      toast.error('No se pudo subir la foto. Probá de nuevo.');
+    }
+  };
 
   if (isError && !horse) {
     return (
@@ -55,145 +90,188 @@ export default function FotosScreen() {
   }
 
   if (isLoading || !horse) {
+    // Silueta real: chips arriba y la grilla de dos columnas con el mismo radio.
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
         <ScreenHeader scrollable showBack title="Fotos" />
-        <View style={{ paddingHorizontal: space[4], flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} width="48%" height={160} borderRadius={radius.md} />
-          ))}
+        <View style={s.chipsRow}>
+          {[62, 96, 84].map((w, i) => <Skeleton key={i} width={w} height={36} borderRadius={radius.full} />)}
+        </View>
+        <View style={[s.grilla, { marginTop: space[6] }]}>
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} width="48%" height={168} borderRadius={radius.card} />)}
         </View>
       </View>
     );
   }
 
+  const totalFotos = activityPhotos?.length ?? 0;
+
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <ScreenHeader scrollable showBack title="Fotos" subtitle={horse.name} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: insets.bottom + space[10] }} showsVerticalScrollIndicator={false}>
-        <View style={s.section}>
-          <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
-            <Text style={s.sectionTitle}>Fotos verificadas</Text>
-            <TouchableOpacity
-              style={s.captureBtn}
-              activeOpacity={0.85}
-              onPress={async () => {
-                const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                if (status !== 'granted') { toast.error('Necesitamos acceso a la cámara.'); return; }
-                const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
-                if (result.canceled || !result.assets[0]) return;
-                try {
-                  await uploadActivityPhoto.mutateAsync({ uri: result.assets[0].uri, activity_type: activityType === 'all' ? 'otro' : activityType });
-                  haptic.success();
-                  toast.success('Foto agregada');
-                } catch {
-                  haptic.error();
-                  toast.error('No se pudo subir la foto. Probá de nuevo.');
-                }
-              }}
+      <ScreenHeader
+        scrollable
+        showBack
+        title="Fotos"
+        subtitle={`${horse.name}${totalFotos > 0 ? ` · ${totalFotos} con sello` : ''}`}
+      />
+
+      {/* ─── Filtros por actividad ─── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.chipsRow}
+        keyboardShouldPersistTaps="handled"
+      >
+        {[{ v: 'all', label: 'Todas' }, ...Object.entries(ACTIVITY_TYPES).map(([v, m]) => ({ v, label: m.label }))].map((f) => {
+          const activo = activityType === f.v;
+          return (
+            <PressableScale
+              key={f.v}
+              style={[s.chip, activo ? s.chipActivo : s.chipInactivo]}
+              onPress={() => { haptic.selection(); setActivityType(f.v); setVisibles(PAGINA); }}
               accessibilityRole="button"
-              accessibilityLabel="Capturar foto"
+              accessibilityState={{ selected: activo }}
+              accessibilityLabel={`Filtrar por ${f.label}`}
             >
-              <Camera size={15} color={c.text} strokeWidth={2.2} />
-              <Text style={s.captureBtnText}>Capturar</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={s.activityTypeRow}
-            contentContainerStyle={{ flexDirection: 'row', gap: 6, paddingRight: 8 }}
-          >
-            <TouchableOpacity
-              style={[s.activityChip, activityType === 'all' && { backgroundColor: c.brandSoft }]}
-              onPress={() => { haptic.selection(); setActivityType('all'); }}
-              activeOpacity={0.75}
-            >
-              <Text style={[s.activityChipText, activityType === 'all' && { color: c.brand }]}>Todas</Text>
-            </TouchableOpacity>
-            {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
-              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg }]} onPress={() => { haptic.selection(); setActivityType(v); }} activeOpacity={0.75}>
-                <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {!fotosVisibles.length ? (
+              <Text style={[s.chipText, activo ? s.chipTextActivo : s.chipTextInactivo]}>{f.label}</Text>
+            </PressableScale>
+          );
+        })}
+      </ScrollView>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + space[20], paddingTop: space[5] }}
+        showsVerticalScrollIndicator={false}
+      >
+        {!fotosVisibles.length ? (
+          <View style={{ paddingHorizontal: space[4] }}>
             <EmptyState
               icon="paw-outline"
-              title="Sin fotos verificadas"
-              message="Las fotos tomadas incluyen sello de fecha y autor verificado."
+              title={activityType === 'all' ? 'Sin fotos verificadas' : 'Nada en este filtro'}
+              message="Las fotos tomadas desde la app guardan quién la sacó y cuándo."
             />
-          ) : (
-            <View style={s.photosGrid}>
-              {fotosVisibles.map((p, index) => {
-                const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
-                const stamp = p.taken_at ? fechaHoraHumana(p.taken_at) : '';
-                return (
-                  <AnimatedTouchable
-                    key={p.id}
-                    style={s.photoWrap}
-                    onPress={() => { haptic.light(); Linking.openURL(p.url); }}
-                    activeOpacity={0.85}
-                    entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Ver foto${p.photographer?.name ? ` de ${p.photographer.name}` : ''}`}
-                  >
-                    <AppImage source={{ uri: p.url }} style={s.photoThumb} />
-                    <View style={[s.photoBadge, { backgroundColor: c.isDark ? meta.color + '26' : meta.bg }]}>
-                      <Text style={[s.photoBadgeText, { color: meta.color }]}>{meta.label}</Text>
-                    </View>
-                    {(p.photographer?.name || stamp) && (
-                      <View style={s.photoStamp}>
-                        {!!p.photographer?.name && (
-                          <Text style={s.photoStampAuthor} numberOfLines={1}>{p.photographer.name}</Text>
-                        )}
-                        {!!stamp && <Text style={s.photoStampTime} numberOfLines={1}>{stamp}</Text>}
-                      </View>
-                    )}
-                  </AnimatedTouchable>
-                );
-              })}
-              {hayMas && (
-                <TouchableOpacity
-                  style={s.verMasBtn}
-                  onPress={() => { haptic.light(); setVisibles((v) => v + PAGINA); }}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ver más fotos"
-                >
-                  <Text style={s.verMasBtnText}>Ver más fotos</Text>
-                </TouchableOpacity>
-              )}
+          </View>
+        ) : (
+          <>
+            {grupos.map((g, gi) => (
+              <View key={`${g.label}-${gi}`}>
+                <Text style={s.diaLabel}>{g.label}</Text>
+                <View style={s.grilla}>
+                  {g.fotos.map((p, i) => {
+                    const autor = p.photographer?.name;
+                    const horaFoto = hora(p.taken_at);
+                    return (
+                      <Animated.View key={p.id} entering={entradaFila(i)} style={s.celda}>
+                        <PressableScale
+                          scaleTo={0.97}
+                          style={s.foto}
+                          onPress={() => { haptic.light(); Linking.openURL(p.url); }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Ver foto${autor ? ` de ${autor}` : ''}`}
+                        >
+                          <AppImage source={{ uri: p.url }} style={s.fotoImg} />
+                          {(autor || horaFoto) && (
+                            // El sello va sobre un degradado, no sobre una barra
+                            // opaca: se lee sin tapar la parte de abajo de la foto.
+                            <LinearGradient
+                              colors={[...photoScrim]}
+                              style={s.sello}
+                            >
+                              {!!autor && <Text style={s.selloAutor} numberOfLines={1}>{autor}</Text>}
+                              {!!horaFoto && <Text style={s.selloHora}>{horaFoto}</Text>}
+                            </LinearGradient>
+                          )}
+                        </PressableScale>
+                      </Animated.View>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+
+            {hayMas && (
+              <PressableScale
+                style={s.verMas}
+                onPress={() => { haptic.light(); setVisibles((v) => v + PAGINA); }}
+                accessibilityRole="button"
+                accessibilityLabel="Ver más fotos"
+              >
+                <Text style={s.verMasText}>Ver más fotos</Text>
+              </PressableScale>
+            )}
+
+            <View style={s.nota}>
+              <ShieldCheck size={15} color={c.textFaint} strokeWidth={1.9} />
+              <Text style={s.notaText}>Cada foto guarda quién la sacó y cuándo</Text>
             </View>
-          )}
-        </View>
+          </>
+        )}
       </ScrollView>
+
+      {/* ─── CTA fijo ─── */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['transparent', c.bg]}
+        style={[s.velo, { height: insets.bottom + space[20] }]}
+      />
+      <View style={[s.ctaWrap, { paddingBottom: insets.bottom + space[4] }]}>
+        <PressableScale
+          style={s.cta}
+          disabled={uploadActivityPhoto.isPending}
+          onPress={sacarFoto}
+          accessibilityRole="button"
+          accessibilityLabel="Sacar una foto con sello"
+        >
+          <Camera size={19} color={c.bg} strokeWidth={1.9} />
+          <Text style={s.ctaText}>{uploadActivityPhoto.isPending ? 'Subiendo…' : 'Sacar una foto'}</Text>
+        </PressableScale>
+      </View>
     </View>
   );
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  section: { marginHorizontal: space[4], gap: space[2] },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
-  activityTypeRow: { marginBottom: 10, flexGrow: 0 },
-  // Igual que los "smallBtn" de las pantallas hermanas: neutro, sin invertir.
-  captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: touch.min, borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
-  captureBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  activityChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[3], backgroundColor: c.surfaceAlt },
-  activityChipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
-  photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  verMasBtn: {
-    width: '100%', minHeight: touch.min, justifyContent: 'center', alignItems: 'center',
-    borderRadius: radius.full, backgroundColor: c.surfaceAlt, marginTop: space[2],
+
+  /* Chips */
+  chipsRow: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[1] },
+  chip: { height: 36, paddingHorizontal: space[4] - 1, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
+  chipActivo: { backgroundColor: c.text },
+  chipInactivo: { backgroundColor: c.surfaceAlt },
+  chipText: { fontSize: text.sm },
+  chipTextActivo: { color: c.bg, fontWeight: weight.semibold },
+  chipTextInactivo: { color: c.textMuted, fontWeight: weight.medium },
+
+  /* Grilla por día */
+  diaLabel: {
+    fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint,
+    paddingHorizontal: space[4], marginBottom: space[3], marginTop: space[3],
   },
-  verMasBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  photoWrap: { width: '48%', aspectRatio: 1, position: 'relative' },
-  photoThumb: { width: '100%', height: '100%', borderRadius: radius.md },
-  photoBadge: { position: 'absolute', top: space[2], left: space[2], borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
-  photoBadgeText: { fontSize: text.xs, fontWeight: weight.bold },
-  photoStamp: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderBottomLeftRadius: radius.md, borderBottomRightRadius: radius.md, paddingHorizontal: space[2], paddingVertical: space[1] },
-  photoStampAuthor: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
-  photoStampTime: { fontSize: text.xs, fontWeight: weight.medium, color: 'rgba(255,255,255,0.85)' },
+  grilla: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3], paddingHorizontal: space[4] },
+  celda: { width: '48%' },
+  foto: { borderRadius: radius.card, overflow: 'hidden', height: 168, backgroundColor: c.surfaceAlt },
+  fotoImg: { width: '100%', height: '100%' },
+  sello: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: space[7], paddingHorizontal: space[3], paddingBottom: space[2] + 2 },
+  selloAutor: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.white },
+  selloHora: { fontSize: text.xs - 1, color: 'rgba(255,255,255,0.8)', fontVariant: ['tabular-nums'] },
+
+  verMas: {
+    marginHorizontal: space[4], marginTop: space[5], height: touch.min,
+    borderRadius: radius.full, backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
+  },
+  verMasText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+
+  nota: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2], marginTop: space[5], paddingHorizontal: space[4] },
+  notaText: { fontSize: text.sm - 1, color: c.textFaint },
+
+  /* CTA */
+  velo: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  ctaWrap: { position: 'absolute', left: space[4], right: space[4], bottom: 0 },
+  cta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2] + 1,
+    height: touch.button, borderRadius: radius.button, backgroundColor: c.text,
+    ...(c.isDark ? {} : shadow.lg),
+  },
+  ctaText: { fontSize: text.base, fontWeight: weight.semibold, color: c.bg },
 });

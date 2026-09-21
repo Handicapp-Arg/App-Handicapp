@@ -334,3 +334,73 @@ Esto es solo para **presentación**. El valor que viaja al backend o a un
 4. Ningún número mágico donde hay un token.
 5. Probado mentalmente en claro y oscuro.
 6. Ninguna fecha cruda — pasa por `lib/fechas.ts`.
+
+---
+
+# Campo abierto 2026
+
+Lo de arriba sigue valiendo. Esto es lo que se agregó al cerrar el rediseño en
+el lienzo, y manda sobre cualquier criterio anterior que lo contradiga.
+
+## La regla de color
+
+| Rol | Token | Qué es |
+|---|---|---|
+| Superficie | `c.bg` (crema) | El fondo de la pantalla |
+| Tarjeta | `c.surface` (blanco) | Lo que flota sobre el crema |
+| Campo | `c.surfaceAlt` | Inputs y botones secundarios |
+| **Acción** | `c.brand` (verde) | El botón principal, el foco, el dato confirmado |
+
+**El verde es la acción, nunca el relleno.** Aparece poco y por eso se nota.
+Pintar de color cada tarjeta es exactamente lo que hacía ver la app genérica.
+El negro (`c.text`) se usa para superficies invertidas: la barra de abajo, el
+botón `+`, el chip seleccionado, el aviso.
+
+Nunca escribir un hexadecimal en una pantalla. Si falta un color, se agrega al
+theme, no al `StyleSheet`.
+
+## Las seis reglas de movimiento
+
+1. **La barra de abajo** — la píldora viaja, no parpadea. Ya resuelto en `app/(tabs)/_layout.tsx`.
+2. **Entrar a una pantalla** — empuja desde la derecha, el gesto del borde la devuelve. Ya resuelto en el Stack raíz; no lo toques.
+3. **Mientras carga** — `Skeleton` con brillo, nunca un spinner centrado, y **con la misma silueta que el contenido real** o al cargar salta todo de lugar.
+4. **Al tocar** — `PressableScale` (se hunde al 94%) + `haptic`. Una tarjeta o una acción principal no van con `TouchableOpacity`.
+5. **Después de guardar** — `toast.success('...')`. Sube desde abajo y admite `{ label: 'Deshacer', onPress }`.
+6. **Las listas** — `entering={entradaFila(index)}` de `styles/motion`. Nunca copiar la fórmula del stagger a mano.
+
+Duraciones: `duration.fast` (120, responde al dedo), `duration.base` (200, sale),
+`duration.enter` (280, entra). Curvas: `easing.outQuart` por defecto.
+**Sin rebote**: nada de `withSpring` en press ni en hojas.
+
+## Las medidas
+
+Radios semánticos de `styles/tokens`: `radius.card` (22), `radius.field` (18),
+`radius.button` (20), `radius.thumb` (16), `radius.sheet` (28). Un radio 12 en
+una tarjeta se lee viejo aunque todo lo demás esté bien.
+
+Sombras: `shadow.sm/md/lg`, largas y suaves, teñidas con la tinta de la marca.
+En oscuro NO se pintan: la jerarquía la da el contraste de `surface` sobre `bg`.
+
+## La regla de la tarjeta
+
+Una tarjeta muestra **un dato hero** y nada más. Si tiene cuatro números del
+mismo tamaño, no es una tarjeta: es una tabla, y hay que elegir cuál importa.
+
+## Encabezados
+
+`ScreenHeader` es el estándar para todo lo que se empuja: formularios, detalles
+y subpantallas. Se le pasa `scrollable` siempre que el contenido scrollee (el
+safe-area lo aplica el scroll).
+
+Los **índices de las pestañas** llevan encabezado propio con título grande y los
+botones cuadrados de 46 al costado: Inicio (saludo + campana), Caballos, Agenda
+y Eventos. No es una excepción por pantalla sino la regla de la barra: lo que se
+alcanza desde abajo se presenta con título grande, lo que se empuja lleva el
+chevron de volver. El mundo de auth y el hero de foto de la ficha son los otros
+dos encabezados propios.
+
+El botón cuadrado de la esquina es **negro** (`c.text`), no verde: navegar o
+crear desde un índice no es la acción principal de esa pantalla.
+
+Si una pantalla de carga usa `ScreenHeader` y la cargada usa un hero propio, hay
+un salto visual: el esqueleto tiene que tener la misma forma que el resultado.

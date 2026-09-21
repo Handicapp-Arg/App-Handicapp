@@ -1,22 +1,25 @@
 import { useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { ScrollView, View, Text, StyleSheet, RefreshControl } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AxiosError } from 'axios';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from 'expo-router';
-import {
-  BarChart3, HeartPulse, Wallet, CalendarClock, Stethoscope, TrendingUp,
-  AlertTriangle, Clock, CheckCircle2,
-} from 'lucide-react-native';
+import { BarChart3, CalendarClock, Stethoscope } from 'lucide-react-native';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow } from '../../styles/tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow } from '../../styles/tokens';
+import { entradaFila } from '../../styles/motion';
 import { Routes } from '../../lib/routes';
 import { useReportSummary, type ReportSummary } from '../../hooks/use-reports';
-import { ReportSkeleton } from '../../components/Skeleton';
+import { useDashboard } from '../../hooks/use-dashboard';
+import { Skeleton } from '../../components/Skeleton';
 import { ErrorState } from '../../components/ErrorState';
+import { PressableScale } from '../../components/PressableScale';
+import { Avatar } from '../../components/Avatar';
+import { haptic } from '../../lib/haptics';
 import { formatMoney } from '../../lib/currency';
 import { fechaHoraHumana, vence } from '../../lib/fechas';
 
@@ -47,183 +50,150 @@ const fmtMonth = (ym: string) => {
   return format(new Date(Number(y), Number(m) - 1, 1), 'MMM', { locale: es });
 };
 
-function StatCard({ icon, label, value, hint, divider, s }: {
-  icon: React.ReactNode; label: string; value: string; hint?: string; divider?: boolean; s: Styles;
-}) {
+/**
+ * Cuánto sale cada caballo. El dato no viene en /reports/summary sino en
+ * /dashboard (`spend_by_horse`), que ya está cacheado: por eso se lee de ahí
+ * en vez de inventar una barra con el total repartido.
+ */
+function GastoPorCaballo({ s }: { s: Styles }) {
+  const { data: dashboard } = useDashboard();
+  const filas = dashboard?.spend_by_horse ?? [];
+  if (filas.length === 0) return null;
+  const max = Math.max(1, ...filas.map((f) => f.total));
+
   return (
-    <View style={[s.statCard, divider && s.statCardDivider]}>
-      <View style={s.statIcon}>{icon}</View>
-      <Text style={s.statLabel}>{label}</Text>
-      <Text style={s.statValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
-      {hint ? <Text style={s.statHint}>{hint}</Text> : null}
-    </View>
+    <>
+      <Text style={s.seccion}>Cuánto sale cada uno</Text>
+      {filas.map((f, i) => (
+        <Animated.View key={f.horse_id} entering={entradaFila(i)} style={[s.gastoFila, i < filas.length - 1 && s.divisor]}>
+          <Avatar name={f.horse_name} size={38} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={s.gastoNombre} numberOfLines={1}>{f.horse_name}</Text>
+            <View style={s.barraTrack}>
+              <View style={[s.barraFill, { width: `${Math.round((f.total / max) * 100)}%` }]} />
+            </View>
+          </View>
+          <Text style={s.gastoMonto}>{fmtMoney(f.total)}</Text>
+        </Animated.View>
+      ))}
+    </>
   );
 }
 
-function HealthCard({ health, c, s }: { health: ReportSummary['health']; c: ThemeColors; s: Styles }) {
-  const verde = Math.max(0, health.total - health.rojo - health.amarillo);
-  const attention = health.rojo + health.amarillo;
-  const total = Math.max(1, health.rojo + health.amarillo + verde);
-
-  const cells = [
-    { value: health.rojo, label: 'Vencidos', color: c.danger, bg: c.dangerSoft, Icon: AlertTriangle },
-    { value: health.amarillo, label: 'Por vencer', color: c.warning, bg: c.warningSoft, Icon: Clock },
-    { value: verde, label: 'Al día', color: c.success, bg: c.successSoft, Icon: CheckCircle2 },
+/** Sanidad en tres números: al día, por vencer, vencidas. */
+function Sanidad({ health, c, s }: { health: ReportSummary['health']; c: ThemeColors; s: Styles }) {
+  const alDia = Math.max(0, health.total - health.rojo - health.amarillo);
+  const cajas = [
+    { valor: alDia, label: 'al día', fondo: c.successSoft, tinta: c.success },
+    { valor: health.amarillo, label: 'por vencer', fondo: c.goldSoft, tinta: c.goldText },
+    { valor: health.rojo, label: 'vencidas', fondo: c.dangerSoft, tinta: c.danger },
   ];
-
   return (
-    <View style={s.card}>
-      <View style={s.cardHead}>
-        <HeartPulse size={18} color={c.brand} strokeWidth={2} />
-        <Text style={s.cardTitle}>Salud sanitaria</Text>
-      </View>
-
-      {/* Barra semáforo agregada */}
-      <View style={s.semaforoTrack}>
-        {health.rojo > 0 && <View style={{ flex: health.rojo, backgroundColor: c.danger }} />}
-        {health.amarillo > 0 && <View style={{ flex: health.amarillo, backgroundColor: c.warning }} />}
-        {verde > 0 && <View style={{ flex: verde, backgroundColor: c.success }} />}
-        {total === 1 && health.rojo + health.amarillo + verde === 0 && (
-          <View style={{ flex: 1, backgroundColor: c.border }} />
-        )}
-      </View>
-
-      <View style={s.healthRow}>
-        {cells.map((cell) => (
-          <View key={cell.label} style={[s.healthBox, { backgroundColor: cell.bg }]}>
-            <cell.Icon size={15} color={cell.color} strokeWidth={2.2} />
-            <Text style={[s.healthNum, { color: cell.color }]}>{cell.value}</Text>
-            <Text style={[s.healthLbl, { color: cell.color }]}>{cell.label}</Text>
+    <>
+      <Text style={s.seccion}>Cómo viene la sanidad</Text>
+      <View style={s.sanidadRow}>
+        {cajas.map((caja) => (
+          <View key={caja.label} style={[s.sanidadCaja, { backgroundColor: caja.fondo }]}>
+            <Text style={[s.sanidadNum, { color: caja.tinta }]}>{caja.valor}</Text>
+            <Text style={[s.sanidadLbl, { color: caja.tinta }]}>{caja.label}</Text>
           </View>
         ))}
       </View>
-
-      <Text style={s.cardHint}>
-        {attention > 0
-          ? `${attention} caballo${attention === 1 ? '' : 's'} necesitan atención sanitaria (AIE, Encefalomielitis, Influenza).`
-          : 'Todos los caballos están al día con las enfermedades oficiales.'}
-      </Text>
-    </View>
+    </>
   );
 }
 
-function ExpensesCard({ expenses, c, s }: { expenses: ReportSummary['expenses']; c: ThemeColors; s: Styles }) {
-  const max = Math.max(1, ...expenses.monthly.map((m) => m.total));
+/** Gasto mes a mes: la barra del mes corriente es la única en verde. */
+function GastoMensual({ expenses, c, s }: { expenses: ReportSummary['expenses']; c: ThemeColors; s: Styles }) {
   const chrono = [...expenses.monthly].reverse();
-  const catMax = Math.max(1, ...expenses.by_category.map((cat) => cat.total));
+  if (chrono.length === 0) return null;
+  const max = Math.max(1, ...chrono.map((m) => m.total));
 
   return (
-    <View style={s.card}>
-      <View style={s.cardHead}>
-        <Wallet size={18} color={c.brand} strokeWidth={2} />
-        <Text style={s.cardTitle}>Gastos</Text>
-      </View>
-
-      <View style={s.expenseHero}>
-        <Text style={s.expenseHeroLbl}>Gasto de este mes</Text>
-        <Text style={s.expenseHeroVal}>{fmtMoney(expenses.month_total)}</Text>
-        <Text style={s.expenseHeroHint}>
-          {fmtMoney(expenses.year_total)} en los últimos 12 meses
-        </Text>
-      </View>
-
-      {chrono.length > 0 ? (
-        <View style={s.chart}>
-          {chrono.map((m, i) => {
-            const isCurrent = i === chrono.length - 1;
-            return (
-              <View key={m.month} style={s.chartCol}>
-                <View style={s.chartValRow}>
-                  {isCurrent ? (
-                    <Text style={s.chartVal} numberOfLines={1} adjustsFontSizeToFit>
-                      {fmtMoney(m.total)}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={s.chartBarTrack}>
-                  <View
-                    style={[
-                      s.chartBar,
-                      {
-                        height: `${Math.round((m.total / max) * 100)}%`,
-                        backgroundColor: isCurrent ? c.brand : c.brandSoft,
-                        borderWidth: isCurrent ? 0 : StyleSheet.hairlineWidth,
-                        borderColor: c.brand,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[s.chartLbl, isCurrent && { color: c.brand, fontWeight: weight.bold }]}>
-                  {fmtMonth(m.month)}
-                </Text>
+    <>
+      <Text style={s.seccion}>Mes a mes</Text>
+      <View style={s.chart}>
+        {chrono.map((m, i) => {
+          const actual = i === chrono.length - 1;
+          return (
+            <View key={m.month} style={s.chartCol}>
+              <View style={s.chartBarTrack}>
+                <View
+                  style={[
+                    s.chartBar,
+                    {
+                      height: `${Math.round((m.total / max) * 100)}%`,
+                      backgroundColor: actual ? c.brand : c.surfaceAlt,
+                    },
+                  ]}
+                />
               </View>
-            );
-          })}
-        </View>
-      ) : (
-        <Text style={s.emptyText}>Sin gastos registrados en el período.</Text>
-      )}
-
-      {expenses.by_category.length > 0 && (
-        <View style={s.catSection}>
-          <Text style={s.subLabel}>Por categoría</Text>
-          {expenses.by_category.map((cat) => (
-            <View key={cat.category} style={{ gap: 5 }}>
-              <View style={s.catRow}>
-                <Text style={s.catName}>{CATEGORY_LABELS[cat.category] ?? cat.category}</Text>
-                <Text style={s.catTotal}>{fmtMoney(cat.total)}</Text>
-              </View>
-              <View style={s.catTrack}>
-                <View style={[s.catFill, { width: `${Math.round((cat.total / catMax) * 100)}%`, backgroundColor: c.brandSoft }]} />
-              </View>
+              <Text style={[s.chartLbl, actual && { color: c.brand, fontWeight: weight.bold }]}>
+                {fmtMonth(m.month)}
+              </Text>
             </View>
-          ))}
-        </View>
-      )}
-    </View>
+          );
+        })}
+      </View>
+    </>
   );
 }
 
-function UpcomingCard({ upcoming, c, s }: { upcoming: ReportSummary['upcoming']; c: ThemeColors; s: Styles }) {
-  // Una sola lista plana (turnos + vencimientos médicos) con separador hairline,
-  // en lugar de cajitas surfaceAlt apiladas.
+/** Categorías y próximos vencimientos: filas planas, sin cajas. */
+function PorCategoria({ expenses, s }: { expenses: ReportSummary['expenses']; s: Styles }) {
+  if (expenses.by_category.length === 0) return null;
+  const max = Math.max(1, ...expenses.by_category.map((cat) => cat.total));
+  return (
+    <>
+      <Text style={s.seccion}>En qué se va</Text>
+      {expenses.by_category.map((cat, i) => (
+        <View key={cat.category} style={[s.catRow, i < expenses.by_category.length - 1 && s.divisor]}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.catName}>{CATEGORY_LABELS[cat.category] ?? cat.category}</Text>
+            <View style={s.barraTrack}>
+              <View style={[s.barraFill, { width: `${Math.round((cat.total / max) * 100)}%` }]} />
+            </View>
+          </View>
+          <Text style={s.gastoMonto}>{fmtMoney(cat.total)}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Proximos({ upcoming, c, s }: { upcoming: ReportSummary['upcoming']; c: ThemeColors; s: Styles }) {
   const filas = [
     ...upcoming.appointments.map((a) => ({
-      key: `turno-${a.id}`, Icon: CalendarClock, tint: c.brand, soft: c.brandSoft,
+      key: `turno-${a.id}`, Icon: CalendarClock, tinta: c.info, fondo: c.infoSoft,
       title: a.title,
       sub: `${a.horse_name} · ${APPOINTMENT_LABELS[a.type] ?? a.type}`,
       date: fechaHoraHumana(a.scheduled_at),
     })),
     ...upcoming.medical.map((m) => ({
-      key: `medico-${m.id}`, Icon: Stethoscope, tint: c.success, soft: c.successSoft,
+      key: `medico-${m.id}`, Icon: Stethoscope, tinta: c.success, fondo: c.successSoft,
       title: m.name,
       sub: m.horse_name,
       date: vence(m.next_due),
     })),
   ];
+  if (filas.length === 0) return null;
 
   return (
-    <View style={s.card}>
-      <View style={s.cardHead}>
-        <CalendarClock size={18} color={c.brand} strokeWidth={2} />
-        <Text style={s.cardTitle}>Próximos vencimientos</Text>
-      </View>
-
-      {filas.length === 0 && <Text style={s.emptyText}>No hay turnos ni vencimientos próximos.</Text>}
-
+    <>
+      <Text style={s.seccion}>Lo que se viene</Text>
       {filas.map((f, i) => (
-        <View key={f.key} style={[s.upRow, i > 0 && s.upRowDivider]}>
-          <View style={[s.upIcon, { backgroundColor: f.soft }]}>
-            <f.Icon size={15} color={f.tint} strokeWidth={2} />
+        <View key={f.key} style={[s.upRow, i < filas.length - 1 && s.divisor]}>
+          <View style={[s.cajita, { backgroundColor: f.fondo }]}>
+            <f.Icon size={18} color={f.tinta} strokeWidth={1.9} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.upTitle} numberOfLines={1}>{f.title}</Text>
             <Text style={s.upSub} numberOfLines={1}>{f.sub}</Text>
           </View>
           <Text style={s.upDate}>{f.date}</Text>
         </View>
       ))}
-    </View>
+    </>
   );
 }
 
@@ -236,69 +206,83 @@ function NoPlanState({ c, s }: { c: ThemeColors; s: Styles }) {
       </View>
       <Text style={s.noPlanTitle}>Tu plan no incluye reportes</Text>
       <Text style={s.noPlanText}>
-        Actualizá tu plan para acceder al resumen de tus caballos, salud, gastos y próximos vencimientos.
+        Actualizá tu plan para ver el resumen de tus caballos, la sanidad, los gastos y lo que se viene.
       </Text>
-      <Pressable
-        onPress={() => router.navigate(Routes.miPlan as never)}
-        style={({ pressed }) => [s.noPlanBtn, pressed && { opacity: 0.7 }]}
+      <PressableScale
+        onPress={() => { haptic.light(); router.navigate(Routes.miPlan as never); }}
+        style={s.noPlanBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Ver Mi Plan"
       >
         <Text style={s.noPlanBtnText}>Ver Mi Plan</Text>
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }
 
 export default function ReportesScreen() {
   const { c } = useTheme();
+  const insets = useSafeAreaInsets();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data, isLoading, error, refetch, isRefetching } = useReportSummary();
   const status = (error as AxiosError | null)?.response?.status;
 
   return (
-    <View style={s.root}>
-      <ScreenHeader title="Reportes" showBack backTo={Routes.mas} />
+    <View style={[s.root, { paddingTop: insets.top }]}>
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
         }
       >
-        {isLoading ? (
-          <ReportSkeleton />
-        ) : status === 403 ? (
-          <NoPlanState c={c} s={s} />
-        ) : error ? (
-          <ErrorState onRetry={refetch} titulo="No pudimos cargar tus reportes" />
-        ) : data ? (
-          <>
-            <Animated.View style={s.statRow} entering={FadeInDown.duration(320)}>
-              <StatCard
-                icon={<BarChart3 size={20} color={c.brand} strokeWidth={2} />}
-                label="Caballos" value={String(data.horses.total)} hint="Gestionados" s={s}
-              />
-              <StatCard
-                icon={<HeartPulse size={20} color={c.brand} strokeWidth={2} />}
-                label="Vencidos" value={String(data.health.rojo)}
-                hint={`${data.health.amarillo} por vencer`} divider s={s}
-              />
-              <StatCard
-                icon={<TrendingUp size={20} color={c.brand} strokeWidth={2} />}
-                label="Gasto mes" value={fmtMoney(data.expenses.month_total)} divider s={s}
-              />
-            </Animated.View>
+        <ScreenHeader scrollable title="Reportes" showBack backTo={Routes.mas} />
 
-            <Animated.View entering={FadeInDown.duration(320).delay(60)}>
-              <HealthCard health={data.health} c={c} s={s} />
-            </Animated.View>
-            <Animated.View entering={FadeInDown.duration(320).delay(120)}>
-              <ExpensesCard expenses={data.expenses} c={c} s={s} />
-            </Animated.View>
-            <Animated.View entering={FadeInDown.duration(320).delay(180)}>
-              <UpcomingCard upcoming={data.upcoming} c={c} s={s} />
-            </Animated.View>
-          </>
-        ) : null}
+        <View style={s.cuerpo}>
+          {isLoading ? (
+            // Misma silueta: hero, tres filas con barra y tres cajas de sanidad.
+            <>
+              <Skeleton width="100%" height={132} borderRadius={radius.card} />
+              <View style={{ height: space[6] }} />
+              <Skeleton width={160} height={16} />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <View key={i} style={[s.gastoFila, i < 2 && s.divisor]}>
+                  <Skeleton width={38} height={38} borderRadius={radius.thumb} />
+                  <View style={{ flex: 1, gap: 8 }}>
+                    <Skeleton width="45%" height={14} />
+                    <Skeleton width="100%" height={6} borderRadius={radius.full} />
+                  </View>
+                  <Skeleton width={80} height={16} />
+                </View>
+              ))}
+              <View style={{ height: space[6] }} />
+              <View style={s.sanidadRow}>
+                {[0, 1, 2].map((i) => <Skeleton key={i} height={74} borderRadius={radius.card} style={{ flex: 1 }} />)}
+              </View>
+            </>
+          ) : status === 403 ? (
+            <NoPlanState c={c} s={s} />
+          ) : error ? (
+            <ErrorState onRetry={refetch} titulo="No pudimos cargar tus reportes" />
+          ) : data ? (
+            <>
+              {/* Hero invertido con el único dato que resume el año. */}
+              <View style={s.hero}>
+                <Text style={s.heroRotulo}>
+                  {data.horses.total === 1 ? 'Gastado en tu caballo' : `Gastado en tus ${data.horses.total} caballos`}
+                </Text>
+                <Text style={s.heroMonto}>{fmtMoney(data.expenses.year_total)}</Text>
+                <Text style={s.heroPie}>{fmtMoney(data.expenses.month_total)} este mes</Text>
+              </View>
+
+              <GastoPorCaballo s={s} />
+              <Sanidad health={data.health} c={c} s={s} />
+              <GastoMensual expenses={data.expenses} c={c} s={s} />
+              <PorCategoria expenses={data.expenses} s={s} />
+              <Proximos upcoming={data.upcoming} c={c} s={s} />
+            </>
+          ) : null}
+        </View>
       </ScrollView>
     </View>
   );
@@ -308,90 +292,53 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  content: { padding: space[4], paddingBottom: 120, gap: space[6] },
+  content: { paddingBottom: 120 },
+  cuerpo: { paddingHorizontal: space[4], paddingTop: space[2] },
 
-  emptyText: { fontSize: text.sm, color: c.textFaint, paddingHorizontal: space[1] },
+  // Superficie invertida: `c.text` de fondo, `c.bg` de tinta. Anda en los dos temas.
+  hero: { backgroundColor: c.text, borderRadius: radius.card, padding: space[5], ...(c.isDark ? {} : shadow.md) },
+  heroRotulo: { fontSize: text.sm, color: c.textFaint },
+  heroMonto: { fontSize: text.display, fontWeight: weight.bold, color: c.bg, letterSpacing: -1.3, marginTop: space[1], fontVariant: ['tabular-nums'] },
+  heroPie: { fontSize: text.sm, color: c.textFaint, marginTop: space[2] },
 
-  /* Stats — aplanadas, separadas por un hairline vertical en vez de tarjeta */
-  statRow: { flexDirection: 'row' },
-  statCard: {
-    flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: space[2],
-  },
-  statCardDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: c.border },
-  statIcon: { marginBottom: space[1] },
-  statLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
-  statValue: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, fontVariant: ['tabular-nums'] },
-  statHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center' },
+  seccion: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.4, marginTop: space[7], marginBottom: space[2] },
+  divisor: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
 
-  /* Secciones — aplanadas, viven directo sobre c.bg */
-  card: { gap: 0 },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[3] },
-  cardTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text },
-  cardHint: { fontSize: text.xs, color: c.textFaint, marginTop: space[3], lineHeight: 16 },
-  subLabel: { fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  gastoFila: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
+  gastoNombre: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  gastoMonto: { fontSize: text.base, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
+  barraTrack: { height: 6, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden', marginTop: 6 },
+  barraFill: { height: '100%', borderRadius: radius.full, backgroundColor: c.brand },
 
-  /* Health */
-  semaforoTrack: {
-    flexDirection: 'row', height: 8, borderRadius: radius.full,
-    overflow: 'hidden', backgroundColor: c.surfaceAlt, marginBottom: space[3],
-  },
-  healthRow: { flexDirection: 'row', gap: space[2] },
-  healthBox: { flex: 1, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', gap: 2 },
-  healthNum: { fontSize: text.xl, fontWeight: weight.extrabold, fontVariant: ['tabular-nums'] },
-  healthLbl: { fontSize: text.xs, fontWeight: weight.semibold },
+  sanidadRow: { flexDirection: 'row', gap: space[2] + 2 },
+  sanidadCaja: { flex: 1, borderRadius: radius.card, padding: space[3] + 2 },
+  sanidadNum: { fontSize: text.xl, fontWeight: weight.bold, letterSpacing: -0.9, fontVariant: ['tabular-nums'] },
+  sanidadLbl: { fontSize: text.sm, marginTop: 3 },
 
-  /* Expenses — el total del mes es el protagonista de la pantalla */
-  expenseHero: { alignItems: 'center', paddingVertical: space[4], marginBottom: space[2], gap: 2 },
-  expenseHeroLbl: {
-    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
-    textTransform: 'uppercase', letterSpacing: 0.8,
-  },
-  expenseHeroVal: {
-    fontSize: text.display, fontWeight: weight.extrabold, color: c.text,
-    letterSpacing: -0.5, fontVariant: ['tabular-nums'],
-  },
-  expenseHeroHint: { fontSize: text.xs, color: c.textFaint, marginTop: space[1] },
-
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: space[2], height: 112, marginTop: space[2] },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: space[2], height: 112 },
   chartCol: { flex: 1, alignItems: 'center', gap: space[1] + 1, height: '100%' },
-  chartValRow: { height: 16, alignSelf: 'stretch', justifyContent: 'flex-end', alignItems: 'center' },
-  chartVal: { fontSize: text.xs, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
   chartBarTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
-  chartBar: { width: '100%', borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 3 },
+  chartBar: { width: '100%', borderRadius: radius.full, minHeight: 4 },
   chartLbl: { fontSize: text.xs, color: c.textFaint, textTransform: 'capitalize' },
 
-  catSection: { marginTop: space[5], paddingTop: space[4], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, gap: space[3] },
-  catRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catName: { fontSize: text.sm, color: c.textMuted },
-  catTotal: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
-  catTrack: { height: 6, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' },
-  catFill: { height: '100%', borderRadius: radius.full },
+  catRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
+  catName: { fontSize: text.base, color: c.text },
 
-  /* Upcoming — filas planas con hairline, sin cajas */
-  upRow: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    paddingVertical: space[3],
-  },
-  upRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
-  upIcon: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  upTitle: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  upSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
-  upDate: { fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted },
+  cajita: { width: 38, height: 38, borderRadius: radius.thumb, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  upRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
+  upTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  upSub: { fontSize: text.sm, color: c.textFaint, marginTop: 1 },
+  upDate: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
 
-  /* No plan */
-  noPlan: {
-    paddingVertical: space[8], paddingHorizontal: space[6],
-    alignItems: 'center', gap: space[3],
-  },
-  noPlanIcon: {
-    width: 60, height: 60, borderRadius: radius.xl,
-    backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
-  },
-  noPlanTitle: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, textAlign: 'center' },
-  noPlanText: { fontSize: text.sm, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
+  /* Sin plan */
+  noPlan: { paddingVertical: space[8], paddingHorizontal: space[6], alignItems: 'center', gap: space[3] },
+  noPlanIcon: { width: 60, height: 60, borderRadius: radius.card, backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  noPlanTitle: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, textAlign: 'center', letterSpacing: -0.5 },
+  noPlanText: { fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 22 },
   noPlanBtn: {
-    marginTop: space[1], backgroundColor: c.brand, borderRadius: radius.md,
-    paddingHorizontal: space[5], paddingVertical: space[3],
+    marginTop: space[2], backgroundColor: c.brand, borderRadius: radius.button,
+    paddingHorizontal: space[6], height: touch.button, alignItems: 'center', justifyContent: 'center',
+    ...(c.isDark ? {} : brandShadow(c.brand)),
   },
-  noPlanBtnText: { fontSize: text.sm, fontWeight: weight.bold, color: colors.white },
+  noPlanBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

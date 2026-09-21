@@ -1,19 +1,21 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, RefreshControl,
+  View, Text, TextInput, FlatList,
+  StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Search, Globe, ChevronRight } from 'lucide-react-native';
+import { Search, Globe, ChevronRight, XCircle, GitBranch } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, nav } from '../lib/routes';
-import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow, touch } from '../styles/tokens';
+import { entradaFila } from '../styles/motion';
 import { haptic } from '../lib/haptics';
 import { useSearchLiveStudbook, type HorseRecord } from '../hooks/use-horse-records';
-import { ListRowSkeleton } from '../components/Skeleton';
+import { Skeleton } from '../components/Skeleton';
+import { PressableScale } from '../components/PressableScale';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
@@ -35,54 +37,74 @@ function useSearch(name: string) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const SEX_LABEL: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
+const SEX_LABEL: Record<string, string> = { macho: 'macho', hembra: 'hembra', castrado: 'castrado' };
+
+const STATUS_LABEL: Record<string, string> = {
+  verified: 'Verificado',
+  pending_claim: 'Pendiente',
+  disputed: 'En disputa',
+  unverified: '',
+};
 
 function statusStyle(st: string, c: ThemeColors): { color: string; bg: string } {
   switch (st) {
     case 'verified':      return { color: c.success, bg: c.successSoft };
-    case 'pending_claim': return { color: c.warning, bg: c.warningSoft };
+    case 'pending_claim': return { color: c.goldText, bg: c.goldSoft };
     case 'disputed':      return { color: c.danger, bg: c.dangerSoft };
     default:              return { color: c.textFaint, bg: c.surfaceAlt };
   }
 }
-const STATUS_LABEL: Record<string, string> = {
-  verified: 'Verificado',
-  pending_claim: 'Solicitud pendiente',
-  disputed: 'En disputa',
-  unverified: 'Sin propietario',
-};
 
-// ─── Search result card ───────────────────────────────────────────────────────
-
-function RecordCard({ record, onPress, cs, c }: { record: HorseRecord; onPress: () => void; cs: CardStyles; c: ThemeColors }) {
+/**
+ * Fila del padrón: nombre + la ficha mínima (año · sexo · país) en una sola
+ * línea de metadatos. Antes cada dato iba en su propia pastilla gris y la fila
+ * parecía una nube de etiquetas.
+ */
+function FilaRegistro({ record, index, ultima, onPress, c, s }: {
+  record: HorseRecord; index: number; ultima: boolean; onPress: () => void; c: ThemeColors; s: Styles;
+}) {
   const st = record.ownership_status ?? 'unverified';
   const ss = statusStyle(st, c);
+  const verificado = st === 'verified';
+  const meta = [
+    record.birth_year != null ? String(record.birth_year) : null,
+    record.sex ? SEX_LABEL[record.sex] ?? record.sex : null,
+    record.country_code,
+    record.color,
+  ].filter(Boolean).join(' · ');
+
   return (
-    <TouchableOpacity style={cs.row} onPress={onPress} activeOpacity={0.6}>
-      <View style={{ flex: 1 }}>
-        <View style={cs.cardHeader}>
-          <Text style={cs.cardName} numberOfLines={1}>{record.name}</Text>
-          <View style={[cs.badge, { backgroundColor: ss.bg }]}>
-            <View style={[cs.badgeDot, { backgroundColor: ss.color }]} />
-            <Text style={[cs.badgeText, { color: ss.color }]}>{STATUS_LABEL[st]}</Text>
+    <Animated.View entering={entradaFila(index)}>
+      <PressableScale
+        style={[s.fila, !ultima && s.filaDivisor]}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver ${record.name} en el padrón`}
+      >
+        <View style={[s.cajita, { backgroundColor: verificado ? c.successSoft : c.surfaceAlt }]}>
+          <GitBranch size={20} color={verificado ? c.success : c.textFaint} strokeWidth={1.9} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={s.filaTituloFila}>
+            <Text style={s.filaTitulo} numberOfLines={1}>{record.name}</Text>
+            {!!STATUS_LABEL[st] && (
+              <View style={[s.chip, { backgroundColor: ss.bg }]}>
+                <Text style={[s.chipText, { color: ss.color }]}>{STATUS_LABEL[st]}</Text>
+              </View>
+            )}
           </View>
+          {!!meta && <Text style={s.filaMeta} numberOfLines={1}>{meta}</Text>}
+          {(record.sire_name || record.dam_name) && (
+            <Text style={s.filaPedigri} numberOfLines={1}>
+              {record.sire_name ? `♂ ${record.sire_name}` : ''}
+              {record.sire_name && record.dam_name ? '   ' : ''}
+              {record.dam_name ? `♀ ${record.dam_name}` : ''}
+            </Text>
+          )}
         </View>
-        <View style={cs.cardMeta}>
-          {record.birth_year != null && <Text style={cs.metaItem}>{record.birth_year}</Text>}
-          {record.sex && <Text style={cs.metaItem}>{SEX_LABEL[record.sex]}</Text>}
-          {record.country_code && <Text style={cs.metaItem}>{record.country_code}</Text>}
-          {record.color && <Text style={cs.metaItem} numberOfLines={1}>{record.color}</Text>}
-        </View>
-        {(record.sire_name || record.dam_name) && (
-          <Text style={cs.cardPedigree} numberOfLines={1}>
-            {record.sire_name ? `♂ ${record.sire_name}` : ''}
-            {record.sire_name && record.dam_name ? '   ' : ''}
-            {record.dam_name ? `♀ ${record.dam_name}` : ''}
-          </Text>
-        )}
-      </View>
-      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} style={{ marginLeft: space[2] }} />
-    </TouchableOpacity>
+        <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />
+      </PressableScale>
+    </Animated.View>
   );
 }
 
@@ -90,10 +112,10 @@ function RecordCard({ record, onPress, cs, c }: { record: HorseRecord; onPress: 
 
 export default function PadronScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
-  const cardS = useMemo(() => makeCardStyles(c), [c]);
 
   const { data, isLoading, isError, isFetching, refetch, isRefetching } = useSearch(query);
 
@@ -121,113 +143,147 @@ export default function PadronScreen() {
     liveSearch.mutate(term);
   }, [term, liveSearch]);
 
-  const liveFooter = (!term || (!offerLiveSearch && !liveSearch.isPending && !liveSearched)) ? null : (
-    <View style={s.liveWrap}>
-      {(offerLiveSearch || liveSearch.isPending) && (
-        <TouchableOpacity
-          style={[s.liveBtn, liveSearch.isPending && { opacity: 0.7 }]}
-          onPress={runLiveSearch}
-          disabled={liveSearch.isPending}
-          activeOpacity={0.85}
-        >
-          {liveSearch.isPending ? (
-            <>
-              <ActivityIndicator size="small" color={colors.white} />
-              <Text style={s.liveBtnText}>Buscando en el registro oficial…</Text>
-            </>
-          ) : (
-            <>
-              <Globe size={18} color={colors.white} strokeWidth={2} />
-              <Text style={s.liveBtnText}>Buscar en el Stud Book Argentino</Text>
-            </>
+  const header = (
+    <>
+      <ScreenHeader
+        scrollable
+        showBack
+        backTo={Routes.mas}
+        title="Padrón"
+        right={isFetching ? <ActivityIndicator size="small" color={c.brand} /> : undefined}
+      />
+      <View style={s.cuerpo}>
+        {/* Buscador: campo blanco apoyado, sin borde. */}
+        <View style={s.buscador}>
+          <Search size={18} color={c.textFaint} strokeWidth={1.9} />
+          <TextInput
+            style={s.buscadorInput}
+            placeholder="Buscar por nombre"
+            placeholderTextColor={c.textFaint}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="words"
+            returnKeyType="search"
+          />
+          {query.length > 0 && (
+            <TouchableOpacity
+              onPress={() => { haptic.selection(); setQuery(''); }}
+              accessibilityRole="button"
+              accessibilityLabel="Limpiar búsqueda"
+              hitSlop={8}
+            >
+              <XCircle size={17} color={c.textFaint} strokeWidth={2} />
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
-      )}
+        </View>
+        <Text style={s.hint}>Buscamos en el registro oficial argentino</Text>
 
-      {liveSearch.isPending && (
-        <Text style={s.liveHint}>Consultando el registro oficial, puede tardar unos segundos…</Text>
+        {total > 0 && (
+          <Text style={s.grupo}>
+            {query ? `${total} resultado${total !== 1 ? 's' : ''}` : `${total} caballos en total`}
+          </Text>
+        )}
+      </View>
+    </>
+  );
+
+  // Pie: la consulta al Stud Book en vivo, presentada como la salida a
+  // "no lo encontré" en vez de un botón suelto en medio de la lista.
+  const pie = (
+    <View style={s.cuerpo}>
+      {liveSearched && (
+        liveItems.length > 0 ? (
+          <>
+            <Text style={s.grupo}>{liveItems.length} en el Stud Book Argentino</Text>
+            {liveItems.map((record, index) => (
+              <FilaRegistro
+                key={record.id} record={record} index={index}
+                ultima={index === liveItems.length - 1}
+                onPress={() => handleSelect(record.id)} c={c} s={s}
+              />
+            ))}
+          </>
+        ) : (
+          <Text style={s.liveEmpty}>No aparece en el Stud Book Argentino.</Text>
+        )
       )}
 
       {liveSearch.isError && (
         <Text style={s.liveError}>No pudimos consultar el Stud Book Argentino. Reintentá en un momento.</Text>
       )}
 
-      {liveSearched && (
-        liveItems.length > 0 ? (
-          <View style={{ marginTop: space[2] }}>
-            <Text style={s.liveSectionTitle}>{liveItems.length} en el Stud Book Argentino</Text>
-            {liveItems.map((record, index) => (
-              <Animated.View key={record.id} entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-                {index > 0 && <View style={cardS.divider} />}
-                <RecordCard record={record} onPress={() => handleSelect(record.id)} cs={cardS} c={c} />
-              </Animated.View>
-            ))}
+      {(offerLiveSearch || liveSearch.isPending) && (
+        <PressableScale
+          style={s.tarjetaAyuda}
+          onPress={runLiveSearch}
+          disabled={liveSearch.isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar en el Stud Book Argentino"
+        >
+          <View style={[s.cajita, { backgroundColor: c.goldSoft }]}>
+            {liveSearch.isPending
+              ? <ActivityIndicator size="small" color={c.goldText} />
+              : <Globe size={20} color={c.goldText} strokeWidth={1.9} />}
           </View>
-        ) : (
-          <Text style={s.liveEmpty}>No se encontró en el Stud Book Argentino.</Text>
-        )
+          <View style={{ flex: 1 }}>
+            <Text style={s.ayudaTitulo}>{liveSearch.isPending ? 'Buscando en el registro' : '¿No lo encontrás?'}</Text>
+            <Text style={s.ayudaMeta}>
+              {liveSearch.isPending
+                ? 'Puede tardar unos segundos'
+                : 'Lo buscamos en el Stud Book Argentino'}
+            </Text>
+          </View>
+          {!liveSearch.isPending && <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />}
+        </PressableScale>
       )}
     </View>
   );
 
   return (
-    <View style={s.root}>
-      <ScreenHeader
-        showBack
-        backTo={Routes.mas}
-        title="Padrón"
-        subtitle="Registro oficial de caballos"
-        right={isFetching ? <ActivityIndicator size="small" color={c.brand} /> : undefined}
-      />
-
-      <View style={s.searchWrap}>
-        <View style={s.searchBox}>
-          <Search size={18} color={c.textFaint} strokeWidth={2} style={{ marginRight: space[2] }} />
-          <TextInput
-            style={s.searchInput}
-            placeholder="Buscar por nombre..."
-            placeholderTextColor={c.textFaint}
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="words"
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-        {total > 0 && (
-          <Text style={s.totalText}>
-            {query ? `${total} resultado${total !== 1 ? 's' : ''}` : `${total} caballos en total`}
-          </Text>
-        )}
-      </View>
-
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {isLoading && items.length === 0 ? (
-        <View style={{ padding: space[4], gap: space[2] }}>
-          {[1, 2, 3, 4, 5, 6].map((i) => <ListRowSkeleton key={i} />)}
+        <View>
+          {header}
+          {/* Misma silueta que la fila real: cajita + nombre + metadatos. */}
+          <View style={s.cuerpo}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <View key={i} style={[s.fila, i < 5 && s.filaDivisor]}>
+                <Skeleton width={44} height={44} borderRadius={radius.thumb} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Skeleton width="50%" height={15} />
+                  <Skeleton width="35%" height={12} />
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       ) : isError && items.length === 0 ? (
-        <ErrorState onRetry={() => refetch()} />
+        <View>{header}<ErrorState onRetry={() => refetch()} /></View>
       ) : (
         <FlatList
           data={items}
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
-              <RecordCard record={item} onPress={() => handleSelect(item.id)} cs={cardS} c={c} />
-            </Animated.View>
+            <View style={s.cuerpo}>
+              <FilaRegistro
+                record={item} index={index} ultima={index === items.length - 1}
+                onPress={() => handleSelect(item.id)} c={c} s={s}
+              />
+            </View>
           )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={cardS.divider} />}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={header}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
           }
-          ListFooterComponent={liveFooter}
+          ListFooterComponent={pie}
           ListEmptyComponent={
             <EmptyState
               icon="search-outline"
               title="Sin resultados"
-              message={query ? 'No está en el padrón local' : undefined}
+              message={query ? 'No está en el padrón local.' : undefined}
             />
           }
         />
@@ -238,79 +294,41 @@ export default function PadronScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+type Styles = ReturnType<typeof makeStyles>;
+
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  searchWrap: {
-    paddingHorizontal: space[4],
-    paddingBottom: space[3],
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
-    borderRadius: radius.lg,
-    paddingHorizontal: space[3],
-    height: touch.field,
-  },
-  searchInput: { flex: 1, fontSize: text.sm, color: c.text },
-  totalText: { fontSize: text.xs, color: c.textFaint, marginTop: space[2], paddingLeft: space[1] },
-  list: { padding: space[4], paddingBottom: 80 },
-  liveWrap: { marginTop: space[2], marginBottom: space[4] },
-  liveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space[2],
-    backgroundColor: c.brand,
-    borderRadius: radius.lg,
-    paddingVertical: space[3],
-    paddingHorizontal: space[4],
-    ...shadow.sm,
-  },
-  liveBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
-  liveHint: { fontSize: text.xs, color: c.textFaint, textAlign: 'center', marginTop: space[2] },
-  liveError: { fontSize: text.xs, color: c.danger, textAlign: 'center', marginTop: space[2] },
-  liveSectionTitle: {
-    fontSize: text.xs,
-    fontWeight: weight.semibold,
-    color: c.textMuted,
-    marginBottom: space[2],
-    paddingLeft: space[1],
-  },
-  liveEmpty: { fontSize: text.sm, color: c.textFaint, textAlign: 'center', marginTop: space[3] },
-});
+  list: { paddingBottom: 120 },
+  cuerpo: { paddingHorizontal: space[4] },
 
-type CardStyles = ReturnType<typeof makeCardStyles>;
+  buscador: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2] + 2,
+    height: touch.field - 8, paddingHorizontal: space[4],
+    backgroundColor: c.surface, borderRadius: radius.thumb,
+    marginTop: space[2], ...(c.isDark ? {} : shadow.sm),
+  },
+  buscadorInput: { flex: 1, fontSize: text.base, color: c.text, height: '100%' },
+  hint: { fontSize: text.sm, color: c.textFaint, marginTop: space[2] + 2 },
 
-const makeCardStyles = (c: ThemeColors) => StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: space[3],
+  grupo: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint, marginTop: space[5], marginBottom: space[1] },
+
+  cajita: { width: 44, height: 44, borderRadius: radius.thumb, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[4] },
+  filaDivisor: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+  filaTituloFila: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  filaTitulo: { flexShrink: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  filaMeta: { fontSize: text.sm, color: c.textMuted, marginTop: 3 },
+  filaPedigri: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
+  chip: { borderRadius: radius.full, paddingHorizontal: space[2], paddingVertical: 2 },
+  chipText: { fontSize: text.xs, fontWeight: weight.bold },
+
+  tarjetaAyuda: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    backgroundColor: c.surface, borderRadius: radius.card, padding: space[4],
+    marginTop: space[6], ...(c.isDark ? {} : shadow.sm),
   },
-  divider: { height: 1, backgroundColor: c.border },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: space[2] },
-  cardName: { flex: 1, fontSize: text.base, fontWeight: weight.bold, color: c.text },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radius.full,
-    paddingHorizontal: space[2],
-    paddingVertical: 2,
-    marginLeft: space[2],
-  },
-  badgeDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
-  badgeText: { fontSize: 10, fontWeight: weight.semibold },
-  cardMeta: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: space[1] },
-  metaItem: {
-    fontSize: text.xs,
-    color: c.textMuted,
-    backgroundColor: c.surfaceAlt,
-    borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginRight: space[1],
-    marginBottom: space[1],
-  },
-  cardPedigree: { fontSize: text.xs, color: c.textFaint, fontStyle: 'italic' },
+  ayudaTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  ayudaMeta: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
+  liveEmpty: { fontSize: text.base, color: c.textFaint, textAlign: 'center', marginTop: space[5] },
+  liveError: { fontSize: text.sm, color: c.danger, textAlign: 'center', marginTop: space[3] },
 });

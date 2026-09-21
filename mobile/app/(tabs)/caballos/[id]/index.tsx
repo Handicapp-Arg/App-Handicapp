@@ -3,44 +3,46 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
   Platform, Alert, ActionSheetIOS, Share,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
+import Svg, { Circle, Polyline } from 'react-native-svg';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronLeft, ChevronRight, MoreHorizontal, QrCode, ShieldCheck, Megaphone,
-  Trash2, Camera, Pencil, Stethoscope, Network, Clock, Images, Banknote,
-  Users, FileText, ClipboardList, Copy, Share2, AlertTriangle, CalendarClock, Scale,
+  Trash2, Camera, Pencil, Stethoscope, Network, Clock, Images, DollarSign,
+  Users, FileText, Copy, Share2, Check, CalendarPlus,
   type LucideIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
-import { differenceInYears } from 'date-fns';
 
 import {
   useHorse, useFinancialSummary, useDeleteHorse, useUploadHorseImage, useWeightRecords,
   useHorseDocuments, useHorseVets, useHorseAssignees,
 } from '../../../../hooks/use-horses';
 import { useMedicalRecords, SANITARY_DISEASES, healthStatusFromNextDue } from '../../../../hooks/use-medical';
-import { useAgenda } from '../../../../hooks/use-agenda';
 import { useEventsByHorse } from '../../../../hooks/use-events';
 import { useActivityPhotos } from '../../../../hooks/use-activity-photos';
-import { useRoutines } from '../../../../hooks/use-routines';
+import { useRoutines, ROUTINE_ITEMS, todayISO, type DailyRoutine } from '../../../../hooks/use-routines';
 import { formatMoney } from '../../../../lib/currency';
 import { useAuth } from '../../../../lib/auth';
 import { haptic } from '../../../../lib/haptics';
 import { Routes, nav } from '../../../../lib/routes';
-import { Skeleton, ListRowSkeleton } from '../../../../components/Skeleton';
+import { Skeleton } from '../../../../components/Skeleton';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { ErrorState } from '../../../../components/ErrorState';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
-import { fechaHumana, fechaHoraHumana } from '../../../../lib/fechas';
+import { edadEnAnios, fechaHumana, vence } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight, radius, touch } from '../../../../styles/tokens';
+import { space, text, weight, radius, touch, shadow, photoScrim } from '../../../../styles/tokens';
+import { entradaFila } from '../../../../styles/motion';
 import { ActionSheet } from '../../../../components/ActionSheet';
 import { BottomSheet } from '../../../../components/BottomSheet';
 import { AppImage } from '../../../../components/AppImage';
+import { PressableScale } from '../../../../components/PressableScale';
 
 // Base URL para el enlace público del caballo (QR). Configurable via EXPO_PUBLIC_APP_URL
 // (ej. IP LAN http://192.168.x.x:3005) para que el QR sea accesible desde otros dispositivos.
@@ -48,11 +50,120 @@ const PUBLIC_BASE = process.env.EXPO_PUBLIC_APP_URL ?? 'https://app.handicapp.co
 
 const SEX_LABEL: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
 
-/** Las píldoras del hero miden 36 para no tapar la foto: el hitSlop las lleva a 52 táctiles. */
+/** Las píldoras del hero miden 44 (mínimo táctil de Apple) y el hitSlop les da aire extra. */
 const HIT_PILL = { top: 8, bottom: 8, left: 8, right: 8 };
+
+/** Proporción del hero: sale de la maqueta (390×300) pero en ratio, para que
+ *  escale igual en un iPhone SE que en un Max en vez de fijarse a un alto. */
+const HERO_RATIO = 390 / 300;
 
 /* La edición del caballo ahora es una pantalla empujada: ./editar.tsx
    (los formularios con tipeo se rompían con el teclado dentro de las hojas). */
+
+/* ─── Sparkline: la tendencia, no el gráfico ───
+   Dos o más puntos dibujados a mano alzada. No lleva ejes ni valores: al lado
+   ya está el número grande, y lo único que agrega la línea es "viene subiendo"
+   o "viene bajando" de un vistazo. Con menos de dos puntos no hay tendencia
+   que contar, así que no se dibuja nada. */
+const SPARK_W = 62;
+const SPARK_H = 26;
+
+function Sparkline({ valores, color }: { valores: number[]; color: string }) {
+  if (valores.length < 2) return null;
+  const min = Math.min(...valores);
+  const max = Math.max(...valores);
+  const rango = max - min || 1; // serie plana: la línea queda al medio, no dividida por cero
+  const pad = 3;                // deja respirar al stroke redondeado en los extremos
+  const puntos = valores
+    .map((v, i) => {
+      const x = (i / (valores.length - 1)) * SPARK_W;
+      const y = SPARK_H - pad - ((v - min) / rango) * (SPARK_H - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+
+  return (
+    <Svg width={SPARK_W} height={SPARK_H} accessibilityElementsHidden>
+      <Polyline points={puntos} fill="none" stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/* ─── Anillo de progreso de la rutina ───
+   Un círculo recortado con strokeDasharray: en RN no existe el conic-gradient
+   de la maqueta, y el SVG da el mismo resultado sin capas superpuestas. */
+const ANILLO = 34;
+
+function AnilloProgreso({ hechas, total, c }: { hechas: number; total: number; c: ThemeColors }) {
+  const grosor = 4;
+  const r = (ANILLO - grosor) / 2;
+  const circunferencia = 2 * Math.PI * r;
+  const avance = total > 0 ? Math.min(hechas / total, 1) : 0;
+
+  return (
+    <Svg width={ANILLO} height={ANILLO} accessibilityElementsHidden>
+      <Circle cx={ANILLO / 2} cy={ANILLO / 2} r={r} stroke={c.border} strokeWidth={grosor} fill="none" />
+      <Circle
+        cx={ANILLO / 2}
+        cy={ANILLO / 2}
+        r={r}
+        stroke={c.brand}
+        strokeWidth={grosor}
+        strokeLinecap="round"
+        fill="none"
+        strokeDasharray={`${circunferencia * avance} ${circunferencia}`}
+        // Arranca arriba (12 en punto) y no a la derecha, que es como se lee un progreso.
+        transform={`rotate(-90 ${ANILLO / 2} ${ANILLO / 2})`}
+      />
+    </Svg>
+  );
+}
+
+/* ─── Acceso rápido del hero ─── */
+function AccesoRapido({ Icon, label, onPress, c, s }: { Icon: LucideIcon; label: string; onPress: () => void; c: ThemeColors; s: Styles }) {
+  return (
+    <PressableScale style={s.acceso} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <Icon size={21} color={c.brand} strokeWidth={1.9} />
+      <Text style={s.accesoLabel}>{label}</Text>
+    </PressableScale>
+  );
+}
+
+/* ─── Fila de dato vital: rótulo chico arriba, número grande abajo, tendencia al costado ─── */
+function FilaDato({
+  label, valor, delta, deltaTono, grafico, onPress, s, c, isLast,
+}: {
+  label: string;
+  valor: string;
+  delta?: string;
+  deltaTono?: 'brand' | 'danger';
+  grafico?: React.ReactNode;
+  onPress: () => void;
+  s: Styles;
+  c: ThemeColors;
+  isLast?: boolean;
+}) {
+  return (
+    <PressableScale
+      style={[s.filaDato, isLast && s.filaDatoLast]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${valor}`}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={s.filaDatoLabel} numberOfLines={1}>{label}</Text>
+        <View style={s.filaDatoValorRow}>
+          <Text style={s.filaDatoValor}>{valor}</Text>
+          {delta ? (
+            <Text style={[s.filaDatoDelta, { color: deltaTono === 'danger' ? c.danger : c.brand }]}>{delta}</Text>
+          ) : null}
+        </View>
+      </View>
+      {grafico}
+      <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />
+    </PressableScale>
+  );
+}
 
 /* ─── SectionRow: fila de navegación estilo Más/Ajustes ─── */
 function SectionRow({ Icon, label, sub, onPress, c, s }: { Icon: LucideIcon; label: string; sub?: string; onPress: () => void; c: ThemeColors; s: Styles }) {
@@ -70,18 +181,13 @@ function SectionRow({ Icon, label, sub, onPress, c, s }: { Icon: LucideIcon; lab
   );
 }
 
-/* ─── SummaryRow: fila de resumen vital (turno / peso / gasto) ─── */
-function SummaryRow({ Icon, label, value, tone, onPress, c, s, isLast }: { Icon: LucideIcon; label: string; value: string; tone?: 'default' | 'brand'; onPress: () => void; c: ThemeColors; s: Styles; isLast?: boolean }) {
-  return (
-    <TouchableOpacity style={[s.summaryRow, isLast && s.summaryRowLast]} onPress={onPress} activeOpacity={0.6} accessibilityRole="button" accessibilityLabel={label}>
-      <View style={s.rowIconWrap}>
-        <Icon size={18} color={tone === 'brand' ? c.brand : c.textMuted} strokeWidth={1.8} />
-      </View>
-      <Text style={[s.rowLabel, { flex: 1 }]}>{label}</Text>
-      <Text style={[s.summaryValue, tone === 'brand' && { color: c.brand }]} numberOfLines={1}>{value}</Text>
-      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-    </TouchableOpacity>
-  );
+/** Cuántas tareas de la rutina de hoy están hechas, sobre las 7 del sistema. */
+function rutinaDeHoy(routines: DailyRoutine[] | undefined) {
+  const hoy = todayISO();
+  const r = routines?.find((x) => x.date?.slice(0, 10) === hoy);
+  if (!r) return null;
+  const hechas = ROUTINE_ITEMS.filter((item) => r[item.key]).length;
+  return { hechas, total: ROUTINE_ITEMS.length };
 }
 
 /* ─── Main ─── */
@@ -100,7 +206,6 @@ export default function HorseDetailScreen() {
   const { data: financial } = useFinancialSummary(id, !isJineteOrPeon);
   const { data: weightRecords } = useWeightRecords(id);
   const { data: medicalRecords } = useMedicalRecords(id);
-  const { data: agenda } = useAgenda(true);
   const { data: events } = useEventsByHorse(id);
   const { data: activityPhotos } = useActivityPhotos(id);
   const { data: documents } = useHorseDocuments(id);
@@ -150,14 +255,37 @@ export default function HorseDetailScreen() {
     ]);
   };
 
-  // Esqueleto con la forma real de la ficha (hero + filas), no una ruedita suelta.
+  // Esqueleto con la MISMA silueta que la ficha cargada (hero a sangre, cuatro
+  // accesos, tres filas de dato, tira de fotos). Si el esqueleto usara
+  // ScreenHeader y la pantalla cargada un hero de foto, al llegar el dato
+  // saltaría todo de lugar.
   if (isLoading) {
     return (
-      <View style={[s.root, { paddingTop: insets.top }]}>
-        <Skeleton height={200} borderRadius={0} />
-        <View style={{ padding: space[4], gap: space[2] }}>
-          <Skeleton height={28} width="60%" style={{ marginBottom: space[2] }} />
-          {[1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} />)}
+      <View style={s.root}>
+        {/* El hero del esqueleto usa el MISMO aspectRatio que la foto real
+            (no un alto fijo), así la pantalla no se acomoda al llegar el dato. */}
+        <View style={s.heroWrap}>
+          <Skeleton borderRadius={0} style={{ height: '100%' }} />
+        </View>
+        <View style={s.accesos}>
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={72} borderRadius={radius.button} style={{ flex: 1 }} />)}
+        </View>
+        <View style={s.datos}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={s.filaDato}>
+              <View style={{ flex: 1, gap: space[2] }}>
+                <Skeleton height={13} width="45%" />
+                <Skeleton height={20} width="35%" />
+              </View>
+              <Skeleton width={ANILLO} height={ANILLO} borderRadius={radius.full} />
+            </View>
+          ))}
+        </View>
+        <View style={s.bloqueFotos}>
+          <Skeleton height={18} width={90} />
+          <View style={s.fotosTira}>
+            {[0, 1, 2].map((i) => <Skeleton key={i} height={104} borderRadius={radius.field} style={{ flex: 1 }} />)}
+          </View>
         </View>
       </View>
     );
@@ -178,47 +306,60 @@ export default function HorseDetailScreen() {
   const base = Routes.caballo(horse.id);
   const goto = (path: string) => { haptic.selection(); nav.push(router, `${base}/${path}`); };
 
-  // ─── Datos vitales, una línea bajo el hero ───
-  const vitals: string[] = [];
-  if (horse.birth_date) {
-    // Igual que lib/fechas.ts: ancla la fecha sola al mediodía local para no
-    // correrse un día por huso horario.
-    const soloFecha = /^\d{4}-\d{2}-\d{2}$/.test(horse.birth_date);
-    const birthDate = new Date(soloFecha ? `${horse.birth_date}T12:00:00` : horse.birth_date);
-    const years = differenceInYears(new Date(), birthDate);
-    vitals.push(`${years} años`);
-  }
-  if (horse.sex) vitals.push(SEX_LABEL[horse.sex] ?? horse.sex);
-  if (horse.breed) vitals.push(horse.breed.name);
+  // ─── Línea bajo el nombre: pelaje · edad · actividad ───
+  const edad = edadEnAnios(horse.birth_date);
+  const subtitulo = [
+    horse.color,
+    edad != null ? `${edad} ${edad === 1 ? 'año' : 'años'}` : null,
+    horse.activity?.name ?? horse.breed?.name,
+    // El sexo solo entra si no hay pelaje ni actividad: la línea tiene que
+    // leerse de un vistazo, no ser la ficha entera.
+    horse.color || horse.activity || horse.breed ? null : (horse.sex ? SEX_LABEL[horse.sex] ?? horse.sex : null),
+  ].filter(Boolean).join(' · ');
 
-  // ─── Alertas de libreta sanitaria (vencidas / por vencer) ───
-  let worstHealthStatus: 'rojo' | 'amarillo' | null = null;
-  let overdueCount = 0;
-  let dueSoonCount = 0;
-  for (const d of SANITARY_DISEASES) {
-    const last = medicalRecords?.filter((r) => r.type === 'sanidad').find((r) => d.match.test(r.name)) ?? null;
-    const status = healthStatusFromNextDue(last?.next_due ?? null);
-    if (status === 'rojo') { overdueCount++; worstHealthStatus = 'rojo'; }
-    else if (status === 'amarillo') { dueSoonCount++; if (worstHealthStatus !== 'rojo') worstHealthStatus = 'amarillo'; }
-  }
+  // ─── Libreta sanitaria: el vencimiento MÁS urgente, dicho con nombre y fecha ───
+  const sanidad = medicalRecords?.filter((r) => r.type === 'sanidad') ?? [];
+  const vencimientos = SANITARY_DISEASES.map((d) => {
+    const ultimo = sanidad.find((r) => d.match.test(r.name)) ?? null;
+    return { nombre: d.name, nextDue: ultimo?.next_due ?? null, estado: healthStatusFromNextDue(ultimo?.next_due ?? null) };
+  });
+  const urgente = vencimientos
+    .filter((v) => v.estado !== 'verde')
+    // El rojo manda sobre el amarillo, y dentro del mismo estado, la fecha más
+    // vieja primero. Sin registro (`nextDue` nulo) es lo más urgente de todo.
+    .sort((a, b) => {
+      if (a.estado !== b.estado) return a.estado === 'rojo' ? -1 : 1;
+      if (!a.nextDue) return -1;
+      if (!b.nextDue) return 1;
+      return a.nextDue.localeCompare(b.nextDue);
+    })[0] ?? null;
 
-  // ─── Resumen vital: próximo turno / último peso / gasto del mes ───
-  const proximoTurno = (agenda ?? [])
-    .filter((a) => a.horse_id === horse.id)
-    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())[0];
-  const ultimoPeso = weightRecords?.[0];
+  // ─── Gasto del mes + tendencia de los últimos meses ───
   const gastoDelMes = financial?.monthly?.[0];
+  const serieGasto = [...(financial?.monthly ?? [])].slice(0, 6).reverse().map((m) => Number(m.total));
 
+  // ─── Último peso, su variación y la tendencia ───
+  const ultimoPeso = weightRecords?.[0];
+  const pesoAnterior = weightRecords?.[1];
+  const deltaPeso = ultimoPeso && pesoAnterior ? Number(ultimoPeso.weight_kg) - Number(pesoAnterior.weight_kg) : null;
+  const seriePeso = [...(weightRecords ?? [])].slice(0, 7).reverse().map((w) => Number(w.weight_kg));
+
+  const rutina = rutinaDeHoy(routines);
+  const fotos = activityPhotos ?? [];
   const hasFinanzas = !isJineteOrPeon;
+
+  // Cada bloque entra escalonado con la fórmula del sistema; el índice es el
+  // orden de lectura, no la posición en un array.
+  let orden = 0;
 
   return (
     <ScrollView
       style={s.root}
-      contentContainerStyle={{ paddingBottom: 120 }}
+      contentContainerStyle={{ paddingBottom: space[20] }}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
     >
-      {/* ─── Hero: aspect ratio, Dynamic Island safe ─── */}
+      {/* ─── Hero: foto a sangre, el nombre apoyado sobre el degradado ─── */}
       <View style={s.heroWrap}>
         {horse.image_url
           ? <AppImage source={{ uri: horse.image_url }} style={StyleSheet.absoluteFill} />
@@ -229,27 +370,39 @@ export default function HorseDetailScreen() {
           )
         }
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.75)']}
+          colors={[...photoScrim]}
           style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0.3 }}
+          start={{ x: 0, y: 0.35 }}
           end={{ x: 0, y: 1 }}
         />
 
-        {/* Back */}
+        {/* Volver */}
         <TouchableOpacity
-          style={[s.heroPill, { top: insets.top + 10, left: 14 }]}
+          style={[s.heroPill, { top: insets.top + space[3], left: space[4] }]}
           onPress={() => { haptic.light(); router.canGoBack() ? router.back() : router.navigate(Routes.tabsCaballos as never); }}
           activeOpacity={0.8}
           hitSlop={HIT_PILL}
           accessibilityRole="button"
           accessibilityLabel="Volver a la lista de caballos"
         >
-          <ChevronLeft size={20} color={colors.white} strokeWidth={2} />
+          <ChevronLeft size={20} color={colors.white} strokeWidth={1.9} />
         </TouchableOpacity>
 
-        {/* Acciones — menú de 3 puntitos */}
-        {(can('horses', 'update') || can('horses', 'delete')) && (
-          <View style={[s.heroActions, { top: insets.top + 10 }]}>
+        {/* QR + menú, arriba a la derecha como en la maqueta */}
+        <View style={[s.heroActions, { top: insets.top + space[3] }]}>
+          {horse.public_token && (
+            <TouchableOpacity
+              style={[s.heroPill, s.heroPillStatic]}
+              onPress={() => { haptic.light(); setShowQR(true); }}
+              activeOpacity={0.8}
+              hitSlop={HIT_PILL}
+              accessibilityRole="button"
+              accessibilityLabel="Ver código QR del caballo"
+            >
+              <QrCode size={20} color={colors.white} strokeWidth={1.9} />
+            </TouchableOpacity>
+          )}
+          {(can('horses', 'update') || can('horses', 'delete')) && (
             <TouchableOpacity
               style={[s.heroPill, s.heroPillStatic]}
               onPress={() => { haptic.light(); setShowMenu(true); }}
@@ -258,105 +411,132 @@ export default function HorseDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Más opciones del caballo"
             >
-              <MoreHorizontal size={20} color={colors.white} strokeWidth={2} />
+              <MoreHorizontal size={20} color={colors.white} strokeWidth={2.4} />
             </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Nombre + QR + badges */}
-        <View style={s.heroContent}>
-          <View style={s.heroNameRow}>
-            <Text style={[s.horseName, { flex: 1 }]} numberOfLines={2}>{horse.name}</Text>
-            {horse.public_token && (
-              <TouchableOpacity
-                style={[s.heroPill, s.heroPillStatic, s.heroPillQr]}
-                onPress={() => { haptic.light(); setShowQR(true); }} activeOpacity={0.85}
-                hitSlop={HIT_PILL}
-                accessibilityRole="button"
-                accessibilityLabel="Ver código QR del caballo"
-              >
-                <QrCode size={20} color={c.isDark ? '#1a1207' : colors.white} strokeWidth={2.2} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={s.heroBadges}>
-            {horse.horse_record_id && (
-              <View style={[s.heroBadge, s.heroBadgeVerified]}>
-                <ShieldCheck size={11} color={colors.white} strokeWidth={2} />
-                <Text style={s.heroBadgeText}>Verificado en padrón</Text>
-              </View>
-            )}
-            {horse.breed && <View style={s.heroBadge}><Text style={s.heroBadgeText} numberOfLines={1}>{horse.breed.name}</Text></View>}
-            {horse.activity && <View style={[s.heroBadge, s.heroBadgeAmber]}><Text style={s.heroBadgeText} numberOfLines={1}>{horse.activity.name}</Text></View>}
-          </View>
-        </View>
-      </View>
-
-      {/* ─── Hoja de contenido (se monta sobre la imagen) ─── */}
-      <View style={s.sheet}>
-
-        {/* ─── Datos vitales, una línea ─── */}
-        {vitals.length > 0 && (
-          <Text style={s.vitalsLine}>{vitals.join(' · ')}</Text>
-        )}
-
-        {/* ─── Alerta de libreta sanitaria ─── */}
-        {worstHealthStatus && (
-          <TouchableOpacity
-            style={[s.alertBanner, worstHealthStatus === 'rojo' ? s.alertBannerDanger : s.alertBannerWarning]}
-            onPress={() => goto('sanidad')}
-            activeOpacity={0.85}
-          >
-            <AlertTriangle size={16} color={worstHealthStatus === 'rojo' ? c.danger : c.warning} strokeWidth={2.2} />
-            <Text style={[s.alertText, { color: worstHealthStatus === 'rojo' ? c.danger : c.warning }]}>
-              {worstHealthStatus === 'rojo'
-                ? `${overdueCount} vacuna${overdueCount > 1 ? 's' : ''} vencida${overdueCount > 1 ? 's' : ''}`
-                : `${dueSoonCount} vacuna${dueSoonCount > 1 ? 's' : ''} por vencer`}
-            </Text>
-            <ChevronRight size={16} color={worstHealthStatus === 'rojo' ? c.danger : c.warning} strokeWidth={2} />
-          </TouchableOpacity>
-        )}
-
-        {/* ─── Resumen vital ─── */}
-        <View style={s.summaryCard}>
-          <SummaryRow
-            Icon={CalendarClock}
-            label="Próximo turno"
-            value={proximoTurno ? fechaHoraHumana(proximoTurno.scheduled_at) : 'Sin turnos'}
-            onPress={() => { haptic.selection(); nav.push(router, Routes.tabsAgenda as never); }}
-            c={c} s={s}
-          />
-          <SummaryRow
-            Icon={Scale}
-            label="Último peso"
-            value={ultimoPeso ? `${Number(ultimoPeso.weight_kg)} kg` : 'Sin registros'}
-            onPress={() => goto('sanidad')}
-            c={c} s={s}
-          />
-          {hasFinanzas && (
-            <SummaryRow
-              Icon={Banknote}
-              label="Gasto del mes"
-              value={gastoDelMes ? formatMoney(gastoDelMes.total) : 'Sin gastos'}
-              onPress={() => goto('finanzas')}
-              c={c} s={s}
-              isLast
-            />
           )}
         </View>
 
-        {/* ─── Lista de secciones ─── */}
-        <View style={s.sectionsList}>
-          <SectionRow Icon={Clock} label="Historial" sub={!events?.length ? 'Sin registros' : undefined} onPress={() => goto('historial')} c={c} s={s} />
-          <SectionRow Icon={Stethoscope} label="Sanidad" sub={!medicalRecords?.length ? 'Sin registros' : undefined} onPress={() => goto('sanidad')} c={c} s={s} />
-          {hasFinanzas && <SectionRow Icon={Banknote} label="Finanzas" sub={!financial?.total ? 'Sin gastos' : undefined} onPress={() => goto('finanzas')} c={c} s={s} />}
-          <SectionRow Icon={Images} label="Fotos" sub={!activityPhotos?.length ? 'Sin fotos' : undefined} onPress={() => goto('fotos')} c={c} s={s} />
-          <SectionRow Icon={Users} label="Equipo y veterinarios" sub={!horseVets?.length && !assignees?.length ? 'Sin asignaciones' : undefined} onPress={() => goto('equipo')} c={c} s={s} />
-          <SectionRow Icon={FileText} label="Documentos" sub={!documents?.length ? 'Sin documentos' : undefined} onPress={() => goto('documentos')} c={c} s={s} />
-          <SectionRow Icon={ClipboardList} label="Rutina" sub={!routines?.length ? 'Sin registros' : undefined} onPress={() => goto('rutina')} c={c} s={s} />
-          <SectionRow Icon={Network} label="Pedigrí" sub={horse.pedigree_status === 'unverified' ? 'Sin verificar' : undefined} onPress={() => goto('pedigree')} c={c} s={s} />
+        {/* Nombre + sello de padrón + línea de identidad */}
+        <View style={s.heroContent}>
+          <View style={s.heroNameRow}>
+            <Text style={s.horseName} numberOfLines={1}>{horse.name}</Text>
+            {/* El escudo dice "está en el padrón": es el sello de confianza y
+                por eso va pegado al nombre, no perdido en una esquina. */}
+            {horse.horse_record_id ? <ShieldCheck size={19} color={colors.white} strokeWidth={1.9} /> : null}
+          </View>
+          {subtitulo ? <Text style={s.heroSub} numberOfLines={1}>{subtitulo}</Text> : null}
         </View>
       </View>
+
+      {/* ─── Cuatro accesos: lo que se hace parado al lado del caballo ─── */}
+      <Animated.View style={s.accesos} entering={entradaFila(orden++)}>
+        {hasFinanzas && (
+          <AccesoRapido
+            Icon={DollarSign}
+            label="Gasto"
+            onPress={() => { haptic.selection(); router.push({ pathname: Routes.caballoEventoNuevo(horse.id), params: { tipo: 'gasto' } } as never); }}
+            c={c} s={s}
+          />
+        )}
+        <AccesoRapido Icon={Camera} label="Foto" onPress={() => goto('fotos')} c={c} s={s} />
+        <AccesoRapido Icon={Check} label="Rutina" onPress={() => goto('rutina')} c={c} s={s} />
+        <AccesoRapido
+          Icon={CalendarPlus}
+          label="Turno"
+          onPress={() => { haptic.selection(); nav.push(router, `${Routes.tabsAgenda}/nuevo`); }}
+          c={c} s={s}
+        />
+      </Animated.View>
+
+      {/* ─── Aviso sanitario: el único color fuerte de la pantalla ─── */}
+      {urgente && (
+        <Animated.View style={s.avisoWrap} entering={entradaFila(orden++)}>
+          <PressableScale
+            style={[s.aviso, { backgroundColor: urgente.estado === 'rojo' ? c.dangerSoft : c.warningSoft }]}
+            onPress={() => goto('sanidad')}
+            accessibilityRole="button"
+            accessibilityLabel="Ver la libreta sanitaria"
+          >
+            <View style={[s.avisoPunto, { backgroundColor: urgente.estado === 'rojo' ? c.danger : c.warning }]} />
+            <Text style={[s.avisoText, { color: urgente.estado === 'rojo' ? c.danger : c.goldText }]} numberOfLines={2}>
+              {urgente.nextDue
+                ? `${urgente.nombre} ${vence(urgente.nextDue).toLowerCase()}`
+                : `${urgente.nombre} sin registro`}
+            </Text>
+            <ChevronRight size={17} color={urgente.estado === 'rojo' ? c.danger : c.warning} strokeWidth={2.2} />
+          </PressableScale>
+        </Animated.View>
+      )}
+
+      {/* ─── Los datos vitales, uno por línea y sin cajas ─── */}
+      <Animated.View style={s.datos} entering={entradaFila(orden++)}>
+        {hasFinanzas && (
+          <FilaDato
+            label="Gasto del mes"
+            valor={gastoDelMes ? formatMoney(gastoDelMes.total) : 'Sin gastos'}
+            grafico={<Sparkline valores={serieGasto} color={c.brand} />}
+            onPress={() => goto('finanzas')}
+            s={s} c={c}
+          />
+        )}
+        <FilaDato
+          label={ultimoPeso ? `Último peso · ${fechaHumana(ultimoPeso.date)}` : 'Último peso'}
+          valor={ultimoPeso ? `${Number(ultimoPeso.weight_kg)} kg` : 'Sin registros'}
+          delta={deltaPeso != null && deltaPeso !== 0 ? `${deltaPeso > 0 ? '+' : ''}${Math.round(deltaPeso)}` : undefined}
+          // Bajar de peso no es "malo" por sí solo, pero es lo que el dueño
+          // quiere ver marcado: por eso el rojo va en la baja.
+          deltaTono={deltaPeso != null && deltaPeso < 0 ? 'danger' : 'brand'}
+          grafico={<Sparkline valores={seriePeso} color={c.brand} />}
+          onPress={() => goto('sanidad')}
+          s={s} c={c}
+        />
+        <FilaDato
+          label="Rutina de hoy"
+          valor={rutina ? `${rutina.hechas} de ${rutina.total}` : 'Sin cargar'}
+          grafico={<AnilloProgreso hechas={rutina?.hechas ?? 0} total={rutina?.total ?? ROUTINE_ITEMS.length} c={c} />}
+          onPress={() => goto('rutina')}
+          s={s} c={c}
+          isLast
+        />
+      </Animated.View>
+
+      {/* ─── Fotos: tres miniaturas y el atajo al álbum ─── */}
+      {fotos.length > 0 && (
+        <Animated.View style={s.bloqueFotos} entering={entradaFila(orden++)}>
+          <View style={s.bloqueHead}>
+            <Text style={s.bloqueTitulo}>Fotos</Text>
+            <TouchableOpacity onPress={() => goto('fotos')} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Ver las ${fotos.length} fotos`}>
+              <Text style={s.bloqueLink}>{fotos.length > 3 ? `Ver las ${fotos.length}` : 'Ver todas'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={s.fotosTira}>
+            {fotos.slice(0, 3).map((f) => (
+              <PressableScale
+                key={f.id}
+                style={s.fotoThumbWrap}
+                onPress={() => goto('fotos')}
+                accessibilityRole="imagebutton"
+                accessibilityLabel={f.caption ?? 'Foto del caballo'}
+              >
+                <AppImage source={{ uri: f.url }} style={s.fotoThumb} />
+              </PressableScale>
+            ))}
+          </View>
+        </Animated.View>
+      )}
+
+      {/* ─── El resto de la ficha, en lista de opciones ───
+          La maqueta muestra el resumen; estas secciones son la navegación
+          profunda de la ficha y no tienen otra puerta de entrada. Finanzas,
+          rutina y fotos no se repiten acá: ya tienen su fila arriba. */}
+      <Animated.View style={s.sectionsList} entering={entradaFila(orden++)}>
+        <SectionRow Icon={Clock} label="Historial" sub={!events?.length ? 'Sin registros' : undefined} onPress={() => goto('historial')} c={c} s={s} />
+        <SectionRow Icon={Stethoscope} label="Sanidad" sub={!medicalRecords?.length ? 'Sin registros' : undefined} onPress={() => goto('sanidad')} c={c} s={s} />
+        {fotos.length === 0 && <SectionRow Icon={Images} label="Fotos" sub="Sin fotos" onPress={() => goto('fotos')} c={c} s={s} />}
+        <SectionRow Icon={Users} label="Equipo y veterinarios" sub={!horseVets?.length && !assignees?.length ? 'Sin asignaciones' : undefined} onPress={() => goto('equipo')} c={c} s={s} />
+        <SectionRow Icon={FileText} label="Documentos" sub={!documents?.length ? 'Sin documentos' : undefined} onPress={() => goto('documentos')} c={c} s={s} />
+        <SectionRow Icon={Network} label="Pedigrí" sub={horse.pedigree_status === 'unverified' ? 'Sin verificar' : undefined} onPress={() => goto('pedigree')} c={c} s={s} />
+      </Animated.View>
 
       {/* ─── Menú de acciones ─── */}
       <ActionSheet
@@ -370,7 +550,7 @@ export default function HorseDetailScreen() {
           ...((user?.role === 'propietario' || can('auctions', 'create')) ? [{
             label: 'Publicar en venta',
             Icon: Megaphone,
-            onPress: () => { haptic.medium(); nav.push(router, `${Routes.remateCrear}?horse=${horse.id}` as never); },
+            onPress: () => { haptic.medium(); nav.push(router, `${Routes.remateCrear}?horse=${horse.id}`); },
           }] : []),
           ...(can('horses', 'delete') ? [{
             label: 'Eliminar caballo',
@@ -383,7 +563,7 @@ export default function HorseDetailScreen() {
 
       {/* ─── Hoja QR ─── */}
       <BottomSheet visible={showQR} onClose={() => setShowQR(false)} title={horse.name}>
-        <View style={{ paddingBottom: insets.bottom + 8 }}>
+        <View style={{ paddingBottom: insets.bottom + space[2] }}>
           <View style={s.qrWrap}>
             <View style={s.qrInner}>
               {horse.public_token && (
@@ -406,7 +586,7 @@ export default function HorseDetailScreen() {
           </View>
           <Text style={s.qrHint}>Escaneá para ver el perfil público del caballo</Text>
           <View style={s.qrActions}>
-            {/* Un solo CTA cuero; copiar es un link de texto secundario */}
+            {/* Un solo CTA verde; copiar es un link de texto secundario */}
             <TouchableOpacity
               style={s.qrShareBtn}
               onPress={async () => {
@@ -451,68 +631,80 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
 
   /* Hero */
-  heroWrap: { aspectRatio: 16 / 9, position: 'relative', backgroundColor: colors.gray900 },
-  heroPlaceholder: { backgroundColor: colors.gray900, alignItems: 'center', justifyContent: 'center' },
-  heroPlaceholderInitial: { fontSize: 80, fontWeight: weight.extrabold, color: colors.brand300 },
+  heroWrap: { width: '100%', aspectRatio: HERO_RATIO, position: 'relative', backgroundColor: c.surfaceAlt },
+  heroPlaceholder: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  heroPlaceholderInitial: { fontSize: 80, fontWeight: weight.extrabold, color: c.textFaint },
   heroPill: {
-    position: 'absolute', width: 36, height: 36, borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    position: 'absolute', width: touch.min, height: touch.min, borderRadius: radius.thumb,
+    // `c.overlay` es el scrim del sistema: oscurece lo justo para que el ícono
+    // blanco se lea sobre cualquier foto, sin inventar un color nuevo.
+    backgroundColor: c.overlay,
     justifyContent: 'center', alignItems: 'center',
   },
-  heroPillQr: { backgroundColor: c.brand, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)' },
   heroPillStatic: { position: 'relative', top: undefined, left: undefined },
-  heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
-  heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 20 },
-  heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  horseName: { fontSize: text.xl, fontWeight: weight.extrabold, letterSpacing: -0.5, color: colors.white, lineHeight: 32, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-  heroBadges: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
-  heroBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  heroBadgeAmber: { backgroundColor: 'rgba(245,158,11,0.35)' },
-  heroBadgeVerified: { backgroundColor: 'rgba(16,163,127,0.9)', flexDirection: 'row', alignItems: 'center', gap: 4 },
-  heroBadgeText: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.white },
-
-  sheet: {
-    marginTop: -10,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: c.bg,
-    overflow: 'hidden',
-    paddingTop: space[4],
+  heroActions: { position: 'absolute', right: space[4], flexDirection: 'row', gap: space[2] },
+  heroContent: { position: 'absolute', bottom: 0, left: space[4], right: space[4], paddingBottom: space[5] },
+  heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  horseName: {
+    flexShrink: 1,
+    fontSize: text.display, fontWeight: weight.bold, letterSpacing: -1.2,
+    color: colors.white, lineHeight: text.display + 4,
   },
+  heroSub: { fontSize: text.sm, color: colors.white, opacity: 0.85, marginTop: space[1] + 2 },
 
-  /* Vitales */
-  vitalsLine: { fontSize: text.base, fontWeight: weight.semibold, color: c.textMuted, textAlign: 'center', marginBottom: space[4] },
+  /* Accesos rápidos */
+  accesos: { flexDirection: 'row', gap: space[2] + 1, paddingHorizontal: space[4], paddingTop: space[4] },
+  acceso: {
+    flex: 1, minHeight: 72, backgroundColor: c.surface, borderRadius: radius.button,
+    alignItems: 'center', justifyContent: 'center', gap: space[2] - 1,
+    // En oscuro la sombra no se ve: la jerarquía la da surface sobre bg.
+    ...(c.isDark ? null : shadow.sm),
+  },
+  accesoLabel: { fontSize: text.xs, fontWeight: weight.medium, color: c.text },
 
-  /* Alerta sanitaria */
-  alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: space[4], marginBottom: space[4], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.md },
-  alertBannerDanger: { backgroundColor: c.dangerSoft },
-  alertBannerWarning: { backgroundColor: c.warningSoft },
-  alertText: { flex: 1, fontSize: text.sm, fontWeight: weight.bold },
+  /* Aviso sanitario */
+  avisoWrap: { paddingHorizontal: space[4], paddingTop: space[4] },
+  aviso: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderRadius: radius.button, paddingHorizontal: space[4], paddingVertical: space[3] + 1 },
+  avisoPunto: { width: 9, height: 9, borderRadius: radius.full },
+  avisoText: { flex: 1, fontSize: text.base, fontWeight: weight.semibold },
 
-  /* Resumen vital */
-  summaryCard: { marginHorizontal: space[4], marginBottom: space[6] },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
-  summaryRowLast: { borderBottomWidth: 0 },
-  summaryValue: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, maxWidth: 140 },
+  /* Filas de dato vital */
+  datos: { paddingHorizontal: space[4], paddingTop: space[5] },
+  filaDato: {
+    flexDirection: 'row', alignItems: 'center', gap: space[4], paddingVertical: space[3] + 1,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
+  },
+  filaDatoLast: { borderBottomWidth: 0 },
+  filaDatoLabel: { fontSize: text.xs + 1, color: c.textFaint },
+  filaDatoValorRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] - 1, marginTop: 2 },
+  filaDatoValor: { fontSize: text.lg - 2, fontWeight: weight.bold, letterSpacing: -0.6, color: c.text },
+  filaDatoDelta: { fontSize: text.sm, fontWeight: weight.semibold },
+
+  /* Bloque de fotos */
+  bloqueFotos: { paddingHorizontal: space[4], paddingTop: space[5] },
+  bloqueHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bloqueTitulo: { fontSize: text.md + 1, fontWeight: weight.bold, letterSpacing: -0.4, color: c.text },
+  bloqueLink: { fontSize: text.base - 1, fontWeight: weight.semibold, color: c.brand },
+  fotosTira: { flexDirection: 'row', gap: space[3] - 2, marginTop: space[3] },
+  fotoThumbWrap: { flex: 1, height: 104, borderRadius: radius.field, overflow: 'hidden', backgroundColor: c.surfaceAlt },
+  fotoThumb: { width: '100%', height: '100%' },
 
   /* Lista de secciones — patrón Más/Ajustes */
-  sectionsList: { marginHorizontal: space[4], marginBottom: space[8] },
+  sectionsList: { marginHorizontal: space[4], marginTop: space[6] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   rowIconWrap: { width: 28, alignItems: 'center', flexShrink: 0 },
   rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
   rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
 
   /* Hoja QR */
-  qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
-  qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  qrHint: { textAlign: 'center', fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
-  qrActions: { gap: space[3], marginTop: 14 },
-  qrLinkBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, minHeight: touch.min },
+  qrWrap: { alignItems: 'center', paddingTop: space[3], paddingBottom: space[5] - 2 },
+  qrInner: { backgroundColor: colors.white, padding: space[4], borderRadius: radius.xl, ...shadow.sm },
+  qrHint: { textAlign: 'center', fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, paddingHorizontal: space[6], lineHeight: 18 },
+  qrActions: { gap: space[3], marginTop: space[3] + 2 },
+  qrLinkBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space[2] - 2, minHeight: touch.min },
   qrLinkBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
-  qrShareBtn: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRadius: radius.md, backgroundColor: c.brand, paddingVertical: space[3] },
-  qrShareBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: colors.white },
-
+  qrShareBtn: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space[2] - 2, borderRadius: radius.button, backgroundColor: c.brand, paddingVertical: space[4] },
+  qrShareBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

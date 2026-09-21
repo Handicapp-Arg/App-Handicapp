@@ -2,37 +2,39 @@ import { useState, useEffect, useMemo, useRef, forwardRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   KeyboardAvoidingView, Platform, ActivityIndicator,
-  ScrollView, Dimensions,
+  ScrollView, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ChevronLeft, Plus, Pencil, ShieldCheck, Info, File, Mars, Venus,
   Network, CheckCircle2, AlertTriangle, XCircle, Circle,
 } from 'lucide-react-native';
-import { HorseHeadIcon } from './icons/equine';
 import { FormSheet } from './FormSheet';
+import { PressableScale } from './PressableScale';
+import { Skeleton } from './Skeleton';
 import { useToast } from './Toast';
 import { colors } from '../lib/colors';
 import { haptic } from '../lib/haptics';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight, touch } from '../styles/tokens';
+import { space, text, radius, weight, touch, shadow } from '../styles/tokens';
+import { duration, easing } from '../styles/motion';
 import {
   usePedigree, usePedigreeValidations, useUpsertPedigree,
   useValidatePedigree, useSearchHorsesForPedigree, type CreatePedigreeDto,
 } from '../hooks/use-pedigree';
 import type { PedigreeValidation } from '../../packages/shared/src';
 
-const SCREEN_W = Dimensions.get('window').width;
-
-// ──────────────────────────────────────────────
-// Visual pedigree tree
-// ──────────────────────────────────────────────
+/** Alto del árbol. Fijo porque los conectores se dibujan en porcentaje: si la
+ *  columna creciera con el contenido, las curvas dejarían de tocar las tarjetas. */
+const ALTO = 448;
+/** Ancho de las dos columnas de conectores entre generaciones. */
+const CONECTOR = 22;
 
 interface NodeData {
   name: string;
   reg?: string | null;
   status?: string | null;
-  inSystem?: boolean;
 }
 
 const statusColor = (st: string, c: ThemeColors): string => (({
@@ -51,41 +53,66 @@ const statusBg = (st: string, c: ThemeColors): string => (({
   pending:    c.infoSoft,
 } as Record<string, string>)[st] ?? c.surfaceAlt);
 
-// Semantic parent colors (slightly brighter in dark for legibility)
-const sireColor = (isDark: boolean) => (isDark ? '#38bdf8' : '#0369a1');
-const damColor  = (isDark: boolean) => (isDark ? '#f472b6' : '#be185d');
-
-function PedigreeNode({ data, width, dim }: { data: NodeData | null; width: number; dim?: boolean }) {
-  const { c } = useTheme();
-  const n = useMemo(() => makeN(c), [c]);
-  if (!data) {
-    return (
-      <View style={[n.node, n.nodeEmpty, { width }]}>
-        <Text style={n.emptyText}>–</Text>
-      </View>
-    );
-  }
-
-  const st = data.status ?? 'unverified';
-  const col = statusColor(st, c);
-  const bg  = statusBg(st, c);
-
+/**
+ * Una llave que se abre: sube a la tarjeta de arriba y baja a la de abajo.
+ * Es un borde en L con esquina redondeada, no una línea recta, porque el trazo
+ * curvo es lo que lee como "árbol" y no como tabla.
+ */
+function Llave({ c }: { c: ThemeColors }) {
   return (
-    <View style={[n.node, { width, backgroundColor: bg, opacity: dim ? 0.7 : 1 }]}>
-      {data.status && data.status !== 'unverified' && (
-        <View style={[n.statusDot, { backgroundColor: col }]} />
-      )}
-      <Text style={[n.name, { color: dim ? c.textMuted : c.text }]} numberOfLines={2}>{data.name}</Text>
-      {data.reg ? <Text style={n.reg} numberOfLines={1}>#{data.reg}</Text> : null}
+    <View style={{ width: CONECTOR, justifyContent: 'center' }}>
+      <View style={{ height: '50%', borderRightWidth: 2, borderTopWidth: 2, borderColor: c.borderStrong, borderTopRightRadius: radius.md, marginRight: 10 }} />
+      <View style={{ height: '50%', borderRightWidth: 2, borderBottomWidth: 2, borderColor: c.borderStrong, borderBottomRightRadius: radius.md, marginRight: 10 }} />
     </View>
   );
 }
 
-function ConnectorLine({ vertical = false }: { vertical?: boolean }) {
-  const { c } = useTheme();
-  const n = useMemo(() => makeN(c), [c]);
-  if (vertical) return <View style={n.vLine} />;
-  return <View style={n.hLine} />;
+/** Las cuatro llaves de padres a abuelos, más finas porque están un paso atrás. */
+function LlavesAbuelos({ c }: { c: ThemeColors }) {
+  const base = { borderRightWidth: 2, borderColor: c.border, marginRight: 10 } as const;
+  return (
+    <View style={{ width: CONECTOR, justifyContent: 'space-around' }}>
+      <View style={[base, { height: '22%', borderTopWidth: 2, borderTopRightRadius: radius.md }]} />
+      <View style={[base, { height: '22%', borderBottomWidth: 2, borderBottomRightRadius: radius.md, marginBottom: space[4] }]} />
+      <View style={[base, { height: '22%', borderTopWidth: 2, borderTopRightRadius: radius.md, marginTop: space[4] }]} />
+      <View style={[base, { height: '22%', borderBottomWidth: 2, borderBottomRightRadius: radius.md }]} />
+    </View>
+  );
+}
+
+/** Tarjeta de un padre: el rol lo dice la etiqueta y lo confirma la barra lateral.
+ *  El punto de estado solo aparece cuando hay algo que decir (validado, disputado...). */
+function Progenitor({ rol, nodo, acento, c, n }: {
+  rol: string; nodo: NodeData | null; acento: string; c: ThemeColors; n: TreeStyles;
+}) {
+  const st = nodo?.status ?? 'unverified';
+  return (
+    <View style={[n.padre, { borderLeftColor: acento }]}>
+      {nodo?.status && nodo.status !== 'unverified' && (
+        <View style={[n.punto, { backgroundColor: statusColor(st, c) }]} />
+      )}
+      <Text style={n.rol}>{rol}</Text>
+      <Text style={n.padreNombre} numberOfLines={2}>{nodo?.name ?? 'Sin dato'}</Text>
+      {nodo?.reg ? <Text style={n.meta} numberOfLines={1}>#{nodo.reg}</Text> : null}
+    </View>
+  );
+}
+
+/** Tarjeta de abuelo. Si no hay dato la tarjeta igual ocupa su lugar: el hueco
+ *  también es información (dice hasta dónde llega lo cargado). */
+function Abuelo({ nombre, n }: { nombre: string | null; n: TreeStyles }) {
+  if (!nombre) {
+    return (
+      <View style={[n.abuelo, n.abueloVacio]}>
+        <Text style={n.abueloVacioTexto}>Sin dato</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={n.abuelo}>
+      <Text style={n.abueloNombre} numberOfLines={2}>{nombre}</Text>
+    </View>
+  );
 }
 
 function PedigreeTree({ horseName, pedigree }: {
@@ -106,6 +133,13 @@ function PedigreeTree({ horseName, pedigree }: {
 }) {
   const { c } = useTheme();
   const n = useMemo(() => makeN(c), [c]);
+  const { width } = useWindowDimensions();
+
+  // Tres columnas iguales dentro del margen de pantalla, descontando las dos
+  // columnas de conectores. Se calcula con el ancho real y no con un número
+  // fijo para que un teléfono chico o una tablet no rompan la grilla.
+  const ancho = Math.max(72, (width - space[4] * 2 - CONECTOR * 2) / 3);
+
   const sireName = pedigree.sire?.name ?? pedigree.sire_name;
   const damName  = pedigree.dam?.name  ?? pedigree.dam_name;
 
@@ -113,157 +147,96 @@ function PedigreeTree({ horseName, pedigree }: {
     name: sireName,
     reg: pedigree.sire_registration_number,
     status: pedigree.sire?.pedigree_status ?? 'unverified',
-    inSystem: !!pedigree.sire,
   } : null;
 
   const dam: NodeData | null = damName ? {
     name: damName,
     reg: pedigree.dam_registration_number,
     status: pedigree.dam?.pedigree_status ?? 'unverified',
-    inSystem: !!pedigree.dam,
   } : null;
 
-  const patGrandsire: NodeData | null = pedigree.paternal_grandsire_name
-    ? { name: pedigree.paternal_grandsire_name } : null;
-  const patGranddam: NodeData | null = pedigree.paternal_granddam_name
-    ? { name: pedigree.paternal_granddam_name } : null;
-  const matGrandsire: NodeData | null = pedigree.maternal_grandsire_name
-    ? { name: pedigree.maternal_grandsire_name } : null;
-  const matGranddam: NodeData | null = pedigree.maternal_granddam_name
-    ? { name: pedigree.maternal_granddam_name } : null;
-
-  const hasGrandparents = patGrandsire || patGranddam || matGrandsire || matGranddam;
-
-  // Node widths
-  const w1 = Math.min(SCREEN_W - 48, 280); // caballo
-  const w2 = (w1 - 12) / 2;               // padres
-  const w3 = (w2 - 8) / 2;                // abuelos
-
   return (
-    <View style={n.tree}>
-      {/* Gen 1 — Caballo */}
-      <View style={n.gen}>
-        <View style={[n.node, n.nodeHorse, { width: w1 }]}>
-          <View style={n.horseIconWrap}>
-            <HorseHeadIcon size={22} color={c.textMuted} />
-          </View>
-          <Text style={n.horseName}>{horseName}</Text>
-          <Text style={n.horseLabel}>CABALLO</Text>
+    <View style={[n.arbol, { height: ALTO }]}>
+      <View style={{ width: ancho, justifyContent: 'center' }}>
+        <View style={n.raiz}>
+          <Text style={n.raizRol}>El caballo</Text>
+          <Text style={n.raizNombre} numberOfLines={2}>{horseName}</Text>
         </View>
       </View>
 
-      {(sire || dam) && (
-        <>
-          {/* Conector gen 1 → 2 */}
-          <View style={[n.gen, { gap: 0 }]}>
-            <View style={{ width: w2, alignItems: 'center' }}>
-              {sire && <ConnectorLine vertical />}
-            </View>
-            <View style={{ width: 12 }} />
-            <View style={{ width: w2, alignItems: 'center' }}>
-              {dam && <ConnectorLine vertical />}
-            </View>
-          </View>
+      <Llave c={c} />
 
-          {/* Gen 2 — Padres */}
-          <View style={[n.gen, { gap: 12 }]}>
-            <View style={{ width: w2 }}>
-              <View style={n.parentLabel}>
-                <Mars size={11} color={sireColor(c.isDark)} strokeWidth={2} />
-                <Text style={[n.parentLabelText, { color: sireColor(c.isDark) }]}>PADRE</Text>
-              </View>
-              <PedigreeNode data={sire} width={w2} />
-            </View>
-            <View style={{ width: w2 }}>
-              <View style={n.parentLabel}>
-                <Venus size={11} color={damColor(c.isDark)} strokeWidth={2} />
-                <Text style={[n.parentLabelText, { color: damColor(c.isDark) }]}>MADRE</Text>
-              </View>
-              <PedigreeNode data={dam} width={w2} />
-            </View>
-          </View>
+      <View style={{ width: ancho, justifyContent: 'space-around' }}>
+        <Progenitor rol="Padre" nodo={sire} acento={c.info} c={c} n={n} />
+        <Progenitor rol="Madre" nodo={dam} acento={c.dam} c={c} n={n} />
+      </View>
 
-          {/* Gen 3 — Abuelos */}
-          {hasGrandparents && (
-            <>
-              {/* Conectores */}
-              <View style={[n.gen, { gap: 0 }]}>
-                {[patGrandsire, patGranddam, matGrandsire, matGranddam].map((g, i) => (
-                  <View key={i} style={{ width: w3, alignItems: 'center' }}>
-                    {g && <ConnectorLine vertical />}
-                  </View>
-                ))}
-              </View>
+      <LlavesAbuelos c={c} />
 
-              {/* Fila abuelos */}
-              <View style={[n.gen, { gap: 6 }]}>
-                <View style={{ width: w3 * 2 + 6 }}>
-                  <Text style={n.grandLabel}>Paternos</Text>
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={n.grandRole}>Abuelo</Text>
-                      <PedigreeNode data={patGrandsire} width={w3} dim />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={n.grandRole}>Abuela</Text>
-                      <PedigreeNode data={patGranddam} width={w3} dim />
-                    </View>
-                  </View>
-                </View>
-                <View style={{ width: 6 }} />
-                <View style={{ width: w3 * 2 + 6 }}>
-                  <Text style={n.grandLabel}>Maternos</Text>
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={n.grandRole}>Abuelo</Text>
-                      <PedigreeNode data={matGrandsire} width={w3} dim />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={n.grandRole}>Abuela</Text>
-                      <PedigreeNode data={matGranddam} width={w3} dim />
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </>
-          )}
-        </>
-      )}
+      <View style={{ width: ancho, justifyContent: 'space-between' }}>
+        <Abuelo nombre={pedigree.paternal_grandsire_name ?? null} n={n} />
+        <Abuelo nombre={pedigree.paternal_granddam_name ?? null} n={n} />
+        <Abuelo nombre={pedigree.maternal_grandsire_name ?? null} n={n} />
+        <Abuelo nombre={pedigree.maternal_granddam_name ?? null} n={n} />
+      </View>
     </View>
   );
 }
 
+/** Esqueleto con la silueta del árbol: tres columnas, 1 + 2 + 4 tarjetas. */
+export function PedigreeTreeSkeleton() {
+  const { width } = useWindowDimensions();
+  const ancho = Math.max(72, (width - space[4] * 2 - CONECTOR * 2) / 3);
+  return (
+    <View style={{ flexDirection: 'row', height: ALTO, paddingHorizontal: space[4], paddingTop: space[2] }}>
+      <View style={{ width: ancho, justifyContent: 'center' }}>
+        <Skeleton height={86} borderRadius={radius.button} />
+      </View>
+      <View style={{ width: CONECTOR }} />
+      <View style={{ width: ancho, justifyContent: 'space-around' }}>
+        <Skeleton height={92} borderRadius={radius.field} />
+        <Skeleton height={92} borderRadius={radius.field} />
+      </View>
+      <View style={{ width: CONECTOR }} />
+      <View style={{ width: ancho, justifyContent: 'space-between' }}>
+        {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={64} borderRadius={radius.thumb} />)}
+      </View>
+    </View>
+  );
+}
+
+type TreeStyles = ReturnType<typeof makeN>;
+
 const makeN = (c: ThemeColors) => StyleSheet.create({
-  tree: { padding: 16, gap: 4 },
-  gen: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
-  vLine: { width: 2, height: 16, backgroundColor: c.border, marginVertical: 0 },
-  hLine: { height: 2, flex: 1, backgroundColor: c.border },
+  arbol: { flexDirection: 'row', paddingHorizontal: space[4], paddingTop: space[2] },
 
-  node: {
-    borderRadius: 12,
-    padding: 10, gap: 3, position: 'relative', overflow: 'hidden',
+  // El caballo va en la superficie invertida: es el único nodo que no se compara
+  // con otro, así que se distingue por contraste y no por color.
+  raiz: { backgroundColor: c.text, borderRadius: radius.button, paddingVertical: space[4], paddingHorizontal: space[3] },
+  raizRol: { fontSize: text.xs - 1, color: c.textMuted },
+  raizNombre: { fontSize: text.base, fontWeight: weight.semibold, color: c.bg, marginTop: 3 },
+
+  padre: {
+    backgroundColor: c.surface,
+    borderRadius: radius.field,
+    padding: space[3],
+    borderLeftWidth: 3,
+    ...(c.isDark ? {} : shadow.sm),
   },
-  nodeEmpty: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center', minHeight: 52 },
-  emptyText: { color: c.textFaint, fontSize: 18 },
-  statusDot: { position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: 4 },
-  name: { fontSize: 12, fontWeight: '700', color: c.text, lineHeight: 16 },
-  reg: { fontSize: 10, color: c.textFaint },
+  punto: { position: 'absolute', top: space[2], right: space[2], width: 7, height: 7, borderRadius: 4 },
+  rol: { fontSize: text.xs - 1, color: c.textFaint },
+  padreNombre: { fontSize: text.sm + 1, fontWeight: weight.semibold, color: c.text, marginTop: 2 },
+  meta: { fontSize: text.xs - 1, color: c.textFaint, marginTop: 2 },
 
-  // El nodo del caballo es neutro: superficie del theme, sin cuero ni borde.
-  nodeHorse: {
-    alignItems: 'center', gap: 4, paddingVertical: 14,
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
-    backgroundColor: c.isDark ? c.surfaceAlt : c.surface,
+  abuelo: {
+    backgroundColor: c.surface,
+    borderRadius: radius.thumb,
+    padding: space[2] + 2,
+    ...(c.isDark ? {} : shadow.sm),
   },
-  horseIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  horseName: { fontSize: 15, fontWeight: '600', color: c.text, textAlign: 'center' },
-  horseLabel: { fontSize: 9, fontWeight: '700', color: c.textFaint, letterSpacing: 1, textTransform: 'uppercase' },
-
-  parentLabel: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 4 },
-  parentLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
-
-  grandLabel: { fontSize: 9, fontWeight: '700', color: c.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
-  grandRole: { fontSize: 9, color: c.textFaint, textAlign: 'center', marginBottom: 3 },
+  abueloVacio: { backgroundColor: c.surfaceAlt, shadowOpacity: 0, elevation: 0 },
+  abueloNombre: { fontSize: text.xs + 1, fontWeight: weight.semibold, color: c.text },
+  abueloVacioTexto: { fontSize: text.xs + 1, fontWeight: weight.medium, color: c.textFaint },
 });
 
 // ──────────────────────────────────────────────
@@ -301,16 +274,18 @@ const HorseSearchField = forwardRef<TextInput, {
       {open && results.length > 0 && (
         <View style={s.dropdown}>
           {results.slice(0, 5).map((r) => (
-            <TouchableOpacity
+            <PressableScale
               key={r.id}
               style={s.dropdownItem}
-              onPress={() => { onSelect(r.id, r.name); onChange(r.name); setOpen(false); }}
+              onPress={() => { haptic.selection(); onSelect(r.id, r.name); onChange(r.name); setOpen(false); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Elegir ${r.name}`}
             >
               <Text style={s.dropdownName}>{r.name}</Text>
               {r.registration_number && (
                 <Text style={s.dropdownReg}>#{r.registration_number}</Text>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </View>
       )}
@@ -433,8 +408,8 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             {/* Padre */}
             <View style={s.fieldset}>
               <View style={s.fieldsetHeader}>
-                <Mars size={14} color={sireColor(c.isDark)} strokeWidth={2} />
-                <Text style={[s.fieldsetTitle, { color: sireColor(c.isDark) }]}>PADRE</Text>
+                <Mars size={14} color={c.info} strokeWidth={2} />
+                <Text style={[s.fieldsetTitle, { color: c.info }]}>PADRE</Text>
               </View>
               <HorseSearchField
                 label="Nombre del padre"
@@ -454,8 +429,8 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             {/* Madre */}
             <View style={s.fieldset}>
               <View style={s.fieldsetHeader}>
-                <Venus size={14} color={damColor(c.isDark)} strokeWidth={2} />
-                <Text style={[s.fieldsetTitle, { color: damColor(c.isDark) }]}>MADRE</Text>
+                <Venus size={14} color={c.dam} strokeWidth={2} />
+                <Text style={[s.fieldsetTitle, { color: c.dam }]}>MADRE</Text>
               </View>
               <HorseSearchField
                 ref={refDamName}
@@ -523,24 +498,24 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
           </ScrollView>
 
           <View style={[s.modalFooter, { paddingBottom: insets.bottom + space[3] }]}>
-            <TouchableOpacity style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={onClose}>
+            <PressableScale style={[s.btn, s.btnSecondary, { flex: 1 }]} onPress={() => { haptic.light(); onClose(); }}>
               <Text style={s.btnSecondaryText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, s.btnOutline, { flex: 1 }]}
-              onPress={() => handleSave(false)} disabled={isPending}>
+            </PressableScale>
+            <PressableScale style={[s.btn, s.btnOutline, { flex: 1 }]}
+              onPress={() => { haptic.light(); handleSave(false); }} disabled={isPending}>
               {upsert.isPending && !validate.isPending
                 ? <ActivityIndicator color={c.brand} size="small" />
                 : <Text style={s.btnOutlineText}>Guardar</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, s.btnPrimary, { flex: 1.4 }]}
-              onPress={() => handleSave(true)} disabled={isPending}>
+            </PressableScale>
+            <PressableScale style={[s.btn, s.btnPrimary, { flex: 1.4 }]}
+              onPress={() => { haptic.light(); handleSave(true); }} disabled={isPending}>
               {validate.isPending
                 ? <ActivityIndicator color={colors.white} size="small" />
                 : <>
                     <ShieldCheck size={16} color={colors.white} strokeWidth={2} />
                     <Text style={s.btnPrimaryText}>Validar</Text>
                   </>}
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -554,9 +529,9 @@ function PedigreeFormModal({ horseId, onClose }: { horseId: string; onClose: () 
             </View>
           )}
           {resultCfg?.msg ? <Text style={{ fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 20 }}>{resultCfg.msg}</Text> : null}
-          <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: space[6], width: '100%' }]} onPress={closeResult}>
+          <PressableScale style={[s.btn, s.btnPrimary, { marginTop: space[6], width: '100%' }]} onPress={() => { haptic.light(); closeResult(); }}>
             <Text style={s.btnPrimaryText}>Cerrar</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </FormSheet>
     </>
@@ -643,11 +618,15 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
   const { data: validations = [] } = usePedigreeValidations(horseId);
   const validate = useValidatePedigree(horseId);
 
+  // Nunca un spinner centrado: el esqueleto tiene la misma silueta que el árbol
+  // (cabecera + tres columnas) para que al cargar nada salte de lugar.
   if (isLoading) {
     return (
-      <View style={s.center}>
-        <ActivityIndicator color={c.brand} size="large" />
-        <Text style={s.loadingText}>Cargando pedigrí...</Text>
+      <View style={s.root}>
+        <View style={s.header}>
+          <Skeleton width={150} height={18} />
+        </View>
+        <PedigreeTreeSkeleton />
       </View>
     );
   }
@@ -663,15 +642,15 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
           Registrá el padre y la madre para construir el árbol genealógico y verificarlo automáticamente contra registros oficiales.
         </Text>
         {canEdit && (
-          <TouchableOpacity
-            style={[s.btn, s.btnPrimary, { marginTop: 8 }]}
-            onPress={() => setShowForm(true)}
+          <PressableScale
+            style={[s.btn, s.btnPrimary, s.btnAncho]}
+            onPress={() => { haptic.light(); setShowForm(true); }}
             accessibilityRole="button"
             accessibilityLabel="Agregar pedigrí"
           >
             <Plus size={18} color={colors.white} strokeWidth={2} />
             <Text style={s.btnPrimaryText}>Agregar pedigrí</Text>
-          </TouchableOpacity>
+          </PressableScale>
         )}
         {showForm && <PedigreeFormModal horseId={horseId} onClose={() => setShowForm(false)} />}
       </View>
@@ -690,20 +669,20 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
         <Text style={s.headerTitle}>Árbol genealógico</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {canEdit && (
-            <TouchableOpacity
+            <PressableScale
               style={s.actionBtn}
-              onPress={() => setShowForm(true)}
+              onPress={() => { haptic.light(); setShowForm(true); }}
               accessibilityRole="button"
               accessibilityLabel="Editar pedigrí"
             >
-              <Pencil size={15} color={c.brand} strokeWidth={2} />
+              <Pencil size={15} color={c.text} strokeWidth={2} />
               <Text style={s.actionBtnText}>Editar</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
           {canEdit && hasData && (
-            <TouchableOpacity
-              style={[s.actionBtn, s.actionBtnPrimary, validate.isPending && { opacity: 0.6 }]}
-              onPress={() => validate.mutate()}
+            <PressableScale
+              style={[s.actionBtn, s.actionBtnPrimary, validate.isPending && s.actionBtnApagado]}
+              onPress={() => { haptic.light(); validate.mutate(); }}
               disabled={validate.isPending}
               accessibilityRole="button"
               accessibilityLabel="Verificar pedigrí contra registros oficiales"
@@ -716,13 +695,13 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
                     <Text style={[s.actionBtnText, { color: colors.white }]}>Verificar</Text>
                   </>
               }
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
       </View>
 
       {/* Banner de resultado de validación */}
-      <View style={{ paddingHorizontal: 16 }}>
+      <View style={{ paddingHorizontal: space[4] }}>
         <ValidationBanner validations={validations} />
       </View>
 
@@ -738,19 +717,31 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
 
       {/* Árbol visual — siempre visible si hay datos */}
       {hasData ? (
-        <View style={s.treeCard}>
+        // El árbol entra entero y no fila por fila: es UNA figura, y escalonarla
+        // por partes la haría ver como una lista que se arma sola.
+        <Animated.View entering={FadeIn.duration(duration.enter).easing(easing.outQuart.factory())}>
           <PedigreeTree
             horseName={horseName ?? 'Caballo'}
             pedigree={pedigree as any}
           />
-        </View>
+          <View style={s.pie}>
+            <ShieldCheck size={15} color={c.textFaint} strokeWidth={1.9} />
+            <Text style={s.pieTexto}>Padre, madre y abuelos cargados en la ficha</Text>
+          </View>
+        </Animated.View>
       ) : (
         <View style={s.noData}>
           <Text style={s.noDataText}>No se han cargado datos del padre ni de la madre.</Text>
           {canEdit && (
-            <TouchableOpacity style={[s.actionBtn, { marginTop: 8 }]} onPress={() => setShowForm(true)}>
-              <Text style={s.actionBtnText}>+ Agregar</Text>
-            </TouchableOpacity>
+            <PressableScale
+              style={[s.actionBtn, s.actionBtnSuelto]}
+              onPress={() => { haptic.light(); setShowForm(true); }}
+              accessibilityRole="button"
+              accessibilityLabel="Agregar pedigrí"
+            >
+              <Plus size={15} color={c.text} strokeWidth={2} />
+              <Text style={s.actionBtnText}>Agregar</Text>
+            </PressableScale>
           )}
         </View>
       )}
@@ -768,7 +759,7 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
         </View>
       )}
 
-      <View style={{ height: 32 }} />
+      <View style={{ height: space[8] }} />
     </ScrollView>
     {showForm && <PedigreeFormModal horseId={horseId} onClose={() => setShowForm(false)} />}
     </>
@@ -777,66 +768,66 @@ export function PedigreeTab({ horseId, horseName, canEdit }: {
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
-  loadingText: { fontSize: 13, color: c.textFaint },
 
-  empty: { flex: 1, padding: 32, alignItems: 'center', gap: 12, justifyContent: 'center' },
+  empty: { flex: 1, padding: space[8], alignItems: 'center', gap: space[3], justifyContent: 'center' },
   emptyIcon: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: c.surfaceAlt,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 4,
+    width: 76, height: 76, borderRadius: radius.card, backgroundColor: c.surfaceAlt,
+    justifyContent: 'center', alignItems: 'center', marginBottom: space[1],
   },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: c.text, textAlign: 'center' },
-  emptyMsg: { fontSize: 13, color: c.textMuted, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, textAlign: 'center' },
+  emptyMsg: { fontSize: text.base, color: c.textMuted, textAlign: 'center', lineHeight: 22 },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
+    paddingHorizontal: space[4], paddingVertical: space[3],
   },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: c.text },
+  headerTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
 
+  // Acción secundaria neutra: el verde queda para "Verificar", que es LA acción.
   actionBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-    paddingHorizontal: space[3], minHeight: touch.min,
-    borderRadius: radius.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[1] + 2,
+    paddingHorizontal: space[4], minHeight: touch.min,
+    borderRadius: radius.full,
     backgroundColor: c.surfaceAlt,
   },
   actionBtnPrimary: { backgroundColor: c.brand },
-  actionBtnText: { fontSize: 12, fontWeight: '600', color: c.brand },
+  actionBtnApagado: { opacity: 0.55 },
+  actionBtnSuelto: { marginTop: space[2] },
+  actionBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
   banner: {
-    borderRadius: 12, borderWidth: 1, padding: 14, gap: 6, marginBottom: 8,
+    borderRadius: radius.field, borderWidth: 1, padding: space[4], gap: space[2] - 2, marginBottom: space[2],
   },
-  bannerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  bannerTitle: { fontSize: 14, fontWeight: '700' },
-  bannerMsg: { fontSize: 12, color: c.textMuted, lineHeight: 18 },
-  sourceRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 },
-  sourceChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
-  sourceChipText: { fontSize: 10, fontWeight: '700' },
+  bannerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] - 1 },
+  bannerTitle: { fontSize: text.base, fontWeight: weight.bold },
+  bannerMsg: { fontSize: text.sm, color: c.textMuted, lineHeight: 20 },
+  sourceRow: { flexDirection: 'row', gap: space[2] - 2, flexWrap: 'wrap', marginTop: space[1] },
+  sourceChip: { paddingHorizontal: space[2], paddingVertical: 3, borderRadius: radius.full, borderWidth: 1 },
+  sourceChipText: { fontSize: text.xs - 1, fontWeight: weight.bold },
 
   noValidation: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: c.surfaceAlt, borderRadius: 10, marginHorizontal: 16,
-    padding: 12, marginBottom: 4,
+    flexDirection: 'row', alignItems: 'flex-start', gap: space[2],
+    backgroundColor: c.surfaceAlt, borderRadius: radius.field, marginHorizontal: space[4],
+    padding: space[3], marginBottom: space[1],
   },
-  noValidationText: { fontSize: 12, color: c.textMuted, flex: 1, lineHeight: 18 },
+  noValidationText: { fontSize: text.sm, color: c.textMuted, flex: 1, lineHeight: 20 },
 
-  treeCard: {
-    backgroundColor: c.surface, borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12,
-    overflow: 'hidden',
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+  pie: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2], marginTop: space[5] },
+  pieTexto: { fontSize: text.sm, color: c.textFaint },
+
+  noData: {
+    margin: space[4], padding: space[4], backgroundColor: c.surfaceAlt,
+    borderRadius: radius.card, alignItems: 'center', gap: space[2] - 2,
   },
-
-  noData: { margin: 16, padding: 16, backgroundColor: c.surfaceAlt, borderRadius: 12, alignItems: 'center', gap: 6 },
-  noDataText: { fontSize: 13, color: c.textMuted, textAlign: 'center' },
+  noDataText: { fontSize: text.base, color: c.textMuted, textAlign: 'center' },
 
   docsCard: {
-    margin: 16, backgroundColor: c.surface, borderRadius: 12, padding: 14, gap: 8,
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+    margin: space[4], backgroundColor: c.surface, borderRadius: radius.card, padding: space[4], gap: space[2],
+    ...(c.isDark ? {} : shadow.md),
   },
-  docsTitle: { fontSize: 13, fontWeight: '700', color: c.text },
-  docRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  docName: { fontSize: 13, color: c.textMuted, flex: 1 },
+  docsTitle: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  docName: { fontSize: text.sm, color: c.textMuted, flex: 1 },
 
   // Formulario a pantalla completa (reemplaza el Modal a mano)
   formScreen: {
@@ -862,19 +853,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   input: {
     borderRadius: radius.md,
     paddingHorizontal: space[3], paddingVertical: space[2] + 2, minHeight: touch.min,
-    fontSize: text.base, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt,
   },
   grandRow: { flexDirection: 'row', gap: space[2] + 2, marginBottom: space[2] + 2 },
   grandLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, marginBottom: 4 },
   inputSm: {
     borderRadius: radius.sm,
     paddingHorizontal: space[2] + 2, paddingVertical: space[2], minHeight: touch.min,
-    fontSize: text.sm, color: c.text, backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
+    fontSize: text.sm, color: c.text, backgroundColor: c.surfaceAlt,
   },
   dropdown: {
     backgroundColor: c.surface, borderRadius: radius.md,
     overflow: 'hidden', marginTop: 4,
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }),
+    ...(c.isDark ? {} : shadow.md),
   },
   dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', padding: space[3], minHeight: touch.min, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   dropdownName: { fontSize: text.base, color: c.text, fontWeight: weight.medium },
@@ -883,7 +874,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] - 2, marginTop: space[3] },
   hint: { flex: 1, fontSize: text.sm, color: c.textFaint, lineHeight: 18 },
 
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, minHeight: touch.min, gap: space[2] - 2 },
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.button, minHeight: touch.button, gap: space[2] - 2 },
+  btnAncho: { alignSelf: 'stretch', marginTop: space[2] },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.base, fontWeight: weight.bold, color: colors.white },
   btnSecondary: { backgroundColor: c.surfaceAlt },

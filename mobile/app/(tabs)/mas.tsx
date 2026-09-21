@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { ScrollView, View, Text, StyleSheet, Alert, type StyleProp, type TextStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -12,56 +12,83 @@ import { usePlanStatus } from '../../hooks/use-plan';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { Avatar } from '../../components/Avatar';
+import { PressableScale } from '../../components/PressableScale';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { space, text, radius, weight, shadow, touch } from '../../styles/tokens';
+import { useCommonStyles } from '../../styles/common';
+import { entradaFila } from '../../styles/motion';
+import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { Routes, nav } from '../../lib/routes';
+
+/**
+ * Etiqueta del rol para el subtítulo de la tarjeta de identidad. `RoleBadge` no
+ * exporta su mapa, y acá no queremos el chip entero: solo el texto.
+ */
+const ROL_LABEL: Record<string, string> = {
+  propietario: 'Propietario',
+  establecimiento: 'Establecimiento',
+  veterinario: 'Veterinario',
+  admin: 'Administrador',
+  encargado: 'Encargado',
+  jinete: 'Jinete',
+  peon: 'Peón',
+  haras: 'Haras',
+};
 
 interface MenuItem {
   icon: LucideIcon;
   label: string;
   path: string;
   badge?: number;
-  iconColor?: string;
+  /** Valor a la derecha, estilo Ajustes de iOS (ej: el plan en "Mi plan"). */
+  value?: string;
 }
 
-function MenuRow({ item, onPress, c, s }: { item: MenuItem; onPress: () => void; c: ThemeColors; s: Styles }) {
+function MenuRow({ item, onPress, ultima, c, s }: {
+  item: MenuItem; onPress: () => void; ultima: boolean; c: ThemeColors; s: Styles;
+}) {
   const Icon = item.icon;
   return (
-    <TouchableOpacity
-      style={s.row}
+    <PressableScale
+      style={[s.row, !ultima && s.rowBorde]}
       onPress={onPress}
-      activeOpacity={0.6}
       accessibilityRole="button"
       accessibilityLabel={item.label}
     >
       <View style={s.iconWrap}>
-        <Icon size={22} color={c.text} strokeWidth={1.7} />
+        <Icon size={21} color={c.text} strokeWidth={1.9} />
       </View>
-      <View style={s.rowBody}>
-        <Text style={s.rowLabel}>{item.label}</Text>
-      </View>
+      <Text style={s.rowLabel} numberOfLines={1}>{item.label}</Text>
       {item.badge != null && item.badge > 0 && (
         <View style={s.badge}>
           <Text style={s.badgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
         </View>
       )}
-      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-    </TouchableOpacity>
+      {item.value ? <Text style={s.rowValue} numberOfLines={1}>{item.value}</Text> : null}
+      <ChevronRight size={17} color={c.textFaint} strokeWidth={2.3} />
+    </PressableScale>
   );
 }
 
-function Section({ title, items, onPress, c, s }: { title: string; items: MenuItem[]; onPress: (path: string) => void; c: ThemeColors; s: Styles }) {
+function Section({ title, items, onPress, desde, c, s, eyebrow }: {
+  title: string; items: MenuItem[]; onPress: (path: string) => void;
+  /** Índice global para que el escalonado siga corriendo entre secciones. */
+  desde: number;
+  c: ThemeColors; s: Styles; eyebrow: StyleProp<TextStyle>;
+}) {
   if (items.length === 0) return null;
   return (
     <View style={s.section}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      <View style={s.sectionCard}>
-        {items.map((item, idx) => (
-          <Animated.View key={item.path} entering={FadeInDown.duration(320).delay(Math.min(idx, 8) * 45)}>
-            <MenuRow item={item} onPress={() => { haptic.light(); onPress(item.path); }} c={c} s={s} />
-          </Animated.View>
-        ))}
-      </View>
+      <Text style={[eyebrow, s.sectionTitle]}>{title}</Text>
+      {items.map((item, idx) => (
+        <Animated.View key={item.path} entering={entradaFila(desde + idx)}>
+          <MenuRow
+            item={item}
+            ultima={idx === items.length - 1}
+            onPress={() => { haptic.light(); onPress(item.path); }}
+            c={c} s={s}
+          />
+        </Animated.View>
+      ))}
     </View>
   );
 }
@@ -71,6 +98,7 @@ export default function MasScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { c } = useTheme();
+  const { typography } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: planStatus } = usePlanStatus();
   const hasReportes = planStatus?.features?.includes('reportes') ?? false;
@@ -159,12 +187,13 @@ export default function MasScreen() {
       icon: CreditCard,
       label: 'Mi plan',
       path: Routes.miPlan,
+      // El valor a la derecha sale del back (`/plans/status`), no lo inventamos.
+      value: planStatus?.label,
     },
     ...(isAdmin ? [{
       icon: Settings,
       label: 'Configuración de notificaciones',
       path: Routes.notificacionesConfig,
-      iconColor: colors.gray500,
     }] : []),
     ...(isAdmin ? [{
       icon: ShieldCheck,
@@ -173,29 +202,47 @@ export default function MasScreen() {
     }] : []),
   ];
 
+  // Subtítulo de identidad: rol + plan, ambos reales. Si el plan todavía no
+  // llegó mostramos solo el rol en vez de un guion suelto.
+  const rolLabel = ROL_LABEL[role] ?? (role || 'Mi cuenta');
+  const identidadSub = planStatus?.label
+    ? `${rolLabel} · plan ${planStatus.label}`
+    : rolLabel;
+
   return (
     <ScrollView
       style={s.root}
-      contentContainerStyle={[s.content, { paddingTop: insets.top + space[4] }]}
+      contentContainerStyle={[s.content, { paddingTop: insets.top + space[5] }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Tarjeta de perfil */}
-      <TouchableOpacity
-        style={s.profileCard}
-        onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
-        activeOpacity={0.7}
-      >
-        <Avatar name={user?.name} avatarColor={user?.avatar_color} size={50} />
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Mi perfil'}</Text>
-        </View>
-        <ChevronRight size={20} color={c.textFaint} strokeWidth={2} />
-      </TouchableOpacity>
+      <Text style={s.pageTitle}>Más</Text>
 
-      <Section title="Principal" items={principal} onPress={push} c={c} s={s} />
-      <Section title="Gestión" items={gestion} onPress={push} c={c} s={s} />
-      <Section title="Cuenta" items={cuenta} onPress={push} c={c} s={s} />
-      <TouchableOpacity
+      {/* Identidad sobre superficie invertida: la única pieza oscura de la
+          pantalla. `c.text` como fondo y `c.bg` como tinta se dan vuelta solos
+          en oscuro, así que no hace falta una variante por tema. */}
+      <Animated.View entering={entradaFila(0)}>
+        <PressableScale
+          style={s.profileCard}
+          onPress={() => { haptic.light(); push('/(tabs)/perfil'); }}
+          accessibilityRole="button"
+          accessibilityLabel="Ver mi perfil"
+        >
+          <Avatar name={user?.name} avatarColor={user?.avatar_color} size={52} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.profileName} numberOfLines={1}>{user?.name ?? 'Mi perfil'}</Text>
+            <Text style={s.profileSub} numberOfLines={1}>{identidadSub}</Text>
+          </View>
+          <ChevronRight size={17} color={c.textMuted} strokeWidth={2.3} />
+        </PressableScale>
+      </Animated.View>
+
+      <Section title="Principal" items={principal} onPress={push} desde={1} c={c} s={s} eyebrow={typography.sectionEyebrow} />
+      <Section title="Gestión" items={gestion} onPress={push} desde={1 + principal.length} c={c} s={s} eyebrow={typography.sectionEyebrow} />
+      <Section title="Cuenta" items={cuenta} onPress={push} desde={1 + principal.length + gestion.length} c={c} s={s} eyebrow={typography.sectionEyebrow} />
+
+      {/* Cerrar sesión queda acá además de en Perfil: es el atajo que ya existía
+          y sacarlo sería una regresión de camino, no un cambio de diseño. */}
+      <PressableScale
         style={s.logoutRow}
         onPress={() => {
           haptic.medium();
@@ -204,15 +251,14 @@ export default function MasScreen() {
             { text: 'Cerrar sesión', style: 'destructive', onPress: () => { void logout(); } },
           ]);
         }}
-        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel="Cerrar sesión"
       >
         <View style={s.iconWrap}>
-          <LogOut size={22} color={c.danger} strokeWidth={1.7} />
+          <LogOut size={21} color={c.danger} strokeWidth={1.9} />
         </View>
         <Text style={s.logoutText}>Cerrar sesión</Text>
-      </TouchableOpacity>
+      </PressableScale>
     </ScrollView>
   );
 }
@@ -221,65 +267,45 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  logoutRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: space[4], minHeight: 52, gap: space[3],
-    marginTop: space[2],
+  content: { paddingBottom: 140 },
+
+  pageTitle: {
+    fontSize: text['2xl'], fontWeight: weight.bold, color: c.text,
+    letterSpacing: -1.1, paddingHorizontal: space[4],
   },
-  logoutText: { fontSize: text.md, fontWeight: weight.medium, color: c.danger, letterSpacing: -0.2 },
-  content: { paddingBottom: 120, gap: space[1] },
 
   profileCard: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surface, borderRadius: radius.xl,
-    paddingVertical: space[3], paddingHorizontal: space[3] + 2,
-    marginHorizontal: space[4], marginBottom: space[4],
-    ...(c.isDark ? {} : shadow.sm),
+    flexDirection: 'row', alignItems: 'center', gap: space[3] + 2,
+    backgroundColor: c.text, borderRadius: radius.sheet,
+    padding: space[4],
+    marginHorizontal: space[4], marginTop: space[5],
   },
-  profileName: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+  profileName: { fontSize: text.md, fontWeight: weight.semibold, color: c.bg, letterSpacing: -0.2 },
+  profileSub: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
 
-  section: { marginBottom: space[4], paddingHorizontal: space[4] },
-  sectionTitle: {
-    fontSize: text.xs,
-    fontWeight: weight.bold,
-    color: c.textFaint,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: space[2],
-    paddingHorizontal: space[1],
-  },
-  sectionCard: {},
+  section: { marginTop: space[6], paddingHorizontal: space[4] },
+  sectionTitle: { marginBottom: space[1] },
 
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: space[4],
-    minHeight: 52,
-    gap: space[3],
+    flexDirection: 'row', alignItems: 'center',
+    minHeight: touch.field, gap: space[3] + 2,
   },
-  iconWrap: {
-    width: 28,
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  rowBody: { flex: 1 },
-  rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
+  rowBorde: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+  iconWrap: { width: 24, alignItems: 'center', flexShrink: 0 },
+  rowLabel: { flex: 1, fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
+  rowValue: { fontSize: text.base, color: c.textFaint, maxWidth: 120 },
 
   badge: {
-    backgroundColor: c.danger,
-    borderRadius: radius.full,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: c.danger, borderRadius: radius.full,
+    minWidth: 22, height: 22, paddingHorizontal: 7,
+    justifyContent: 'center', alignItems: 'center',
   },
   badgeText: { color: colors.white, fontSize: text.xs, fontWeight: weight.bold },
 
-  divider: { height: 1, backgroundColor: c.border, marginHorizontal: space[4] },
-
-  segmentBtnActive: {
-    backgroundColor: c.surface,
-    ...(c.isDark ? {} : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 }),
+  logoutRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: space[4], minHeight: touch.field, gap: space[3] + 2,
+    marginTop: space[5],
   },
+  logoutText: { fontSize: text.md, fontWeight: weight.medium, color: c.danger, letterSpacing: -0.2 },
 });

@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package, type LucideIcon,
+  Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package, Plus, type LucideIcon,
 } from 'lucide-react-native';
+import Animated from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useHorse, useFinancialSummary } from '../../../../hooks/use-horses';
 import { useAuth } from '../../../../lib/auth';
@@ -13,24 +15,30 @@ import { Routes } from '../../../../lib/routes';
 import { formatMoney } from '../../../../lib/currency';
 import { fechaHumana, mesCorto } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight, radius, touch } from '../../../../styles/tokens';
+import { space, text, weight, radius, touch, shadow, brandShadow } from '../../../../styles/tokens';
+import { entradaFila } from '../../../../styles/motion';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { PressableScale } from '../../../../components/PressableScale';
 import { EmptyState } from '../../../../components/EmptyState';
 import { ErrorState } from '../../../../components/ErrorState';
-import { ListRowSkeleton, Skeleton } from '../../../../components/Skeleton';
+import { Skeleton } from '../../../../components/Skeleton';
+import { colors } from '../../../../lib/colors';
 
 /** Colores por categoría con tokens semánticos del theme (legibles en ambos temas). */
-function makeExpenseCategoryMeta(c: ThemeColors): Record<string, { Icon: LucideIcon; color: string; label: string }> {
+function makeExpenseCategoryMeta(c: ThemeColors): Record<string, { Icon: LucideIcon; color: string; bg: string; label: string }> {
   return {
-    alimentacion:  { Icon: Wheat,    color: c.success,   label: 'Alimentación' },
-    veterinario:   { Icon: Syringe,  color: c.danger,    label: 'Veterinario' },
-    herradero:     { Icon: Hammer,   color: c.warning,   label: 'Herradero' },
-    entrenamiento: { Icon: Activity, color: c.info,      label: 'Entrenamiento' },
-    mantenimiento: { Icon: Wrench,   color: c.textMuted, label: 'Mantenimiento' },
-    transporte:    { Icon: Truck,    color: c.info,      label: 'Transporte' },
-    otros:         { Icon: Package,  color: c.textMuted, label: 'Otros' },
+    alimentacion:  { Icon: Wheat,    color: c.success,   bg: c.successSoft, label: 'Alimentación' },
+    veterinario:   { Icon: Syringe,  color: c.danger,    bg: c.dangerSoft,  label: 'Veterinario' },
+    herradero:     { Icon: Hammer,   color: c.goldText,  bg: c.goldSoft,    label: 'Herradero' },
+    entrenamiento: { Icon: Activity, color: c.info,      bg: c.infoSoft,    label: 'Entrenamiento' },
+    mantenimiento: { Icon: Wrench,   color: c.textMuted, bg: c.surfaceAlt,  label: 'Mantenimiento' },
+    transporte:    { Icon: Truck,    color: c.info,      bg: c.infoSoft,    label: 'Transporte' },
+    otros:         { Icon: Package,  color: c.textMuted, bg: c.surfaceAlt,  label: 'Otros' },
   };
 }
+
+const BARRA_MAX = 58;  // alto máximo de una barra del mini gráfico del hero
+const BARRA_MIN = 6;
 
 export default function FinanzasScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -53,6 +61,20 @@ export default function FinanzasScreen() {
     router.push({ pathname: Routes.caballoEventoNuevo(id), params: { tipo: 'gasto' } } as never);
   };
 
+  /**
+   * Serie del mini gráfico: el backend manda los meses del más nuevo al más
+   * viejo, y un gráfico se lee de izquierda (pasado) a derecha (presente), así
+   * que se invierte. El delta sale de comparar los dos meses más recientes.
+   */
+  const serie = useMemo(() => {
+    const meses = (financial?.monthly ?? []).slice(0, 6);
+    const max = Math.max(...meses.map((m) => m.total), 1);
+    const delta = meses.length >= 2 && meses[1].total > 0
+      ? Math.round(((meses[0].total - meses[1].total) / meses[1].total) * 100)
+      : null;
+    return { barras: [...meses].reverse(), max, delta };
+  }, [financial]);
+
   if (isHorseError && !horse) {
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
@@ -63,189 +85,230 @@ export default function FinanzasScreen() {
   }
 
   if (isLoading || !horse) {
+    // Silueta idéntica a la real: la tarjeta hero grande y después filas.
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
         <ScreenHeader scrollable showBack title="Finanzas" />
-        <View style={{ padding: space[4], gap: space[2] }}>
-          <Skeleton height={72} style={{ marginBottom: space[2] }} />
-          {[1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
+        <View style={{ paddingHorizontal: space[4], paddingTop: space[5] }}>
+          <Skeleton height={196} borderRadius={radius.sheet} />
+        </View>
+        <View style={{ paddingHorizontal: space[4], marginTop: space[8], gap: space[5] }}>
+          <Skeleton width={140} height={20} />
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={42} />)}
         </View>
       </View>
     );
   }
 
+  const sinDatos = isError && !financial ? 'error' : (!financial || financial.total === 0) ? 'vacio' : null;
+
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <ScreenHeader scrollable showBack title="Finanzas" subtitle={horse.name} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: insets.bottom + space[10] }} showsVerticalScrollIndicator={false}>
-        <View style={s.section}>
-          {isError && !financial ? (
-            <ErrorState onRetry={refetch} />
-          ) : !financial || financial.total === 0 ? (
-            <EmptyState
-              icon="receipt-outline"
-              title="Sin gastos registrados"
-              message="Cargá el primer gasto de este caballo y vas a ver acá el total, el promedio por mes y el detalle por categoría."
-              actionLabel={puedeRegistrar ? 'Registrar gasto' : undefined}
-              onAction={puedeRegistrar ? irARegistrarGasto : undefined}
-            />
-          ) : (
-            <>
-              {/* Hero: total acumulado */}
-              <View style={s.hero}>
-                <Text style={s.heroValue} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatMoney(financial.total)}
+
+      {sinDatos === 'error' ? (
+        <ErrorState onRetry={refetch} />
+      ) : sinDatos === 'vacio' ? (
+        <EmptyState
+          icon="receipt-outline"
+          title="Sin gastos registrados"
+          message="Cargá el primer gasto de este caballo y vas a ver acá el total, en qué se va y el detalle mes a mes."
+          actionLabel={puedeRegistrar ? 'Registrar gasto' : undefined}
+          onAction={puedeRegistrar ? irARegistrarGasto : undefined}
+        />
+      ) : financial ? (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + space[20] }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ─── Hero: la tarjeta de tinta con el único número que importa ─── */}
+          <Animated.View entering={entradaFila(0)} style={s.heroWrap}>
+            <View style={s.hero}>
+              <Text style={s.heroLabel}>Total acumulado</Text>
+              <Text style={s.heroValor} numberOfLines={1} adjustsFontSizeToFit>
+                {formatMoney(financial.total)}
+              </Text>
+
+              <View style={s.heroMetaRow}>
+                {serie.delta !== null && (
+                  <View style={s.chip}>
+                    {/* El relleno translúcido se hace con una capa aparte: aplicar
+                        opacity al chip entero también apagaría el texto. */}
+                    <View style={[StyleSheet.absoluteFill, s.chipFondo]} />
+                    <Text style={s.chipText}>
+                      {serie.delta > 0 ? '+' : serie.delta < 0 ? '−' : ''}{Math.abs(serie.delta)}%
+                    </Text>
+                  </View>
+                )}
+                <Text style={s.heroMeta}>
+                  {serie.delta !== null ? 'vs. el mes pasado' : `Promedio ${formatMoney(financial.average_monthly)} por mes`}
                 </Text>
-                <Text style={s.heroLabel}>Total acumulado</Text>
-              </View>
-              <View style={s.subStatRow}>
-                <Text style={s.subStatLabel}>Promedio por mes</Text>
-                <Text style={s.subStatValue}>{formatMoney(financial.average_monthly)}</Text>
               </View>
 
-              {puedeRegistrar && (
-                <TouchableOpacity
-                  style={s.registrarBtn}
-                  onPress={irARegistrarGasto}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel="Registrar un gasto de este caballo"
-                >
-                  <Text style={s.registrarBtnText}>+ Registrar gasto</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* Por categoría */}
-              {(financial.by_category ?? []).length > 0 && (
-                <View style={{ marginTop: space[6] }}>
-                  <Text style={s.sectionTitle}>Por categoría</Text>
-                  {financial.by_category.map((cat) => {
-                    const meta = categoryMeta[cat.category] ?? { Icon: Package, color: c.textMuted, label: cat.category };
-                    const MetaIcon = meta.Icon;
-                    const pct = financial.total > 0 ? (cat.total / financial.total) * 100 : 0;
-                    const maxVal = Math.max(...financial.by_category.map((x) => x.total), 1);
+              {serie.barras.length > 0 && (
+                <View style={s.grafico}>
+                  {serie.barras.map((m, i) => {
+                    const esUltimo = i === serie.barras.length - 1;
                     return (
-                      <View key={cat.category} style={s.catRow}>
-                        <View style={s.catRowTop}>
-                          <View style={s.catRowLabel}>
-                            <MetaIcon size={16} color={meta.color} strokeWidth={2} />
-                            <Text style={s.catName}>{meta.label}</Text>
-                          </View>
-                          <View style={s.catRowValues}>
-                            <Text style={s.catPct}>{pct.toFixed(0)}%</Text>
-                            <Text style={s.catTotal}>{formatMoney(cat.total)}</Text>
-                          </View>
-                        </View>
-                        <View style={s.barTrack}>
-                          <View style={[s.barFill, { width: `${(cat.total / maxVal) * 100}%` as any, backgroundColor: meta.color }]} />
-                        </View>
+                      <View key={m.month} style={s.graficoCol}>
+                        <View
+                          style={[
+                            s.barra,
+                            { height: Math.max(BARRA_MIN, (m.total / serie.max) * BARRA_MAX) },
+                            // El mes corriente va a plena opacidad: es el que se lee.
+                            esUltimo ? s.barraActual : s.barraPasada,
+                          ]}
+                        />
+                        <Text style={[s.graficoLabel, esUltimo && s.graficoLabelActual]}>{mesCorto(m.month)}</Text>
                       </View>
                     );
                   })}
                 </View>
               )}
+            </View>
+          </Animated.View>
 
-              {/* Evolución mensual */}
-              {(financial.monthly ?? []).length > 0 && (
-                <View style={{ marginTop: space[6] }}>
-                  <Text style={s.sectionTitle}>Evolución mensual</Text>
-                  {(financial.monthly ?? []).slice(0, 6).map((m, i) => {
-                    const label = mesCorto(m.month);
-                    const maxVal = Math.max(...(financial.monthly ?? []).map((x) => x.total), 1);
-                    // Serie en gris neutro; el cuero marca solo el mes más reciente.
-                    const esMesActual = i === 0;
-                    return (
-                      <View key={m.month} style={s.barRow}>
-                        <Text style={s.barLabel}>{label}</Text>
-                        <View style={s.barTrack}>
-                          <View style={[
-                            s.barFill,
-                            { width: `${(m.total / maxVal) * 100}%` as any },
-                            !esMesActual && { backgroundColor: c.textFaint },
-                          ]} />
-                        </View>
-                        <Text style={s.barValue}>{formatMoney(m.total)}</Text>
+          {/* ─── En qué se va ─── */}
+          {(financial.by_category ?? []).length > 0 && (
+            <>
+              <View style={s.tituloRow}>
+                <Text style={s.tituloSeccion}>En qué se va</Text>
+                <Text style={s.tituloMeta}>del total</Text>
+              </View>
+              <View style={s.lista}>
+                {financial.by_category.map((cat, i, arr) => {
+                  const meta = categoryMeta[cat.category] ?? { Icon: Package, color: c.textMuted, bg: c.surfaceAlt, label: cat.category };
+                  const MetaIcon = meta.Icon;
+                  const pct = financial.total > 0 ? (cat.total / financial.total) * 100 : 0;
+                  return (
+                    <Animated.View
+                      key={cat.category}
+                      entering={entradaFila(i + 1)}
+                      style={[s.fila, i < arr.length - 1 && s.filaBorde]}
+                    >
+                      <View style={[s.filaIcono, { backgroundColor: meta.bg }]}>
+                        <MetaIcon size={19} color={meta.color} strokeWidth={1.9} />
                       </View>
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Últimos gastos */}
-              {(financial.recent_expenses ?? []).length > 0 && (
-                <View style={{ marginTop: space[6] }}>
-                  <Text style={s.sectionTitle}>Últimos gastos</Text>
-                  {financial.recent_expenses.map((exp, i, arr) => {
-                    const meta = categoryMeta[exp.expense_category ?? ''] ?? { Icon: Package, color: c.textMuted, label: exp.expense_category ?? '' };
-                    const MetaIcon = meta.Icon;
-                    const isLast = i === arr.length - 1;
-                    return (
-                      <View key={exp.id} style={[s.expenseRow, isLast && s.expenseRowLast]}>
-                        <MetaIcon size={18} color={meta.color} strokeWidth={2} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.expenseDesc} numberOfLines={1}>{exp.description}</Text>
-                          <Text style={s.expenseDate}>{fechaHumana(exp.date) || '—'}</Text>
-                        </View>
-                        <Text style={s.expenseAmount}>{formatMoney(exp.amount)}</Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={s.filaNombre} numberOfLines={1}>{meta.label}</Text>
+                        <Text style={s.filaSub}>{pct.toFixed(0)}% del total</Text>
                       </View>
-                    );
-                  })}
-                </View>
-              )}
+                      <Text style={s.filaMonto}>{formatMoney(cat.total)}</Text>
+                    </Animated.View>
+                  );
+                })}
+              </View>
             </>
           )}
-        </View>
-      </ScrollView>
+
+          {/* ─── Últimos gastos ─── */}
+          {(financial.recent_expenses ?? []).length > 0 && (
+            <>
+              <View style={s.tituloRow}>
+                <Text style={s.tituloSeccion}>Últimos gastos</Text>
+              </View>
+              <View style={s.lista}>
+                {financial.recent_expenses.map((exp, i, arr) => {
+                  const meta = categoryMeta[exp.expense_category ?? ''] ?? { Icon: Package, color: c.textMuted, bg: c.surfaceAlt, label: exp.expense_category ?? 'Otros' };
+                  const MetaIcon = meta.Icon;
+                  return (
+                    <Animated.View
+                      key={exp.id}
+                      entering={entradaFila(i)}
+                      style={[s.fila, i < arr.length - 1 && s.filaBorde]}
+                    >
+                      <View style={[s.filaIcono, { backgroundColor: meta.bg }]}>
+                        <MetaIcon size={19} color={meta.color} strokeWidth={1.9} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={s.filaNombre} numberOfLines={1}>{exp.description}</Text>
+                        <Text style={s.filaSub}>{fechaHumana(exp.date) || meta.label}</Text>
+                      </View>
+                      <Text style={s.filaMonto}>{formatMoney(exp.amount)}</Text>
+                    </Animated.View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </ScrollView>
+      ) : null}
+
+      {/* ─── CTA fijo ─── */}
+      {puedeRegistrar && sinDatos !== 'vacio' && (
+        <>
+          <LinearGradient
+            pointerEvents="none"
+            colors={['transparent', c.bg]}
+            style={[s.velo, { height: insets.bottom + space[20] }]}
+          />
+          <View style={[s.ctaWrap, { paddingBottom: insets.bottom + space[4] }]}>
+            <PressableScale
+              style={s.cta}
+              onPress={irARegistrarGasto}
+              accessibilityRole="button"
+              accessibilityLabel="Registrar un gasto de este caballo"
+            >
+              <Plus size={19} color={colors.white} strokeWidth={2.4} />
+              <Text style={s.ctaText}>Registrar un gasto</Text>
+            </PressableScale>
+          </View>
+        </>
+      )}
     </View>
   );
 }
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  section: { marginHorizontal: space[4] },
-  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3, marginBottom: space[3] },
 
-  /* Misma píldora neutra que el "+ Registrar" de Sanidad, para no inventar un botón nuevo. */
-  registrarBtn: {
-    alignSelf: 'center', marginTop: space[4], minHeight: touch.min, justifyContent: 'center',
-    borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
+  /**
+   * Hero de tinta: `c.text` como fondo y `c.bg` como texto. Es la "superficie
+   * invertida" del sistema, y se da vuelta sola en oscuro sin tocar nada.
+   */
+  heroWrap: { paddingHorizontal: space[4], paddingTop: space[5] },
+  hero: { backgroundColor: c.text, borderRadius: radius.sheet, padding: space[5], ...(c.isDark ? {} : shadow.md) },
+  heroLabel: { fontSize: text.sm - 1, color: c.textMuted },
+  heroValor: { fontSize: text.display + 4, fontWeight: weight.bold, color: c.bg, letterSpacing: -1.6, marginTop: space[1], fontVariant: ['tabular-nums'] },
+  heroMetaRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[3] },
+  chip: { height: 24, paddingHorizontal: space[2] + 1, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  chipFondo: { backgroundColor: c.bg, opacity: 0.16, borderRadius: radius.full },
+  chipText: { fontSize: text.xs, fontWeight: weight.bold, color: c.bg },
+  heroMeta: { fontSize: text.sm - 1, color: c.textMuted, flexShrink: 1 },
+
+  grafico: { flexDirection: 'row', alignItems: 'flex-end', gap: space[2], marginTop: space[5] },
+  graficoCol: { flex: 1, alignItems: 'center', gap: space[2] - 1 },
+  barra: { width: '100%', borderRadius: radius.sm - 1 },
+  barraPasada: { backgroundColor: c.bg, opacity: 0.16 },
+  barraActual: { backgroundColor: c.bg },
+  graficoLabel: { fontSize: text.xs - 2, color: c.textMuted },
+  graficoLabelActual: { color: c.bg, fontWeight: weight.bold },
+
+  /* Secciones */
+  tituloRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: space[4], marginTop: space[7], marginBottom: space[1],
   },
-  registrarBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
+  tituloSeccion: { fontSize: text.md + 1, fontWeight: weight.bold, color: c.text, letterSpacing: -0.4 },
+  tituloMeta: { fontSize: text.sm, color: c.textFaint },
 
-  /* Hero: total acumulado */
-  hero: { alignItems: 'center', paddingVertical: space[4], gap: space[1] },
-  heroValue: { fontSize: text.display, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
-  heroLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  /* Filas planas sobre el lienzo */
+  lista: { paddingHorizontal: space[4] },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: space[3] + 2, paddingVertical: space[3] + 2 },
+  filaBorde: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+  filaIcono: { width: 40, height: 40, borderRadius: radius.thumb - 2, alignItems: 'center', justifyContent: 'center' },
+  filaNombre: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  filaSub: { fontSize: text.sm - 1, color: c.textFaint, marginTop: 2 },
+  filaMonto: { fontSize: text.md, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
 
-  subStatRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
+  /* CTA */
+  velo: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  ctaWrap: { position: 'absolute', left: space[4], right: space[4], bottom: 0 },
+  cta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2] + 1,
+    height: touch.button, borderRadius: radius.button, backgroundColor: c.brand,
+    ...(c.isDark ? {} : brandShadow(c.brand)),
   },
-  subStatLabel: { fontSize: text.base, color: c.textMuted },
-  subStatValue: { fontSize: text.base, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
-
-  /* Categorías */
-  catRow: { marginBottom: space[3] },
-  catRowTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: space[1] },
-  catRowLabel: { flexDirection: 'row', alignItems: 'center', gap: space[2], flex: 1 },
-  catName: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  catRowValues: { flexDirection: 'row', gap: space[2], alignItems: 'center' },
-  catPct: { fontSize: text.xs, color: c.textFaint },
-  catTotal: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
-
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[2] },
-  barLabel: { width: 40, fontSize: text.xs, color: c.textFaint, textAlign: 'right' },
-  barTrack: { flex: 1, height: 6, backgroundColor: c.border, borderRadius: 999, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: c.brand, borderRadius: 999 },
-  barValue: { width: 72, fontSize: text.xs, fontWeight: weight.semibold, color: c.textMuted, textAlign: 'right', fontVariant: ['tabular-nums'] },
-
-  /* Últimos gastos */
-  expenseRow: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    paddingVertical: space[3], borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
-  },
-  expenseRowLast: { borderBottomWidth: 0 },
-  expenseDesc: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
-  expenseDate: { fontSize: text.xs, color: c.textFaint, marginTop: 2 },
-  expenseAmount: { fontSize: text.base, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
+  ctaText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

@@ -1,11 +1,14 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
+import Constants from 'expo-constants';
 import {
-  User, ChevronRight, Phone, ShieldCheck, Users, Crown, Check, type LucideIcon,
+  User, ChevronRight, Phone, ShieldCheck, Users, CreditCard, Check,
+  Sun, type LucideIcon,
 } from 'lucide-react-native';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
@@ -13,10 +16,13 @@ import { Routes } from '../../../lib/routes';
 import { Avatar } from '../../../components/Avatar';
 import { RoleBadge } from '../../../components/RoleBadge';
 import { ScreenHeader } from '../../../components/ScreenHeader';
-import { FilaSelector } from '../../../components/FilaSelector';
+import { PressableScale } from '../../../components/PressableScale';
+import { Skeleton } from '../../../components/Skeleton';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { useTheme, type ThemeColors, type ThemePreference } from '../../../lib/theme';
-import { space, text, weight, touch } from '../../../styles/tokens';
+import { useCommonStyles } from '../../../styles/common';
+import { entradaFila } from '../../../styles/motion';
+import { space, text, radius, weight, touch } from '../../../styles/tokens';
 import { usePlanStatus } from '../../../hooks/use-plan';
 import { VetVerifiedBadge, isVetVerified } from '../../../components/VerifiedBadge';
 
@@ -33,31 +39,50 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'dark', label: 'Oscuro' },
 ];
 
+/** Versión que muestra el pie: la del `app.json`, nunca una constante a mano. */
+const APP_VERSION = Constants.expoConfig?.version ?? '';
+
 /* ─── Fila de sección estilo Ajustes ─── */
-function SectionRow({ Icon, label, sub, onPress, c, s }: {
-  Icon: LucideIcon; label: string; sub?: string; onPress: () => void; c: ThemeColors; s: Styles;
+function SectionRow({ Icon, label, valor, onPress, ultima, c, s }: {
+  Icon: LucideIcon; label: string; valor?: string; onPress: () => void;
+  ultima?: boolean; c: ThemeColors; s: Styles;
 }) {
   return (
-    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.6} accessibilityRole="button" accessibilityLabel={label}>
+    <PressableScale
+      style={[s.row, !ultima && s.rowBorde]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={valor ? `${label}: ${valor}` : label}
+    >
       <View style={s.rowIconWrap}>
-        <Icon size={20} color={c.text} strokeWidth={1.7} />
+        <Icon size={21} color={c.text} strokeWidth={1.9} />
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={s.rowLabel}>{label}</Text>
-        {sub ? <Text style={s.rowSub}>{sub}</Text> : null}
-      </View>
-      <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-    </TouchableOpacity>
+      <Text style={s.rowLabel} numberOfLines={1}>{label}</Text>
+      {valor ? <Text style={s.rowValor} numberOfLines={1}>{valor}</Text> : null}
+      <ChevronRight size={17} color={c.textFaint} strokeWidth={2.3} />
+    </PressableScale>
+  );
+}
+
+/** Una celda del bloque de números. Los tres comparten forma para que el ojo
+ *  los lea como una sola tira, no como tres tarjetas. */
+function Stat({ valor, label, s }: { valor: string; label: string; s: Styles }) {
+  return (
+    <View style={s.statCell}>
+      <Text style={s.statValor}>{valor}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
   );
 }
 
 export default function PerfilScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { c, preference, setPreference } = useTheme();
+  const { typography } = useCommonStyles();
   const s = useMemo(() => makeStyles(c), [c]);
-  const { data: planStatus } = usePlanStatus();
+  const { data: planStatus, isLoading: cargandoPlan } = usePlanStatus();
   const [themeSheet, setThemeSheet] = useState(false);
 
   if (!user) return null;
@@ -68,100 +93,137 @@ export default function PerfilScreen() {
 
   const goto = (path: string) => { haptic.selection(); router.push(`/perfil/${path}` as never); };
 
-  const planLabel = planStatus
-    ? planStatus.plan === 'pro'
-      ? 'Pro · acceso ilimitado'
-      : `Gratis · ${planStatus.horse_count}${planStatus.horse_limit ? `/${planStatus.horse_limit}` : ''} caballos`
-    : undefined;
-
   const themeLabel = THEME_OPTIONS.find((o) => o.value === preference)?.label;
+
+  // Filas de la lista, armadas antes de pintar para que el escalonado use un
+  // índice corrido aunque el rol saque filas del medio.
+  const filas: { key: string; Icon: LucideIcon; label: string; valor?: string; onPress: () => void }[] = [
+    { key: 'cuenta', Icon: User, label: 'Datos personales', onPress: () => goto('cuenta') },
+    {
+      key: 'contacto', Icon: Phone, label: 'Contacto y avisos',
+      valor: user.phone ?? 'Sin cargar',
+      onPress: () => goto('contacto'),
+    },
+    ...(showPlan ? [{
+      key: 'plan', Icon: CreditCard, label: 'Mi plan',
+      valor: planStatus?.label,
+      onPress: () => { haptic.selection(); router.push(Routes.miPlan as never); },
+    }] : []),
+    ...(isVet ? [{
+      key: 'matricula', Icon: ShieldCheck, label: 'Matrícula profesional',
+      valor: LICENSE_LABELS[user.vet_license_status ?? 'none'],
+      onPress: () => goto('matricula'),
+    }] : []),
+    ...(isAdmin ? [{
+      key: 'planes-admin', Icon: Users, label: 'Gestión de planes',
+      onPress: () => goto('planes-admin'),
+    }] : []),
+    {
+      key: 'apariencia', Icon: Sun, label: 'Apariencia',
+      valor: themeLabel,
+      onPress: () => { haptic.selection(); setThemeSheet(true); },
+    },
+  ];
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader scrollable showBack backTo={Routes.mas} title="Perfil" />
+        <ScreenHeader
+          scrollable
+          showBack
+          backTo={Routes.mas}
+          title="Perfil"
+          right={(
+            <TouchableOpacity
+              onPress={() => { haptic.selection(); router.push(Routes.perfilEditar as never); }}
+              style={s.editarBtn}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel="Editar mis datos"
+            >
+              <Text style={s.editarBtnText}>Editar</Text>
+            </TouchableOpacity>
+          )}
+        />
 
-        {/* Hero: identidad — jerarquía intacta */}
-        <View style={s.hero}>
-          <Avatar name={user.name} avatarColor={user.avatar_color} size={68} ring />
+        {/* Hero: identidad centrada */}
+        <Animated.View entering={entradaFila(0)} style={s.hero}>
+          <Avatar name={user.name} avatarColor={user.avatar_color} size={92} />
           <View style={s.userNameRow}>
             <Text style={s.userName}>{user.name}</Text>
             {isVetVerified(user) && <VetVerifiedBadge size="md" />}
           </View>
           <Text style={s.userEmail}>{user.email}</Text>
           <RoleBadge role={user.role} />
-        </View>
+        </Animated.View>
 
-        <View style={s.sheet}>
-          {/* Mi plan — una fila tocable, resume el estado y empuja a mi-plan */}
-          {showPlan && (
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Mi plan</Text>
-              <TouchableOpacity
-                style={s.planRow}
-                onPress={() => { haptic.selection(); router.push(Routes.miPlan as never); }}
-                activeOpacity={0.6}
-                accessibilityRole="button"
-                accessibilityLabel="Ver mi plan"
-              >
-                <View style={s.rowIconWrap}>
-                  <Crown size={18} color={planStatus?.plan === 'pro' ? c.brand : c.textMuted} strokeWidth={1.9} />
+        {/* Números del plan. Solo mostramos lo que manda `/plans/status`:
+            el tamaño del equipo y la caballeriza no vienen en ningún endpoint
+            que este rol pueda pedir, así que esas celdas no existen. */}
+        {showPlan && (cargandoPlan || planStatus) && (
+          <Animated.View entering={entradaFila(1)} style={s.stats}>
+            {cargandoPlan || !planStatus ? (
+              // Misma silueta que el resultado: dos números y sus etiquetas.
+              <>
+                <View style={s.statCell}>
+                  <Skeleton width={32} height={24} />
+                  <Skeleton width={56} height={11} style={{ marginTop: space[1] }} />
                 </View>
-                <Text style={[s.rowLabel, { flex: 1 }]} numberOfLines={1}>{planLabel ?? 'Ver mi plan'}</Text>
-                <ChevronRight size={16} color={c.textFaint} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-          )}
+                <View style={s.statDivider} />
+                <View style={s.statCell}>
+                  <Skeleton width={32} height={24} />
+                  <Skeleton width={56} height={11} style={{ marginTop: space[1] }} />
+                </View>
+              </>
+            ) : (
+              <>
+                <Stat valor={String(planStatus.horse_count)} label="caballos" s={s} />
+                <View style={s.statDivider} />
+                <Stat
+                  valor={planStatus.horse_limit == null ? '∞' : String(planStatus.horse_limit)}
+                  label="tope del plan"
+                  s={s}
+                />
+              </>
+            )}
+          </Animated.View>
+        )}
 
-          {/* Apariencia — fila con el valor actual, abre la hoja de opciones */}
-          <View style={s.section}>
-            <FilaSelector
-              primera
-              label="Apariencia"
-              valor={themeLabel}
-              onPress={() => setThemeSheet(true)}
-            />
-          </View>
-
-          {/* Lista de secciones — se navegan, no se apilan acá */}
-          <View style={s.sectionsList}>
-            <SectionRow
-              Icon={User}
-              label="Mi cuenta"
-              sub={`${user.name} · ${user.email}`}
-              onPress={() => goto('cuenta')}
-              c={c} s={s}
-            />
-            <SectionRow
-              Icon={Phone}
-              label="Contacto y WhatsApp"
-              sub={user.phone ?? 'Sin teléfono cargado'}
-              onPress={() => goto('contacto')}
-              c={c} s={s}
-            />
-            {isVet && (
+        <View style={s.section}>
+          <Text style={[typography.sectionEyebrow, s.sectionTitle]}>Tu cuenta</Text>
+          {filas.map((f, i) => (
+            <Animated.View key={f.key} entering={entradaFila(i + 2)}>
               <SectionRow
-                Icon={ShieldCheck}
-                label="Matrícula profesional"
-                sub={LICENSE_LABELS[user.vet_license_status ?? 'none']}
-                onPress={() => goto('matricula')}
+                Icon={f.Icon}
+                label={f.label}
+                valor={f.valor}
+                onPress={f.onPress}
+                ultima={i === filas.length - 1}
                 c={c} s={s}
               />
-            )}
-            {isAdmin && (
-              <SectionRow
-                Icon={Users}
-                label="Gestión de planes"
-                sub="Activar y revocar plan Pro"
-                onPress={() => goto('planes-admin')}
-                c={c} s={s}
-              />
-            )}
-          </View>
+            </Animated.View>
+          ))}
+
+          <PressableScale
+            style={s.logoutBtn}
+            onPress={() => {
+              haptic.medium();
+              Alert.alert('Cerrar sesión', '¿Salir de tu cuenta?', [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Cerrar sesión', style: 'destructive', onPress: () => { void logout(); } },
+              ]);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
+          >
+            <Text style={s.logoutText}>Cerrar sesión</Text>
+          </PressableScale>
+
+          {APP_VERSION ? <Text style={s.version}>HandicApp {APP_VERSION}</Text> : null}
         </View>
       </ScrollView>
 
@@ -195,38 +257,50 @@ type Styles = ReturnType<typeof makeStyles>;
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
 
+  editarBtn: { height: touch.min, justifyContent: 'center', paddingHorizontal: space[1] },
+  editarBtnText: { fontSize: text.base, fontWeight: weight.semibold, color: c.brand },
+
   hero: {
     alignItems: 'center',
-    gap: space[1] + 2,
-    paddingBottom: space[5],
-    paddingTop: space[2],
+    gap: space[1],
+    paddingTop: space[4],
+    paddingBottom: space[2],
     paddingHorizontal: space[5],
   },
-  sheet: {
-    paddingTop: space[2],
-    paddingBottom: space[6],
-  },
-  userNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  userName: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text, letterSpacing: -0.4 },
-  userEmail: { fontSize: text.sm, color: c.textMuted },
+  userNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space[2] },
+  userName: { fontSize: text.lg, fontWeight: weight.bold, color: c.text, letterSpacing: -0.8 },
+  userEmail: { fontSize: text.base, color: c.textMuted, marginBottom: space[1] },
 
-  section: { gap: space[2] + 2, paddingHorizontal: space[5], marginTop: space[5] },
-  sectionTitle: {
-    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
-    textTransform: 'uppercase', letterSpacing: 1,
+  stats: { flexDirection: 'row', paddingHorizontal: space[5], marginTop: space[5] },
+  statCell: { flex: 1, alignItems: 'center' },
+  statValor: {
+    fontSize: text.lg, fontWeight: weight.bold, color: c.text,
+    letterSpacing: -0.8, fontVariant: ['tabular-nums'],
   },
+  statLabel: { fontSize: text.xs, color: c.textFaint, marginTop: 3 },
+  statDivider: { width: StyleSheet.hairlineWidth, backgroundColor: c.border },
 
-  planRow: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    minHeight: 52,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
+  section: { paddingHorizontal: space[5], marginTop: space[7] },
+  sectionTitle: { marginBottom: space[1] },
+
+  row: {
+    flexDirection: 'row', alignItems: 'center',
+    minHeight: touch.field, gap: space[3] + 2,
   },
+  rowBorde: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+  rowIconWrap: { width: 24, alignItems: 'center', flexShrink: 0 },
+  rowLabel: { flex: 1, fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
+  rowValor: { fontSize: text.base, color: c.textFaint, maxWidth: 150 },
 
-  sectionsList: { marginHorizontal: space[5], marginTop: space[5] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
-  rowIconWrap: { width: 28, alignItems: 'center', flexShrink: 0 },
-  rowLabel: { fontSize: text.md, fontWeight: weight.regular, color: c.text, letterSpacing: -0.2 },
-  rowSub: { fontSize: text.xs, color: c.textFaint, marginTop: 1 },
+  // Botón destructivo en píldora: el rojo sutil de fondo ya avisa, sin borde.
+  logoutBtn: {
+    alignSelf: 'flex-start', marginTop: space[6],
+    height: touch.min + 4, paddingHorizontal: space[5],
+    borderRadius: radius.full, backgroundColor: c.dangerSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  logoutText: { fontSize: text.base, fontWeight: weight.semibold, color: c.danger },
+  version: { fontSize: text.xs, color: c.textFaint, marginTop: space[4], fontVariant: ['tabular-nums'] },
 
   // Opciones de tema: filas planas sobre la hoja, separadas por hairline.
   themeLista: { paddingBottom: space[1] },

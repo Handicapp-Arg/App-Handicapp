@@ -1,41 +1,32 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, RefreshControl, ScrollView, ActivityIndicator, Pressable,
+  View, Text, StyleSheet, FlatList, RefreshControl, ScrollView, ActivityIndicator,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useScrollToTop } from '@react-navigation/native';
-import {
-  HeartPulse, Dumbbell, ClipboardList, Trophy, Receipt, StickyNote, Bell, Trash2, Camera,
-} from 'lucide-react-native';
+import { Trash2, Camera, Plus } from 'lucide-react-native';
 import { useAllEvents, useDeleteEvent } from '../../../hooks/use-events';
+import { useHorses } from '../../../hooks/use-horses';
 import { useAuth } from '../../../lib/auth';
-import { ScreenHeader, HeaderButton } from '../../../components/ScreenHeader';
 import { SwipeableRow } from '../../../components/SwipeableRow';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { AppImage } from '../../../components/AppImage';
+import { PressableScale } from '../../../components/PressableScale';
+import { HorseshoeH } from '../../../components/icons/equine';
 import { Routes } from '../../../lib/routes';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
-import { EventRowSkeleton } from '../../../components/Skeleton';
+import { Skeleton } from '../../../components/Skeleton';
 import { haptic } from '../../../lib/haptics';
 import { formatCurrency } from '../../../lib/currency';
-import { fechaHumana, fechaHoraHumana } from '../../../lib/fechas';
+import { fechaHumana } from '../../../lib/fechas';
 import { makeEventTypeColors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, weight } from '../../../styles/tokens';
-import { useCommonStyles } from '../../../styles/common';
+import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { entradaFila } from '../../../styles/motion';
 import type { Event } from '../../../../packages/shared/src';
-
-const TYPE_ICONS: Record<string, typeof HeartPulse> = {
-  salud: HeartPulse,
-  entrenamiento: Dumbbell,
-  tarea: ClipboardList,
-  carrera: Trophy,
-  gasto: Receipt,
-  nota: StickyNote,
-  aviso: Bell,
-};
 
 type FeedItem =
   | { kind: 'dia'; key: string; label: string }
@@ -56,16 +47,31 @@ function agruparPorDia(events: Event[]): FeedItem[] {
   return items;
 }
 
-export default function EventosScreen() {
+/** Misma silueta que la fila real: miniatura cuadrada + dos líneas de texto. */
+function FilaEventoSkeleton({ s }: { s: Styles }) {
+  return (
+    <View style={s.fila}>
+      <Skeleton width={44} height={44} borderRadius={radius.md + 3} />
+      <View style={s.filaMain}>
+        <Skeleton height={14} width="45%" />
+        <Skeleton height={13} width="85%" style={{ marginTop: space[2] }} />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * El feed vive en su propio componente y el padre lo remonta con `key` cuando
+ * cambia el filtro de caballo. `useAllEvents` acumula páginas en estado
+ * interno: sin remontar, al filtrar se mezclarían los eventos del caballo
+ * anterior con los del nuevo.
+ */
+function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: Styles }) {
   const router = useRouter();
   const { can } = useAuth();
-  const insets = useSafeAreaInsets();
-  const { c } = useTheme();
-  const { layout } = useCommonStyles();
-  const s = useMemo(() => makeStyles(c), [c]);
   const typeLabels = makeEventTypeColors(c);
-
-  const { events, isLoading, isError, isFetchingMore, hasMore, loadMore, refetch } = useAllEvents();
+  const params = useMemo(() => (horseId ? { horse_id: horseId } : undefined), [horseId]);
+  const { events, isLoading, isError, isFetchingMore, hasMore, loadMore, refetch } = useAllEvents(params);
   const deleteEvent = useDeleteEvent();
   const canCreate = can('events', 'create');
   const canDelete = can('events', 'delete');
@@ -74,50 +80,44 @@ export default function EventosScreen() {
   const [detalle, setDetalle] = useState<Event | null>(null);
 
   const feed = useMemo(() => agruparPorDia(events), [events]);
-
   const irANuevo = () => { haptic.medium(); router.push(Routes.eventoNuevo as never); };
 
-  const header = (
-    <ScreenHeader
-      scrollable
-      title="Eventos"
-      right={canCreate ? <HeaderButton label="Nuevo" onPress={irANuevo} /> : undefined}
-    />
-  );
-
-  const renderFila = ({ item }: { item: FeedItem }) => {
+  const renderFila = ({ item, index }: { item: FeedItem; index: number }) => {
     if (item.kind === 'dia') {
       return <Text style={s.diaHeader}>{item.label}</Text>;
     }
     const e = item.event;
-    const Icon = TYPE_ICONS[e.type] ?? StickyNote;
-    const subtitulo = [e.horse?.name, typeLabels[e.type]?.label ?? e.type]
-      .filter(Boolean)
-      .join(' · ');
     const fila = (
-      <Pressable
-        style={({ pressed }) => [s.fila, pressed && { backgroundColor: c.surfaceAlt }]}
+      <PressableScale
+        style={s.fila}
         onPress={() => { haptic.light(); setDetalle(e); }}
+        accessibilityRole="button"
+        accessibilityLabel={`Evento de ${e.horse?.name ?? 'caballo'}`}
       >
-        <View style={s.iconWrap}>
-          <Icon size={17} color={c.textMuted} strokeWidth={1.8} />
-        </View>
+        {e.horse?.image_url ? (
+          <AppImage source={{ uri: e.horse.image_url }} style={s.filaFoto} />
+        ) : (
+          <View style={[s.filaFoto, s.filaFotoVacia]}>
+            <HorseshoeH size={22} color={c.textFaint} />
+          </View>
+        )}
+
         <View style={s.filaMain}>
-          <Text style={s.filaTitulo} numberOfLines={2}>{e.description}</Text>
-          <View style={s.filaSubRow}>
-            <Text style={s.filaSub} numberOfLines={1}>{subtitulo}</Text>
+          <View style={s.filaHead}>
+            {e.horse?.name ? <Text style={s.filaNombre} numberOfLines={1}>{e.horse.name}</Text> : null}
+            <Text style={s.filaTipo} numberOfLines={1}>{typeLabels[e.type]?.label ?? e.type}</Text>
             {e.photos && e.photos.length > 0 && (
               <Camera size={12} color={c.textFaint} strokeWidth={2} />
             )}
           </View>
+          <Text style={s.filaDesc} numberOfLines={2}>{e.description}</Text>
+          {e.amount != null && (
+            <Text style={s.filaMonto}>{formatCurrency(e.amount, e.currency ?? 'ARS')}</Text>
+          )}
         </View>
-        {e.amount != null && (
-          <Text style={s.filaMonto}>{formatCurrency(e.amount, e.currency ?? 'ARS')}</Text>
-        )}
-      </Pressable>
+      </PressableScale>
     );
-    if (!canDelete) return fila;
-    return (
+    const envuelta = canDelete ? (
       <SwipeableRow
         acciones={[{
           label: 'Eliminar',
@@ -129,63 +129,63 @@ export default function EventosScreen() {
       >
         {fila}
       </SwipeableRow>
-    );
+    ) : fila;
+
+    return <Animated.View entering={entradaFila(index)}>{envuelta}</Animated.View>;
   };
 
-  return (
-    <View style={[layout.screen, { paddingTop: insets.top }]}>
-      {isError && events.length === 0 ? (
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
-        >
-          {header}
-          <ErrorState onRetry={() => refetch()} />
-        </ScrollView>
-      ) : isLoading ? (
-        <View>
-          {header}
-          <View style={{ paddingHorizontal: space[4], paddingTop: space[3], gap: space[2] }}>
-            {[1, 2, 3, 4, 5].map((i) => <EventRowSkeleton key={i} />)}
-          </View>
-        </View>
-      ) : !events.length ? (
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
-        >
-          {header}
-          <EmptyState
-            icon="document-text-outline"
-            title="Sin eventos registrados"
-            message="Los eventos de salud, entrenamiento y gastos aparecerán aquí."
-            actionLabel={canCreate ? 'Crear primer evento' : undefined}
-            onAction={irANuevo}
-          />
-        </ScrollView>
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={feed}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={s.list}
-          ListHeaderComponent={header}
-          renderItem={renderFila}
-          onEndReached={() => { if (hasMore) loadMore(); }}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={
-            isFetchingMore ? (
-              <View style={s.footer}>
-                <ActivityIndicator size="small" color={c.brand} />
-              </View>
-            ) : null
-          }
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+  if (isError && events.length === 0) {
+    return <ErrorState onRetry={() => refetch()} />;
+  }
 
-      {/* Detalle del evento: hoja nativa con la info completa */}
+  if (isLoading) {
+    return (
+      <View style={s.esqueleto}>
+        <Skeleton width={40} height={14} style={{ marginLeft: space[4] + 2 }} />
+        {[1, 2, 3, 4].map((i) => <FilaEventoSkeleton key={i} s={s} />)}
+      </View>
+    );
+  }
+
+  if (!events.length) {
+    return (
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
+      >
+        <EmptyState
+          icon="document-text-outline"
+          title={horseId ? 'Sin eventos de este caballo' : 'Sin eventos registrados'}
+          message="Los eventos de salud, entrenamiento y gastos aparecerán acá."
+          actionLabel={canCreate ? 'Cargar el primero' : undefined}
+          onAction={irANuevo}
+        />
+      </ScrollView>
+    );
+  }
+
+  return (
+    <>
+      <FlatList
+        ref={listRef}
+        data={feed}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={s.lista}
+        renderItem={renderFila}
+        onEndReached={() => { if (hasMore) loadMore(); }}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          isFetchingMore ? (
+            <View style={s.cargando}>
+              <ActivityIndicator size="small" color={c.brand} />
+            </View>
+          ) : null
+        }
+        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Detalle del evento: hoja nativa con lo que la fila no muestra */}
       <BottomSheet
         visible={!!detalle}
         onClose={() => setDetalle(null)}
@@ -194,7 +194,7 @@ export default function EventosScreen() {
         {detalle && (
           <View style={s.detalle}>
             <Text style={s.detalleDesc}>{detalle.description}</Text>
-            <View style={s.detalleFilas}>
+            <View>
               {detalle.horse?.name ? (
                 <View style={s.detalleFila}>
                   <Text style={s.detalleLabel}>Caballo</Text>
@@ -203,7 +203,7 @@ export default function EventosScreen() {
               ) : null}
               <View style={s.detalleFila}>
                 <Text style={s.detalleLabel}>Fecha</Text>
-                <Text style={s.detalleValor}>{fechaHoraHumana(detalle.date) || fechaHumana(detalle.date)}</Text>
+                <Text style={s.detalleValor}>{fechaHumana(detalle.date)}</Text>
               </View>
               {detalle.amount != null && (
                 <View style={s.detalleFila}>
@@ -222,39 +222,152 @@ export default function EventosScreen() {
           </View>
         )}
       </BottomSheet>
+    </>
+  );
+}
+
+export default function EventosScreen() {
+  const router = useRouter();
+  const { can } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const { data: horses } = useHorses();
+  const [horseId, setHorseId] = useState('');
+  const canCreate = can('events', 'create');
+
+  // Con un solo caballo los chips no filtran nada: son ruido en pantalla.
+  const hayFiltros = (horses ?? []).length > 1;
+
+  const irANuevo = () => { haptic.medium(); router.push(Routes.eventoNuevo as never); };
+
+  return (
+    <View style={[s.root, { paddingTop: insets.top }]}>
+      <View style={s.header}>
+        <Text style={s.titulo}>Eventos</Text>
+        {canCreate ? (
+          <PressableScale
+            style={s.btnMas}
+            onPress={irANuevo}
+            accessibilityRole="button"
+            accessibilityLabel="Cargar evento"
+          >
+            <Plus size={24} color={c.bg} strokeWidth={2.2} />
+          </PressableScale>
+        ) : null}
+      </View>
+
+      {hayFiltros ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.chips}
+          style={s.chipsScroll}
+        >
+          <PressableScale
+            style={[s.chip, s.chipTodos, !horseId && s.chipActivo]}
+            onPress={() => { haptic.selection(); setHorseId(''); }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: !horseId }}
+            accessibilityLabel="Todos los caballos"
+          >
+            <Text style={[s.chipTexto, !horseId && s.chipTextoActivo]}>Todos</Text>
+          </PressableScale>
+
+          {(horses ?? []).map((h) => {
+            const activo = horseId === h.id;
+            return (
+              <PressableScale
+                key={h.id}
+                style={[s.chip, activo && s.chipActivo]}
+                onPress={() => { haptic.selection(); setHorseId(activo ? '' : h.id); }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: activo }}
+                accessibilityLabel={`Ver solo ${h.name}`}
+              >
+                {h.image_url ? (
+                  <AppImage source={{ uri: h.image_url }} style={s.chipFoto} />
+                ) : (
+                  <View style={[s.chipFoto, s.chipFotoVacia]}>
+                    <HorseshoeH size={14} color={c.textFaint} />
+                  </View>
+                )}
+                <Text style={[s.chipTexto, activo && s.chipTextoActivo]} numberOfLines={1}>{h.name}</Text>
+              </PressableScale>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+
+      {/* El `key` remonta el feed al cambiar de caballo: ver FeedEventos. */}
+      <FeedEventos key={horseId || 'todos'} horseId={horseId} c={c} s={s} />
     </View>
   );
 }
 
+type Styles = ReturnType<typeof makeStyles>;
+
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
+  lista: { paddingTop: space[2], paddingBottom: 140 },
+  esqueleto: { paddingTop: space[4] },
+
+  /* ─── Encabezado ───────────────────────────────────────────────────────── */
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: space[4] + 2, paddingTop: space[3], paddingBottom: space[2],
+  },
+  titulo: { fontSize: text['2xl'], fontWeight: weight.bold, color: c.text, letterSpacing: -1.1 },
+  btnMas: {
+    width: 46, height: 46, borderRadius: radius.thumb,
+    backgroundColor: c.text, alignItems: 'center', justifyContent: 'center',
+  },
+
+  /* ─── Chips de caballo ─────────────────────────────────────────────────── */
+  chipsScroll: { maxHeight: 52, marginTop: space[1] },
+  chips: { gap: space[2], paddingHorizontal: space[4] + 2, paddingVertical: space[1] },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2],
+    height: 36, paddingLeft: space[1] + 2, paddingRight: space[3] + 2,
+    borderRadius: radius.full, backgroundColor: c.surface,
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  chipTodos: { paddingLeft: space[4], paddingRight: space[4] },
+  // Selección invertida neutra, igual que en la lista de caballos.
+  chipActivo: { backgroundColor: c.text },
+  chipFoto: { width: 26, height: 26, borderRadius: radius.full },
+  chipFotoVacia: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  chipTexto: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
+  chipTextoActivo: { color: c.bg, fontWeight: weight.semibold },
+
+  /* ─── Feed ─────────────────────────────────────────────────────────────── */
   diaHeader: {
-    fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted,
-    paddingHorizontal: space[4], paddingTop: space[5], paddingBottom: space[2],
+    fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint,
+    paddingHorizontal: space[4] + 2, paddingTop: space[5], paddingBottom: space[1],
   },
   fila: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    paddingHorizontal: space[4], paddingVertical: space[3],
-    backgroundColor: c.bg,
+    flexDirection: 'row', gap: space[3] + 1,
+    paddingHorizontal: space[4] + 2, paddingVertical: space[3],
   },
-  iconWrap: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: c.surfaceAlt,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  filaMain: { flex: 1, gap: 2 },
-  filaTitulo: { fontSize: text.md, color: c.text, lineHeight: 21 },
-  filaSubRow: { flexDirection: 'row', alignItems: 'center', gap: space[1] + 2 },
-  filaSub: { fontSize: text.sm, color: c.textFaint, flexShrink: 1 },
-  filaMonto: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
-  list: { paddingBottom: 120 },
+  filaFoto: { width: 44, height: 44, borderRadius: radius.md + 3, flexShrink: 0 },
+  filaFotoVacia: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  filaMain: { flex: 1, minWidth: 0 },
+  filaHead: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] + 3 },
+  filaNombre: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, flexShrink: 1 },
+  filaTipo: { fontSize: text.xs + 1, color: c.textFaint, textTransform: 'lowercase' },
+  filaDesc: { fontSize: text.base - 1, color: c.textMuted, lineHeight: 21, marginTop: 3 },
+  // El monto es el dato hero de un gasto: por eso es lo único en negrita.
+  filaMonto: { fontSize: text.md, fontWeight: weight.bold, color: c.text, marginTop: 5, fontVariant: ['tabular-nums'] },
+  cargando: { padding: space[5], alignItems: 'center' },
+
+  /* ─── Detalle ──────────────────────────────────────────────────────────── */
   detalle: { gap: space[4], paddingBottom: space[2] },
   detalleDesc: { fontSize: text.md, color: c.text, lineHeight: 23 },
-  detalleFilas: { gap: 0 },
   detalleFila: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: space[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border,
   },
   detalleLabel: { fontSize: text.sm, color: c.textFaint },
   detalleValor: { fontSize: text.sm, fontWeight: weight.medium, color: c.text },
-  detalleFoto: { width: 96, height: 96, borderRadius: 12 },
-  footer: { padding: space[5], alignItems: 'center' },
+  detalleFoto: { width: 96, height: 96, borderRadius: radius.md },
 });
