@@ -8,6 +8,8 @@ import { useRouter } from 'expo-router';
 import { Check, List, CalendarDays, Trash2, Plus } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAgenda, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES, type ServiceAppointment } from '../../../hooks/use-agenda';
+import { useHorses } from '../../../hooks/use-horses';
+import { AppImage } from '../../../components/AppImage';
 import { MonthCalendar } from '../../../components/MonthCalendar';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
@@ -52,9 +54,12 @@ type Grupo = { clave: string; titulo: string; detalle: string; turnos: ServiceAp
  * en un bloque de texto. El caballo y el tipo se ven al tocar la fila.
  */
 const FilaTurno = memo(function FilaTurno({
-  appt, onComplete, onDelete, onAbrirMenu, isLast, c, s,
+  appt, fotoCaballo, onComplete, onDelete, onAbrirMenu, isLast, c, s,
 }: {
   appt: ServiceAppointment;
+  /** Foto del caballo del turno. La respuesta de agenda no la trae: se cruza
+   *  en la pantalla contra el listado de caballos, que sí la tiene. */
+  fotoCaballo?: string | null;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
   onAbrirMenu: (appt: ServiceAppointment) => void;
@@ -96,6 +101,15 @@ const FilaTurno = memo(function FilaTurno({
       >
         <Text style={s.filaHora}>{hora(appt.scheduled_at)}</Text>
         <View style={[s.filaBarra, { backgroundColor: colorDeTipo(appt.type, c) }]} />
+        {fotoCaballo ? (
+          <AppImage source={{ uri: fotoCaballo }} style={s.filaFoto} contentFit="cover" />
+        ) : appt.horse ? (
+          // Sin foto va la inicial, no un hueco: la columna tiene que mantener
+          // su ancho o los títulos de las filas dejan de alinearse entre sí.
+          <View style={[s.filaFoto, s.filaFotoVacia]}>
+            <Text style={s.filaFotoInicial}>{appt.horse.name.charAt(0).toUpperCase()}</Text>
+          </View>
+        ) : null}
         <Text style={s.filaTitulo} numberOfLines={1}>{appt.title}</Text>
       </PressableScale>
     </SwipeableRow>
@@ -110,6 +124,7 @@ function FilaTurnoSkeleton({ s }: { s: Styles }) {
       <View style={s.filaBarraHueco}>
         <Skeleton width={3} height={38} borderRadius={radius.full} />
       </View>
+      <Skeleton width={38} height={38} borderRadius={radius.md} />
       <Skeleton height={15} width="55%" />
     </View>
   );
@@ -125,6 +140,7 @@ export default function AgendaScreen() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const { data: appointments, isLoading, isError, refetch, isRefetching } = useAgenda(viewMode === 'list' ? upcoming : false);
+  const caballos = useHorses();
   const complete = useCompleteAppointment();
   const deleteAppt = useDeleteAppointment();
   const listRef = useRef<FlatList<Grupo>>(null);
@@ -177,6 +193,18 @@ export default function AgendaScreen() {
     // `mutate` es estable en react-query; el objeto de la mutación no lo es.
   }, [deleteAppt.mutate]);
 
+  /**
+   * La respuesta de agenda trae del caballo solo `{ id, name }`, sin la foto.
+   * En vez de pedirle al backend un campo más, se cruza contra el listado de
+   * caballos, que la app ya tiene cargado y cacheado: misma foto, cero
+   * consultas extra.
+   */
+  const fotosPorCaballo = useMemo(() => {
+    const m: Record<string, string | null> = {};
+    for (const h of caballos.data ?? []) m[h.id] = h.image_url;
+    return m;
+  }, [caballos.data]);
+
   const handleComplete = useCallback((id: string) => { complete.mutate(id); }, [complete.mutate]);
   const abrirMenu = useCallback((appt: ServiceAppointment) => setTurnoAbierto(appt), []);
   const cerrarMenu = useCallback(() => setTurnoAbierto(null), []);
@@ -198,6 +226,7 @@ export default function AgendaScreen() {
         <FilaTurno
           key={appt.id}
           appt={appt}
+          fotoCaballo={appt.horse ? fotosPorCaballo[appt.horse.id] : null}
           onComplete={handleComplete}
           onDelete={handleDelete}
           onAbrirMenu={abrirMenu}
@@ -278,6 +307,7 @@ export default function AgendaScreen() {
                     <FilaTurno
                       key={appt!.id}
                       appt={appt!}
+                      fotoCaballo={appt!.horse ? fotosPorCaballo[appt!.horse.id] : null}
                       onComplete={handleComplete}
                       onDelete={handleDelete}
                       onAbrirMenu={abrirMenu}
@@ -409,6 +439,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filaCompletada: { opacity: 0.45 },
   filaHora: { width: 52, fontSize: text.md, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
   filaBarra: { width: 3, height: 38, borderRadius: radius.full, flexShrink: 0 },
+  filaFoto: { width: 38, height: 38, borderRadius: radius.md, backgroundColor: c.surfaceAlt, flexShrink: 0 },
+  filaFotoVacia: { alignItems: 'center', justifyContent: 'center' },
+  filaFotoInicial: { fontSize: text.base, fontWeight: weight.bold, color: c.textFaint },
   // El esqueleto necesita ocupar el mismo ancho que la barrita real.
   filaBarraHueco: { width: 3, flexShrink: 0 },
   filaTitulo: { flex: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
