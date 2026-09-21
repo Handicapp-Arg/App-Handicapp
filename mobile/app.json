@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon-solo.png",
+      "image": "./assets/splash-icon-marca.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0b0b0c"
+      "backgroundColor": "#15140f"
     },
     "ios": {
       "supportsTablet": true,
@@ -36,7 +36,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0b0b0c"
+        "backgroundColor": "#15140f"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -96,9 +96,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon-blanco.png",
-          "imageWidth": 200,
-          "backgroundColor": "#0b0b0c"
+          "image": "./assets/splash-icon-marca.png",
+          "imageWidth": 160,
+          "backgroundColor": "#15140f"
         }
       ]
     ],
