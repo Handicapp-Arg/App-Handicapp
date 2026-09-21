@@ -218,7 +218,9 @@ export class EventsService {
       .createQueryBuilder('event')
       .leftJoinAndSelect('event.photos', 'photos')
       .leftJoin('event.horse', 'horse')
-      .addSelect(['horse.id', 'horse.name', 'horse.owner_id', 'horse.establishment_id'])
+      // image_url va en la selección: el listado del móvil muestra la foto del
+      // caballo en cada fila, y sin esto cae en el placeholder de la marca.
+      .addSelect(['horse.id', 'horse.name', 'horse.image_url', 'horse.owner_id', 'horse.establishment_id'])
       .orderBy('event.date', 'DESC')
       .addOrderBy('event.created_at', 'DESC');
 

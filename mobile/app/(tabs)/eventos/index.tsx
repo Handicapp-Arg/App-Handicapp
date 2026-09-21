@@ -66,9 +66,12 @@ function FilaEventoSkeleton({ s }: { s: Styles }) {
  * cada celda se remontaría entera al scrollear.
  */
 const FilaEvento = memo(function FilaEvento({
-  e, tipoLabel, canDelete, onPress, onDelete, c, s,
+  e, foto, tipoLabel, canDelete, onPress, onDelete, c, s,
 }: {
   e: Event;
+  /** Foto del caballo ya resuelta: puede venir del evento o del listado de
+   *  caballos, según si el backend desplegado la manda o no. */
+  foto?: string | null;
   tipoLabel: string;
   canDelete: boolean;
   onPress: (e: Event) => void;
@@ -92,8 +95,8 @@ const FilaEvento = memo(function FilaEvento({
       accessibilityRole="button"
       accessibilityLabel={`Evento de ${e.horse?.name ?? 'caballo'}`}
     >
-      {e.horse?.image_url ? (
-        <AppImage source={{ uri: e.horse.image_url }} style={s.filaFoto} />
+      {foto ? (
+        <AppImage source={{ uri: foto }} style={s.filaFoto} />
       ) : (
         <View style={[s.filaFoto, s.filaFotoVacia]}>
           <HorseshoeH size={22} color={c.textFaint} />
@@ -140,6 +143,19 @@ function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: St
   const [detalle, setDetalle] = useState<Event | null>(null);
 
   const feed = useMemo(() => agruparPorDia(events), [events]);
+
+  /**
+   * Respaldo de fotos. El listado de eventos del servidor desplegado todavía no
+   * manda `image_url` del caballo (ya está arreglado en el código, falta subirlo),
+   * así que mientras tanto se cruza contra el listado de caballos, que la app ya
+   * tiene cacheado. Cuando el backend la mande, gana la del evento.
+   */
+  const { data: caballos } = useHorses();
+  const fotosPorCaballo = useMemo(() => {
+    const m: Record<string, string | null> = {};
+    for (const h of caballos ?? []) m[h.id] = h.image_url;
+    return m;
+  }, [caballos]);
   const irANuevo = () => { haptic.medium(); router.push(Routes.eventoNuevo as never); };
 
   // Callbacks estables: sin esto cada fila recibía funciones nuevas en cada
@@ -160,6 +176,7 @@ function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: St
     return (
       <FilaEvento
         e={e}
+        foto={e.horse?.image_url ?? (e.horse ? fotosPorCaballo[e.horse.id] : null)}
         tipoLabel={typeLabels[e.type]?.label ?? e.type}
         canDelete={canDelete}
         onPress={abrirDetalle}
@@ -168,7 +185,7 @@ function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: St
         s={s}
       />
     );
-  }, [s, c, typeLabels, canDelete, abrirDetalle, borrarEvento]);
+  }, [s, c, typeLabels, canDelete, abrirDetalle, borrarEvento, fotosPorCaballo]);
 
   if (isError && events.length === 0) {
     return <ErrorState onRetry={() => refetch()} />;
