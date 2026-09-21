@@ -7,6 +7,7 @@ import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   Clock, Stethoscope, Hammer, Trophy, Bug, Syringe, Dumbbell, MoreHorizontal,
+  Check, ChevronRight, Search,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCreateAppointment, APPOINTMENT_TYPES } from '../../../hooks/use-agenda';
@@ -22,6 +23,7 @@ import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../styles/tokens';
 import { hora } from '../../../lib/fechas';
 import { useToast } from '../../../components/Toast';
+import { BottomSheet } from '../../../components/BottomSheet';
 
 /** Un ícono por tipo de turno: la grilla se elige de un vistazo, sin leer. */
 const ICONO_TIPO: Record<string, LucideIcon> = {
@@ -36,6 +38,12 @@ const ICONO_TIPO: Record<string, LucideIcon> = {
 
 const TIPOS = Object.keys(APPOINTMENT_TYPES);
 
+/**
+ * Hasta acá el carrusel de fotos es lo más rápido para elegir. Pasado este
+ * número, arrastrar buscando una foto se vuelve peor que buscar por nombre.
+ */
+const TOPE_CARRUSEL = 6;
+
 export default function NuevoTurnoScreen() {
   const router = useRouter();
   const navigation = useNavigation();
@@ -47,6 +55,9 @@ export default function NuevoTurnoScreen() {
   const toast = useToast();
 
   const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
+  const [pickerCaballo, setPickerCaballo] = useState(false);
+  const [buscaCaballo, setBuscaCaballo] = useState('');
+  const caballoElegido = (horses ?? []).find((h) => h.id === horseId);
   const [type, setType] = useState('veterinario');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
@@ -136,39 +147,75 @@ export default function NuevoTurnoScreen() {
           </View>
         </View>
 
-        {/* ─── Para qué caballo: se elige por la foto, no por una lista ───────── */}
+        {/* ─── Para qué caballo ───────────────────────────────────────────────
+            Con pocos caballos se eligen por la foto, que es lo más rápido.
+            Pasado ese número el carrusel obliga a arrastrar a ciegas buscando
+            una foto, así que se cambia por una fila que abre una hoja con
+            buscador: elegir entre veinte es un problema distinto al de elegir
+            entre tres. */}
         <View style={s.seccion}>
           <Text style={s.rotulo}>Para qué caballo</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.filaCaballos}
-          >
-            {(horses ?? []).map((h) => {
-              const activo = horseId === h.id;
-              return (
-                <PressableScale
-                  key={h.id}
-                  style={[s.caballo, activo && s.caballoActivo]}
-                  onPress={() => { haptic.selection(); setHorseId(h.id); }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: activo }}
-                  accessibilityLabel={h.name}
-                >
-                  {h.image_url ? (
-                    <AppImage source={{ uri: h.image_url }} style={s.caballoFoto} />
-                  ) : (
-                    <View style={[s.caballoFoto, s.caballoFotoVacia]}>
-                      <HorseshoeH size={26} color={c.textFaint} />
+
+          {(horses ?? []).length > TOPE_CARRUSEL ? (
+            <PressableScale
+              style={s.elegirCaballo}
+              onPress={() => { haptic.selection(); setPickerCaballo(true); }}
+              accessibilityRole="button"
+              accessibilityLabel="Elegir el caballo"
+            >
+              {caballoElegido?.image_url ? (
+                <AppImage source={{ uri: caballoElegido.image_url }} style={s.elegirFoto} />
+              ) : (
+                <View style={[s.elegirFoto, s.caballoFotoVacia]}>
+                  <HorseshoeH size={20} color={c.textFaint} />
+                </View>
+              )}
+              <Text style={[s.elegirTexto, !caballoElegido && s.elegirPlaceholder]} numberOfLines={1}>
+                {caballoElegido?.name ?? 'Elegí un caballo'}
+              </Text>
+              <ChevronRight size={18} color={c.textFaint} strokeWidth={2.2} />
+            </PressableScale>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.filaCaballos}
+            >
+              {(horses ?? []).map((h) => {
+                const activo = horseId === h.id;
+                return (
+                  <PressableScale
+                    key={h.id}
+                    style={[s.caballo, activo && s.caballoActivo]}
+                    onPress={() => { haptic.selection(); setHorseId(h.id); }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: activo }}
+                    accessibilityLabel={h.name}
+                  >
+                    <View>
+                      {h.image_url ? (
+                        <AppImage source={{ uri: h.image_url }} style={s.caballoFoto} />
+                      ) : (
+                        <View style={[s.caballoFoto, s.caballoFotoVacia]}>
+                          <HorseshoeH size={26} color={c.textFaint} />
+                        </View>
+                      )}
+                      {/* El check dice "es este" sin discutirle el color a la
+                          foto; el borde duro competía con la imagen. */}
+                      {activo && (
+                        <View style={s.caballoCheck}>
+                          <Check size={13} color={colors.white} strokeWidth={3} />
+                        </View>
+                      )}
                     </View>
-                  )}
-                  <Text style={[s.caballoNombre, activo && s.caballoNombreActivo]} numberOfLines={1}>
-                    {h.name}
-                  </Text>
-                </PressableScale>
-              );
-            })}
-          </ScrollView>
+                    <Text style={[s.caballoNombre, activo && s.caballoNombreActivo]} numberOfLines={1}>
+                      {h.name}
+                    </Text>
+                  </PressableScale>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         {/* ─── Cuándo ─────────────────────────────────────────────────────────── */}
@@ -229,6 +276,59 @@ export default function NuevoTurnoScreen() {
           }
         </PressableScale>
       </View>
+
+      {/* Hoja de selección, solo para cuando hay muchos caballos. */}
+      <BottomSheet
+        visible={pickerCaballo}
+        onClose={() => { setPickerCaballo(false); setBuscaCaballo(''); }}
+        title="Elegí el caballo"
+      >
+        <View style={s.buscador}>
+          <Search size={18} color={c.textFaint} strokeWidth={1.9} />
+          <TextInput
+            style={s.buscadorInput}
+            value={buscaCaballo}
+            onChangeText={setBuscaCaballo}
+            placeholder="Buscar por nombre"
+            placeholderTextColor={c.textFaint}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+        </View>
+
+        <ScrollView style={s.pickerLista} keyboardShouldPersistTaps="handled">
+          {(horses ?? [])
+            .filter((h) => h.name.toLowerCase().includes(buscaCaballo.trim().toLowerCase()))
+            .map((h) => {
+              const activo = horseId === h.id;
+              return (
+                <PressableScale
+                  key={h.id}
+                  style={s.pickerFila}
+                  onPress={() => {
+                    haptic.selection();
+                    setHorseId(h.id);
+                    setPickerCaballo(false);
+                    setBuscaCaballo('');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activo }}
+                  accessibilityLabel={h.name}
+                >
+                  {h.image_url ? (
+                    <AppImage source={{ uri: h.image_url }} style={s.pickerFoto} />
+                  ) : (
+                    <View style={[s.pickerFoto, s.caballoFotoVacia]}>
+                      <HorseshoeH size={20} color={c.textFaint} />
+                    </View>
+                  )}
+                  <Text style={s.pickerNombre} numberOfLines={1}>{h.name}</Text>
+                  {activo && <Check size={19} color={c.brand} strokeWidth={2.6} />}
+                </PressableScale>
+              );
+            })}
+        </ScrollView>
+      </BottomSheet>
     </View>
   );
 }
@@ -262,8 +362,41 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center', backgroundColor: c.surface,
     ...(c.isDark ? {} : shadow.sm),
   },
-  // Anillo en vez de fondo de color: marca la elección sin pintar la tarjeta.
-  caballoActivo: { borderWidth: 2, borderColor: c.text, padding: space[2] },
+  // Anillo verde y fino, no negro y grueso: el negro duro pegado a una foto se
+  // lee como un error de recorte, y el grosor movía la tarjeta un pixel.
+  caballoActivo: { borderWidth: 2, borderColor: c.brand, padding: space[2] },
+  caballoCheck: {
+    position: 'absolute', top: -5, right: -5,
+    width: 22, height: 22, borderRadius: radius.full,
+    backgroundColor: c.brand,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  /* Fila selectora, para cuando hay demasiados caballos para un carrusel. */
+  elegirCaballo: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    minHeight: touch.field, paddingHorizontal: space[4],
+    borderRadius: radius.field, backgroundColor: c.surfaceAlt,
+  },
+  elegirFoto: { width: 38, height: 38, borderRadius: radius.md, backgroundColor: c.surface },
+  elegirTexto: { flex: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  elegirPlaceholder: { fontWeight: weight.regular, color: c.textFaint },
+
+  /* Hoja de selección */
+  buscador: {
+    flexDirection: 'row', alignItems: 'center', gap: space[2] + 2,
+    height: touch.min, borderRadius: radius.field,
+    backgroundColor: c.surfaceAlt, paddingHorizontal: space[4],
+    marginBottom: space[2],
+  },
+  buscadorInput: { flex: 1, fontSize: text.base, color: c.text, padding: 0 },
+  pickerLista: { maxHeight: 340 },
+  pickerFila: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    paddingVertical: space[2] + 2,
+  },
+  pickerFoto: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.surfaceAlt },
+  pickerNombre: { flex: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   caballoFoto: { width: '100%', height: 58, borderRadius: radius.md + 2 },
   caballoFotoVacia: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   caballoNombre: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
