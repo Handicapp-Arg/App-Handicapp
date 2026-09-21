@@ -23,6 +23,7 @@ import { WeightRecord } from './weight-record.entity';
 import { ShareToken } from './share-token.entity';
 import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { User } from '../auth/user.entity';
+import { healthStatusFromNextDue } from '../medical/health-status';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PlansService } from '../plans/plans.service';
 import { HorseRecordsService } from '../horse-records/horse-records.service';
@@ -202,7 +203,51 @@ export class HorsesService implements OnModuleInit {
     return { horse: saved, record_matches };
   }
 
+  /**
+   * Listado de caballos con su estado sanitario adjunto.
+   *
+   * El semáforo se resuelve en UNA consulta para toda la lista, no pidiendo la
+   * libreta de cada caballo: la pantalla de caballos lo muestra en cada tarjeta
+   * y con diez caballos serían diez llamadas por cada entrada a la pantalla.
+   */
   async findAll(user: User, query: HorsesQueryDto = {}): Promise<Horse[]> {
+    const horses = await this.findAllScoped(user, query);
+    return this.attachHealth(horses);
+  }
+
+  /**
+   * Toma el vencimiento más urgente de cada caballo (el `next_due` más viejo,
+   * que es el ya vencido si lo hay) y deriva el semáforo con la misma función
+   * que usa la libreta sanitaria, para que no haya dos criterios distintos.
+   */
+  private async attachHealth(horses: Horse[]): Promise<Horse[]> {
+    if (!horses.length) return horses;
+
+    const rows: { horse_id: string; name: string; next_due: string }[] =
+      await this.horseRepository.query(
+        `SELECT DISTINCT ON (horse_id) horse_id, name, next_due
+           FROM medical_records
+          WHERE horse_id = ANY($1::uuid[])
+            AND next_due IS NOT NULL
+          ORDER BY horse_id, next_due ASC`,
+        [horses.map((h) => h.id)],
+      );
+
+    const porCaballo = new Map(rows.map((r) => [r.horse_id, r]));
+    for (const horse of horses) {
+      const fila = porCaballo.get(horse.id);
+      horse.health = fila
+        ? {
+            status: healthStatusFromNextDue(fila.next_due),
+            name: fila.name,
+            next_due: fila.next_due,
+          }
+        : null;
+    }
+    return horses;
+  }
+
+  private async findAllScoped(user: User, query: HorsesQueryDto = {}): Promise<Horse[]> {
     const { search } = query;
 
     const buildQb = (baseAlias: string) =>

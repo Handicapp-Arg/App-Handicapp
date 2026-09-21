@@ -148,3 +148,14 @@ export function vence(iso: string | null | undefined): string {
   if (dias === -1) return 'Vencida ayer';
   return `Vencida hace ${Math.abs(dias)} días`;
 }
+
+/** Edad en años cumplidos. Devuelve null si no hay fecha de nacimiento. */
+export function edadEnAnios(iso: string | null | undefined): number | null {
+  const d = aFecha(iso);
+  if (!d) return null;
+  const hoy = new Date();
+  let anios = hoy.getFullYear() - d.getFullYear();
+  const m = hoy.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < d.getDate())) anios--;
+  return anios >= 0 ? anios : null;
+}

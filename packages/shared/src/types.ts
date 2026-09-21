@@ -111,6 +111,15 @@ export interface Horse {
   activity?: CatalogItem;
   co_owners?: HorseOwnership[];
   public_token: string | null;
+  /**
+   * Vencimiento sanitario más urgente. Solo viene en el listado (`GET /horses`),
+   * donde el backend lo resuelve para todos los caballos en una consulta.
+   */
+  health?: {
+    status: 'verde' | 'amarillo' | 'rojo';
+    name: string;
+    next_due: string;
+  } | null;
   created_at: string;
 }
 

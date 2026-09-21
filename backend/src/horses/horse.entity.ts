@@ -131,4 +131,14 @@ export class Horse {
 
   @DeleteDateColumn()
   deleted_at: Date | null;
+
+  /**
+   * Vencimiento sanitario más urgente, calculado al listar. No es una columna:
+   * lo adjunta `HorsesService.attachHealth` y viaja solo en la respuesta.
+   */
+  health?: {
+    status: 'verde' | 'amarillo' | 'rojo';
+    name: string;
+    next_due: string;
+  } | null;
 }

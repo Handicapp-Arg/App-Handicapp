@@ -4,7 +4,10 @@
  * Reanimated `withTiming`, `Animated.timing` o transiciones de layout.
  */
 
-import { Easing } from 'react-native';
+// El Easing viene de Reanimated, no de react-native: `withTiming` corre en el
+// hilo de UI y rechaza cualquier curva que no sea un worklet. Ojo si alguna vez
+// se usa con el `Animated` clásico: esto devuelve una fábrica, no una función.
+import { Easing } from 'react-native-reanimated';
 
 export const duration = {
   fast: 120,

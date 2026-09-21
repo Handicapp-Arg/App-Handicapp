@@ -16,11 +16,23 @@ import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
-import { weight, radius } from '../../styles/tokens';
+import { weight } from '../../styles/tokens';
 import { duration, easing } from '../../styles/motion';
 
-/** Ancho de cada pestaña; el indicador se mueve de a este paso. */
-const TAB_W = 72;
+/**
+ * Medidas de la barra, tal cual la maqueta: una píldora oscura flotante donde
+ * la pestaña activa se ensancha para mostrar su nombre y el resto queda en
+ * ícono suelto. Los anchos son fijos a propósito: así la posición de la
+ * pastilla se calcula sin medir el layout y la animación nunca titila.
+ */
+const TAB_W = 56;
+const TAB_ACTIVA_W = 122;
+const BARRA_PAD = 8;
+
+/** La barra es oscura en ambos temas, así que sus colores no salen del theme. */
+const BARRA_FONDO = 'rgba(21,20,15,0.92)';
+const BARRA_ACTIVO = '#FBFAF7';
+const BARRA_APAGADO = '#8A857C';
 
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
@@ -48,6 +60,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   );
   const activo = Math.max(0, visibles.indexOf(activeName));
 
+  // Todas las pestañas a la izquierda de la activa están en su ancho angosto,
+  // así que la pastilla arranca en un múltiplo exacto del paso.
   const x = useSharedValue(activo * TAB_W);
   useEffect(() => {
     x.value = withTiming(activo * TAB_W, { duration: duration.base, easing: easing.outExpo });
@@ -65,7 +79,6 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (!meta) return null;
     const focused = activeName === name;
     const Icon = meta.Icon;
-    const color = focused ? c.brand : c.textMuted;
     const onPress = () => {
       haptic.selection();
       const route = state.routes.find((r) => r.name === name);
@@ -76,15 +89,17 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     return (
       <TouchableOpacity
         key={name}
-        style={styles.tab}
+        style={focused ? styles.tabActiva : styles.tab}
         onPress={onPress}
         activeOpacity={0.7}
         accessibilityRole="tab"
         accessibilityLabel={meta.label}
         accessibilityState={{ selected: focused }}
       >
-        <Icon size={24} color={color} strokeWidth={focused ? 2.1 : 1.5} />
-        <Text style={[styles.label, { color, fontWeight: focused ? weight.bold : weight.semibold }]}>{meta.label}</Text>
+        <Icon size={21} color={focused ? BARRA_ACTIVO : BARRA_APAGADO} strokeWidth={1.9} />
+        {/* El nombre solo acompaña a la pestaña activa: cuatro rótulos
+            permanentes llenaban la barra de texto sin agregar información. */}
+        {focused ? <Text style={styles.label} numberOfLines={1}>{meta.label}</Text> : null}
       </TouchableOpacity>
     );
   };
@@ -96,8 +111,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       <View style={styles.bar}>
         {/* Vidrio esmerilado de fondo, estilo pildora flotante de iOS. */}
         <BlurView
-          intensity={88}
-          tint={c.isDark ? 'dark' : 'light'}
+          intensity={40}
+          tint="dark"
           style={[StyleSheet.absoluteFill, styles.barGlass]}
         />
         {/* Pastilla que se desliza hasta la pestaña activa. Va detrás de los
@@ -146,37 +161,47 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    paddingHorizontal: 10,
-    height: 62,
-    borderRadius: 32,
+    paddingHorizontal: BARRA_PAD,
+    height: 64,
+    borderRadius: 26,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: c.isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: c.isDark ? 0.28 : 0.09,
-    shadowRadius: 22,
-    elevation: 8,
+    shadowColor: '#15140f',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
+    elevation: 10,
   },
   barGlass: {
-    // El blur pone el vidrio; este velo le da el tinte de la superficie.
-    backgroundColor: c.isDark ? 'rgba(29,26,23,0.55)' : 'rgba(255,255,255,0.55)',
+    // El blur pone el vidrio; el velo oscuro es el que da el color de la barra.
+    backgroundColor: BARRA_FONDO,
   },
   indicador: {
     position: 'absolute',
-    left: 10,
-    top: 7,
-    width: TAB_W,
+    left: BARRA_PAD,
+    top: BARRA_PAD,
+    width: TAB_ACTIVA_W,
     height: 48,
-    borderRadius: radius.full,
-    backgroundColor: c.brandSoft,
+    borderRadius: 18,
+    backgroundColor: 'rgba(251,250,247,0.14)',
   },
   tab: {
     width: TAB_W,
-    height: '100%',
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
   },
-  label: { fontSize: 11, letterSpacing: 0.1 },
+  tabActiva: {
+    width: TAB_ACTIVA_W,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: weight.semibold,
+    color: BARRA_ACTIVO,
+    letterSpacing: -0.1,
+  },
 });

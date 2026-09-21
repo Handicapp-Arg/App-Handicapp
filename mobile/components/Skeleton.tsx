@@ -49,11 +49,13 @@ export function HorseCardSkeleton() {
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   return (
+    // Misma silueta que la tarjeta real (foto al costado, texto a la derecha):
+    // si el esqueleto tiene otra forma, al cargar todo salta de lugar.
     <View style={s.card}>
-      <Skeleton height={120} borderRadius={radius.lg} />
-      <View style={{ padding: 10, gap: 6 }}>
-        <Skeleton height={14} width="70%" />
-        <Skeleton height={11} width="45%" />
+      <Skeleton width={96} height={116} borderRadius={radius.xl} />
+      <View style={{ flex: 1, paddingVertical: 4, gap: 7 }}>
+        <Skeleton height={17} width="65%" />
+        <Skeleton height={12} width="45%" />
       </View>
     </View>
   );
@@ -163,7 +165,10 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   base: { backgroundColor: c.borderStrong, overflow: 'hidden' },
-  card: { flex: 1, backgroundColor: c.surface, borderRadius: radius.lg, overflow: 'hidden' },
+  card: {
+    flexDirection: 'row', gap: 14, padding: 12,
+    backgroundColor: c.surface, borderRadius: radius['2xl'] + 2,
+  },
   eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: c.surface, marginBottom: 2 },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: c.surface, marginBottom: 8, borderRadius: radius.lg },
   post: { backgroundColor: c.surface, borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12 },
