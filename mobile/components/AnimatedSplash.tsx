@@ -50,7 +50,7 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: AUTH_DARK.bgMid,
+    backgroundColor: AUTH_DARK.bg,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,

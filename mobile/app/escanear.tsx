@@ -182,7 +182,7 @@ export default function EscanearScreen() {
             accessibilityState={{ selected: linterna }}
           >
             {!linterna && <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />}
-            <Lightbulb size={20} color={linterna ? AUTH_DARK.bgMid : AUTH_DARK.text} strokeWidth={1.9} />
+            <Lightbulb size={20} color={linterna ? AUTH_DARK.bg : AUTH_DARK.text} strokeWidth={1.9} />
           </PressableScale>
         )}
       </View>
@@ -270,7 +270,7 @@ export default function EscanearScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: AUTH_DARK.bgBottom },
+  root: { flex: 1, backgroundColor: AUTH_DARK.bg },
   velo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,10,8,0.42)' },
 
   barra: {
@@ -325,7 +325,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  botonClaroTexto: { fontSize: text.md, fontWeight: weight.semibold, color: AUTH_DARK.bgMid },
+  botonClaroTexto: { fontSize: text.md, fontWeight: weight.semibold, color: AUTH_DARK.bg },
 
   permiso: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space[6], gap: space[3] },
   permisoIcono: {

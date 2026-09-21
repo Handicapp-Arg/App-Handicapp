@@ -66,7 +66,7 @@ export function IngresoCurtain() {
       style={[
         StyleSheet.absoluteFill,
         rootStyle,
-        { backgroundColor: D.bgBottom, alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+        { backgroundColor: D.bg, alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
       ]}
       pointerEvents="auto"
     >

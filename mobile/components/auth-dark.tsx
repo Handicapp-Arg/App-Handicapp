@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing,
 } from 'react-native-reanimated';
@@ -14,43 +13,44 @@ import { HorseshoeH } from './icons/equine';
  * cambia en las tres pantallas a la vez.
  */
 export const AUTH_DARK = {
-  // Tres paradas y no dos: es la "luz de arriba" del ícono de la app, el mismo
-  // fondo que eligió el diseño. Con dos el negro queda plano y anónimo.
-  bgTop: '#2f2c26',
-  bgMid: '#15140f',
-  bgBottom: '#0a0907',
+  bg: '#100f0c',
+  surface: '#1c1a16',
   text: '#f3f0e9',
   textMuted: '#8f8879',
   textFaint: '#6b655a',
   field: 'rgba(255,255,255,0.07)',
   fieldFocus: 'rgba(255,255,255,0.11)',
-  // El verde profundo de la marca no se lee sobre este fondo: sobre oscuro va
-  // el claro, igual que en el tema de noche.
+  /**
+   * Verde claro: para TEXTO e íconos verdes sobre el fondo negro. El verde
+   * profundo de la marca no se lee ahí, igual que en el tema de noche.
+   */
   brand: '#5fc08f',
+  /**
+   * Verde profundo: para el RELLENO del botón principal, que lleva texto
+   * blanco encima. Blanco sobre el verde claro casi no contrasta; sobre este
+   * sí. Son dos usos distintos del mismo color, no un capricho.
+   */
+  brandSolid: '#17715a',
   danger: '#e8836d',
   dangerBg: 'rgba(232,131,109,0.16)',
   success: '#78d6a6',
   successBg: 'rgba(120,214,166,0.16)',
 } as const;
 
-/** Fondo del mundo auth: la luz de arriba del ícono + grano + status bar clara. */
+/**
+ * Fondo del mundo auth: negro de marca liso y status bar clara.
+ *
+ * Liso a propósito. Antes llevaba un degradado y una textura de grano: el
+ * degradado es del ÍCONO de la app, no de esta pantalla, y el grano se pintaba
+ * con `resizeMode="repeat"`, que en iOS no repite — dibujaba el mosaico una
+ * sola vez y se veía un cuadrado claro arriba a la izquierda. La maqueta pide
+ * un fondo plano, que además es lo que deja respirar al contenido.
+ */
 export function AuthDarkBackground() {
   return (
     <>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={[AUTH_DARK.bgTop, AUTH_DARK.bgMid, AUTH_DARK.bgBottom]}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Grano casi invisible: el negro deja de ser plancha y toma materia. */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden>
-        <Image
-          source={require('../assets/grain.png')}
-          style={[StyleSheet.absoluteFill, { opacity: 0.35 }]}
-          resizeMode="repeat"
-        />
-      </View>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: AUTH_DARK.bg }]} />
     </>
   );
 }

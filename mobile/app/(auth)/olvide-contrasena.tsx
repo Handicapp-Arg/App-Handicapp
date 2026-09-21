@@ -1,20 +1,18 @@
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { Check, ArrowLeft } from 'lucide-react-native';
+import { Check, ChevronLeft, Mail } from 'lucide-react-native';
 import api from '../../lib/api';
 import { colors } from '../../lib/colors';
 import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { AUTH_DARK as D, AuthDarkBackground, BrandMark } from '../../components/auth-dark';
-
-/** Verde de éxito del mundo auth (siempre oscuro): AUTH_DARK no expone success
- *  y los tokens del theme (c.*) quedan prohibidos acá. */
+import { AUTH_DARK as D, AuthDarkBackground } from '../../components/auth-dark';
+import { PressableScale } from '../../components/PressableScale';
 import { fontFamily } from '../../styles/fonts';
 
 export default function OlvideContrasenaScreen() {
@@ -57,37 +55,46 @@ export default function OlvideContrasenaScreen() {
         <ScrollView
           contentContainerStyle={[
             s.scroll,
-            { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 28 },
+            { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 },
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View style={s.header} entering={FadeIn.duration(500)}>
-            <BrandMark size={116} />
-          </Animated.View>
+          {/* Chevron de volver: esta pantalla se empuja, no es un índice. */}
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={() => { haptic.selection(); router.back(); }}
+            hitSlop={8}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+          >
+            <ChevronLeft size={21} color={D.text} strokeWidth={2.2} />
+          </TouchableOpacity>
 
-          {sent ? (
-            <Animated.View style={s.sentBox} entering={FadeInDown.duration(450)}>
-              <View style={s.checkCircle}>
-                <Check size={30} color={D.success} strokeWidth={2.5} />
-              </View>
-              <Text style={s.titleCenter}>Revisá tu email</Text>
-              <Text style={s.subtitleCenter}>
-                Si existe una cuenta con {email}, vas a recibir un enlace para restablecer tu contraseña.
-              </Text>
-            </Animated.View>
-          ) : (
-            <>
-              <Animated.View style={s.intro} entering={FadeInDown.duration(450).delay(80)}>
-                <Text style={s.title}>Recuperar contraseña</Text>
+          {/* Una sola entrada sobria para todo el cuerpo. */}
+          <Animated.View style={s.body} entering={FadeIn.duration(420)}>
+            {sent ? (
+              <View style={s.sentBox}>
+                <View style={s.checkCircle}>
+                  <Check size={30} color={D.success} strokeWidth={2.5} />
+                </View>
+                <Text style={s.title}>Revisá tu correo</Text>
                 <Text style={s.subtitle}>
-                  Ingresá tu email y te enviamos un enlace para restablecerla.
+                  Si existe una cuenta con {email}, te llega el enlace para poner una
+                  contraseña nueva.
                 </Text>
-              </Animated.View>
+              </View>
+            ) : (
+              <>
+                <Text style={s.title}>¿Te olvidaste{'\n'}la contraseña?</Text>
+                <Text style={s.subtitle}>
+                  Poné tu correo y te mandamos un enlace para poner una nueva. Llega en
+                  un minuto.
+                </Text>
 
-              <Animated.View style={s.form} entering={FadeInDown.duration(450).delay(160)}>
                 {error ? (
                   <Animated.View style={s.errorBox} entering={FadeIn.duration(200)}>
                     <Text style={s.errorText}>{error}</Text>
@@ -99,7 +106,7 @@ export default function OlvideContrasenaScreen() {
                     style={s.input}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="Correo electrónico"
+                    placeholder="Correo"
                     placeholderTextColor={D.textFaint}
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -113,28 +120,45 @@ export default function OlvideContrasenaScreen() {
                   />
                 </View>
 
-                <Pressable
-                  style={({ pressed }) => [s.btn, pressed && s.btnPressed, loading && s.btnDisabled]}
-                  onPress={handleSubmit}
+                <PressableScale
+                  style={[s.btn, loading && s.btnDisabled]}
+                  onPress={() => { haptic.light(); void handleSubmit(); }}
                   disabled={loading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mandame el enlace"
                 >
                   {loading
                     ? <ActivityIndicator color={colors.white} />
-                    : <Text style={s.btnText}>Enviar enlace</Text>}
-                </Pressable>
-              </Animated.View>
-            </>
-          )}
+                    : <Text style={s.btnText}>Mandame el enlace</Text>}
+                </PressableScale>
+              </>
+            )}
 
-          <TouchableOpacity
-            onPress={() => router.replace('/(auth)/login')}
-            style={s.linkWrap}
-            activeOpacity={0.7}
-            hitSlop={6}
-          >
-            <ArrowLeft size={16} color={D.brand} strokeWidth={2} />
-            <Text style={s.link}>Volver al inicio de sesión</Text>
-          </TouchableOpacity>
+            {/* Ayuda de la maqueta: adelanta la duda que sigue al enviar. */}
+            <View style={s.ayuda}>
+              <View style={s.ayudaIcono}>
+                <Mail size={19} color={D.brand} strokeWidth={1.9} />
+              </View>
+              <View style={s.flex}>
+                <Text style={s.ayudaTitulo}>¿No te llegó?</Text>
+                <Text style={s.ayudaTexto}>
+                  Mirá en correo no deseado. Si igual no aparece, escribinos y lo
+                  resolvemos.
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          <View style={s.footer}>
+            <Text style={s.footerText}>¿Te acordaste? </Text>
+            <TouchableOpacity
+              onPress={() => router.replace('/(auth)/login')}
+              hitSlop={8}
+              activeOpacity={0.7}
+            >
+              <Text style={s.link}>Entrar</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -144,62 +168,65 @@ export default function OlvideContrasenaScreen() {
 type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: D.bgBottom },
+  root: { flex: 1, backgroundColor: D.bg },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 26 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24 },
 
-  header: { alignItems: 'center', marginBottom: 28 },
-
-  intro: { marginBottom: 26 },
-  title: {
-    fontSize: 32, fontWeight: '700', fontFamily: fontFamily.semibold,
-    letterSpacing: -0.8, color: D.text,
+  backBtn: {
+    width: 44, height: 44, marginLeft: -12,
+    alignItems: 'center', justifyContent: 'center',
   },
-  subtitle: { fontSize: 15, color: D.textMuted, marginTop: 6, lineHeight: 21, letterSpacing: -0.1 },
 
-  sentBox: { alignItems: 'center', gap: 14 },
+  // flexGrow para que el pie quede abajo aunque el cuerpo sea corto.
+  body: { flexGrow: 1, paddingTop: 30 },
+
+  title: {
+    fontSize: 30, lineHeight: 34, fontWeight: '700', fontFamily: fontFamily.bold,
+    letterSpacing: -1.1, color: D.text,
+  },
+  subtitle: { marginTop: 14, fontSize: 16, lineHeight: 23, color: D.textMuted },
+
+  sentBox: { alignItems: 'center', gap: 4, paddingBottom: 6 },
   checkCircle: {
-    width: 64, height: 64, borderRadius: 999,
+    width: 64, height: 64, borderRadius: 999, marginBottom: 12,
     backgroundColor: D.successBg,
     justifyContent: 'center', alignItems: 'center',
   },
-  titleCenter: {
-    fontSize: 28, fontWeight: '700', fontFamily: fontFamily.semibold,
-    letterSpacing: -0.7, color: D.text, textAlign: 'center',
-  },
-  subtitleCenter: { fontSize: 15, color: D.textMuted, textAlign: 'center', lineHeight: 21 },
 
-  form: { gap: 12 },
-
-  errorBox: {
-    backgroundColor: D.dangerBg, borderRadius: 12, padding: 13,
-    borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)',
-  },
-  errorText: { fontSize: 13.5, color: D.danger },
+  errorBox: { marginTop: 18, backgroundColor: D.dangerBg, borderRadius: 18, padding: 14 },
+  errorText: { fontSize: 14, color: D.danger, lineHeight: 19 },
 
   inputWrap: {
-    height: 56, borderRadius: 14,
+    marginTop: 26, height: 58, borderRadius: 18,
     borderWidth: 1.5, borderColor: 'transparent',
-    backgroundColor: D.field,
+    backgroundColor: D.surface,
     justifyContent: 'center',
   },
-  inputWrapFocused: { borderColor: D.brand, backgroundColor: D.fieldFocus },
-  input: {
-    height: '100%', paddingHorizontal: 16,
-    fontSize: 16.5, color: D.text, letterSpacing: -0.2,
-  },
+  inputWrapFocused: { borderColor: D.brand },
+  input: { height: '100%', paddingHorizontal: 18, fontSize: 17, color: D.text },
 
   btn: {
-    backgroundColor: D.brand, borderRadius: 14, height: 56,
-    alignItems: 'center', justifyContent: 'center', marginTop: 6,
+    marginTop: 14, backgroundColor: D.brandSolid, borderRadius: 20, height: 58,
+    alignItems: 'center', justifyContent: 'center',
+    // Sombra teñida: el botón principal flota sobre el negro sin borde.
+    shadowColor: D.brand, shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35, shadowRadius: 22, elevation: 8,
   },
-  btnPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: colors.white, fontSize: 16.5, fontWeight: '700', letterSpacing: -0.2 },
+  btnText: { color: colors.white, fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold },
 
-  linkWrap: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginTop: 30,
+  ayuda: {
+    marginTop: 26, backgroundColor: D.surface, borderRadius: 20,
+    padding: 16, flexDirection: 'row', gap: 13,
   },
-  link: { fontSize: 14.5, fontWeight: '700', color: D.brand },
+  ayudaIcono: {
+    width: 40, height: 40, borderRadius: 14, backgroundColor: D.successBg,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  ayudaTitulo: { fontSize: 16, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.text },
+  ayudaTexto: { fontSize: 14, lineHeight: 20, color: D.textMuted, marginTop: 3 },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingTop: 26, paddingBottom: 16 },
+  footerText: { fontSize: 15, color: D.textMuted },
+  link: { fontSize: 15, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.brand },
 });
