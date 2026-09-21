@@ -76,7 +76,8 @@ export default function LoginScreen() {
   const [focused, setFocused] = useState<'email' | 'password' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [bioListo, setBioListo] = useState(false);
+  /** Solo se prende si el Face ID automático no entró: ver el botón más abajo. */
+  const [bioReintento, setBioReintento] = useState(false);
 
   /**
    * `silencioso` es para el intento automático al abrir la pantalla: ahí no
@@ -86,6 +87,8 @@ export default function LoginScreen() {
   const entrarConBiometria = async (silencioso = false) => {
     const r = await loginBiometrico();
     if (!r.ok) {
+      // Quedó a mitad de camino: recién ahora ofrecemos reintentar a mano.
+      if (r.motivo === 'cancelado' || r.motivo === 'fallo') setBioReintento(true);
       if (!silencioso) {
         const msg = mensajeBiometrico(r.motivo);
         if (msg) { setError(msg); haptic.error(); }
@@ -107,16 +110,12 @@ export default function LoginScreen() {
     }
   };
 
-  // El botón se muestra con que el teléfono TENGA Face ID, aunque todavía no
-  // haya contraseña guardada: si se ocultara, quien nunca entró a mano vería
-  // desaparecer una opción que la app promete, sin ninguna explicación. Al
-  // tocarlo se le dice que entre una vez con contraseña.
-  // El intento automático, en cambio, solo corre si ya hay algo guardado, y va
-  // en silencio: el usuario todavía no pidió nada.
+  // Al abrir el login, si ya hay una contraseña guardada, la cara se lee sola.
+  // Va en silencio: el usuario todavía no pidió nada, y si cancela no hay que
+  // retarlo con un cartel — alcanza con ofrecerle el botón de reintento.
   useEffect(() => {
     (async () => {
       if (!(await biometriaDisponible())) return;
-      setBioListo(true);
       if (await hayCredencialesGuardadas()) void entrarConBiometria(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,7 +247,14 @@ export default function LoginScreen() {
               }
             </PressableScale>
 
-            {bioListo && (
+            {/*
+              El botón de Face ID NO se muestra en el camino normal: al abrir el
+              login la cara ya se lee sola y se entra, así que un botón para
+              pedir lo que acaba de pasar solo. Aparece únicamente cuando ese
+              intento automático no entró —porque lo cancelaste— y ahí sí hace
+              falta una forma de reintentar sin salir y volver a la pantalla.
+            */}
+            {bioReintento && (
               <PressableScale
                 style={s.bioBtn}
                 onPress={() => { haptic.selection(); void entrarConBiometria(); }}
