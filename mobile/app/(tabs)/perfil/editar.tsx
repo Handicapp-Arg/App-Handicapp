@@ -125,8 +125,8 @@ export default function EditarPerfilScreen() {
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
-  errorText: { fontSize: text.sm, color: colors.red500 },
+  errorText: { fontSize: text.sm, color: c.danger },
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package, type LucideIcon,
@@ -8,10 +8,12 @@ import {
 
 import { useHorse, useFinancialSummary } from '../../../../hooks/use-horses';
 import { useAuth } from '../../../../lib/auth';
+import { haptic } from '../../../../lib/haptics';
+import { Routes } from '../../../../lib/routes';
 import { formatMoney } from '../../../../lib/currency';
 import { fechaHumana, mesCorto } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
-import { space, text, weight } from '../../../../styles/tokens';
+import { space, text, weight, radius, touch } from '../../../../styles/tokens';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { EmptyState } from '../../../../components/EmptyState';
 import { ErrorState } from '../../../../components/ErrorState';
@@ -34,7 +36,8 @@ export default function FinanzasScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
+  const router = useRouter();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
 
@@ -42,6 +45,13 @@ export default function FinanzasScreen() {
   const isJineteOrPeon = user?.role === 'jinete' || user?.role === 'peon';
   const { data: financial, isError, refetch } = useFinancialSummary(id, !isJineteOrPeon);
   const categoryMeta = useMemo(() => makeExpenseCategoryMeta(c), [c]);
+
+  // Cargar un gasto sin salir del caballo: el formulario abre ya en tipo "gasto".
+  const puedeRegistrar = can('horses', 'update');
+  const irARegistrarGasto = () => {
+    haptic.light();
+    router.push({ pathname: Routes.caballoEventoNuevo(id), params: { tipo: 'gasto' } } as never);
+  };
 
   if (isHorseError && !horse) {
     return (
@@ -75,7 +85,9 @@ export default function FinanzasScreen() {
             <EmptyState
               icon="receipt-outline"
               title="Sin gastos registrados"
-              message='Creá un evento de tipo "Gasto" para ver el dashboard'
+              message="Cargá el primer gasto de este caballo y vas a ver acá el total, el promedio por mes y el detalle por categoría."
+              actionLabel={puedeRegistrar ? 'Registrar gasto' : undefined}
+              onAction={puedeRegistrar ? irARegistrarGasto : undefined}
             />
           ) : (
             <>
@@ -90,6 +102,18 @@ export default function FinanzasScreen() {
                 <Text style={s.subStatLabel}>Promedio por mes</Text>
                 <Text style={s.subStatValue}>{formatMoney(financial.average_monthly)}</Text>
               </View>
+
+              {puedeRegistrar && (
+                <TouchableOpacity
+                  style={s.registrarBtn}
+                  onPress={irARegistrarGasto}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Registrar un gasto de este caballo"
+                >
+                  <Text style={s.registrarBtnText}>+ Registrar gasto</Text>
+                </TouchableOpacity>
+              )}
 
               {/* Por categoría */}
               {(financial.by_category ?? []).length > 0 && (
@@ -125,13 +149,21 @@ export default function FinanzasScreen() {
               {(financial.monthly ?? []).length > 0 && (
                 <View style={{ marginTop: space[6] }}>
                   <Text style={s.sectionTitle}>Evolución mensual</Text>
-                  {(financial.monthly ?? []).slice(0, 6).map((m) => {
+                  {(financial.monthly ?? []).slice(0, 6).map((m, i) => {
                     const label = mesCorto(m.month);
                     const maxVal = Math.max(...(financial.monthly ?? []).map((x) => x.total), 1);
+                    // Serie en gris neutro; el cuero marca solo el mes más reciente.
+                    const esMesActual = i === 0;
                     return (
                       <View key={m.month} style={s.barRow}>
                         <Text style={s.barLabel}>{label}</Text>
-                        <View style={s.barTrack}><View style={[s.barFill, { width: `${(m.total / maxVal) * 100}%` as any }]} /></View>
+                        <View style={s.barTrack}>
+                          <View style={[
+                            s.barFill,
+                            { width: `${(m.total / maxVal) * 100}%` as any },
+                            !esMesActual && { backgroundColor: c.textFaint },
+                          ]} />
+                        </View>
                         <Text style={s.barValue}>{formatMoney(m.total)}</Text>
                       </View>
                     );
@@ -172,6 +204,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   section: { marginHorizontal: space[4] },
   sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3, marginBottom: space[3] },
+
+  /* Misma píldora neutra que el "+ Registrar" de Sanidad, para no inventar un botón nuevo. */
+  registrarBtn: {
+    alignSelf: 'center', marginTop: space[4], minHeight: touch.min, justifyContent: 'center',
+    borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
+  },
+  registrarBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
   /* Hero: total acumulado */
   hero: { alignItems: 'center', paddingVertical: space[4], gap: space[1] },

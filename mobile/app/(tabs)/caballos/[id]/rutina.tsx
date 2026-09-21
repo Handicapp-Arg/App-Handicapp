@@ -17,15 +17,17 @@ import { ErrorState } from '../../../../components/ErrorState';
 import { ListRowSkeleton } from '../../../../components/Skeleton';
 
 /** Íconos de la rutina diaria — lucide con color (en vez de emojis). */
-const ROUTINE_ICON: Record<string, { Icon: LucideIcon; color: string }> = {
-  morning_feed:   { Icon: Sunrise,    color: '#f59e0b' },
-  afternoon_feed: { Icon: Sun,        color: '#eab308' },
-  evening_feed:   { Icon: Moon,       color: '#6366f1' },
-  water_ok:       { Icon: Droplets,   color: '#3b82f6' },
-  paddock:        { Icon: Sprout,     color: '#22c55e' },
-  trained:        { Icon: Activity,   color: '#f97316' },
-  health_check:   { Icon: HeartPulse, color: '#ef4444' },
-};
+function makeRoutineIcon(c: ThemeColors): Record<string, { Icon: LucideIcon; color: string }> {
+  return {
+    morning_feed:   { Icon: Sunrise,    color: c.warning },
+    afternoon_feed: { Icon: Sun,        color: c.warning },
+    evening_feed:   { Icon: Moon,       color: c.info },
+    water_ok:       { Icon: Droplets,   color: c.info },
+    paddock:        { Icon: Sprout,     color: c.success },
+    trained:        { Icon: Activity,   color: c.warning },
+    health_check:   { Icon: HeartPulse, color: c.danger },
+  };
+}
 
 export default function RutinaScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -33,6 +35,7 @@ export default function RutinaScreen() {
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
+  const routineIcon = useMemo(() => makeRoutineIcon(c), [c]);
 
   const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: routines } = useRoutines(id);
@@ -86,7 +89,7 @@ export default function RutinaScreen() {
           <View style={s.routineList}>
             {ROUTINE_ITEMS.map(({ key, label }) => {
               const checked = todayRoutine?.[key] ?? false;
-              const ri = ROUTINE_ICON[key];
+              const ri = routineIcon[key];
               const RIcon = ri?.Icon ?? Info;
               return (
                 <TouchableOpacity
@@ -151,7 +154,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
+  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
 
   routineList: { gap: space[2] },
   routineItem: {

@@ -208,7 +208,7 @@ export default function NuevoCaballoScreen() {
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
-  errorText: { fontSize: text.sm, color: colors.red500 },
+  errorText: { fontSize: text.sm, color: c.danger },
   photoPickerBtn: { alignSelf: 'center', marginBottom: space[1], position: 'relative' },
   photoPreview: { width: 110, height: 110, borderRadius: 55 },
   photoPlaceholder: { width: 110, height: 110, borderRadius: 55, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', gap: 4 },
@@ -216,6 +216,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   photoPlaceholderSub: { fontSize: text.xs, color: c.textFaint },
   photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

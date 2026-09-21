@@ -189,6 +189,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   userNotFoundText: { fontSize: text.xs, color: c.danger },
   // Footer sin borde: solo aire, como eventos/nuevo.
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

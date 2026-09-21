@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MessageCircle, ArrowUp, X } from 'lucide-react-native';
@@ -158,9 +158,15 @@ export default function HistorialScreen() {
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <ScreenHeader scrollable showBack title="Historial" subtitle={horse.name} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: insets.bottom + space[10] }} showsVerticalScrollIndicator={false}>
-        <View style={s.section}>
-          <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
+      {/* FlatList y no ScrollView+map: el historial de un caballo crece sin techo. */}
+      <FlatList
+        data={sortedEvents}
+        keyExtractor={(ev) => ev.id}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + space[10] }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={[s.section, s.sectionHeader, { justifyContent: 'space-between' }]}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionTitle}>Historial de eventos</Text>
               {sortedEvents.length > 0 && (
@@ -170,28 +176,29 @@ export default function HistorialScreen() {
             {can('events', 'create') && (
               // El formulario de nuevo evento ahora es una pantalla empujada:
               // ./evento-nuevo.tsx (el caballo va implícito en la ruta).
-              <TouchableOpacity onPress={() => { haptic.light(); nav.push(router, Routes.caballoEventoNuevo(id)); }} style={s.smallBtn}>
+              <TouchableOpacity onPress={() => { haptic.light(); nav.push(router, Routes.caballoEventoNuevo(id)); }} style={s.smallBtn} activeOpacity={0.75}>
                 <Text style={s.smallBtnText}>+ Agregar</Text>
               </TouchableOpacity>
             )}
           </View>
-          {sortedEvents.length === 0 ? (
+        }
+        ListEmptyComponent={
+          <View style={s.section}>
             <EmptyState
               icon="newspaper-outline"
               title="Sin eventos registrados"
               message="Registrá notas, entrenamientos, salud y carreras para armar el historial."
             />
-          ) : (
-            <View style={s.eventsList}>
-              {sortedEvents.map((ev, index) => (
-                <Animated.View key={ev.id} entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
-                  <EventCard event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} isLast={index === sortedEvents.length - 1} c={c} s={s} />
-                </Animated.View>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
+          </View>
+        }
+        renderItem={({ item: ev, index }) => (
+          <View style={[s.section, s.eventsList]}>
+            <Animated.View entering={FadeInDown.duration(300).delay(Math.min(index, 8) * 45)}>
+              <EventCard event={ev} currentUserId={user?.id} canEdit={can('events', 'create')} isLast={index === sortedEvents.length - 1} c={c} s={s} />
+            </Animated.View>
+          </View>
+        )}
+      />
     </View>
   );
 }
@@ -203,7 +210,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
+  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
   countBadge: { backgroundColor: c.surfaceAlt, borderRadius: 999, paddingHorizontal: space[2], paddingVertical: 2 },
   countText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
 
@@ -219,10 +226,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Comentarios */
   commentRoot: { marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, paddingTop: 8 },
   commentToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  commentToggleText: { fontSize: text.sm, color: c.textFaint, fontWeight: '600' },
+  commentToggleText: { fontSize: text.sm, color: c.textFaint, fontWeight: weight.semibold },
   commentBody: { marginTop: 8, gap: 8 },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  commentAuthor: { fontSize: text.sm, fontWeight: '700', color: c.text },
+  commentAuthor: { fontSize: text.sm, fontWeight: weight.bold, color: c.text },
   commentDate: { fontSize: text.xs, color: c.textFaint },
   commentText: { fontSize: text.base, color: c.text, marginTop: 2 },
   commentInputRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-end', marginTop: 4 },

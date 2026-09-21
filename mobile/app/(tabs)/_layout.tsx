@@ -42,7 +42,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (!meta) return null;
     const focused = activeName === name;
     const Icon = meta.Icon;
-    const color = focused ? c.brand : (c.isDark ? '#8a8177' : '#57534e');
+    const color = focused ? c.brand : c.textMuted;
     const onPress = () => {
       haptic.selection();
       const route = state.routes.find((r) => r.name === name);

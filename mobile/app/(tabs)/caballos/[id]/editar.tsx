@@ -10,7 +10,7 @@ import { useHorse, useUpdateHorse } from '../../../../hooks/use-horses';
 import { DatePicker } from '../../../../components/DatePicker';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { useToast } from '../../../../components/Toast';
-import { Spinner } from '../../../../components/Spinner';
+import { Skeleton } from '../../../../components/Skeleton';
 import { haptic } from '../../../../lib/haptics';
 import { colors } from '../../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
@@ -87,7 +87,9 @@ export default function EditarCaballoScreen() {
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
         <ScreenHeader scrollable showBack title="Editar caballo" />
-        <Spinner />
+        <View style={{ padding: space[4], gap: space[3] }}>
+          {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height={touch.field} />)}
+        </View>
       </View>
     );
   }
@@ -149,8 +151,8 @@ export default function EditarCaballoScreen() {
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
-  errorText: { fontSize: text.sm, color: colors.red500 },
+  errorText: { fontSize: text.sm, color: c.danger },
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

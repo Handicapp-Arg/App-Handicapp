@@ -30,7 +30,9 @@ import { formatMoney } from '../../../../lib/currency';
 import { useAuth } from '../../../../lib/auth';
 import { haptic } from '../../../../lib/haptics';
 import { Routes, nav } from '../../../../lib/routes';
-import { Spinner } from '../../../../components/Spinner';
+import { Skeleton, ListRowSkeleton } from '../../../../components/Skeleton';
+import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { ErrorState } from '../../../../components/ErrorState';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
 import { fechaHumana, fechaHoraHumana } from '../../../../lib/fechas';
@@ -45,6 +47,9 @@ import { AppImage } from '../../../../components/AppImage';
 const PUBLIC_BASE = process.env.EXPO_PUBLIC_APP_URL ?? 'https://app.handicapp.com.ar';
 
 const SEX_LABEL: Record<string, string> = { macho: 'Macho', hembra: 'Hembra', castrado: 'Castrado' };
+
+/** Las píldoras del hero miden 36 para no tapar la foto: el hitSlop las lleva a 52 táctiles. */
+const HIT_PILL = { top: 8, bottom: 8, left: 8, right: 8 };
 
 /* La edición del caballo ahora es una pantalla empujada: ./editar.tsx
    (los formularios con tipeo se rompían con el teclado dentro de las hojas). */
@@ -145,18 +150,27 @@ export default function HorseDetailScreen() {
     ]);
   };
 
-  if (isLoading) return <Spinner />;
+  // Esqueleto con la forma real de la ficha (hero + filas), no una ruedita suelta.
+  if (isLoading) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <Skeleton height={200} borderRadius={0} />
+        <View style={{ padding: space[4], gap: space[2] }}>
+          <Skeleton height={28} width="60%" style={{ marginBottom: space[2] }} />
+          {[1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} />)}
+        </View>
+      </View>
+    );
+  }
   if (!horse) {
     return (
-      <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={{ fontSize: text.base, color: c.textMuted }}>Caballo no encontrado</Text>
-        <TouchableOpacity
-          onPress={() => { haptic.light(); router.canGoBack() ? router.back() : router.navigate(Routes.tabsCaballos as never); }}
-          accessibilityRole="button"
-          accessibilityLabel="Volver a la lista de caballos"
-        >
-          <Text style={{ fontSize: text.sm, fontWeight: '600', color: c.brand }}>← Volver</Text>
-        </TouchableOpacity>
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader scrollable showBack backTo={Routes.tabsCaballos} title="Caballo" />
+        <ErrorState
+          titulo="No encontramos este caballo"
+          detalle="Puede que lo hayan eliminado o que el enlace ya no sirva."
+          onRetry={refetch}
+        />
       </View>
     );
   }
@@ -226,6 +240,7 @@ export default function HorseDetailScreen() {
           style={[s.heroPill, { top: insets.top + 10, left: 14 }]}
           onPress={() => { haptic.light(); router.canGoBack() ? router.back() : router.navigate(Routes.tabsCaballos as never); }}
           activeOpacity={0.8}
+          hitSlop={HIT_PILL}
           accessibilityRole="button"
           accessibilityLabel="Volver a la lista de caballos"
         >
@@ -239,6 +254,7 @@ export default function HorseDetailScreen() {
               style={[s.heroPill, s.heroPillStatic]}
               onPress={() => { haptic.light(); setShowMenu(true); }}
               activeOpacity={0.8}
+              hitSlop={HIT_PILL}
               accessibilityRole="button"
               accessibilityLabel="Más opciones del caballo"
             >
@@ -255,6 +271,7 @@ export default function HorseDetailScreen() {
               <TouchableOpacity
                 style={[s.heroPill, s.heroPillStatic, s.heroPillQr]}
                 onPress={() => { haptic.light(); setShowQR(true); }} activeOpacity={0.85}
+                hitSlop={HIT_PILL}
                 accessibilityRole="button"
                 accessibilityLabel="Ver código QR del caballo"
               >
@@ -439,7 +456,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Hero */
   heroWrap: { aspectRatio: 16 / 9, position: 'relative', backgroundColor: colors.gray900 },
   heroPlaceholder: { backgroundColor: colors.gray900, alignItems: 'center', justifyContent: 'center' },
-  heroPlaceholderInitial: { fontSize: 80, fontWeight: '800', color: colors.brand300 },
+  heroPlaceholderInitial: { fontSize: 80, fontWeight: weight.extrabold, color: colors.brand300 },
   heroPill: {
     position: 'absolute', width: 36, height: 36, borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -450,7 +467,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   heroActions: { position: 'absolute', right: 14, flexDirection: 'row', gap: 8 },
   heroContent: { position: 'absolute', bottom: 0, left: 16, right: 16, paddingBottom: 20 },
   heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  horseName: { fontSize: text.xl, fontWeight: '800', letterSpacing: -0.5, color: colors.white, lineHeight: 32, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  horseName: { fontSize: text.xl, fontWeight: weight.extrabold, letterSpacing: -0.5, color: colors.white, lineHeight: 32, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   heroBadges: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   heroBadge: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   heroBadgeAmber: { backgroundColor: 'rgba(245,158,11,0.35)' },
@@ -473,13 +490,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: space[4], marginBottom: space[4], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.md },
   alertBannerDanger: { backgroundColor: c.dangerSoft },
   alertBannerWarning: { backgroundColor: c.warningSoft },
-  alertText: { flex: 1, fontSize: text.sm, fontWeight: '700' },
+  alertText: { flex: 1, fontSize: text.sm, fontWeight: weight.bold },
 
   /* Resumen vital */
   summaryCard: { marginHorizontal: space[4], marginBottom: space[6] },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   summaryRowLast: { borderBottomWidth: 0 },
-  summaryValue: { fontSize: text.sm, fontWeight: '700', color: c.text, maxWidth: 140 },
+  summaryValue: { fontSize: text.sm, fontWeight: weight.bold, color: c.text, maxWidth: 140 },
 
   /* Lista de secciones — patrón Más/Ajustes */
   sectionsList: { marginHorizontal: space[4], marginBottom: space[8] },
@@ -491,7 +508,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /* Hoja QR */
   qrWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 18 },
   qrInner: { backgroundColor: '#ffffff', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  qrHint: { textAlign: 'center', fontSize: text.sm, fontWeight: '500', color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
+  qrHint: { textAlign: 'center', fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, paddingHorizontal: 24, lineHeight: 18 },
   qrActions: { gap: space[3], marginTop: 14 },
   qrLinkBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, minHeight: touch.min },
   qrLinkBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },

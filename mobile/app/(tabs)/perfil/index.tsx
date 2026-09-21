@@ -83,7 +83,7 @@ export default function PerfilScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader scrollable title="Perfil" />
+        <ScreenHeader scrollable showBack backTo={Routes.mas} title="Perfil" />
 
         {/* Hero: identidad — jerarquía intacta */}
         <View style={s.hero}>

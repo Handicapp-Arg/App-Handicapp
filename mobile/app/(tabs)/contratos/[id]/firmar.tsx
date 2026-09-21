@@ -126,6 +126,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   hint: { fontSize: text.xs, color: c.textFaint, marginTop: space[2] },
   // Footer sin borde: solo aire, como eventos/nuevo.
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.success, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.success, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

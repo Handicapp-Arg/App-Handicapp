@@ -325,7 +325,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   monedaBtnActiva: { backgroundColor: c.surface },
   monedaText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
   monedaTextActiva: { color: c.text },
-  errorText: { fontSize: text.sm, color: colors.red500 },
+  errorText: { fontSize: text.sm, color: c.danger },
   photoThumb: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
   photoImg: { width: '100%', height: '100%' },
   photoRemove: { position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
@@ -336,6 +336,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   fotosRowText: { flex: 1, fontSize: text.md, color: c.text },
   fotosRowCount: { fontSize: text.sm, color: c.textFaint },
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

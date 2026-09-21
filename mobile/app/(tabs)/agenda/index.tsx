@@ -147,6 +147,7 @@ export default function AgendaScreen() {
               style={s.headerIconBtn}
               onPress={() => { haptic.selection(); setViewMode(viewMode === 'list' ? 'calendar' : 'list'); }}
               activeOpacity={0.8}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
               accessibilityLabel={viewMode === 'list' ? 'Ver como calendario' : 'Ver como lista'}
             >
@@ -286,5 +287,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   apptTitle: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   apptMeta: { fontSize: text.xs, color: c.textFaint, textTransform: 'capitalize' },
   apptTime: { fontSize: text.sm, color: c.text, fontWeight: weight.bold, width: 46, fontVariant: ['tabular-nums'] },
-  errorText: { fontSize: text.sm, color: colors.red500 },
+  errorText: { fontSize: text.sm, color: c.danger },
 });

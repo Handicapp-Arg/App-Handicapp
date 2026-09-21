@@ -109,7 +109,7 @@ export default function DocumentosScreen() {
           <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
             <Text style={s.sectionTitle}>Documentos</Text>
             {can('horses', 'update') && (
-              <TouchableOpacity onPress={() => { haptic.light(); setShowUploadDoc(true); }} style={s.smallBtn}>
+              <TouchableOpacity onPress={() => { haptic.light(); setShowUploadDoc(true); }} style={s.smallBtn} activeOpacity={0.75}>
                 <Text style={s.smallBtnText}>+ Subir</Text>
               </TouchableOpacity>
             )}
@@ -182,7 +182,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
+  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
   personRow: { flexDirection: 'row', alignItems: 'center', minHeight: touch.field, gap: 10 },
   docIcon: { width: 36, height: 36, borderRadius: radius.md - 2, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   docName: { flex: 1, fontSize: text.base, fontWeight: weight.medium, color: c.text },
@@ -191,7 +191,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   smallBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
   input: { borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
+  btn: { borderRadius: radius.lg, height: touch.button, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

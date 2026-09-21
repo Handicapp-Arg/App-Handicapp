@@ -318,7 +318,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   infoText: { flex: 1, fontSize: text.xs, color: c.textMuted, lineHeight: 17 },
   fieldLabel: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   input: { borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  errorText: { fontSize: text.sm, color: colors.red500 },
+  errorText: { fontSize: text.sm, color: c.danger },
 
   docPickerBtn: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: c.surfaceAlt },
   docPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: space[6], gap: 6 },
@@ -336,6 +336,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   footer: { flexDirection: 'row', gap: space[3], paddingHorizontal: space[4], paddingTop: space[3] },
   skipLink: { flex: 1, minHeight: touch.min, justifyContent: 'center', alignItems: 'center' },
   skipLinkText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted },
-  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.md, backgroundColor: c.brand, alignItems: 'center' },
+  submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },
 });

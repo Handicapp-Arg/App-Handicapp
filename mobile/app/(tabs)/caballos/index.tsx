@@ -93,6 +93,9 @@ function HorseCard({ horse, monthlySpend, c, s }: {
 /* El alta de caballo ahora es una pantalla empujada: app/(tabs)/caballos/nuevo.tsx
    (los formularios con tipeo se rompían con el teclado dentro de las hojas). */
 
+/** Los chips se ven compactos a propósito; el hitSlop les da los 44 táctiles. */
+const HIT_CHIP = { top: 10, bottom: 10, left: 4, right: 4 };
+
 export default function CaballosScreen() {
   const { can } = useAuth();
   const { c } = useTheme();
@@ -169,6 +172,7 @@ export default function CaballosScreen() {
                     style={[s.filterChip, filterActivity === act && s.filterChipActive]}
                     onPress={() => { haptic.selection(); setFilterActivity(filterActivity === act ? '' : act); }}
                     activeOpacity={0.75}
+                    hitSlop={HIT_CHIP}
                   >
                     <Text style={[s.filterChipText, filterActivity === act && s.filterChipTextActive]}>{act}</Text>
                   </TouchableOpacity>
@@ -179,6 +183,7 @@ export default function CaballosScreen() {
                     style={[s.filterChip, filterEstab === est && s.filterChipActive]}
                     onPress={() => { haptic.selection(); setFilterEstab(filterEstab === est ? '' : est); }}
                     activeOpacity={0.75}
+                    hitSlop={HIT_CHIP}
                   >
                     <Building2 size={11} color={filterEstab === est ? c.surface : c.textMuted} strokeWidth={2} />
                     <Text style={[s.filterChipText, filterEstab === est && s.filterChipTextActive]}>{est}</Text>

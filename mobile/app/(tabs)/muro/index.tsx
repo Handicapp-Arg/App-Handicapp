@@ -395,7 +395,7 @@ function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
       {/* Saludo */}
       <View style={s.inicioTop}>
         <View style={{ flex: 1 }}>
-          <Text style={s.inicioHola}>Hola, {nombre} 👋</Text>
+          <Text style={s.inicioHola}>Hola, {nombre}</Text>
           <Text style={s.inicioFecha}>{fecha}</Text>
         </View>
         <TouchableOpacity

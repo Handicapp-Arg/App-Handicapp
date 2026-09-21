@@ -185,7 +185,7 @@ export default function SanidadScreen() {
           <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
             <Text style={s.sectionTitle}>Peso y condición</Text>
             {can('horses', 'update') && (
-              <TouchableOpacity onPress={() => { haptic.light(); setShowAddWeight(true); }} style={s.smallBtn}>
+              <TouchableOpacity onPress={() => { haptic.light(); setShowAddWeight(true); }} style={s.smallBtn} activeOpacity={0.75}>
                 <Text style={s.smallBtnText}>+ Registrar</Text>
               </TouchableOpacity>
             )}
@@ -240,6 +240,7 @@ export default function SanidadScreen() {
                 <TouchableOpacity
                   onPress={() => irANuevoRegistro()}
                   style={s.smallBtn}
+                  activeOpacity={0.75}
                 >
                   <Text style={s.smallBtnText}>+ Agregar</Text>
                 </TouchableOpacity>
@@ -356,7 +357,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
 
   section: { marginHorizontal: space[4], marginBottom: space[6], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
+  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
   countBadge: { backgroundColor: c.surfaceAlt, borderRadius: radius.full, paddingHorizontal: space[2], paddingVertical: 2 },
   countText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
 
@@ -393,8 +394,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   medRowLast: { borderBottomWidth: 0 },
   medCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   medTypeBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  medTypeText: { fontSize: text.xs, fontWeight: '700' },
-  medName: { flex: 1, fontSize: text.sm, fontWeight: '600', color: c.text },
+  medTypeText: { fontSize: text.xs, fontWeight: weight.bold },
+  medName: { flex: 1, fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   medDate: { fontSize: text.xs, color: c.textFaint },
   medNextDue: { fontSize: text.xs },
   medBrand: { fontSize: text.xs, color: c.textFaint },
@@ -407,7 +408,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   smallBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
   input: { borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[3], fontSize: text.base, color: c.text, backgroundColor: c.surfaceAlt },
-  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
+  btn: { borderRadius: radius.lg, height: touch.button, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnPrimaryText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },
 });

@@ -22,6 +22,18 @@ export const makeLayout = (c: ThemeColors) => StyleSheet.create({
 export const makeTypography = (c: ThemeColors) => StyleSheet.create({
   pageTitle: { fontSize: text.lg, fontWeight: weight.extrabold, color: c.text },
   sectionTitle: { fontSize: text.base, fontWeight: weight.bold, color: c.text },
+
+  /**
+   * Los dos encabezados de sección de la app. Antes cada pantalla se lo escribía
+   * a mano y aparecieron seis variantes; van siempre estos dos:
+   * - `sectionHeading`: pantallas de CONTENIDO (las subpantallas del caballo).
+   * - `sectionEyebrow`: listas tipo Ajustes de iOS (Más, Perfil, Mi plan).
+   */
+  sectionHeading: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
+  sectionEyebrow: {
+    fontSize: text.xs, fontWeight: weight.bold, color: c.textFaint,
+    textTransform: 'uppercase' as const, letterSpacing: 1,
+  },
   bodyLg: { fontSize: text.md, color: c.textMuted, lineHeight: 24 },
   body: { fontSize: text.base, color: c.textMuted, lineHeight: 22 },
   caption: { fontSize: text.xs, color: c.textFaint },

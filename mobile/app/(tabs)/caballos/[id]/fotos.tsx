@@ -22,6 +22,9 @@ import { Skeleton } from '../../../../components/Skeleton';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
+/** Cuántas fotos se muestran por tanda. */
+const PAGINA = 12;
+
 export default function FotosScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -34,6 +37,13 @@ export default function FotosScreen() {
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
   const [activityType, setActivityType] = useState('all');
+  // La grilla vive dentro de un ScrollView, así que no se puede virtualizar:
+  // se muestra de a tandas para no montar cientos de fotos remotas de una.
+  const [visibles, setVisibles] = useState(PAGINA);
+
+  const fotosFiltradas = (activityPhotos ?? []).filter((p) => activityType === 'all' || p.activity_type === activityType);
+  const fotosVisibles = fotosFiltradas.slice(0, visibles);
+  const hayMas = fotosFiltradas.length > fotosVisibles.length;
 
   if (isError && !horse) {
     return (
@@ -97,16 +107,17 @@ export default function FotosScreen() {
             <TouchableOpacity
               style={[s.activityChip, activityType === 'all' && { backgroundColor: c.brandSoft }]}
               onPress={() => { haptic.selection(); setActivityType('all'); }}
+              activeOpacity={0.75}
             >
               <Text style={[s.activityChipText, activityType === 'all' && { color: c.brand }]}>Todas</Text>
             </TouchableOpacity>
             {Object.entries(ACTIVITY_TYPES).map(([v, m]) => (
-              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg }]} onPress={() => { haptic.selection(); setActivityType(v); }}>
+              <TouchableOpacity key={v} style={[s.activityChip, activityType === v && { backgroundColor: c.isDark ? m.color + '26' : m.bg }]} onPress={() => { haptic.selection(); setActivityType(v); }} activeOpacity={0.75}>
                 <Text style={[s.activityChipText, activityType === v && { color: m.color }]}>{m.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          {!activityPhotos?.length ? (
+          {!fotosVisibles.length ? (
             <EmptyState
               icon="paw-outline"
               title="Sin fotos verificadas"
@@ -114,7 +125,7 @@ export default function FotosScreen() {
             />
           ) : (
             <View style={s.photosGrid}>
-              {activityPhotos.filter((p) => activityType === 'all' || p.activity_type === activityType).map((p, index) => {
+              {fotosVisibles.map((p, index) => {
                 const meta = ACTIVITY_TYPES[p.activity_type] ?? ACTIVITY_TYPES.otro;
                 const stamp = p.taken_at ? fechaHoraHumana(p.taken_at) : '';
                 return (
@@ -142,6 +153,17 @@ export default function FotosScreen() {
                   </AnimatedTouchable>
                 );
               })}
+              {hayMas && (
+                <TouchableOpacity
+                  style={s.verMasBtn}
+                  onPress={() => { haptic.light(); setVisibles((v) => v + PAGINA); }}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver más fotos"
+                >
+                  <Text style={s.verMasBtnText}>Ver más fotos</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
@@ -154,7 +176,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   section: { marginHorizontal: space[4], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
+  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
   activityTypeRow: { marginBottom: 10, flexGrow: 0 },
   // Igual que los "smallBtn" de las pantallas hermanas: neutro, sin invertir.
   captureBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: touch.min, borderRadius: radius.full, paddingHorizontal: space[4], backgroundColor: c.surfaceAlt },
@@ -162,6 +184,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   activityChip: { minHeight: touch.min, justifyContent: 'center', borderRadius: radius.full, paddingHorizontal: space[3], backgroundColor: c.surfaceAlt },
   activityChipText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textMuted },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  verMasBtn: {
+    width: '100%', minHeight: touch.min, justifyContent: 'center', alignItems: 'center',
+    borderRadius: radius.full, backgroundColor: c.surfaceAlt, marginTop: space[2],
+  },
+  verMasBtnText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
   photoWrap: { width: '48%', aspectRatio: 1, position: 'relative' },
   photoThumb: { width: '100%', height: '100%', borderRadius: radius.md },
   photoBadge: { position: 'absolute', top: space[2], left: space[2], borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },

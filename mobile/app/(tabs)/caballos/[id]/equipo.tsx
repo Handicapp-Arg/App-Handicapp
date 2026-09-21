@@ -143,7 +143,7 @@ export default function EquipoScreen() {
           <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
             <Text style={s.sectionTitle}>Veterinarios</Text>
             {can('horses', 'update') && (
-              <TouchableOpacity onPress={() => { haptic.light(); setShowAssignVet(true); }} style={s.smallBtn}>
+              <TouchableOpacity onPress={() => { haptic.light(); setShowAssignVet(true); }} style={s.smallBtn} activeOpacity={0.75}>
                 <Text style={s.smallBtnText}>+ Asignar</Text>
               </TouchableOpacity>
             )}
@@ -184,7 +184,7 @@ export default function EquipoScreen() {
           <View style={[s.sectionHeader, { justifyContent: 'space-between' }]}>
             <Text style={s.sectionTitle}>Equipo</Text>
             {canManageTeam && (
-              <TouchableOpacity onPress={() => { haptic.light(); setSelectedMemberId(''); setShowAssignTeam(true); }} style={s.smallBtn}>
+              <TouchableOpacity onPress={() => { haptic.light(); setSelectedMemberId(''); setShowAssignTeam(true); }} style={s.smallBtn} activeOpacity={0.75}>
                 <Text style={s.smallBtnText}>+ Asignar</Text>
               </TouchableOpacity>
             )}
@@ -409,7 +409,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   section: { marginHorizontal: space[4], marginBottom: space[6], gap: space[2] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: text.md, fontWeight: '700', color: c.text, letterSpacing: -0.3 },
+  sectionTitle: { fontSize: text.md, fontWeight: weight.bold, color: c.text, letterSpacing: -0.3 },
   emptyText: { fontSize: text.sm, color: c.textFaint },
 
   personRow: { flexDirection: 'row', alignItems: 'center', minHeight: touch.field, gap: 10 },
@@ -423,7 +423,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   optionRowBorde: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
   optionText: { flex: 1, fontSize: text.base, color: c.text },
 
-  btn: { borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
+  btn: { borderRadius: radius.lg, height: touch.button, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: c.brand },
   btnDanger: { backgroundColor: c.danger },
   btnPrimaryText: { fontSize: text.base, fontWeight: weight.semibold, color: colors.white },

@@ -7,7 +7,8 @@ import { useAuth } from '../../../../lib/auth';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { PedigreeTab } from '../../../../components/PedigreeTab';
-import { Spinner } from '../../../../components/Spinner';
+import { Skeleton } from '../../../../components/Skeleton';
+import { space } from '../../../../styles/tokens';
 
 export default function PedigreeScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -18,7 +19,13 @@ export default function PedigreeScreen() {
 
   const { data: horse, isLoading } = useHorse(id);
 
-  if (isLoading || !horse) return <Spinner />;
+  if (isLoading || !horse) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg, padding: space[4], gap: space[3] }}>
+        {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={64} />)}
+      </View>
+    );
+  }
 
   const canEdit = can('horses', 'update') || (user?.role === 'propietario' && horse.owner_id === user.id) || user?.role === 'admin';
 
