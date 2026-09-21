@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
-  useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, Easing,
+  useAnimatedStyle, withRepeat, withTiming, interpolate, Easing,
+  makeMutable, cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, type ThemeColors } from '../lib/theme';
@@ -14,18 +15,50 @@ interface SkeletonProps {
   style?: ViewStyle;
 }
 
+/* ─── Un solo reloj para TODOS los esqueletos ───
+   Antes cada bloque abría su propia animación infinita. Una pantalla como la
+   ficha del caballo monta ~15 esqueletos, y eso eran 15 animaciones en bucle
+   corriendo justo mientras el stack hace su transición de entrada: el hilo de
+   UI se llena de timers y la navegación se siente pesada.
+
+   Ahora el progreso es UNO solo, a nivel de módulo (`makeMutable` funciona
+   fuera de un componente), y cada bloque solo lo LEE en su `useAnimatedStyle`.
+   Leer un shared value es gratis; lo caro era animarlo N veces. Visualmente es
+   idéntico: los bloques ya arrancaban juntos, así que el brillo se veía
+   sincronizado igual. */
+const shimmerProgress = makeMutable(0);
+/** Cuántos esqueletos hay vivos: cuando no queda ninguno, se apaga el reloj. */
+let vivos = 0;
+
+function encenderShimmer() {
+  vivos += 1;
+  if (vivos > 1) return; // ya está corriendo
+  shimmerProgress.value = 0;
+  shimmerProgress.value = withRepeat(
+    withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
+    -1,
+    false,
+  );
+}
+
+function apagarShimmer() {
+  vivos = Math.max(0, vivos - 1);
+  // Sin esqueletos en pantalla no tiene sentido seguir animando en el hilo de UI.
+  if (vivos === 0) cancelAnimation(shimmerProgress);
+}
+
 /** Bloque de carga con shimmer (un brillo que se desliza), estilo apps modernas. */
 export function Skeleton({ width = '100%', height = 16, borderRadius = radius.sm, style }: SkeletonProps) {
-  const progress = useSharedValue(0);
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
 
   useEffect(() => {
-    progress.value = withRepeat(withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }), -1, false);
+    encenderShimmer();
+    return apagarShimmer;
   }, []);
 
   const shimmer = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [-180, 180]) }],
+    transform: [{ translateX: interpolate(shimmerProgress.value, [0, 1], [-180, 180]) }],
   }));
 
   const shimmerColor = c.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)';

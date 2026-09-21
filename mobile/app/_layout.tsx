@@ -81,8 +81,13 @@ function InnerLayout() {
             animationDuration: 280,
           }}
         >
-          <Stack.Screen name="peon" />
-          <Stack.Screen name="jinete" />
+          {/* "peon" y "jinete" son carpetas sin _layout, así que sus rutas
+              reales son peon/index, peon/[id], etc. Declararlas por el nombre
+              de la carpeta hacía que expo-router avisara por consola en CADA
+              render del stack: en una sesión de navegación normal eran más de
+              cien warnings cruzando el puente, y eso se siente como tirones.
+              No hace falta declararlas: el stack las toma del sistema de
+              archivos igual. */}
           <Stack.Screen name="supervision" />
         </Stack>
       </NotificationsProvider>

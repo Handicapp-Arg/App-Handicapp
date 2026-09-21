@@ -11,7 +11,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { BlurView } from 'expo-blur';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
@@ -30,7 +29,7 @@ const TAB_ACTIVA_W = 122;
 const BARRA_PAD = 8;
 
 /** La barra es oscura en ambos temas, así que sus colores no salen del theme. */
-const BARRA_FONDO = 'rgba(21,20,15,0.92)';
+const BARRA_FONDO = '#15140f';
 const BARRA_ACTIVO = '#FBFAF7';
 const BARRA_APAGADO = '#8A857C';
 
@@ -73,6 +72,21 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const nested = (state.routes[state.index] as any)?.state;
   const enPantallaInterna = !!nested && typeof nested.index === 'number' && nested.index > 0;
 
+  // Se oculta con opacidad, no desmontándose: al destruir la barra se destruía
+  // también su fondo y sus cuatro iconos, y volver a construirlos en mitad de
+  // la transición de 280 ms era un tirón en cada navegación.
+  const oculta = useSharedValue(enPantallaInterna ? 1 : 0);
+  useEffect(() => {
+    oculta.value = withTiming(enPantallaInterna ? 1 : 0, {
+      duration: duration.base,
+      easing: easing.outQuart,
+    });
+  }, [enPantallaInterna, oculta]);
+  const barra = useAnimatedStyle(() => ({
+    opacity: 1 - oculta.value,
+    transform: [{ translateY: oculta.value * 96 }],
+  }));
+
 
   const renderTab = (name: string) => {
     const meta = TABS[name];
@@ -104,23 +118,22 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     );
   };
 
-  if (enPantallaInterna) return null;
-
   return (
-    <View style={[styles.wrap, { bottom: insets.bottom + 10 }]} pointerEvents="box-none">
+    <Animated.View
+      style={[styles.wrap, { bottom: insets.bottom + 10 }, barra]}
+      pointerEvents={enPantallaInterna ? 'none' : 'box-none'}
+    >
       <View style={styles.bar}>
-        {/* Vidrio esmerilado de fondo, estilo pildora flotante de iOS. */}
-        <BlurView
-          intensity={40}
-          tint="dark"
-          style={[StyleSheet.absoluteFill, styles.barGlass]}
-        />
+        {/* Fondo sólido y no BlurView: encima del vidrio ya iba un velo casi
+            opaco, así que el desenfoque no se veía, pero se pagaba en cada
+            frame de scroll y se recreaba en cada navegación. */}
+        <View style={[StyleSheet.absoluteFill, styles.barGlass]} />
         {/* Pastilla que se desliza hasta la pestaña activa. Va detrás de los
             iconos y no intercepta toques. */}
         <Animated.View style={[styles.indicador, indicador]} pointerEvents="none" />
         {visibles.map(renderTab)}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -171,10 +184,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowRadius: 32,
     elevation: 10,
   },
-  barGlass: {
-    // El blur pone el vidrio; el velo oscuro es el que da el color de la barra.
-    backgroundColor: BARRA_FONDO,
-  },
+  barGlass: { backgroundColor: BARRA_FONDO },
   indicador: {
     position: 'absolute',
     left: BARRA_PAD,

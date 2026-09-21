@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback, memo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, RefreshControl, ScrollView, Alert,
 } from 'react-native';
@@ -16,7 +16,7 @@ import { PressableScale } from '../../../components/PressableScale';
 import { haptic } from '../../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
-import { entradaFila } from '../../../styles/motion';
+import { entradaLista } from '../../../styles/motion';
 import { hora, fechaHumana, diaLargo } from '../../../lib/fechas';
 import { ActionSheet } from '../../../components/ActionSheet';
 import { SwipeableRow } from '../../../components/SwipeableRow';
@@ -51,69 +51,56 @@ type Grupo = { clave: string; titulo: string; detalle: string; turnos: ServiceAp
  * reojo para saber qué hay, y una segunda línea por fila convierte la pestaña
  * en un bloque de texto. El caballo y el tipo se ven al tocar la fila.
  */
-function FilaTurno({
-  appt, onComplete, onDelete, isLast, c, s,
+const FilaTurno = memo(function FilaTurno({
+  appt, onComplete, onDelete, onAbrirMenu, isLast, c, s,
 }: {
   appt: ServiceAppointment;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
+  onAbrirMenu: (appt: ServiceAppointment) => void;
   isLast?: boolean;
   c: ThemeColors;
   s: Styles;
 }) {
-  const [menuAbierto, setMenuAbierto] = useState(false);
+  // Las acciones del swipe se memorizan: si fueran un array literal nuevo en
+  // cada render, `SwipeableRow` rearmaría su contenido derecho cada vez.
+  const acciones = useMemo(() => [
+    ...(appt.completed ? [] : [{
+      label: 'Completar',
+      Icon: Check,
+      color: c.success,
+      onPress: () => onComplete(appt.id),
+      accessibilityLabel: 'Marcar turno como completado',
+    }]),
+    {
+      label: 'Eliminar',
+      Icon: Trash2,
+      color: c.danger,
+      onPress: () => onDelete(appt.id),
+      accessibilityLabel: 'Eliminar turno',
+    },
+  ], [appt.completed, appt.id, c.success, c.danger, onComplete, onDelete]);
 
+  const abrir = useCallback(() => { haptic.selection(); onAbrirMenu(appt); }, [appt, onAbrirMenu]);
+
+  // El ActionSheet NO vive acá: uno por fila significaba montar un BottomSheet
+  // por turno (5 useSharedValue, 2 useAnimatedStyle y un Gesture.Pan cada uno)
+  // aunque estuviera cerrado. Ahora hay UNO solo a nivel de pantalla.
   return (
-    <SwipeableRow
-      acciones={[
-        ...(appt.completed ? [] : [{
-          label: 'Completar',
-          Icon: Check,
-          color: c.success,
-          onPress: () => onComplete(appt.id),
-          accessibilityLabel: 'Marcar turno como completado',
-        }]),
-        {
-          label: 'Eliminar',
-          Icon: Trash2,
-          color: c.danger,
-          onPress: () => onDelete(appt.id),
-          accessibilityLabel: 'Eliminar turno',
-        },
-      ]}
-    >
+    <SwipeableRow acciones={acciones}>
       <PressableScale
         style={[s.fila, !isLast && s.filaDivisor, appt.completed && s.filaCompletada]}
-        onPress={() => { haptic.selection(); setMenuAbierto(true); }}
+        onPress={abrir}
         accessibilityRole="button"
         accessibilityLabel={`Turno ${appt.title}`}
       >
         <Text style={s.filaHora}>{hora(appt.scheduled_at)}</Text>
         <View style={[s.filaBarra, { backgroundColor: colorDeTipo(appt.type, c) }]} />
         <Text style={s.filaTitulo} numberOfLines={1}>{appt.title}</Text>
-
-        <ActionSheet
-          visible={menuAbierto}
-          onClose={() => setMenuAbierto(false)}
-          title={`${appt.horse?.name ? `${appt.horse.name} · ` : ''}${APPOINTMENT_TYPES[appt.type]?.label ?? 'Turno'}`}
-          acciones={[
-            ...(appt.completed ? [] : [{
-              label: 'Marcar como completado',
-              Icon: Check,
-              onPress: () => onComplete(appt.id),
-            }]),
-            {
-              label: 'Eliminar turno',
-              Icon: Trash2,
-              destructiva: true,
-              onPress: () => onDelete(appt.id),
-            },
-          ]}
-        />
       </PressableScale>
     </SwipeableRow>
   );
-}
+});
 
 /** Misma silueta que la fila real (hora + barrita + una sola línea de título). */
 function FilaTurnoSkeleton({ s }: { s: Styles }) {
@@ -142,6 +129,8 @@ export default function AgendaScreen() {
   const deleteAppt = useDeleteAppointment();
   const listRef = useRef<FlatList<Grupo>>(null);
   useScrollToTop(listRef);
+  // Un solo turno abierto a la vez: el menú es de la pantalla, no de la fila.
+  const [turnoAbierto, setTurnoAbierto] = useState<ServiceAppointment | null>(null);
 
   const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -175,14 +164,49 @@ export default function AgendaScreen() {
   );
   const dayAppts = (appointments ?? []).filter((a) => !!a && ymd(new Date(a.scheduled_at)) === selectedDay);
 
-  const handleDelete = (id: string) => {
+  /**
+   * Los tres callbacks que bajan a cada fila se estabilizan con useCallback:
+   * antes `onComplete={(id) => complete.mutate(id)}` creaba una función nueva
+   * por fila en cada render, lo que rompía cualquier memoización posible.
+   */
+  const handleDelete = useCallback((id: string) => {
     Alert.alert('Eliminar turno', '¿Querés eliminar este turno?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deleteAppt.mutate(id); } },
     ]);
-  };
+    // `mutate` es estable en react-query; el objeto de la mutación no lo es.
+  }, [deleteAppt.mutate]);
+
+  const handleComplete = useCallback((id: string) => { complete.mutate(id); }, [complete.mutate]);
+  const abrirMenu = useCallback((appt: ServiceAppointment) => setTurnoAbierto(appt), []);
+  const cerrarMenu = useCallback(() => setTurnoAbierto(null), []);
 
   const irANuevo = () => { haptic.medium(); router.push('/(tabs)/agenda/nuevo' as never); };
+
+  /**
+   * `renderItem` estable: si fuera una closure nueva en cada render, la
+   * FlatList re-renderizaría todas sus celdas montadas ante cualquier cambio
+   * de estado de la pantalla (abrir el menú, tirar para refrescar).
+   */
+  const renderGrupo = useCallback(({ item }: { item: Grupo }) => (
+    <View style={s.grupo}>
+      <View style={s.grupoHead}>
+        <Text style={s.grupoTitulo}>{item.titulo}</Text>
+        {item.detalle ? <Text style={s.grupoDetalle}>{item.detalle}</Text> : null}
+      </View>
+      {item.turnos.map((appt, i) => (
+        <FilaTurno
+          key={appt.id}
+          appt={appt}
+          onComplete={handleComplete}
+          onDelete={handleDelete}
+          onAbrirMenu={abrirMenu}
+          isLast={i === item.turnos.length - 1}
+          c={c} s={s}
+        />
+      ))}
+    </View>
+  ), [s, c, handleComplete, handleDelete, abrirMenu]);
 
   /**
    * Encabezado propio (título grande + dos acciones cuadradas), igual que la
@@ -236,25 +260,33 @@ export default function AgendaScreen() {
                 onSelectDay={setSelectedDay}
                 markedDays={markedDays}
               />
-              <View style={s.calCuerpo}>
+              {/* El fade es del bloque del día (key = día), no de cada fila. */}
+              <Animated.View key={selectedDay ?? 'sin-dia'} entering={entradaLista()} style={s.calCuerpo}>
                 {!selectedDay ? (
                   <Text style={s.calHint}>Tocá un día para ver sus turnos</Text>
                 ) : dayAppts.length === 0 ? (
                   <Text style={s.calHint}>Sin turnos para este día</Text>
                 ) : (
+                  /*
+                   * Los turnos de UN día caben en pantalla (rara vez pasan de
+                   * una docena), así que el ScrollView + map se queda: meter
+                   * una FlatList anidada dentro de un ScrollView vertical es
+                   * peor que no virtualizar. Lo que sí se va es el `entering`
+                   * por fila: anima el bloque entero, no cada turno.
+                   */
                   dayAppts.map((appt, index) => (
-                    <Animated.View key={appt!.id} entering={entradaFila(index)}>
-                      <FilaTurno
-                        appt={appt!}
-                        onComplete={(id) => complete.mutate(id)}
-                        onDelete={handleDelete}
-                        isLast={index === dayAppts.length - 1}
-                        c={c} s={s}
-                      />
-                    </Animated.View>
+                    <FilaTurno
+                      key={appt!.id}
+                      appt={appt!}
+                      onComplete={handleComplete}
+                      onDelete={handleDelete}
+                      onAbrirMenu={abrirMenu}
+                      isLast={index === dayAppts.length - 1}
+                      c={c} s={s}
+                    />
                   ))
                 )}
-              </View>
+              </Animated.View>
             </>
           )}
         </ScrollView>
@@ -285,44 +317,58 @@ export default function AgendaScreen() {
           />
         </ScrollView>
       ) : (
-        <FlatList
-          ref={listRef}
-          ListHeaderComponent={encabezado}
-          data={grupos}
-          keyExtractor={(g) => g.clave}
-          contentContainerStyle={s.lista}
-          renderItem={({ item, index }) => (
-            <Animated.View entering={entradaFila(index)} style={s.grupo}>
-              <View style={s.grupoHead}>
-                <Text style={s.grupoTitulo}>{item.titulo}</Text>
-                {item.detalle ? <Text style={s.grupoDetalle}>{item.detalle}</Text> : null}
-              </View>
-              {item.turnos.map((appt, i) => (
-                <FilaTurno
-                  key={appt.id}
-                  appt={appt}
-                  onComplete={(id) => complete.mutate(id)}
-                  onDelete={handleDelete}
-                  isLast={i === item.turnos.length - 1}
-                  c={c} s={s}
-                />
-              ))}
-            </Animated.View>
-          )}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={
-            <PressableScale
-              style={s.pasadosLink}
-              onPress={() => { haptic.selection(); setUpcoming(!upcoming); }}
-              accessibilityRole="button"
-              accessibilityLabel={upcoming ? 'Ver turnos anteriores' : 'Ver solo los próximos'}
-            >
-              <Text style={s.pasadosLinkText}>{upcoming ? 'Ver turnos anteriores' : 'Solo próximos'}</Text>
-            </PressableScale>
-          }
-        />
+        // La entrada la hace la lista entera, una sola vez, no cada celda.
+        <Animated.View entering={entradaLista()} style={{ flex: 1 }}>
+          <FlatList
+            ref={listRef}
+            ListHeaderComponent={encabezado}
+            data={grupos}
+            keyExtractor={(g) => g.clave}
+            contentContainerStyle={s.lista}
+            renderItem={renderGrupo}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
+            showsVerticalScrollIndicator={false}
+            // Cada celda es un día entero (varios turnos): pocas de golpe y
+            // ventana chica alcanzan, y soltar las de fuera de pantalla saca
+            // sus gestos nativos de memoria.
+            initialNumToRender={6}
+            maxToRenderPerBatch={5}
+            windowSize={7}
+            ListFooterComponent={
+              <PressableScale
+                style={s.pasadosLink}
+                onPress={() => { haptic.selection(); setUpcoming(!upcoming); }}
+                accessibilityRole="button"
+                accessibilityLabel={upcoming ? 'Ver turnos anteriores' : 'Ver solo los próximos'}
+              >
+                <Text style={s.pasadosLinkText}>{upcoming ? 'Ver turnos anteriores' : 'Solo próximos'}</Text>
+              </PressableScale>
+            }
+          />
+        </Animated.View>
       )}
+
+      {/* UN solo menú de acciones para toda la agenda (antes: uno por fila). */}
+      <ActionSheet
+        visible={!!turnoAbierto}
+        onClose={cerrarMenu}
+        title={turnoAbierto
+          ? `${turnoAbierto.horse?.name ? `${turnoAbierto.horse.name} · ` : ''}${APPOINTMENT_TYPES[turnoAbierto.type]?.label ?? 'Turno'}`
+          : undefined}
+        acciones={turnoAbierto ? [
+          ...(turnoAbierto.completed ? [] : [{
+            label: 'Marcar como completado',
+            Icon: Check,
+            onPress: () => handleComplete(turnoAbierto.id),
+          }]),
+          {
+            label: 'Eliminar turno',
+            Icon: Trash2,
+            destructiva: true,
+            onPress: () => handleDelete(turnoAbierto.id),
+          },
+        ] : []}
+      />
     </View>
   );
 }

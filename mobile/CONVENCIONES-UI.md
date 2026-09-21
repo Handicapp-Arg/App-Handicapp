@@ -404,3 +404,34 @@ crear desde un índice no es la acción principal de esa pantalla.
 
 Si una pantalla de carga usa `ScreenHeader` y la cargada usa un hero propio, hay
 un salto visual: el esqueleto tiene que tener la misma forma que el resultado.
+
+## Lo que hace que la app se sienta lenta
+
+Aprendido a los golpes después del rediseño: la app se trababa al navegar y
+ninguna de estas cosas la ve el typecheck.
+
+**`entering` nunca dentro de una lista.** Una `FlatList` destruye y recrea sus
+celdas mientras scrolleás, así que la animación de entrada se vuelve a disparar
+sobre vistas recicladas y se acumulan decenas. Anima la lista entera con
+`entradaLista()` y dejá las celdas quietas. `entradaFila(i)` es para bloques
+fijos de una pantalla.
+
+**Nada de `entering` compitiendo con la transición del stack.** La pantalla ya
+entra deslizándose durante 280 ms; sumarle cinco animaciones internas no la hace
+más viva, la hace pesada.
+
+**Nada caro dentro de una fila de lista.** Una hoja (`BottomSheet`,
+`ActionSheet`), un reproductor de video o un detector de gestos montados por
+fila se multiplican por la cantidad de filas. Una hoja cerrada igual corre sus
+hooks: cinco valores animados y un gesto por fila. Va UNA sola hoja a nivel de
+la lista, con el id de la fila abierta como estado.
+
+**`React.memo` en la fila y `useCallback` en el `renderItem`.** Sin eso, tipear
+una letra en un buscador re-renderiza todas las celdas montadas.
+
+**No `removeClippedSubviews` en iOS.** React Native lo documenta como propenso a
+dejar contenido en blanco. El reciclado de iOS ya alcanza.
+
+**Cuidado con abrir una pantalla y disparar diez consultas.** Cada una que
+vuelve redibuja el árbol entero mientras la pantalla está entrando. Lo que se ve
+arriba se pide enseguida; el resto, después de la transición.

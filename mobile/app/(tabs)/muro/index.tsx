@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput,
   StyleSheet, ActivityIndicator,
-  Alert, RefreshControl,
+  Alert, RefreshControl, Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScrollToTop } from '@react-navigation/native';
@@ -26,11 +26,11 @@ import { Avatar as UserAvatar } from '../../../components/Avatar';
 import { PressableScale } from '../../../components/PressableScale';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow, touch } from '../../../styles/tokens';
-import { entradaFila } from '../../../styles/motion';
+import { entradaLista } from '../../../styles/motion';
 import { fontFamily } from '../../../styles/fonts';
 import {
   Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
-  Eye, EyeOff, Bell, Plus, ChevronRight, FileText,
+  Eye, EyeOff, Bell, Plus, ChevronRight, FileText, Play,
 } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 import { AppImage } from '../../../components/AppImage';
@@ -45,13 +45,19 @@ import { FormSheet } from '../../../components/FormSheet';
 import { useToast } from '../../../components/Toast';
 import { fechaHumana, diaLargo, hace, hora, vence } from '../../../lib/fechas';
 
-/** Reproductor de un video del feed, con expo-video (expo-av está deprecado). */
-function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
+/**
+ * Reproductor real (expo-video; expo-av está deprecado). Se monta recién cuando
+ * el usuario pidió ver el video: `useVideoPlayer` abre un reproductor NATIVO, y
+ * dentro de una celda reciclada de la lista eso significaba un decodificador
+ * vivo por cada video que pasara por pantalla. Al desmontarse, el hook libera
+ * el player solo, así que salir de la vista ya no deja nada corriendo.
+ */
+function FeedVideoPlayer({ uri, style, contentFit = 'contain', controls = true }: {
   uri: string; style: import('react-native').StyleProp<import('react-native').ViewStyle>;
   contentFit?: 'contain' | 'cover';
   controls?: boolean;
 }) {
-  const player = useVideoPlayer(uri, (p) => { p.loop = false; });
+  const player = useVideoPlayer(uri, (p) => { p.loop = false; p.play(); });
   return (
     <VideoView
       player={player}
@@ -60,6 +66,35 @@ function FeedVideo({ uri, style, contentFit = 'contain', controls = true }: {
       nativeControls={controls}
     />
   );
+}
+
+/** Video del feed: caja quieta con botón de play hasta que alguien lo toca. */
+function FeedVideo({ uri, style, contentFit = 'contain', controls = true, s }: {
+  uri: string; style: import('react-native').StyleProp<import('react-native').ViewStyle>;
+  contentFit?: 'contain' | 'cover';
+  controls?: boolean;
+  s: Styles;
+}) {
+  const [reproduciendo, setReproduciendo] = useState(false);
+
+  if (!reproduciendo) {
+    return (
+      <Pressable
+        style={style}
+        onPress={() => { haptic.light(); setReproduciendo(true); }}
+        accessibilityRole="button"
+        accessibilityLabel="Reproducir video"
+      >
+        <View style={s.videoPoster}>
+          <View style={s.videoPlayBtn}>
+            <Play size={20} color={colors.white} fill={colors.white} strokeWidth={0} />
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
+
+  return <FeedVideoPlayer uri={uri} style={style} contentFit={contentFit} controls={controls} />;
 }
 
 function Avatar({ name, colorId, size = 38 }: { name: string; colorId?: string | null; size?: number }) {
@@ -278,20 +313,21 @@ function TarjetaProximoTurno({ turno, onPress, c, s }: {
  * Una novedad del muro: miniatura a la izquierda, texto al costado. Es una fila
  * sobre el lienzo, no una tarjeta: la publicación no es un objeto autónomo, es
  * una línea del día (regla "el fondo es el lienzo").
+ *
+ * Memoizada: es la celda de una lista larga y, sin esto, cualquier estado de la
+ * pantalla (abrir un menú, abrir comentarios) redibujaba todas las filas vivas.
+ * El menú de acciones NO vive acá: ver la nota en `MuroTab`.
  */
-function FilaMuro({ post, currentUserId, isAdmin, onComment, c, s }: {
+const FilaMuro = memo(function FilaMuro({ post, currentUserId, isAdmin, onComment, onMenu, c, s }: {
   post: FeedPost;
   currentUserId: string;
   isAdmin: boolean;
   onComment: (post: FeedPost) => void;
+  onMenu: (post: FeedPost) => void;
   c: ThemeColors;
   s: Styles;
 }) {
   const toggleLike = useToggleLike();
-  const deletePost = useDeletePost();
-  const togglePin = useTogglePin();
-  const toggleHide = useToggleHide();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const isOwner = post.author_id === currentUserId;
   const fotos = post.image_urls ?? [];
@@ -310,14 +346,6 @@ function FilaMuro({ post, currentUserId, isAdmin, onComment, c, s }: {
     toggleLike.mutate(post.id, {
       onError: () => { setLikeLocal(previo); haptic.error(); },
     });
-  };
-
-  const handleDelete = () => {
-    Alert.alert('Eliminar post', '¿Estás seguro?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deletePost.mutate(post.id); } },
-    ]);
-    setMenuOpen(false);
   };
 
   const meta = [
@@ -370,7 +398,7 @@ function FilaMuro({ post, currentUserId, isAdmin, onComment, c, s }: {
       {videos.length > 0 && (
         <View style={s.filaVideos}>
           {videos.map((url, i) => (
-            <FeedVideo key={i} uri={url} style={s.videoPlayer} contentFit="contain" />
+            <FeedVideo key={i} uri={url} style={s.videoPlayer} contentFit="contain" s={s} />
           ))}
         </View>
       )}
@@ -409,7 +437,7 @@ function FilaMuro({ post, currentUserId, isAdmin, onComment, c, s }: {
 
         {(isOwner || isAdmin) && (
           <PressableScale
-            onPress={() => { haptic.selection(); setMenuOpen(true); }}
+            onPress={() => { haptic.selection(); onMenu(post); }}
             style={[s.accionBtn, s.accionMenu]}
             hitSlop={8}
             accessibilityRole="button"
@@ -419,34 +447,9 @@ function FilaMuro({ post, currentUserId, isAdmin, onComment, c, s }: {
           </PressableScale>
         )}
       </View>
-
-      <ActionSheet
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        acciones={[
-          ...(isAdmin ? [
-            {
-              label: post.is_pinned ? 'Desfijar' : 'Fijar post',
-              Icon: Pin,
-              onPress: () => togglePin.mutate(post.id),
-            },
-            {
-              label: post.is_hidden ? 'Mostrar' : 'Ocultar',
-              Icon: post.is_hidden ? Eye : EyeOff,
-              onPress: () => toggleHide.mutate(post.id),
-            },
-          ] : []),
-          ...((isOwner || isAdmin) ? [{
-            label: 'Eliminar',
-            Icon: Trash2,
-            destructiva: true,
-            onPress: handleDelete,
-          }] : []),
-        ]}
-      />
     </View>
   );
-}
+});
 
 /** Misma silueta que `FilaMuro`: miniatura 62 + dos líneas + meta. */
 function FilaMuroSkeleton({ s }: { s: Styles }) {
@@ -470,8 +473,12 @@ function FilaMuroSkeleton({ s }: { s: Styles }) {
  * Encabezado de Inicio: saludo, lo que hay para resolver y el próximo turno.
  * Es lo que separa un feed genérico de un inicio con propósito: la primera
  * pantalla te saluda, te dice qué está pendiente y qué se viene.
+ *
+ * Memoizado: es el ListHeaderComponent de la lista y trae tres consultas
+ * propias. Si se redibujara cada vez que cambia un estado del feed, cada
+ * scroll o cada menú abierto rearmaría pendientes, turno y saludo.
  */
-function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
+const InicioHeader = memo(function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
   const router = useRouter();
   const { user } = useAuth();
   const { unread } = useNotifications();
@@ -561,7 +568,7 @@ function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
       </View>
     </View>
   );
-}
+});
 
 export default function MuroTab() {
   const insets = useSafeAreaInsets();
@@ -573,24 +580,68 @@ export default function MuroTab() {
     isAdmin ? { include_hidden: true } : undefined,
   );
   const [commentPost, setCommentPost] = useState<FeedPost | null>(null);
+  // Un solo menú para toda la lista: antes cada fila montaba su ActionSheet y,
+  // aunque cerrado no dibuje nada, sus hooks corrían igual (shared values,
+  // estilos animados y un gesto nuevo por fila). Ahora la fila sólo avisa cuál
+  // se tocó y el menú vive una sola vez, acá.
+  const [postAbierto, setPostAbierto] = useState<FeedPost | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const listRef = useRef<FlatList<FeedPost>>(null);
   useScrollToTop(listRef);
 
-  const renderItem = useCallback(({ item, index }: { item: FeedPost; index: number }) => (
-    <Animated.View entering={entradaFila(index)}>
-      <FilaMuro
-        post={item}
-        currentUserId={user?.id ?? ''}
-        isAdmin={isAdmin}
-        onComment={setCommentPost}
-        c={c}
-        s={s}
-      />
-    </Animated.View>
+  // Las mutaciones del menú también suben de nivel: una instancia, no una por fila.
+  const deletePost = useDeletePost();
+  const togglePin = useTogglePin();
+  const toggleHide = useToggleHide();
+
+  const cerrarMenu = useCallback(() => setPostAbierto(null), []);
+
+  const pedirBorrar = useCallback((post: FeedPost) => {
+    Alert.alert('Eliminar post', '¿Estás seguro?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => { haptic.medium(); deletePost.mutate(post.id); } },
+    ]);
+  }, [deletePost]);
+
+  const accionesMenu = useMemo(() => {
+    const post = postAbierto;
+    if (!post) return [];
+    const isOwner = post.author_id === user?.id;
+    return [
+      ...(isAdmin ? [
+        {
+          label: post.is_pinned ? 'Desfijar' : 'Fijar post',
+          Icon: Pin,
+          onPress: () => togglePin.mutate(post.id),
+        },
+        {
+          label: post.is_hidden ? 'Mostrar' : 'Ocultar',
+          Icon: post.is_hidden ? Eye : EyeOff,
+          onPress: () => toggleHide.mutate(post.id),
+        },
+      ] : []),
+      ...((isOwner || isAdmin) ? [{
+        label: 'Eliminar',
+        Icon: Trash2,
+        destructiva: true,
+        onPress: () => pedirBorrar(post),
+      }] : []),
+    ];
+  }, [postAbierto, user?.id, isAdmin, togglePin, toggleHide, pedirBorrar]);
+
+  const renderItem = useCallback(({ item }: { item: FeedPost }) => (
+    <FilaMuro
+      post={item}
+      currentUserId={user?.id ?? ''}
+      isAdmin={isAdmin}
+      onComment={setCommentPost}
+      onMenu={setPostAbierto}
+      c={c}
+      s={s}
+    />
   ), [user?.id, isAdmin, c, s]);
 
-  const Encabezado = <InicioHeader c={c} s={s} />;
+  const Encabezado = useMemo(() => <InicioHeader c={c} s={s} />, [c, s]);
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -604,33 +655,48 @@ export default function MuroTab() {
           <FilaMuroSkeleton s={s} />
         </View>
       ) : (
-        <FlatList
-          ref={listRef}
-          data={posts}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={Encabezado}
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={c.brand} />
-          }
-          ListFooterComponent={
-            isFetchingMore
-              ? <ActivityIndicator color={c.textFaint} style={{ marginVertical: space[4] }} />
-              : null
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="newspaper-outline"
-              title="Todavía no hay publicaciones"
-              message="Compartí una novedad, un logro o una foto y empezá la conversación con tu comunidad."
-            />
-          }
-        />
+        // Entra la lista entera, una vez, desde el contenedor: animar cada celda
+        // en el renderItem revivía la animación sobre vistas recicladas.
+        <Animated.View entering={entradaLista()} style={s.flex}>
+          <FlatList
+            ref={listRef}
+            data={posts}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={Encabezado}
+            contentContainerStyle={s.list}
+            showsVerticalScrollIndicator={false}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={c.brand} />
+            }
+            ListFooterComponent={
+              isFetchingMore
+                ? <ActivityIndicator color={c.textFaint} style={{ marginVertical: space[4] }} />
+                : null
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="newspaper-outline"
+                title="Todavía no hay publicaciones"
+                message="Compartí una novedad, un logro o una foto y empezá la conversación con tu comunidad."
+              />
+            }
+            // Celdas caras (fotos, videos, acciones): pocas por tanda y ventana
+            // corta, para que el scrollear no tenga que montar de más.
+            initialNumToRender={5}
+            maxToRenderPerBatch={4}
+            windowSize={5}
+          />
+        </Animated.View>
       )}
+
+      <ActionSheet
+        visible={!!postAbierto}
+        onClose={cerrarMenu}
+        acciones={accionesMenu}
+      />
 
       <CommentsSheet
         visible={!!commentPost}
@@ -653,6 +719,8 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
+  /** Contenedor de la lista: sólo existe para animar la entrada del conjunto. */
+  flex: { flex: 1 },
   list: { paddingBottom: 120 },
   bloque: { paddingHorizontal: space[4], paddingTop: space[4] },
   deshabilitado: { opacity: 0.4 },
@@ -763,6 +831,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   // El video se recuesta sobre surfaceAlt (no sobre negro literal) para que la
   // caja funcione igual en claro y en oscuro.
   videoPlayer: { width: '100%', height: 200, backgroundColor: c.surfaceAlt, borderRadius: radius.lg },
+  // La caja previa ocupa exactamente el lugar del reproductor, así montarlo no
+  // mueve nada de lo que ya está en pantalla.
+  videoPoster: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  videoPlayBtn: {
+    width: 52, height: 52, borderRadius: radius.full,
+    backgroundColor: c.overlay, alignItems: 'center', justifyContent: 'center',
+  },
   filaAcciones: {
     flexDirection: 'row', alignItems: 'center', gap: space[5],
     marginTop: space[2], marginLeft: 62 + space[3] + 1,

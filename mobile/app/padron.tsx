@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import {
   View, Text, TextInput, FlatList,
   StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity,
@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Routes, nav } from '../lib/routes';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, radius, weight, shadow, touch } from '../styles/tokens';
-import { entradaFila } from '../styles/motion';
+import { entradaLista } from '../styles/motion';
 import { haptic } from '../lib/haptics';
 import { useSearchLiveStudbook, type HorseRecord } from '../hooks/use-horse-records';
 import { Skeleton } from '../components/Skeleton';
@@ -60,8 +60,8 @@ function statusStyle(st: string, c: ThemeColors): { color: string; bg: string } 
  * línea de metadatos. Antes cada dato iba en su propia pastilla gris y la fila
  * parecía una nube de etiquetas.
  */
-function FilaRegistro({ record, index, ultima, onPress, c, s }: {
-  record: HorseRecord; index: number; ultima: boolean; onPress: () => void; c: ThemeColors; s: Styles;
+const FilaRegistro = memo(function FilaRegistro({ record, ultima, onPress, c, s }: {
+  record: HorseRecord; ultima: boolean; onPress: (id: string) => void; c: ThemeColors; s: Styles;
 }) {
   const st = record.ownership_status ?? 'unverified';
   const ss = statusStyle(st, c);
@@ -73,11 +73,12 @@ function FilaRegistro({ record, index, ultima, onPress, c, s }: {
     record.color,
   ].filter(Boolean).join(' · ');
 
+  // Sin `entering` por fila: la FlatList recicla celdas al scrollear y la
+  // animación se re-disparaba sobre vistas ya vistas.
   return (
-    <Animated.View entering={entradaFila(index)}>
       <PressableScale
         style={[s.fila, !ultima && s.filaDivisor]}
-        onPress={onPress}
+        onPress={() => onPress(record.id)}
         accessibilityRole="button"
         accessibilityLabel={`Ver ${record.name} en el padrón`}
       >
@@ -104,9 +105,8 @@ function FilaRegistro({ record, index, ultima, onPress, c, s }: {
         </View>
         <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />
       </PressableScale>
-    </Animated.View>
   );
-}
+});
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
@@ -129,6 +129,20 @@ export default function PadronScreen() {
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
+
+  /**
+   * `renderItem` estable: antes era una closure nueva en cada render (y cada
+   * fila recibía además un `onPress` nuevo), así que cualquier tecla escrita
+   * en el buscador re-renderizaba todas las celdas montadas.
+   */
+  const renderFila = useCallback(({ item, index }: { item: HorseRecord; index: number }) => (
+    <View style={s.cuerpo}>
+      <FilaRegistro
+        record={item} ultima={index === items.length - 1}
+        onPress={handleSelect} c={c} s={s}
+      />
+    </View>
+  ), [s, c, items.length, handleSelect]);
 
   const term = query.trim();
   const liveActive = !!term && liveSearch.variables === term;
@@ -197,9 +211,9 @@ export default function PadronScreen() {
             <Text style={s.grupo}>{liveItems.length} en el Stud Book Argentino</Text>
             {liveItems.map((record, index) => (
               <FilaRegistro
-                key={record.id} record={record} index={index}
+                key={record.id} record={record}
                 ultima={index === liveItems.length - 1}
-                onPress={() => handleSelect(record.id)} c={c} s={s}
+                onPress={handleSelect} c={c} s={s}
               />
             ))}
           </>
@@ -260,17 +274,12 @@ export default function PadronScreen() {
       ) : isError && items.length === 0 ? (
         <View>{header}<ErrorState onRetry={() => refetch()} /></View>
       ) : (
+        // La entrada es de la lista completa, una sola vez.
+        <Animated.View entering={entradaLista()} style={{ flex: 1 }}>
         <FlatList
           data={items}
           keyExtractor={item => item.id}
-          renderItem={({ item, index }) => (
-            <View style={s.cuerpo}>
-              <FilaRegistro
-                record={item} index={index} ultima={index === items.length - 1}
-                onPress={() => handleSelect(item.id)} c={c} s={s}
-              />
-            </View>
-          )}
+          renderItem={renderFila}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -286,7 +295,11 @@ export default function PadronScreen() {
               message={query ? 'No está en el padrón local.' : undefined}
             />
           }
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={9}
         />
+        </Animated.View>
       )}
     </View>
   );

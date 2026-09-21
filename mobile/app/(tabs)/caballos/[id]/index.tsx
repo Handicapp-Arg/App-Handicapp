@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import { memo, useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
-  Platform, Alert, ActionSheetIOS, Share,
+  Platform, Alert, ActionSheetIOS, Share, InteractionManager,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,7 +37,6 @@ import { colors } from '../../../../lib/colors';
 import { edadEnAnios, fechaHumana, vence } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, weight, radius, touch, shadow, photoScrim } from '../../../../styles/tokens';
-import { entradaFila } from '../../../../styles/motion';
 import { ActionSheet } from '../../../../components/ActionSheet';
 import { BottomSheet } from '../../../../components/BottomSheet';
 import { AppImage } from '../../../../components/AppImage';
@@ -68,7 +66,12 @@ const HERO_RATIO = 390 / 300;
 const SPARK_W = 62;
 const SPARK_H = 26;
 
-function Sparkline({ valores, color }: { valores: number[]; color: string }) {
+/* `memo` porque la ficha se re-renderiza cada vez que resuelve una query, y
+   redibujar el SVG (min/max/join de puntos) en cada una es trabajo puro al
+   pedo: mientras la serie no cambie de referencia, el gráfico es el mismo.
+   Las series llegan memoizadas desde la pantalla, así que la comparación
+   por referencia realmente corta. */
+const Sparkline = memo(function Sparkline({ valores, color }: { valores: number[]; color: string }) {
   if (valores.length < 2) return null;
   const min = Math.min(...valores);
   const max = Math.max(...valores);
@@ -87,14 +90,15 @@ function Sparkline({ valores, color }: { valores: number[]; color: string }) {
       <Polyline points={puntos} fill="none" stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
-}
+});
 
 /* ─── Anillo de progreso de la rutina ───
    Un círculo recortado con strokeDasharray: en RN no existe el conic-gradient
    de la maqueta, y el SVG da el mismo resultado sin capas superpuestas. */
 const ANILLO = 34;
 
-function AnilloProgreso({ hechas, total, c }: { hechas: number; total: number; c: ThemeColors }) {
+/* Mismo motivo que el sparkline: el anillo solo depende de hechas/total/tema. */
+const AnilloProgreso = memo(function AnilloProgreso({ hechas, total, c }: { hechas: number; total: number; c: ThemeColors }) {
   const grosor = 4;
   const r = (ANILLO - grosor) / 2;
   const circunferencia = 2 * Math.PI * r;
@@ -117,7 +121,7 @@ function AnilloProgreso({ hechas, total, c }: { hechas: number; total: number; c
       />
     </Svg>
   );
-}
+});
 
 /* ─── Acceso rápido del hero ─── */
 function AccesoRapido({ Icon, label, onPress, c, s }: { Icon: LucideIcon; label: string; onPress: () => void; c: ThemeColors; s: Styles }) {
@@ -201,22 +205,87 @@ export default function HorseDetailScreen() {
   const toast = useToast();
   const s = useMemo(() => makeStyles(c), [c]);
 
+  /* ─── Abrir la ficha NO puede disparar diez requests a la vez ───
+     Cada query que resolvía re-renderizaba el árbol entero (hero + sparklines
+     + anillo + secciones) justo mientras el stack hacía su slide de entrada:
+     diez re-renders encima de la transición. Ahora se piden en dos tandas.
+
+     Tanda 1 (ya): lo que se VE arriba — el caballo, la sanidad (aviso), las
+     finanzas, el peso y la rutina.
+     Tanda 2 (después de la transición): lo que solo alimenta el subtítulo
+     "Sin registros" de las filas de abajo y la tira de fotos.
+
+     El diferido se hace pasando `''` como id: todos estos hooks tienen
+     `enabled: !!horseId`, así que con id vacío la query ni siquiera arranca.
+     Es la forma de diferir sin tocar hooks compartidos con otras pantallas. */
+  const [listo, setListo] = useState(false);
+  useEffect(() => {
+    // `runAfterInteractions` espera a que termine la animación de entrada del
+    // stack; el timer es el paracaídas por si no hay interacción en curso.
+    const tarea = InteractionManager.runAfterInteractions(() => setListo(true));
+    const t = setTimeout(() => setListo(true), 450);
+    return () => { tarea.cancel(); clearTimeout(t); };
+  }, []);
+  const idDiferido = listo ? id : '';
+
   const { data: horse, isLoading, refetch, isRefetching } = useHorse(id);
   const isJineteOrPeon = user?.role === 'jinete' || user?.role === 'peon';
   const { data: financial } = useFinancialSummary(id, !isJineteOrPeon);
   const { data: weightRecords } = useWeightRecords(id);
   const { data: medicalRecords } = useMedicalRecords(id);
-  const { data: events } = useEventsByHorse(id);
-  const { data: activityPhotos } = useActivityPhotos(id);
-  const { data: documents } = useHorseDocuments(id);
-  const { data: horseVets } = useHorseVets(id);
-  const { data: assignees } = useHorseAssignees(id);
   const { data: routines } = useRoutines(id);
+  // Secundarias: nada de lo que traen cambia la silueta de arriba.
+  const { data: events } = useEventsByHorse(idDiferido);
+  const { data: activityPhotos } = useActivityPhotos(idDiferido);
+  const { data: documents } = useHorseDocuments(idDiferido);
+  const { data: horseVets } = useHorseVets(idDiferido);
+  const { data: assignees } = useHorseAssignees(idDiferido);
   const deleteHorse = useDeleteHorse();
   const uploadImage = useUploadHorseImage();
 
   const [showQR, setShowQR] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
+  /* ─── Todo lo derivado, memoizado ───
+     Estos cálculos (regex por enfermedad, filter+sort, series numéricas) se
+     rehacían en CADA render de la pantalla, y la pantalla renderiza una vez
+     por query que resuelve. Van arriba de los early returns porque un hook no
+     puede quedar detrás de un `return` condicional. */
+
+  // ─── Libreta sanitaria: el vencimiento MÁS urgente, dicho con nombre y fecha ───
+  const vencimientos = useMemo(() => {
+    const sanidad = medicalRecords?.filter((r) => r.type === 'sanidad') ?? [];
+    return SANITARY_DISEASES.map((d) => {
+      const ultimo = sanidad.find((r) => d.match.test(r.name)) ?? null;
+      return { nombre: d.name, nextDue: ultimo?.next_due ?? null, estado: healthStatusFromNextDue(ultimo?.next_due ?? null) };
+    });
+  }, [medicalRecords]);
+
+  const urgente = useMemo(() => (
+    vencimientos
+      .filter((v) => v.estado !== 'verde')
+      // El rojo manda sobre el amarillo, y dentro del mismo estado, la fecha más
+      // vieja primero. Sin registro (`nextDue` nulo) es lo más urgente de todo.
+      .sort((a, b) => {
+        if (a.estado !== b.estado) return a.estado === 'rojo' ? -1 : 1;
+        if (!a.nextDue) return -1;
+        if (!b.nextDue) return 1;
+        return a.nextDue.localeCompare(b.nextDue);
+      })[0] ?? null
+  ), [vencimientos]);
+
+  // Las series van memoizadas también porque son la prop de un componente
+  // `memo`: si el array se recrea en cada render, el `memo` no sirve de nada.
+  const serieGasto = useMemo(
+    () => [...(financial?.monthly ?? [])].slice(0, 6).reverse().map((m) => Number(m.total)),
+    [financial],
+  );
+  const seriePeso = useMemo(
+    () => [...(weightRecords ?? [])].slice(0, 7).reverse().map((w) => Number(w.weight_kg)),
+    [weightRecords],
+  );
+
+  const rutina = useMemo(() => rutinaDeHoy(routines), [routines]);
 
   const handlePickImage = () => {
     const doUpload = async (source: 'camera' | 'gallery') => {
@@ -317,40 +386,16 @@ export default function HorseDetailScreen() {
     horse.color || horse.activity || horse.breed ? null : (horse.sex ? SEX_LABEL[horse.sex] ?? horse.sex : null),
   ].filter(Boolean).join(' · ');
 
-  // ─── Libreta sanitaria: el vencimiento MÁS urgente, dicho con nombre y fecha ───
-  const sanidad = medicalRecords?.filter((r) => r.type === 'sanidad') ?? [];
-  const vencimientos = SANITARY_DISEASES.map((d) => {
-    const ultimo = sanidad.find((r) => d.match.test(r.name)) ?? null;
-    return { nombre: d.name, nextDue: ultimo?.next_due ?? null, estado: healthStatusFromNextDue(ultimo?.next_due ?? null) };
-  });
-  const urgente = vencimientos
-    .filter((v) => v.estado !== 'verde')
-    // El rojo manda sobre el amarillo, y dentro del mismo estado, la fecha más
-    // vieja primero. Sin registro (`nextDue` nulo) es lo más urgente de todo.
-    .sort((a, b) => {
-      if (a.estado !== b.estado) return a.estado === 'rojo' ? -1 : 1;
-      if (!a.nextDue) return -1;
-      if (!b.nextDue) return 1;
-      return a.nextDue.localeCompare(b.nextDue);
-    })[0] ?? null;
-
-  // ─── Gasto del mes + tendencia de los últimos meses ───
+  // ─── Gasto del mes ───
   const gastoDelMes = financial?.monthly?.[0];
-  const serieGasto = [...(financial?.monthly ?? [])].slice(0, 6).reverse().map((m) => Number(m.total));
 
-  // ─── Último peso, su variación y la tendencia ───
+  // ─── Último peso y su variación ───
   const ultimoPeso = weightRecords?.[0];
   const pesoAnterior = weightRecords?.[1];
   const deltaPeso = ultimoPeso && pesoAnterior ? Number(ultimoPeso.weight_kg) - Number(pesoAnterior.weight_kg) : null;
-  const seriePeso = [...(weightRecords ?? [])].slice(0, 7).reverse().map((w) => Number(w.weight_kg));
 
-  const rutina = rutinaDeHoy(routines);
   const fotos = activityPhotos ?? [];
   const hasFinanzas = !isJineteOrPeon;
-
-  // Cada bloque entra escalonado con la fórmula del sistema; el índice es el
-  // orden de lectura, no la posición en un array.
-  let orden = 0;
 
   return (
     <ScrollView
@@ -428,8 +473,12 @@ export default function HorseDetailScreen() {
         </View>
       </View>
 
-      {/* ─── Cuatro accesos: lo que se hace parado al lado del caballo ─── */}
-      <Animated.View style={s.accesos} entering={entradaFila(orden++)}>
+      {/* ─── Cuatro accesos: lo que se hace parado al lado del caballo ───
+          Sin `entering` escalonado: la pantalla ya entra deslizándose con la
+          transición del stack (280 ms). Sumarle cinco animaciones internas era
+          lo que hacía que abrir la ficha se sintiera pesado. `entradaFila`
+          sigue siendo válida en pantallas que no compiten con una transición. */}
+      <View style={s.accesos}>
         {hasFinanzas && (
           <AccesoRapido
             Icon={DollarSign}
@@ -446,11 +495,11 @@ export default function HorseDetailScreen() {
           onPress={() => { haptic.selection(); nav.push(router, `${Routes.tabsAgenda}/nuevo`); }}
           c={c} s={s}
         />
-      </Animated.View>
+      </View>
 
       {/* ─── Aviso sanitario: el único color fuerte de la pantalla ─── */}
       {urgente && (
-        <Animated.View style={s.avisoWrap} entering={entradaFila(orden++)}>
+        <View style={s.avisoWrap}>
           <PressableScale
             style={[s.aviso, { backgroundColor: urgente.estado === 'rojo' ? c.dangerSoft : c.warningSoft }]}
             onPress={() => goto('sanidad')}
@@ -465,11 +514,11 @@ export default function HorseDetailScreen() {
             </Text>
             <ChevronRight size={17} color={urgente.estado === 'rojo' ? c.danger : c.warning} strokeWidth={2.2} />
           </PressableScale>
-        </Animated.View>
+        </View>
       )}
 
       {/* ─── Los datos vitales, uno por línea y sin cajas ─── */}
-      <Animated.View style={s.datos} entering={entradaFila(orden++)}>
+      <View style={s.datos}>
         {hasFinanzas && (
           <FilaDato
             label="Gasto del mes"
@@ -498,11 +547,11 @@ export default function HorseDetailScreen() {
           s={s} c={c}
           isLast
         />
-      </Animated.View>
+      </View>
 
       {/* ─── Fotos: tres miniaturas y el atajo al álbum ─── */}
       {fotos.length > 0 && (
-        <Animated.View style={s.bloqueFotos} entering={entradaFila(orden++)}>
+        <View style={s.bloqueFotos}>
           <View style={s.bloqueHead}>
             <Text style={s.bloqueTitulo}>Fotos</Text>
             <TouchableOpacity onPress={() => goto('fotos')} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Ver las ${fotos.length} fotos`}>
@@ -522,21 +571,21 @@ export default function HorseDetailScreen() {
               </PressableScale>
             ))}
           </View>
-        </Animated.View>
+        </View>
       )}
 
       {/* ─── El resto de la ficha, en lista de opciones ───
           La maqueta muestra el resumen; estas secciones son la navegación
           profunda de la ficha y no tienen otra puerta de entrada. Finanzas,
           rutina y fotos no se repiten acá: ya tienen su fila arriba. */}
-      <Animated.View style={s.sectionsList} entering={entradaFila(orden++)}>
+      <View style={s.sectionsList}>
         <SectionRow Icon={Clock} label="Historial" sub={!events?.length ? 'Sin registros' : undefined} onPress={() => goto('historial')} c={c} s={s} />
         <SectionRow Icon={Stethoscope} label="Sanidad" sub={!medicalRecords?.length ? 'Sin registros' : undefined} onPress={() => goto('sanidad')} c={c} s={s} />
         {fotos.length === 0 && <SectionRow Icon={Images} label="Fotos" sub="Sin fotos" onPress={() => goto('fotos')} c={c} s={s} />}
         <SectionRow Icon={Users} label="Equipo y veterinarios" sub={!horseVets?.length && !assignees?.length ? 'Sin asignaciones' : undefined} onPress={() => goto('equipo')} c={c} s={s} />
         <SectionRow Icon={FileText} label="Documentos" sub={!documents?.length ? 'Sin documentos' : undefined} onPress={() => goto('documentos')} c={c} s={s} />
         <SectionRow Icon={Network} label="Pedigrí" sub={horse.pedigree_status === 'unverified' ? 'Sin verificar' : undefined} onPress={() => goto('pedigree')} c={c} s={s} />
-      </Animated.View>
+      </View>
 
       {/* ─── Menú de acciones ─── */}
       <ActionSheet

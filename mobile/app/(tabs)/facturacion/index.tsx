@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, memo } from 'react';
 import { View, Text, StyleSheet, RefreshControl, ScrollView } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import { PressableScale } from '../../../components/PressableScale';
 import { haptic } from '../../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
-import { entradaFila } from '../../../styles/motion';
+import { entradaLista } from '../../../styles/motion';
 
 /**
  * Cada estado tiene su cajita de ícono: el color dice de un vistazo si la
@@ -33,19 +33,18 @@ const ESTADO = {
 type EstadoBill = keyof typeof ESTADO;
 const estadoDe = (b: Bill): EstadoBill => (ESTADO[b.status as EstadoBill] ? (b.status as EstadoBill) : 'borrador');
 
-function FilaFactura({ bill, index, ultima, c, s }: {
-  bill: Bill; index: number; ultima: boolean; c: ThemeColors; s: Styles;
+const FilaFactura = memo(function FilaFactura({ bill, ultima, onPress, c, s }: {
+  bill: Bill; ultima: boolean; onPress: (id: string) => void; c: ThemeColors; s: Styles;
 }) {
-  const router = useRouter();
   const est = ESTADO[estadoDe(bill)];
   const { Icon } = est;
   const aprobada = bill.status === 'aprobada';
 
+  // Sin `entering` por fila: entra el bloque entero de facturas.
   return (
-    <Animated.View entering={entradaFila(index)}>
       <PressableScale
         style={[s.fila, !ultima && s.filaDivisor]}
-        onPress={() => { haptic.selection(); router.push(Routes.factura(bill.id) as never); }}
+        onPress={() => { haptic.selection(); onPress(bill.id); }}
         accessibilityRole="button"
         accessibilityLabel={`Factura de ${bill.horse?.name ?? 'caballo'}, ${monthLabel(bill.month, bill.year)}`}
       >
@@ -64,9 +63,8 @@ function FilaFactura({ bill, index, ultima, c, s }: {
           )}
         </View>
       </PressableScale>
-    </Animated.View>
   );
-}
+});
 
 export default function FacturacionScreen() {
   const { user } = useAuth();
@@ -90,6 +88,11 @@ export default function FacturacionScreen() {
       totalPendiente: pend.reduce((acc, b) => acc + (b.total ?? 0), 0),
     };
   }, [bills]);
+
+  // Navegación estable para que React.memo de la fila sirva.
+  const abrirFactura = useCallback((billId: string) => {
+    router.push(Routes.factura(billId) as never);
+  }, [router]);
 
   const headerRight = isEst
     ? <HeaderButton label="Nueva" onPress={() => { haptic.light(); router.push(Routes.facturacionNueva as never); }} />
@@ -139,7 +142,8 @@ export default function FacturacionScreen() {
             onAction={isEst ? () => { haptic.light(); router.push(Routes.facturacionNueva as never); } : undefined}
           />
         ) : (
-          <View style={s.cuerpo}>
+          // Entra el bloque, no cada factura.
+          <Animated.View entering={entradaLista()} style={s.cuerpo}>
             {/* Hero invertido: un solo dato: cuánto falta resolver. */}
             {pendientes.length > 0 && (
               <View style={s.hero}>
@@ -155,7 +159,7 @@ export default function FacturacionScreen() {
               <>
                 <Text style={[s.grupo, pendientes.length > 0 && { marginTop: space[6] }]}>Sin aprobar</Text>
                 {pendientes.map((b, i) => (
-                  <FilaFactura key={b.id} bill={b} index={i} ultima={i === pendientes.length - 1} c={c} s={s} />
+                  <FilaFactura key={b.id} bill={b} ultima={i === pendientes.length - 1} onPress={abrirFactura} c={c} s={s} />
                 ))}
               </>
             )}
@@ -164,11 +168,11 @@ export default function FacturacionScreen() {
               <>
                 <Text style={[s.grupo, { marginTop: space[7] }]}>Ya aprobadas</Text>
                 {aprobadas.map((b, i) => (
-                  <FilaFactura key={b.id} bill={b} index={pendientes.length + i} ultima={i === aprobadas.length - 1} c={c} s={s} />
+                  <FilaFactura key={b.id} bill={b} ultima={i === aprobadas.length - 1} onPress={abrirFactura} c={c} s={s} />
                 ))}
               </>
             )}
-          </View>
+          </Animated.View>
         )}
       </ScrollView>
     </View>

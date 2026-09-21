@@ -1,4 +1,4 @@
-import { useRef, type ComponentType } from 'react';
+import { useCallback, useRef, type ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
@@ -43,9 +43,13 @@ export function SwipeableRow({
 }) {
   const ref = useRef<SwipeableMethods>(null);
 
-  if (acciones.length === 0) return <>{children}</>;
-
-  const renderRightActions = (progress: SharedValue<number>) => (
+  // `renderRightActions` se estabiliza con useCallback y va ANTES del early
+  // return: los hooks no pueden quedar detrás de un `return` condicional.
+  // Si fuera una closure nueva en cada render, `ReanimatedSwipeable` volvería
+  // a construir las acciones de cada fila en cada render de la lista — con una
+  // FlatList de decenas de filas eso es reconstruir decenas de subárboles
+  // animados mientras el dedo arrastra.
+  const renderRightActions = useCallback((progress: SharedValue<number>) => (
     <View style={styles.accionesWrap}>
       {acciones.map((accion, i) => (
         <BotonAccion
@@ -62,7 +66,9 @@ export function SwipeableRow({
         />
       ))}
     </View>
-  );
+  ), [acciones]);
+
+  if (acciones.length === 0) return <>{children}</>;
 
   return (
     <ReanimatedSwipeable

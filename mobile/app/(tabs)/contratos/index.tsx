@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, memo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import { haptic } from '../../../lib/haptics';
 import { fechaHumana } from '../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
-import { entradaFila } from '../../../styles/motion';
+import { entradaLista } from '../../../styles/motion';
 
 /**
  * Qué le falta al contrato, contado desde el lado de quien mira. Es la única
@@ -31,17 +31,17 @@ function estadoDeFirma(ct: Contract, esPropietario: boolean) {
 }
 
 /** Tarjeta de los que esperan una firma: es contenido autónomo, lleva superficie. */
-function TarjetaPendiente({ ct, index, esPropietario, onPress, c, s }: {
-  ct: Contract; index: number; esPropietario: boolean; onPress: () => void; c: ThemeColors; s: Styles;
+const TarjetaPendiente = memo(function TarjetaPendiente({ ct, esPropietario, onPress, c, s }: {
+  ct: Contract; esPropietario: boolean; onPress: (id: string) => void; c: ThemeColors; s: Styles;
 }) {
   const { meFalta, laOtraFirmo } = estadoDeFirma(ct, esPropietario);
   const contraparte = esPropietario ? ct.establishment?.name : ct.owner?.name;
 
+  // Sin `entering` por tarjeta: el escalonado lo hace ahora el contenedor.
   return (
-    <Animated.View entering={entradaFila(index)}>
       <PressableScale
         style={s.tarjeta}
-        onPress={() => { haptic.selection(); onPress(); }}
+        onPress={() => { haptic.selection(); onPress(ct.id); }}
         accessibilityRole="button"
         accessibilityLabel={`Ver contrato ${ct.title}`}
       >
@@ -71,13 +71,12 @@ function TarjetaPendiente({ ct, index, esPropietario, onPress, c, s }: {
           </View>
         </View>
       </PressableScale>
-    </Animated.View>
   );
-}
+});
 
 /** Fila plana del historial: el contrato cerrado ya no pide nada. */
-function FilaHistorial({ ct, index, esPropietario, ultima, onPress, c, s }: {
-  ct: Contract; index: number; esPropietario: boolean; ultima: boolean; onPress: () => void; c: ThemeColors; s: Styles;
+const FilaHistorial = memo(function FilaHistorial({ ct, esPropietario, ultima, onPress, c, s }: {
+  ct: Contract; esPropietario: boolean; ultima: boolean; onPress: (id: string) => void; c: ThemeColors; s: Styles;
 }) {
   const firmado = ct.status === 'signed';
   const contraparte = esPropietario ? ct.establishment?.name : ct.owner?.name;
@@ -88,10 +87,9 @@ function FilaHistorial({ ct, index, esPropietario, ultima, onPress, c, s }: {
       : 'Rechazado';
 
   return (
-    <Animated.View entering={entradaFila(index)}>
       <PressableScale
         style={[s.fila, !ultima && s.filaDivisor]}
-        onPress={() => { haptic.selection(); onPress(); }}
+        onPress={() => { haptic.selection(); onPress(ct.id); }}
         accessibilityRole="button"
         accessibilityLabel={`Ver contrato ${ct.title}`}
       >
@@ -108,9 +106,8 @@ function FilaHistorial({ ct, index, esPropietario, ultima, onPress, c, s }: {
         </View>
         <ChevronRight size={17} color={c.textFaint} strokeWidth={2.2} />
       </PressableScale>
-    </Animated.View>
   );
-}
+});
 
 export default function ContratosScreen() {
   const router = useRouter();
@@ -123,8 +120,14 @@ export default function ContratosScreen() {
   const isEstab = user?.role === 'establecimiento' || user?.role === 'admin';
   const esPropietario = !isEstab;
 
-  const pendientes = contracts?.filter((ct) => ct.status === 'pending') ?? [];
-  const historial = contracts?.filter((ct) => ct.status !== 'pending') ?? [];
+  const pendientes = useMemo(() => contracts?.filter((ct) => ct.status === 'pending') ?? [], [contracts]);
+  const historial = useMemo(() => contracts?.filter((ct) => ct.status !== 'pending') ?? [], [contracts]);
+
+  // Navegación estable: sin esto cada fila recibía un `onPress` nuevo y
+  // React.memo no podía evitar un solo re-render.
+  const abrirContrato = useCallback((id: string) => {
+    router.push(Routes.contrato(id) as never);
+  }, [router]);
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -172,15 +175,20 @@ export default function ContratosScreen() {
               message={isEstab ? 'Creá un contrato digital para que el propietario lo firme desde la app.' : 'No tenés contratos pendientes por el momento.'}
             />
           ) : (
-            <>
+            /*
+             * La lista entra como un bloque (`entradaLista`) en vez de
+             * escalonar tarjeta por tarjeta: con muchos contratos, decenas de
+             * animaciones de entrada simultáneas hacen tironear el scroll.
+             */
+            <Animated.View entering={entradaLista()}>
               {pendientes.length > 0 && (
                 <>
                   <Text style={s.grupo}>Te esperan a vos</Text>
                   <View style={{ gap: space[3] }}>
-                    {pendientes.map((ct, i) => (
+                    {pendientes.map((ct) => (
                       <TarjetaPendiente
-                        key={ct.id} ct={ct} index={i} esPropietario={esPropietario}
-                        onPress={() => router.push(Routes.contrato(ct.id) as never)}
+                        key={ct.id} ct={ct} esPropietario={esPropietario}
+                        onPress={abrirContrato}
                         c={c} s={s}
                       />
                     ))}
@@ -195,15 +203,15 @@ export default function ContratosScreen() {
                   </Text>
                   {historial.map((ct, i) => (
                     <FilaHistorial
-                      key={ct.id} ct={ct} index={pendientes.length + i} esPropietario={esPropietario}
+                      key={ct.id} ct={ct} esPropietario={esPropietario}
                       ultima={i === historial.length - 1}
-                      onPress={() => router.push(Routes.contrato(ct.id) as never)}
+                      onPress={abrirContrato}
                       c={c} s={s}
                     />
                   ))}
                 </>
               )}
-            </>
+            </Animated.View>
           )}
         </View>
       </ScrollView>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { memo, useCallback, useState, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, ScrollView, TextInput,
@@ -23,7 +23,7 @@ import { useTheme, type ThemeColors } from '../../../lib/theme';
 import type { Horse } from '../../../../packages/shared/src';
 import { AppImage } from '../../../components/AppImage';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
-import { entradaFila } from '../../../styles/motion';
+import { entradaLista } from '../../../styles/motion';
 import { HorseshoeH } from '../../../components/icons/equine';
 
 /**
@@ -42,8 +42,12 @@ const SEMAFORO = {
  * Antes la foto ocupaba toda la tarjeta y el nombre iba encima de un degradado:
  * se veía lindo pero no dejaba leer de un vistazo cuánto gasta cada caballo ni
  * cuál está verificado, que es a lo que se entra a esta pantalla.
+ *
+ * Va memoizada porque el buscador vive en el mismo árbol: sin `memo`, cada
+ * tecla que se tipea vuelve a dibujar todas las tarjetas visibles (con su foto
+ * y su chip) y el teclado se atrasa respecto del dedo.
  */
-function HorseCard({ horse, monthlySpend, c, s }: {
+const HorseCard = memo(function HorseCard({ horse, monthlySpend, c, s }: {
   horse: Horse;
   monthlySpend?: number;
   c: ThemeColors;
@@ -105,13 +109,153 @@ function HorseCard({ horse, monthlySpend, c, s }: {
       </View>
     </PressableScale>
   );
-}
+});
 
 /* El alta de caballo es una pantalla empujada: app/(tabs)/caballos/nuevo.tsx
    (los formularios con tipeo se rompían con el teclado dentro de las hojas). */
 
 /** Los chips se ven compactos a propósito; el hitSlop les da los 44 táctiles. */
 const HIT_CHIP = { top: 10, bottom: 10, left: 4, right: 4 };
+
+/**
+ * Los chips de filtro viven aparte del buscador y memoizados porque no dependen
+ * del texto que se tipea: así tipear no obliga a volver a medir y dibujar un
+ * ScrollView horizontal entero en cada tecla.
+ */
+const FilaChips = memo(function FilaChips({
+  activityOptions, estabOptions, filterActivity, filterEstab,
+  onActividad, onEstablecimiento, onLimpiar, c, s,
+}: {
+  activityOptions: string[];
+  estabOptions: string[];
+  filterActivity: string;
+  filterEstab: string;
+  onActividad: (act: string) => void;
+  onEstablecimiento: (est: string) => void;
+  onLimpiar: () => void;
+  c: ThemeColors;
+  s: Styles;
+}) {
+  const sinFiltro = !filterActivity && !filterEstab;
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={s.filterRow}
+      style={s.filterScroll}
+    >
+      <TouchableOpacity
+        style={[s.filterChip, sinFiltro && s.filterChipActive]}
+        onPress={() => { haptic.selection(); onLimpiar(); }}
+        activeOpacity={0.75}
+        hitSlop={HIT_CHIP}
+      >
+        <Text style={[s.filterChipText, sinFiltro && s.filterChipTextActive]}>Todos</Text>
+      </TouchableOpacity>
+      {activityOptions.map((act) => (
+        <TouchableOpacity
+          key={act}
+          style={[s.filterChip, filterActivity === act && s.filterChipActive]}
+          onPress={() => { haptic.selection(); onActividad(act); }}
+          activeOpacity={0.75}
+          hitSlop={HIT_CHIP}
+        >
+          <Text style={[s.filterChipText, filterActivity === act && s.filterChipTextActive]}>{act}</Text>
+        </TouchableOpacity>
+      ))}
+      {estabOptions.map((est) => (
+        <TouchableOpacity
+          key={est}
+          style={[s.filterChip, filterEstab === est && s.filterChipActive]}
+          onPress={() => { haptic.selection(); onEstablecimiento(est); }}
+          activeOpacity={0.75}
+          hitSlop={HIT_CHIP}
+        >
+          <Building2 size={12} color={filterEstab === est ? c.surface : c.textMuted} strokeWidth={2} />
+          <Text style={[s.filterChipText, filterEstab === est && s.filterChipTextActive]}>{est}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+});
+
+/**
+ * Encabezado de la lista como componente propio y estable: si fuera un JSX
+ * armado adentro del render, la FlatList lo trataría como un nodo nuevo cada
+ * vez. El estado del buscador sigue viviendo en la pantalla y entra por props,
+ * así el TextInput nunca se remonta y no pierde el foco mientras se escribe.
+ */
+const CabezaCaballos = memo(function CabezaCaballos({
+  puedeCrear, onCrear, hayBuscador, busqueda, onBusqueda, hasFilters,
+  activityOptions, estabOptions, filterActivity, filterEstab,
+  onActividad, onEstablecimiento, onLimpiar, c, s,
+}: {
+  puedeCrear: boolean;
+  onCrear: () => void;
+  hayBuscador: boolean;
+  busqueda: string;
+  onBusqueda: (v: string) => void;
+  hasFilters: boolean;
+  activityOptions: string[];
+  estabOptions: string[];
+  filterActivity: string;
+  filterEstab: string;
+  onActividad: (act: string) => void;
+  onEstablecimiento: (est: string) => void;
+  onLimpiar: () => void;
+  c: ThemeColors;
+  s: Styles;
+}) {
+  return (
+    <>
+      <View style={s.header}>
+        <Text style={s.title}>Tus caballos</Text>
+        {puedeCrear ? (
+          <TouchableOpacity
+            style={s.addBtn}
+            onPress={onCrear}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Agregar caballo"
+          >
+            <Plus size={24} color={c.bg} strokeWidth={2.2} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      {hayBuscador ? (
+        <View style={s.searchWrap}>
+          <Search size={18} color={c.textFaint} strokeWidth={1.9} />
+          <TextInput
+            style={s.searchInput}
+            value={busqueda}
+            onChangeText={onBusqueda}
+            placeholder="Buscar un caballo"
+            placeholderTextColor={c.textFaint}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            autoCorrect={false}
+          />
+        </View>
+      ) : null}
+
+      {hasFilters ? (
+        <FilaChips
+          activityOptions={activityOptions}
+          estabOptions={estabOptions}
+          filterActivity={filterActivity}
+          filterEstab={filterEstab}
+          onActividad={onActividad}
+          onEstablecimiento={onEstablecimiento}
+          onLimpiar={onLimpiar}
+          c={c}
+          s={s}
+        />
+      ) : null}
+    </>
+  );
+});
 
 export default function CaballosScreen() {
   const { can } = useAuth();
@@ -133,100 +277,82 @@ export default function CaballosScreen() {
     return map;
   }, [dashboard?.spend_by_horse]);
 
-  // Opciones de filtro dinámicas según los datos disponibles
-  const activityOptions = [...new Set((horses ?? []).map((h) => h.activity?.name).filter(Boolean))] as string[];
-  const estabOptions = [...new Set((horses ?? []).map((h) => h.establishment?.name).filter(Boolean))] as string[];
+  // Opciones de filtro dinámicas según los datos disponibles. Memoizadas: sin
+  // esto se recorría la lista entera y se armaban dos Set nuevos en cada tecla
+  // del buscador, y además los arrays nuevos rompían la memo del encabezado.
+  const activityOptions = useMemo(
+    () => [...new Set((horses ?? []).map((h) => h.activity?.name).filter(Boolean))] as string[],
+    [horses],
+  );
+  const estabOptions = useMemo(
+    () => [...new Set((horses ?? []).map((h) => h.establishment?.name).filter(Boolean))] as string[],
+    [horses],
+  );
   const hasFilters = activityOptions.length > 1 || estabOptions.length > 1;
   // El buscador aparece recién cuando hay tantos caballos que mirar la lista
   // deja de alcanzar; con cinco es ruido en pantalla.
   const hayBuscador = (horses ?? []).length >= 6;
 
   const termino = busqueda.trim().toLowerCase();
-  const filtered = (horses ?? []).filter((h) => {
-    const matchActivity = !filterActivity || h.activity?.name === filterActivity;
-    const matchEstab = !filterEstab || h.establishment?.name === filterEstab;
-    const matchTermino = !termino || h.name.toLowerCase().includes(termino);
-    return matchActivity && matchEstab && matchTermino;
-  });
-
-  const limpiarFiltros = () => { setFilterActivity(''); setFilterEstab(''); };
-  const sinFiltro = !filterActivity && !filterEstab;
-
-  const encabezado = (
-    <>
-      <View style={s.header}>
-        <Text style={s.title}>Tus caballos</Text>
-        {can('horses', 'create') ? (
-          <TouchableOpacity
-            style={s.addBtn}
-            onPress={() => { haptic.medium(); nav.push(router, Routes.caballoNuevo); }}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Agregar caballo"
-          >
-            <Plus size={24} color={c.bg} strokeWidth={2.2} />
-          </TouchableOpacity>
-        ) : null}
-      </View>
-
-      {hayBuscador ? (
-        <View style={s.searchWrap}>
-          <Search size={18} color={c.textFaint} strokeWidth={1.9} />
-          <TextInput
-            style={s.searchInput}
-            value={busqueda}
-            onChangeText={setBusqueda}
-            placeholder="Buscar un caballo"
-            placeholderTextColor={c.textFaint}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-            autoCorrect={false}
-          />
-        </View>
-      ) : null}
-
-      {hasFilters ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.filterRow}
-          style={s.filterScroll}
-        >
-          <TouchableOpacity
-            style={[s.filterChip, sinFiltro && s.filterChipActive]}
-            onPress={() => { haptic.selection(); limpiarFiltros(); }}
-            activeOpacity={0.75}
-            hitSlop={HIT_CHIP}
-          >
-            <Text style={[s.filterChipText, sinFiltro && s.filterChipTextActive]}>Todos</Text>
-          </TouchableOpacity>
-          {activityOptions.map((act) => (
-            <TouchableOpacity
-              key={act}
-              style={[s.filterChip, filterActivity === act && s.filterChipActive]}
-              onPress={() => { haptic.selection(); setFilterActivity(filterActivity === act ? '' : act); }}
-              activeOpacity={0.75}
-              hitSlop={HIT_CHIP}
-            >
-              <Text style={[s.filterChipText, filterActivity === act && s.filterChipTextActive]}>{act}</Text>
-            </TouchableOpacity>
-          ))}
-          {estabOptions.map((est) => (
-            <TouchableOpacity
-              key={est}
-              style={[s.filterChip, filterEstab === est && s.filterChipActive]}
-              onPress={() => { haptic.selection(); setFilterEstab(filterEstab === est ? '' : est); }}
-              activeOpacity={0.75}
-              hitSlop={HIT_CHIP}
-            >
-              <Building2 size={12} color={filterEstab === est ? c.surface : c.textMuted} strokeWidth={2} />
-              <Text style={[s.filterChipText, filterEstab === est && s.filterChipTextActive]}>{est}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      ) : null}
-    </>
+  // El filtrado también va memoizado: si devolviera un array nuevo en cada
+  // render, la FlatList vería datos "distintos" aunque nada haya cambiado y
+  // volvería a montar celdas mientras el dedo arrastra.
+  const filtered = useMemo(
+    () => (horses ?? []).filter((h) => {
+      const matchActivity = !filterActivity || h.activity?.name === filterActivity;
+      const matchEstab = !filterEstab || h.establishment?.name === filterEstab;
+      const matchTermino = !termino || h.name.toLowerCase().includes(termino);
+      return matchActivity && matchEstab && matchTermino;
+    }),
+    [horses, filterActivity, filterEstab, termino],
   );
+
+  // Callbacks estables: son props del encabezado memoizado, si cambiaran de
+  // identidad en cada render la memo no serviría de nada.
+  const limpiarFiltros = useCallback(() => { setFilterActivity(''); setFilterEstab(''); }, []);
+  const elegirActividad = useCallback((act: string) => {
+    setFilterActivity((actual) => (actual === act ? '' : act));
+  }, []);
+  const elegirEstablecimiento = useCallback((est: string) => {
+    setFilterEstab((actual) => (actual === est ? '' : est));
+  }, []);
+  const irANuevo = useCallback(() => {
+    haptic.medium();
+    nav.push(router, Routes.caballoNuevo);
+  }, [router]);
+
+  const puedeCrear = can('horses', 'create');
+
+  const renderItem = useCallback(({ item }: { item: Horse }) => (
+    <HorseCard horse={item} monthlySpend={spendMap[item.id]} c={c} s={s} />
+  ), [spendMap, c, s]);
+
+  // El encabezado se arma una sola vez por dependencia real. Es un elemento de
+  // un componente estable, no un JSX anonimo: la FlatList lo reconcilia en vez
+  // de remontarlo, asi el TextInput del buscador conserva el foco al tipear.
+  const encabezado = useMemo(() => (
+    <CabezaCaballos
+      puedeCrear={puedeCrear}
+      onCrear={irANuevo}
+      hayBuscador={hayBuscador}
+      busqueda={busqueda}
+      onBusqueda={setBusqueda}
+      hasFilters={hasFilters}
+      activityOptions={activityOptions}
+      estabOptions={estabOptions}
+      filterActivity={filterActivity}
+      filterEstab={filterEstab}
+      onActividad={elegirActividad}
+      onEstablecimiento={elegirEstablecimiento}
+      onLimpiar={limpiarFiltros}
+      c={c}
+      s={s}
+    />
+  ), [
+    puedeCrear, irANuevo, hayBuscador, busqueda, hasFilters,
+    activityOptions, estabOptions, filterActivity, filterEstab,
+    elegirActividad, elegirEstablecimiento, limpiarFiltros, c, s,
+  ]);
 
   if (isLoading) {
     return (
@@ -243,47 +369,48 @@ export default function CaballosScreen() {
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <FlatList
-        ref={listRef}
-        data={filtered}
-        keyExtractor={(h) => h.id}
-        contentContainerStyle={s.list}
-        ListHeaderComponent={encabezado}
-        ListEmptyComponent={
-          isError ? (
-            <ErrorState onRetry={() => refetch()} />
-          ) : termino ? (
-            <EmptyState
-              icon="search-outline"
-              title="Ningún caballo con ese nombre"
-              message="Probá con otra parte del nombre."
-            />
-          ) : (
-            <EmptyState
-              icon="paw-outline"
-              title="No hay caballos registrados"
-              message="Registrá el primer caballo para empezar a gestionar su historial."
-              actionLabel={can('horses', 'create') ? 'Registrar caballo' : undefined}
-              onAction={() => { haptic.medium(); nav.push(router, Routes.caballoNuevo); }}
-            />
-          )
-        }
-        renderItem={({ item, index }) => (
-          <Animated.View entering={entradaFila(index)}>
-            <HorseCard
-              horse={item}
-              monthlySpend={spendMap[item.id]}
-              c={c}
-              s={s}
-            />
-          </Animated.View>
-        )}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
-        }
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-      />
+      {/* La entrada la hace el conjunto, una sola vez, desde el contenedor. Las
+          celdas quedan quietas: animarlas adentro del renderItem revive la
+          animación sobre cada vista reciclada al scrollear. */}
+      <Animated.View entering={entradaLista()} style={s.flex}>
+        <FlatList
+          ref={listRef}
+          data={filtered}
+          keyExtractor={(h) => h.id}
+          contentContainerStyle={s.list}
+          ListHeaderComponent={encabezado}
+          ListEmptyComponent={
+            isError ? (
+              <ErrorState onRetry={() => refetch()} />
+            ) : termino ? (
+              <EmptyState
+                icon="search-outline"
+                title="Ningún caballo con ese nombre"
+                message="Probá con otra parte del nombre."
+              />
+            ) : (
+              <EmptyState
+                icon="paw-outline"
+                title="No hay caballos registrados"
+                message="Registrá el primer caballo para empezar a gestionar su historial."
+                actionLabel={puedeCrear ? 'Registrar caballo' : undefined}
+                onAction={irANuevo}
+              />
+            )
+          }
+          renderItem={renderItem}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />
+          }
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          // La tarjeta trae foto, chip y sombra: conviene montar pocas por tanda y
+          // soltar las que quedan lejos antes que tener medio listado vivo.
+          initialNumToRender={6}
+          maxToRenderPerBatch={5}
+          windowSize={7}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -292,6 +419,8 @@ type Styles = ReturnType<typeof makeStyles>;
 
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
+  /** Contenedor de la lista: sólo existe para animar la entrada del conjunto. */
+  flex: { flex: 1 },
   list: { paddingHorizontal: space[4] + 2, paddingBottom: 140, gap: 14 },
   skeletonWrap: { paddingHorizontal: space[4] + 2, gap: 14 },
 

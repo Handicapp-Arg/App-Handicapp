@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, memo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, RefreshControl, ScrollView, ActivityIndicator,
 } from 'react-native';
@@ -25,7 +25,7 @@ import { fechaHumana } from '../../../lib/fechas';
 import { makeEventTypeColors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
-import { entradaFila } from '../../../styles/motion';
+import { entradaLista } from '../../../styles/motion';
 import type { Event } from '../../../../packages/shared/src';
 
 type FeedItem =
@@ -61,6 +61,65 @@ function FilaEventoSkeleton({ s }: { s: Styles }) {
 }
 
 /**
+ * Fila de evento memoizada. Vive fuera de `FeedEventos` para que React.memo
+ * sirva de algo: dentro del render del padre se redefiniría en cada pasada y
+ * cada celda se remontaría entera al scrollear.
+ */
+const FilaEvento = memo(function FilaEvento({
+  e, tipoLabel, canDelete, onPress, onDelete, c, s,
+}: {
+  e: Event;
+  tipoLabel: string;
+  canDelete: boolean;
+  onPress: (e: Event) => void;
+  onDelete: (id: string) => void;
+  c: ThemeColors;
+  s: Styles;
+}) {
+  // Array estable de acciones: ver SwipeableRow.
+  const acciones = useMemo(() => [{
+    label: 'Eliminar',
+    Icon: Trash2,
+    color: c.danger,
+    onPress: () => onDelete(e.id),
+    accessibilityLabel: 'Eliminar evento',
+  }], [c.danger, e.id, onDelete]);
+
+  const fila = (
+    <PressableScale
+      style={s.fila}
+      onPress={() => { haptic.light(); onPress(e); }}
+      accessibilityRole="button"
+      accessibilityLabel={`Evento de ${e.horse?.name ?? 'caballo'}`}
+    >
+      {e.horse?.image_url ? (
+        <AppImage source={{ uri: e.horse.image_url }} style={s.filaFoto} />
+      ) : (
+        <View style={[s.filaFoto, s.filaFotoVacia]}>
+          <HorseshoeH size={22} color={c.textFaint} />
+        </View>
+      )}
+
+      <View style={s.filaMain}>
+        <View style={s.filaHead}>
+          {e.horse?.name ? <Text style={s.filaNombre} numberOfLines={1}>{e.horse.name}</Text> : null}
+          <Text style={s.filaTipo} numberOfLines={1}>{tipoLabel}</Text>
+          {e.photos && e.photos.length > 0 && (
+            <Camera size={12} color={c.textFaint} strokeWidth={2} />
+          )}
+        </View>
+        <Text style={s.filaDesc} numberOfLines={2}>{e.description}</Text>
+        {e.amount != null && (
+          <Text style={s.filaMonto}>{formatCurrency(e.amount, e.currency ?? 'ARS')}</Text>
+        )}
+      </View>
+    </PressableScale>
+  );
+
+  return canDelete ? <SwipeableRow acciones={acciones}>{fila}</SwipeableRow> : fila;
+});
+
+/**
  * El feed vive en su propio componente y el padre lo remonta con `key` cuando
  * cambia el filtro de caballo. `useAllEvents` acumula páginas en estado
  * interno: sin remontar, al filtrar se mezclarían los eventos del caballo
@@ -69,7 +128,8 @@ function FilaEventoSkeleton({ s }: { s: Styles }) {
 function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: Styles }) {
   const router = useRouter();
   const { can } = useAuth();
-  const typeLabels = makeEventTypeColors(c);
+  // Se recalculaba en cada render y se leía una vez por fila.
+  const typeLabels = useMemo(() => makeEventTypeColors(c), [c]);
   const params = useMemo(() => (horseId ? { horse_id: horseId } : undefined), [horseId]);
   const { events, isLoading, isError, isFetchingMore, hasMore, loadMore, refetch } = useAllEvents(params);
   const deleteEvent = useDeleteEvent();
@@ -82,57 +142,33 @@ function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: St
   const feed = useMemo(() => agruparPorDia(events), [events]);
   const irANuevo = () => { haptic.medium(); router.push(Routes.eventoNuevo as never); };
 
-  const renderFila = ({ item, index }: { item: FeedItem; index: number }) => {
+  // Callbacks estables: sin esto cada fila recibía funciones nuevas en cada
+  // render del feed y React.memo no podía cortar nada.
+  const abrirDetalle = useCallback((e: Event) => setDetalle(e), []);
+  const borrarEvento = useCallback((eventId: string) => { deleteEvent.mutate(eventId); }, [deleteEvent.mutate]);
+
+  /**
+   * `renderItem` estable y SIN `entering` por celda: la FlatList recicla las
+   * celdas al scrollear, así que la animación de entrada se volvía a disparar
+   * sobre vistas ya vistas y se acumulaban decenas de animaciones.
+   */
+  const renderFila = useCallback(({ item }: { item: FeedItem }) => {
     if (item.kind === 'dia') {
       return <Text style={s.diaHeader}>{item.label}</Text>;
     }
     const e = item.event;
-    const fila = (
-      <PressableScale
-        style={s.fila}
-        onPress={() => { haptic.light(); setDetalle(e); }}
-        accessibilityRole="button"
-        accessibilityLabel={`Evento de ${e.horse?.name ?? 'caballo'}`}
-      >
-        {e.horse?.image_url ? (
-          <AppImage source={{ uri: e.horse.image_url }} style={s.filaFoto} />
-        ) : (
-          <View style={[s.filaFoto, s.filaFotoVacia]}>
-            <HorseshoeH size={22} color={c.textFaint} />
-          </View>
-        )}
-
-        <View style={s.filaMain}>
-          <View style={s.filaHead}>
-            {e.horse?.name ? <Text style={s.filaNombre} numberOfLines={1}>{e.horse.name}</Text> : null}
-            <Text style={s.filaTipo} numberOfLines={1}>{typeLabels[e.type]?.label ?? e.type}</Text>
-            {e.photos && e.photos.length > 0 && (
-              <Camera size={12} color={c.textFaint} strokeWidth={2} />
-            )}
-          </View>
-          <Text style={s.filaDesc} numberOfLines={2}>{e.description}</Text>
-          {e.amount != null && (
-            <Text style={s.filaMonto}>{formatCurrency(e.amount, e.currency ?? 'ARS')}</Text>
-          )}
-        </View>
-      </PressableScale>
+    return (
+      <FilaEvento
+        e={e}
+        tipoLabel={typeLabels[e.type]?.label ?? e.type}
+        canDelete={canDelete}
+        onPress={abrirDetalle}
+        onDelete={borrarEvento}
+        c={c}
+        s={s}
+      />
     );
-    const envuelta = canDelete ? (
-      <SwipeableRow
-        acciones={[{
-          label: 'Eliminar',
-          Icon: Trash2,
-          color: c.danger,
-          onPress: () => deleteEvent.mutate(e.id),
-          accessibilityLabel: 'Eliminar evento',
-        }]}
-      >
-        {fila}
-      </SwipeableRow>
-    ) : fila;
-
-    return <Animated.View entering={entradaFila(index)}>{envuelta}</Animated.View>;
-  };
+  }, [s, c, typeLabels, canDelete, abrirDetalle, borrarEvento]);
 
   if (isError && events.length === 0) {
     return <ErrorState onRetry={() => refetch()} />;
@@ -166,24 +202,32 @@ function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: St
 
   return (
     <>
-      <FlatList
-        ref={listRef}
-        data={feed}
-        keyExtractor={(item) => item.key}
-        contentContainerStyle={s.lista}
-        renderItem={renderFila}
-        onEndReached={() => { if (hasMore) loadMore(); }}
-        onEndReachedThreshold={0.3}
-        ListFooterComponent={
-          isFetchingMore ? (
-            <View style={s.cargando}>
-              <ActivityIndicator size="small" color={c.brand} />
-            </View>
-          ) : null
-        }
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Entra el feed entero, una vez. */}
+      <Animated.View entering={entradaLista()} style={{ flex: 1 }}>
+        <FlatList
+          ref={listRef}
+          data={feed}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={s.lista}
+          renderItem={renderFila}
+          onEndReached={() => { if (hasMore) loadMore(); }}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View style={s.cargando}>
+                <ActivityIndicator size="small" color={c.brand} />
+              </View>
+            ) : null
+          }
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={c.brand} colors={[c.brand]} />}
+          showsVerticalScrollIndicator={false}
+          // Filas chicas con foto: conviene soltar las de fuera de pantalla
+          // (cada una instala un gesto nativo de swipe y decodifica una imagen).
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+        />
+      </Animated.View>
 
       {/* Detalle del evento: hoja nativa con lo que la fila no muestra */}
       <BottomSheet

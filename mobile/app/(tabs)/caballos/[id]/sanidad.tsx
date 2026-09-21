@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, Lock, ShieldCheck, FileText, MoreVertical, Trash2 } from 'lucide-react-native';
-import Animated from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -22,7 +21,6 @@ import { colors } from '../../../../lib/colors';
 import { fechaHumana, vence } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, radius, weight, touch, shadow } from '../../../../styles/tokens';
-import { entradaFila } from '../../../../styles/motion';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { PressableScale } from '../../../../components/PressableScale';
 import { FormSheet } from '../../../../components/FormSheet';
@@ -190,15 +188,72 @@ export default function SanidadScreen() {
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <ScreenHeader scrollable showBack title="Sanidad" subtitle={horse.name} />
-      <ScrollView
+      {/* El historial médico puede tener decenas de registros: es la ÚNICA
+          lista larga de la pantalla, así que la pantalla entera es una FlatList
+          que lo virtualiza y todo lo demás (resumen, libreta, peso) viaja como
+          encabezado. Antes era un `.map()` dentro de un ScrollView: montaba
+          todos los registros de una, cada uno con su animación de entrada. */}
+      <FlatList
         style={{ flex: 1 }}
+        data={medicalRecords ?? []}
+        keyExtractor={(rec) => rec.id}
         // El CTA flota abajo: el contenido reserva su alto para que la última
         // fila no quede escondida detrás del botón.
         contentContainerStyle={{ paddingBottom: insets.bottom + space[20] }}
         showsVerticalScrollIndicator={false}
-      >
-        {/* ─── Resumen: anillo + leyenda ─── */}
-        <Animated.View entering={entradaFila(0)} style={s.resumen}>
+        initialNumToRender={8}
+        windowSize={7}
+        renderItem={({ item: rec, index }) => {
+          const mc = medicalColors[rec.type] ?? medicalColors.tratamiento;
+          const dueStatus = rec.next_due ? healthStatusFromNextDue(rec.next_due) : null;
+          const dueColor = dueStatus === 'rojo' ? c.danger : dueStatus === 'amarillo' ? c.warning : c.textFaint;
+          const esUltimo = index === (medicalRecords?.length ?? 0) - 1;
+          return (
+            // Sin `entering` por ítem: la lista recicla celdas al scrollear y la
+            // animación se volvería a disparar sobre vistas reusadas.
+            <View style={s.lista}>
+              <View style={[s.medFila, !esUltimo && s.filaBorde]}>
+                <View style={[s.medIcono, { backgroundColor: mc.bg }]}>
+                  <FileText size={18} color={mc.text} strokeWidth={2} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.filaNombre} numberOfLines={1}>{rec.name}</Text>
+                  <Text style={s.filaSub} numberOfLines={1}>
+                    {MEDICAL_TYPE_LABELS[rec.type] ?? rec.type} · {fechaHumana(rec.date)}
+                  </Text>
+                  {rec.next_due && (
+                    <Text style={[s.medVence, { color: dueColor }]}>{vence(rec.next_due)}</Text>
+                  )}
+                  {rec.notes && <Text style={s.medNotas} numberOfLines={2}>{rec.notes}</Text>}
+                </View>
+                {puedeEditar && (
+                  <PressableScale
+                    onPress={() => { haptic.selection(); setMedMenuRecord({ id: rec.id, name: rec.name }); }}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Más opciones de ${rec.name}`}
+                  >
+                    <MoreVertical size={20} color={c.textFaint} strokeWidth={2} />
+                  </PressableScale>
+                )}
+              </View>
+            </View>
+          );
+        }}
+        ListEmptyComponent={
+          <View style={s.lista}>
+            <EmptyState
+              icon="medkit-outline"
+              title="Sin registros médicos"
+              message="Agregá vacunas, desparasitaciones y tratamientos."
+            />
+          </View>
+        }
+        ListHeaderComponent={
+          <>
+        {/* ─── Resumen: anillo + leyenda ───
+            Sin `entering`: la pantalla ya entra con la transición del stack. */}
+        <View style={s.resumen}>
           <View style={s.anilloWrap}>
             <AnilloSanidad verde={conteo.verde} amarillo={conteo.amarillo} rojo={conteo.rojo} c={c} />
             <View style={s.anilloCentro}>
@@ -215,7 +270,7 @@ export default function SanidadScreen() {
               </View>
             ))}
           </View>
-        </Animated.View>
+        </View>
 
         {/* ─── Libreta sanitaria ─── */}
         <View style={s.tituloRow}>
@@ -237,7 +292,9 @@ export default function SanidadScreen() {
             const vencida = d.estado === 'rojo';
             const dotColor = vencida ? c.danger : d.estado === 'amarillo' ? c.warning : c.success;
             return (
-              <Animated.View key={d.key} entering={entradaFila(i + 1)}>
+              // Fila quieta: las 5 filas de la libreta no necesitan su propia
+              // animación de entrada encima de la transición de la pantalla.
+              <View key={d.key}>
                 <PressableScale
                   scaleTo={0.98}
                   onPress={() => puedeEditar && irANuevoRegistro({ type: 'sanidad', name: d.name })}
@@ -263,7 +320,7 @@ export default function SanidadScreen() {
                     <ChevronRight size={17} color={c.textFaint} strokeWidth={2.3} />
                   )}
                 </PressableScale>
-              </Animated.View>
+              </View>
             );
           })}
         </View>
@@ -337,56 +394,9 @@ export default function SanidadScreen() {
           <Text style={s.tituloSeccion}>Historial médico</Text>
           <Text style={s.tituloMeta}>{medicalRecords?.length ?? 0} registros</Text>
         </View>
-
-        {!medicalRecords?.length ? (
-          <View style={s.lista}>
-            <EmptyState
-              icon="medkit-outline"
-              title="Sin registros médicos"
-              message="Agregá vacunas, desparasitaciones y tratamientos."
-            />
-          </View>
-        ) : (
-          <View style={s.lista}>
-            {medicalRecords.map((rec, index, arr) => {
-              const mc = medicalColors[rec.type] ?? medicalColors.tratamiento;
-              const dueStatus = rec.next_due ? healthStatusFromNextDue(rec.next_due) : null;
-              const dueColor = dueStatus === 'rojo' ? c.danger : dueStatus === 'amarillo' ? c.warning : c.textFaint;
-              return (
-                <Animated.View
-                  key={rec.id}
-                  entering={entradaFila(index)}
-                  style={[s.medFila, index < arr.length - 1 && s.filaBorde]}
-                >
-                  <View style={[s.medIcono, { backgroundColor: mc.bg }]}>
-                    <FileText size={18} color={mc.text} strokeWidth={2} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.filaNombre} numberOfLines={1}>{rec.name}</Text>
-                    <Text style={s.filaSub} numberOfLines={1}>
-                      {MEDICAL_TYPE_LABELS[rec.type] ?? rec.type} · {fechaHumana(rec.date)}
-                    </Text>
-                    {rec.next_due && (
-                      <Text style={[s.medVence, { color: dueColor }]}>{vence(rec.next_due)}</Text>
-                    )}
-                    {rec.notes && <Text style={s.medNotas} numberOfLines={2}>{rec.notes}</Text>}
-                  </View>
-                  {puedeEditar && (
-                    <PressableScale
-                      onPress={() => { haptic.selection(); setMedMenuRecord({ id: rec.id, name: rec.name }); }}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Más opciones de ${rec.name}`}
-                    >
-                      <MoreVertical size={20} color={c.textFaint} strokeWidth={2} />
-                    </PressableScale>
-                  )}
-                </Animated.View>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+          </>
+        }
+      />
 
       {/* ─── CTA fijo: descargar la libreta ─── */}
       {/* El degradado apaga el contenido debajo del botón en vez de cortarlo en seco. */}

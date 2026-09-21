@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, memo } from 'react';
 import {
   View, Text, FlatList, StyleSheet, RefreshControl,
 } from 'react-native';
@@ -18,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { Routes } from '../../lib/routes';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, touch } from '../../styles/tokens';
-import { entradaFila } from '../../styles/motion';
+import { entradaLista } from '../../styles/motion';
 import { fontFamily } from '../../styles/fonts';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { EmptyState } from '../../components/EmptyState';
@@ -62,36 +62,36 @@ function formatTime(iso: string): string {
  * Fila de aviso. La no leída lleva el texto completo y el punto verde a la
  * derecha; la leída se apaga y muestra solo título y momento: ya no pide nada.
  */
-function NotifRow({
+const NotifRow = memo(function NotifRow({
   item,
-  index,
+  meta,
   onPress,
   onMarkRead,
   c,
   s,
 }: {
   item: NotificationItem;
-  index: number;
+  meta: { icon: LucideIcon; bg: string; color: string };
   onPress: (n: NotificationItem) => void;
   onMarkRead: (id: string) => void;
   c: ThemeColors;
   s: Styles;
 }) {
-  const typeMeta = makeTypeMeta(c);
-  const meta = typeMeta[item.type] ?? typeMeta.default;
   const MetaIcon = meta.icon;
 
+  // Array estable para el swipe (ver SwipeableRow).
+  const acciones = useMemo(() => (item.read ? [] : [{
+    label: 'Leída',
+    Icon: Check,
+    color: c.info,
+    onPress: () => onMarkRead(item.id),
+    accessibilityLabel: 'Marcar como leída',
+  }]), [item.read, item.id, c.info, onMarkRead]);
+
+  // Sin `entering` por fila: la FlatList recicla celdas y la animación se
+  // volvía a disparar sobre vistas ya vistas. Entra la lista, no cada aviso.
   return (
-    <Animated.View entering={entradaFila(index)}>
-      <SwipeableRow
-        acciones={item.read ? [] : [{
-          label: 'Leída',
-          Icon: Check,
-          color: c.info,
-          onPress: () => onMarkRead(item.id),
-          accessibilityLabel: 'Marcar como leída',
-        }]}
-      >
+      <SwipeableRow acciones={acciones}>
         <PressableScale
           style={s.row}
           onPress={() => { haptic.light(); onPress(item); }}
@@ -115,9 +115,13 @@ function NotifRow({
           {!item.read && <View style={s.puntoSinLeer} />}
         </PressableScale>
       </SwipeableRow>
-    </Animated.View>
   );
-}
+});
+
+/** Fila de la lista: rótulo de sección o aviso. */
+type ListRow =
+  | { kind: 'section'; key: string; label: string }
+  | { kind: 'item';    key: string; item: NotificationItem };
 
 /* ─── Main ─── */
 export default function NotificacionesScreen() {
@@ -126,16 +130,18 @@ export default function NotificacionesScreen() {
   const { notifications, loading, isError, refresh, markAllRead, markOneRead } = useNotifications();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
+  // El mapa tipo→ícono se armaba una vez POR FILA (creaba 15 objetos cada vez).
+  const typeMeta = useMemo(() => makeTypeMeta(c), [c]);
 
   // Limpiar badge al abrir la pantalla
   useEffect(() => {
     void clearBadge();
   }, []);
 
-  const unreadList = notifications.filter((n) => !n.read);
-  const readList   = notifications.filter((n) =>  n.read).slice(0, 30);
+  const unreadList = useMemo(() => notifications.filter((n) => !n.read), [notifications]);
+  const readList   = useMemo(() => notifications.filter((n) => n.read).slice(0, 30), [notifications]);
 
-  const handlePress = (n: NotificationItem) => {
+  const handlePress = useCallback((n: NotificationItem) => {
     if (!n.read) void markOneRead(n.id);
     if (['bid_placed', 'auction_won', 'auction_closed', 'auction_outbid'].includes(n.type)) {
       router.push('/(tabs)/remates' as never);
@@ -144,21 +150,38 @@ export default function NotificacionesScreen() {
     } else if (n.event_id) {
       router.push('/(tabs)/eventos' as never);
     }
-  };
+  }, [markOneRead, router]);
 
-  type ListRow =
-    | { kind: 'section'; key: string; label: string }
-    | { kind: 'item';    key: string; item: NotificationItem };
+  const marcarUna = useCallback((id: string) => { void markOneRead(id); }, [markOneRead]);
 
-  const rows: ListRow[] = [];
-  if (unreadList.length > 0) {
-    rows.push({ kind: 'section', key: 'sec-unread', label: 'Sin leer' });
-    unreadList.forEach((n) => rows.push({ kind: 'item', key: n.id, item: n }));
-  }
-  if (readList.length > 0) {
-    rows.push({ kind: 'section', key: 'sec-read', label: 'Antes' });
-    readList.forEach((n) => rows.push({ kind: 'item', key: n.id, item: n }));
-  }
+  // `rows` se rearmaba en cada render y `data` nuevo obliga a la FlatList a
+  // recorrer todas sus celdas: se memoriza contra las listas de avisos.
+  const rows = useMemo<ListRow[]>(() => {
+    const out: ListRow[] = [];
+    if (unreadList.length > 0) {
+      out.push({ kind: 'section', key: 'sec-unread', label: 'Sin leer' });
+      unreadList.forEach((n) => out.push({ kind: 'item', key: n.id, item: n }));
+    }
+    if (readList.length > 0) {
+      out.push({ kind: 'section', key: 'sec-read', label: 'Antes' });
+      readList.forEach((n) => out.push({ kind: 'item', key: n.id, item: n }));
+    }
+    return out;
+  }, [unreadList, readList]);
+
+  const renderRow = useCallback(({ item: row }: { item: ListRow }) => {
+    if (row.kind === 'section') return <Text style={s.sectionLabel}>{row.label}</Text>;
+    return (
+      <NotifRow
+        item={row.item}
+        meta={typeMeta[row.item.type] ?? typeMeta.default}
+        onPress={handlePress}
+        onMarkRead={marcarUna}
+        c={c}
+        s={s}
+      />
+    );
+  }, [s, c, typeMeta, handlePress, marcarUna]);
 
   // Una sola acción no merece un menú de tres puntos: va como texto en el header.
   const header = (
@@ -212,29 +235,23 @@ export default function NotificacionesScreen() {
           />
         </View>
       ) : (
-        <FlatList
-          data={rows}
-          keyExtractor={(r) => r.key}
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={header}
-          refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={c.brand} colors={[c.brand]} />
-          }
-          renderItem={({ item: row, index }) => {
-            if (row.kind === 'section') return <Text style={s.sectionLabel}>{row.label}</Text>;
-            return (
-              <NotifRow
-                item={row.item}
-                index={index}
-                onPress={handlePress}
-                onMarkRead={(id) => void markOneRead(id)}
-                c={c}
-                s={s}
-              />
-            );
-          }}
-        />
+        // Entra la lista entera, una vez.
+        <Animated.View entering={entradaLista()} style={{ flex: 1 }}>
+          <FlatList
+            data={rows}
+            keyExtractor={(r) => r.key}
+            contentContainerStyle={s.list}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={header}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={c.brand} colors={[c.brand]} />
+            }
+            renderItem={renderRow}
+            initialNumToRender={10}
+            maxToRenderPerBatch={8}
+            windowSize={9}
+          />
+        </Animated.View>
       )}
     </View>
   );

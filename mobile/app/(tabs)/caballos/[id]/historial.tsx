@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,7 @@ import { colors, makeEventTypeColors } from '../../../../lib/colors';
 import { fechaHumana, hora } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, weight, touch, radius, brandShadow } from '../../../../styles/tokens';
-import { entradaFila } from '../../../../styles/motion';
+import { entradaLista } from '../../../../styles/motion';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { PressableScale } from '../../../../components/PressableScale';
 import { EmptyState } from '../../../../components/EmptyState';
@@ -58,7 +58,7 @@ type Fila =
   | { kind: 'evento'; key: string; event: Event; ultimoDelDia: boolean };
 
 /* ─── EventCommentThread ─── */
-function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string; currentUserId?: string; c: ThemeColors; s: Styles }) {
+const EventCommentThread = memo(function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string; currentUserId?: string; c: ThemeColors; s: Styles }) {
   const [open, setOpen] = useState(false);
   const [texto, setTexto] = useState('');
   const { data: comments } = useEventComments(eventId, open);
@@ -143,7 +143,55 @@ function EventCommentThread({ eventId, currentUserId, c, s }: { eventId: string;
       )}
     </View>
   );
-}
+});
+
+/**
+ * Fila del timeline, memoizada y a nivel de módulo: cada una monta un panel de
+ * métricas y un hilo de comentarios, así que re-renderizarlas de más es caro.
+ */
+const FilaTimeline = memo(function FilaTimeline({
+  ev, ultimoDelDia, meta, canEdit, currentUserId, c, s,
+}: {
+  ev: Event;
+  ultimoDelDia: boolean;
+  meta: { bg: string; text: string; label: string };
+  canEdit: boolean;
+  currentUserId?: string;
+  c: ThemeColors;
+  s: Styles;
+}) {
+  const Icono = ICONO_TIPO[ev.type] ?? StickyNote;
+  const horaEv = hora(ev.created_at);
+
+  // Sin `entering` por fila: la FlatList recicla celdas al scrollear.
+  return (
+    <View style={s.timelineRow}>
+      {/* Riel: la cajita del ícono y la línea que baja hasta el próximo item. */}
+      <View style={s.riel}>
+        <View style={[s.rielIcono, { backgroundColor: meta.bg }]}>
+          <Icono size={19} color={meta.text} strokeWidth={1.9} />
+        </View>
+        {!ultimoDelDia && <View style={s.rielLinea} />}
+      </View>
+
+      <View style={s.timelineBody}>
+        <View style={s.timelineTitulo}>
+          <Text style={s.eventoTipo}>{meta.label}</Text>
+          {ev.amount != null && (
+            <Text style={s.eventoMonto}>{formatCurrency(ev.amount, ev.currency ?? 'ARS')}</Text>
+          )}
+        </View>
+        {!!ev.description && <Text style={s.eventoDesc}>{ev.description}</Text>}
+        {!!horaEv && <Text style={s.eventoMeta}>{horaEv}</Text>}
+
+        {ev.type === 'entrenamiento' && (
+          <TrainingMetricsPanel eventId={ev.id} canEdit={canEdit} />
+        )}
+        <EventCommentThread eventId={ev.id} currentUserId={currentUserId} c={c} s={s} />
+      </View>
+    </View>
+  );
+});
 
 export default function HistorialScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -186,6 +234,25 @@ export default function HistorialScreen() {
   }, [events, filtro]);
 
   const totalEventos = events?.length ?? 0;
+  const puedeCrear = can('events', 'create');
+
+  /** `renderItem` estable: cambiar de filtro no re-renderiza celda por celda. */
+  const renderFila = useCallback(({ item }: { item: Fila }) => {
+    if (item.kind === 'dia') {
+      return <Text style={s.diaLabel}>{item.label}</Text>;
+    }
+    return (
+      <FilaTimeline
+        ev={item.event}
+        ultimoDelDia={item.ultimoDelDia}
+        meta={tipoColors[item.event.type] ?? tipoColors.nota}
+        canEdit={puedeCrear}
+        currentUserId={user?.id}
+        c={c}
+        s={s}
+      />
+    );
+  }, [s, c, tipoColors, puedeCrear, user?.id]);
 
   if (isError && !horse) {
     return (
@@ -252,6 +319,8 @@ export default function HistorialScreen() {
         })}
       </ScrollView>
 
+      {/* Entra el timeline completo, una vez, no fila por fila. */}
+      <Animated.View entering={entradaLista()} style={{ flex: 1 }}>
       <FlatList
         data={filas}
         keyExtractor={(f) => f.key}
@@ -269,47 +338,14 @@ export default function HistorialScreen() {
             />
           </View>
         }
-        renderItem={({ item, index }) => {
-          if (item.kind === 'dia') {
-            return (
-              <Animated.View entering={entradaFila(index)}>
-                <Text style={s.diaLabel}>{item.label}</Text>
-              </Animated.View>
-            );
-          }
-          const ev = item.event;
-          const meta = tipoColors[ev.type] ?? tipoColors.nota;
-          const Icono = ICONO_TIPO[ev.type] ?? StickyNote;
-          const horaEv = hora(ev.created_at);
-          return (
-            <Animated.View entering={entradaFila(index)} style={s.timelineRow}>
-              {/* Riel: la cajita del ícono y la línea que baja hasta el próximo item. */}
-              <View style={s.riel}>
-                <View style={[s.rielIcono, { backgroundColor: meta.bg }]}>
-                  <Icono size={19} color={meta.text} strokeWidth={1.9} />
-                </View>
-                {!item.ultimoDelDia && <View style={s.rielLinea} />}
-              </View>
-
-              <View style={s.timelineBody}>
-                <View style={s.timelineTitulo}>
-                  <Text style={s.eventoTipo}>{meta.label}</Text>
-                  {ev.amount != null && (
-                    <Text style={s.eventoMonto}>{formatCurrency(ev.amount, ev.currency ?? 'ARS')}</Text>
-                  )}
-                </View>
-                {!!ev.description && <Text style={s.eventoDesc}>{ev.description}</Text>}
-                {!!horaEv && <Text style={s.eventoMeta}>{horaEv}</Text>}
-
-                {ev.type === 'entrenamiento' && (
-                  <TrainingMetricsPanel eventId={ev.id} canEdit={can('events', 'create')} />
-                )}
-                <EventCommentThread eventId={ev.id} currentUserId={user?.id} c={c} s={s} />
-              </View>
-            </Animated.View>
-          );
-        }}
+        renderItem={renderFila}
+        // Filas altas (panel de métricas + hilo de comentarios): conviene
+        // montar pocas y soltar las que salen de pantalla.
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={7}
       />
+      </Animated.View>
 
       {/* ─── CTA fijo ─── */}
       {can('events', 'create') && (

@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Linking } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ShieldCheck } from 'lucide-react-native';
-import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useHorse } from '../../../../hooks/use-horses';
@@ -15,7 +14,6 @@ import { colors } from '../../../../lib/colors';
 import { fechaHumana, hora } from '../../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../../lib/theme';
 import { space, text, touch, radius, weight, shadow, photoScrim } from '../../../../styles/tokens';
-import { entradaFila } from '../../../../styles/motion';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { PressableScale } from '../../../../components/PressableScale';
 import { AppImage } from '../../../../components/AppImage';
@@ -23,8 +21,22 @@ import { EmptyState } from '../../../../components/EmptyState';
 import { ErrorState } from '../../../../components/ErrorState';
 import { Skeleton } from '../../../../components/Skeleton';
 
-/** Cuántas fotos se muestran por tanda. */
-const PAGINA = 12;
+/* ─── El álbum es una lista virtualizada ───
+   Antes la grilla vivía dentro de un ScrollView y se montaban TODAS las fotos
+   de una tanda juntas: por foto un Animated.View con entrada, un
+   PressableScale, un AppImage remoto y un LinearGradient. Con 50 fotos eso es
+   brutal, y la paginación de a 12 era un parche.
+
+   Ahora la grilla es una FlatList: mantiene el mismo diseño (dos columnas
+   agrupadas por día) aplanando el contenido en filas — o un rótulo de día, o
+   una fila de hasta dos fotos — y así la virtualización solo monta lo que se
+   ve. El `Ver más` deja de hacer falta: la lista pagina sola al scrollear. */
+type ItemAlbum =
+  | { tipo: 'dia'; key: string; label: string }
+  | { tipo: 'fila'; key: string; fotos: ActivityPhoto[]; ultimaDelDia: boolean };
+
+/** Cuántas fotos entran por fila de la grilla (dos columnas al 48%). */
+const POR_FILA = 2;
 
 export default function FotosScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -38,28 +50,44 @@ export default function FotosScreen() {
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
   const [activityType, setActivityType] = useState('all');
-  // La grilla vive dentro de un ScrollView, así que no se puede virtualizar:
-  // se muestra de a tandas para no montar cientos de fotos remotas de una.
-  const [visibles, setVisibles] = useState(PAGINA);
 
   const fotosFiltradas = useMemo(
     () => (activityPhotos ?? []).filter((p) => activityType === 'all' || p.activity_type === activityType),
     [activityPhotos, activityType],
   );
-  const fotosVisibles = fotosFiltradas.slice(0, visibles);
-  const hayMas = fotosFiltradas.length > fotosVisibles.length;
 
-  /** Las fotos se agrupan por día ("Hoy", "Ayer", "vie 5 sep"): así se lee un diario. */
-  const grupos = useMemo(() => {
-    const out: { label: string; fotos: ActivityPhoto[] }[] = [];
-    fotosVisibles.forEach((p) => {
+  /** Las fotos se agrupan por día ("Hoy", "Ayer", "vie 5 sep"): así se lee un
+   *  diario. El grupo se aplana en rótulo + filas de a dos para que la lista
+   *  pueda virtualizar sin perder el agrupado ni el ancho de columna. */
+  const items = useMemo(() => {
+    const out: ItemAlbum[] = [];
+    let labelActual: string | null = null;
+    let fila: ActivityPhoto[] = [];
+
+    const cerrarFila = () => {
+      if (!fila.length) return;
+      out.push({ tipo: 'fila', key: `f-${fila[0].id}`, fotos: fila, ultimaDelDia: false });
+      fila = [];
+    };
+
+    fotosFiltradas.forEach((p) => {
       const label = fechaHumana(p.taken_at) || 'Sin fecha';
-      const ultimo = out[out.length - 1];
-      if (ultimo && ultimo.label === label) ultimo.fotos.push(p);
-      else out.push({ label, fotos: [p] });
+      if (label !== labelActual) {
+        cerrarFila();
+        labelActual = label;
+        out.push({ tipo: 'dia', key: `d-${label}-${p.id}`, label });
+      }
+      fila.push(p);
+      if (fila.length === POR_FILA) cerrarFila();
+    });
+    cerrarFila();
+    // La última fila de cada día no lleva margen abajo: ese aire ya lo pone el
+    // rótulo del día siguiente, igual que cuando la grilla era un solo wrap.
+    out.forEach((it, i) => {
+      if (it.tipo === 'fila') it.ultimaDelDia = out[i + 1]?.tipo !== 'fila';
     });
     return out;
-  }, [fotosVisibles]);
+  }, [fotosFiltradas]);
 
   const sacarFoto = async () => {
     haptic.light();
@@ -128,7 +156,7 @@ export default function FotosScreen() {
             <PressableScale
               key={f.v}
               style={[s.chip, activo ? s.chipActivo : s.chipInactivo]}
-              onPress={() => { haptic.selection(); setActivityType(f.v); setVisibles(PAGINA); }}
+              onPress={() => { haptic.selection(); setActivityType(f.v); }}
               accessibilityRole="button"
               accessibilityState={{ selected: activo }}
               accessibilityLabel={`Filtrar por ${f.label}`}
@@ -139,12 +167,53 @@ export default function FotosScreen() {
         })}
       </ScrollView>
 
-      <ScrollView
+      <FlatList
         style={{ flex: 1 }}
+        data={items}
+        keyExtractor={(it) => it.key}
         contentContainerStyle={{ paddingBottom: insets.bottom + space[20], paddingTop: space[5] }}
         showsVerticalScrollIndicator={false}
-      >
-        {!fotosVisibles.length ? (
+        initialNumToRender={6}
+        windowSize={7}
+        renderItem={({ item }) => {
+          if (item.tipo === 'dia') return <Text style={s.diaLabel}>{item.label}</Text>;
+          return (
+            // Sin animación de entrada por foto: la lista recicla celdas al
+            // scrollear y el `entering` se volvería a disparar sobre vistas
+            // reusadas, justo mientras el dedo arrastra.
+            <View style={[s.grilla, !item.ultimaDelDia && s.grillaFila]}>
+              {item.fotos.map((p) => {
+                const autor = p.photographer?.name;
+                const horaFoto = hora(p.taken_at);
+                return (
+                  <View key={p.id} style={s.celda}>
+                    <PressableScale
+                      scaleTo={0.97}
+                      style={s.foto}
+                      onPress={() => { haptic.light(); Linking.openURL(p.url); }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ver foto${autor ? ` de ${autor}` : ''}`}
+                    >
+                      <AppImage source={{ uri: p.url }} style={s.fotoImg} />
+                      {(autor || horaFoto) && (
+                        // El sello va sobre un degradado, no sobre una barra
+                        // opaca: se lee sin tapar la parte de abajo de la foto.
+                        <LinearGradient
+                          colors={[...photoScrim]}
+                          style={s.sello}
+                        >
+                          {!!autor && <Text style={s.selloAutor} numberOfLines={1}>{autor}</Text>}
+                          {!!horaFoto && <Text style={s.selloHora}>{horaFoto}</Text>}
+                        </LinearGradient>
+                      )}
+                    </PressableScale>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        }}
+        ListEmptyComponent={
           <View style={{ paddingHorizontal: space[4] }}>
             <EmptyState
               icon="paw-outline"
@@ -152,62 +221,16 @@ export default function FotosScreen() {
               message="Las fotos tomadas desde la app guardan quién la sacó y cuándo."
             />
           </View>
-        ) : (
-          <>
-            {grupos.map((g, gi) => (
-              <View key={`${g.label}-${gi}`}>
-                <Text style={s.diaLabel}>{g.label}</Text>
-                <View style={s.grilla}>
-                  {g.fotos.map((p, i) => {
-                    const autor = p.photographer?.name;
-                    const horaFoto = hora(p.taken_at);
-                    return (
-                      <Animated.View key={p.id} entering={entradaFila(i)} style={s.celda}>
-                        <PressableScale
-                          scaleTo={0.97}
-                          style={s.foto}
-                          onPress={() => { haptic.light(); Linking.openURL(p.url); }}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Ver foto${autor ? ` de ${autor}` : ''}`}
-                        >
-                          <AppImage source={{ uri: p.url }} style={s.fotoImg} />
-                          {(autor || horaFoto) && (
-                            // El sello va sobre un degradado, no sobre una barra
-                            // opaca: se lee sin tapar la parte de abajo de la foto.
-                            <LinearGradient
-                              colors={[...photoScrim]}
-                              style={s.sello}
-                            >
-                              {!!autor && <Text style={s.selloAutor} numberOfLines={1}>{autor}</Text>}
-                              {!!horaFoto && <Text style={s.selloHora}>{horaFoto}</Text>}
-                            </LinearGradient>
-                          )}
-                        </PressableScale>
-                      </Animated.View>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-
-            {hayMas && (
-              <PressableScale
-                style={s.verMas}
-                onPress={() => { haptic.light(); setVisibles((v) => v + PAGINA); }}
-                accessibilityRole="button"
-                accessibilityLabel="Ver más fotos"
-              >
-                <Text style={s.verMasText}>Ver más fotos</Text>
-              </PressableScale>
-            )}
-
+        }
+        ListFooterComponent={
+          items.length ? (
             <View style={s.nota}>
               <ShieldCheck size={15} color={c.textFaint} strokeWidth={1.9} />
               <Text style={s.notaText}>Cada foto guarda quién la sacó y cuándo</Text>
             </View>
-          </>
-        )}
-      </ScrollView>
+          ) : null
+        }
+      />
 
       {/* ─── CTA fijo ─── */}
       <LinearGradient
@@ -249,18 +272,16 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4], marginBottom: space[3], marginTop: space[3],
   },
   grilla: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3], paddingHorizontal: space[4] },
+  // Cada fila de la grilla es ahora un item de la lista: el aire vertical que
+  // antes daba el `gap` del wrap lo pone este margen, para que el espaciado
+  // entre filas quede exactamente igual que antes.
+  grillaFila: { marginBottom: space[3] },
   celda: { width: '48%' },
   foto: { borderRadius: radius.card, overflow: 'hidden', height: 168, backgroundColor: c.surfaceAlt },
   fotoImg: { width: '100%', height: '100%' },
   sello: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: space[7], paddingHorizontal: space[3], paddingBottom: space[2] + 2 },
   selloAutor: { fontSize: text.xs, fontWeight: weight.semibold, color: colors.white },
   selloHora: { fontSize: text.xs - 1, color: 'rgba(255,255,255,0.8)', fontVariant: ['tabular-nums'] },
-
-  verMas: {
-    marginHorizontal: space[4], marginTop: space[5], height: touch.min,
-    borderRadius: radius.full, backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
-  },
-  verMasText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.text },
 
   nota: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2], marginTop: space[5], paddingHorizontal: space[4] },
   notaText: { fontSize: text.sm - 1, color: c.textFaint },
