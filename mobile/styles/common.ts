@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
-import { space, text, radius, weight, touch } from './tokens';
+import { space, text, radius, weight, touch, shadow, brandShadow } from './tokens';
 
 /**
  * Estilos compartidos entre pantallas, sensibles al tema (claro / oscuro).
@@ -47,111 +47,80 @@ export const makeTypography = (c: ThemeColors) => StyleSheet.create({
  * era lo que hacía ver la app como un wireframe. En oscuro la sombra no se ve:
  * alcanza el contraste surface (#18181b) sobre bg (#0b0b0c).
  */
-export const makeCard = (c: ThemeColors) => StyleSheet.create({
-  base: {
-    backgroundColor: c.surface,
-    borderRadius: radius.xl,
-    ...(c.isDark ? {} : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
-    }),
-  },
-  padded: {
-    backgroundColor: c.surface,
-    borderRadius: radius.xl,
-    padding: space[4],
-    ...(c.isDark ? {} : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
-    }),
-  },
-  overflow: {
-    backgroundColor: c.surface,
-    borderRadius: radius.xl,
-    overflow: 'hidden' as const,
-    ...(c.isDark ? {} : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
-    }),
-  },
-});
+export const makeCard = (c: ThemeColors) => {
+  // En oscuro la sombra no se ve: la jerarquía la da el contraste de surface
+  // sobre bg, así que no la pintamos y ahorramos el costo de render.
+  const lift = c.isDark ? {} : shadow.md;
+  const liftHi = c.isDark ? {} : shadow.lg;
+  return StyleSheet.create({
+    base: { backgroundColor: c.surface, borderRadius: radius.card, ...lift },
+    padded: { backgroundColor: c.surface, borderRadius: radius.card, padding: space[4], ...lift },
+    overflow: {
+      backgroundColor: c.surface,
+      borderRadius: radius.card,
+      overflow: 'hidden' as const,
+      ...lift,
+    },
+    /** La única tarjeta que puede levantar más en una pantalla: el dato hero. */
+    hero: { backgroundColor: c.surface, borderRadius: radius.card, padding: space[4], ...liftHi },
+  });
+};
 
-export const makeInput = (c: ThemeColors) => StyleSheet.create({
-  base: {
-    height: touch.field,
-    // Relleno sin borde visible (estilo Instagram/Airbnb); el 1.5 transparente
-    // evita el salto de layout cuando el foco pinta el borde.
-    borderWidth: 1.5,
+export const makeInput = (c: ThemeColors) => {
+  // Relleno sin borde visible; el 2 transparente evita el salto de layout
+  // cuando el foco pinta el borde verde.
+  const field = {
+    borderWidth: 2,
     borderColor: 'transparent',
-    borderRadius: radius.lg,
+    borderRadius: radius.field,
     paddingHorizontal: space[4],
     fontSize: text.md,
     color: c.text,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
-  },
-  /** Igual que `base` pero para el campo enfocado. */
-  focused: {
-    borderColor: c.brand,
-    backgroundColor: c.surface,
-  },
-  multiline: {
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    borderRadius: radius.lg,
-    paddingHorizontal: space[4],
-    paddingVertical: space[4],
-    fontSize: text.md,
-    color: c.text,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
-    minHeight: 104,
-    textAlignVertical: 'top' as const,
-  },
-});
+    backgroundColor: c.surfaceAlt,
+  };
+  return StyleSheet.create({
+    base: { ...field, height: touch.field },
+    /** Igual que `base` pero para el campo enfocado. */
+    focused: { borderColor: c.brand },
+    multiline: {
+      ...field,
+      paddingVertical: space[4],
+      minHeight: 104,
+      textAlignVertical: 'top' as const,
+    },
+  });
+};
 
-export const makeButton = (c: ThemeColors) => StyleSheet.create({
-  primary: {
-    backgroundColor: c.brand,
-    borderRadius: radius.lg,
+export const makeButton = (c: ThemeColors) => {
+  const shape = {
     height: touch.button,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-  },
-  secondary: {
-    borderRadius: radius.lg,
-    height: touch.button,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: c.isDark ? c.surfaceAlt : '#f2f0eb',
-  },
-  danger: {
-    borderWidth: 1.5,
-    borderColor: c.isDark ? 'rgba(239,68,68,0.4)' : '#fecaca',
-    borderRadius: radius.lg,
-    height: touch.button,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: c.isDark ? 'rgba(239,68,68,0.14)' : '#fef2f2',
-  },
-  primaryText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white, letterSpacing: -0.2 },
-  secondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.textMuted, letterSpacing: -0.2 },
-  dangerText: { fontSize: text.md, fontWeight: weight.semibold, color: c.danger },
-});
+  };
+  return StyleSheet.create({
+    // La sombra teñida es lo que lo despega del crema. En oscuro no va: sobre
+    // fondo casi negro una sombra verde se lee como un halo sucio.
+    primary: {
+      ...shape,
+      backgroundColor: c.brand,
+      borderRadius: radius.button,
+      ...(c.isDark ? {} : brandShadow(c.brand)),
+    },
+    secondary: { ...shape, backgroundColor: c.surfaceAlt, borderRadius: radius.button },
+    /** Destructivo sin borde: el rojo sutil de fondo ya avisa. */
+    danger: { ...shape, backgroundColor: c.dangerSoft, borderRadius: radius.button },
+    primaryText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white, letterSpacing: -0.2 },
+    secondaryText: { fontSize: text.md, fontWeight: weight.semibold, color: c.text, letterSpacing: -0.2 },
+    dangerText: { fontSize: text.md, fontWeight: weight.semibold, color: c.danger },
+  });
+};
 
 export const makeModal = (c: ThemeColors) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: c.surface,
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     maxHeight: '90%' as unknown as number,
   },
   header: {

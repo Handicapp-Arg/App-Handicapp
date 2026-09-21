@@ -1,12 +1,12 @@
 export const colors = {
   primary: '#0f1f3d',
   primaryLight: '#1a3366',
-  // Marca HandicApp — cuero caramelo
-  brand: '#9d6c35',
-  brand300: '#d2aa78',
-  brand400: '#bd8a4d',
-  brand600: '#7f5628',
-  espresso: '#1b130c',   // fondo oscuro (login/auth)
+  // Marca HandicApp — verde campo
+  brand: '#17715a',
+  brand300: '#5fc08f',
+  brand400: '#2f9472',
+  brand600: '#0f4e3d',
+  espresso: '#15140f',   // fondo oscuro (login/auth)
   white: '#ffffff',
   gray50: '#f9fafb',
   gray100: '#f3f4f6',

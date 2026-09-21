@@ -4,14 +4,23 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, ListPlus, CalendarClock } from 'lucide-react-native';
 import { HorseHeadNav } from '../../components/icons/equine';
-import { useMemo, type ComponentType } from 'react';
+import { useEffect, useMemo, type ComponentType } from 'react';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { BlurView } from 'expo-blur';
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
-import { weight } from '../../styles/tokens';
+import { weight, radius } from '../../styles/tokens';
+import { duration, easing } from '../../styles/motion';
+
+/** Ancho de cada pestaña; el indicador se mueve de a este paso. */
+const TAB_W = 72;
 
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
@@ -30,6 +39,20 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const isProp = user?.role === 'propietario';
   const styles = useMemo(() => makeStyles(c), [c]);
   const activeName = state.routes[state.index]?.name;
+
+  // Las pestañas visibles dependen del rol, así que la posición del indicador
+  // se calcula sobre esta lista y no sobre `state.index` (que cuenta todas).
+  const visibles = useMemo(
+    () => ['caballos', isProp && 'eventos', 'agenda', 'mas'].filter(Boolean) as string[],
+    [isProp],
+  );
+  const activo = Math.max(0, visibles.indexOf(activeName));
+
+  const x = useSharedValue(activo * TAB_W);
+  useEffect(() => {
+    x.value = withTiming(activo * TAB_W, { duration: duration.base, easing: easing.outExpo });
+  }, [activo, x]);
+  const indicador = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
   // Patron nativo (hidesBottomBarWhenPushed): dentro de una pantalla empujada
   // (formulario, detalle) la barra se oculta y el pie de la pantalla queda libre.
@@ -77,10 +100,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           tint={c.isDark ? 'dark' : 'light'}
           style={[StyleSheet.absoluteFill, styles.barGlass]}
         />
-        {renderTab('caballos')}
-        {isProp && renderTab('eventos')}
-        {renderTab('agenda')}
-        {renderTab('mas')}
+        {/* Pastilla que se desliza hasta la pestaña activa. Va detrás de los
+            iconos y no intercepta toques. */}
+        <Animated.View style={[styles.indicador, indicador]} pointerEvents="none" />
+        {visibles.map(renderTab)}
       </View>
     </View>
   );
@@ -139,8 +162,17 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     // El blur pone el vidrio; este velo le da el tinte de la superficie.
     backgroundColor: c.isDark ? 'rgba(29,26,23,0.55)' : 'rgba(255,255,255,0.55)',
   },
+  indicador: {
+    position: 'absolute',
+    left: 10,
+    top: 7,
+    width: TAB_W,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: c.brandSoft,
+  },
   tab: {
-    width: 72,
+    width: TAB_W,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
