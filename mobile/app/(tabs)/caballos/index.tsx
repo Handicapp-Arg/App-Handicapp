@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, ScrollView, TextInput,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScrollToTop } from '@react-navigation/native';
@@ -23,6 +23,7 @@ import { useTheme, type ThemeColors } from '../../../lib/theme';
 import type { Horse } from '../../../../packages/shared/src';
 import { AppImage } from '../../../components/AppImage';
 import { space, text, radius, weight, shadow } from '../../../styles/tokens';
+import { entradaFila } from '../../../styles/motion';
 import { HorseshoeH } from '../../../components/icons/equine';
 
 /**
@@ -268,7 +269,7 @@ export default function CaballosScreen() {
           )
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.duration(320).delay(Math.min(index, 8) * 45)}>
+          <Animated.View entering={entradaFila(index)}>
             <HorseCard
               horse={item}
               monthlySpend={spendMap[item.id]}
