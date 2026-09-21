@@ -2,7 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, ChevronRight, FileText } from 'lucide-react-native';
+import { Bell, ChevronRight, FileText, Check } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 
 import { useAuth } from '../../../lib/auth';
@@ -22,7 +22,6 @@ import { AppImage } from '../../../components/AppImage';
 import { PressableScale } from '../../../components/PressableScale';
 import { Skeleton } from '../../../components/Skeleton';
 import { ErrorState } from '../../../components/ErrorState';
-import { EmptyState } from '../../../components/EmptyState';
 
 /**
  * INICIO — la primera pantalla de la app.
@@ -214,6 +213,7 @@ export default function InicioTab() {
   // falló pero las otras trajeron datos, mostrar el resumen es mejor que un
   // cartel de error sobre información que sí tenemos.
   const sinDatos = pendientes.length === 0 && !proximoTurno;
+  const totalCaballos = caballos.data?.length ?? 0;
   const falló = agenda.isError || caballos.isError || facturas.isError;
   const refrescando = agenda.isRefetching || caballos.isRefetching || facturas.isRefetching;
 
@@ -255,11 +255,25 @@ export default function InicioTab() {
         ) : falló && sinDatos ? (
           <ErrorState onRetry={refrescar} />
         ) : sinDatos ? (
-          <EmptyState
-            icon="calendar-outline"
-            title="Nada para resolver"
-            message="No hay vencimientos ni turnos próximos. Cuando aparezca algo, lo vas a ver acá."
-          />
+          /*
+            Cuando no hay nada pendiente NO va un estado vacío. Un vacío dice
+            "acá falta algo"; acá no falta nada: está todo al día, que es la
+            mejor noticia que puede dar la app. Por eso es una tarjeta afirmativa
+            en verde y no un ícono gris con la palabra "nada".
+          */
+          <Animated.View entering={entradaFila(0)} style={s.bloque}>
+            <View style={s.alDia}>
+              <View style={s.alDiaIcono}>
+                <Check size={22} color={c.brand} strokeWidth={2.4} />
+              </View>
+              <Text style={s.alDiaTitulo}>Está todo al día</Text>
+              <Text style={s.alDiaTexto}>
+                {totalCaballos > 0
+                  ? `${totalCaballos === 1 ? 'Tu caballo' : `Tus ${totalCaballos} caballos`} con la sanidad en regla y ningún turno pendiente.`
+                  : 'Sin vencimientos ni turnos pendientes.'}
+              </Text>
+            </View>
+          </Animated.View>
         ) : (
           <>
             {/* Bloques fijos (no es una lista virtualizada): `entradaFila` está
@@ -293,6 +307,26 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   content: { paddingBottom: 120 },
   bloque: { paddingHorizontal: space[4], paddingTop: space[4] },
+
+  /* Todo al día: la buena noticia, con la superficie clara de siempre. */
+  alDia: {
+    backgroundColor: c.surface,
+    borderRadius: radius.card,
+    padding: space[5],
+    alignItems: 'center',
+    ...(c.isDark ? {} : shadow.md),
+  },
+  alDiaIcono: {
+    width: 52, height: 52, borderRadius: radius.full,
+    backgroundColor: c.brandSoft,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: space[3],
+  },
+  alDiaTitulo: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  alDiaTexto: {
+    fontSize: text.sm, color: c.textMuted, textAlign: 'center',
+    lineHeight: 20, marginTop: space[1] + 2,
+  },
   /** Velo del color del fondo: reemplaza cualquier rgba literal sobre la tarjeta invertida. */
   velo: { backgroundColor: c.bg, opacity: 0.13, borderRadius: radius.full },
 
