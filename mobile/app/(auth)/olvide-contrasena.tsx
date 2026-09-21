@@ -209,8 +209,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     marginTop: 14, backgroundColor: D.brandSolid, borderRadius: 20, height: 58,
     alignItems: 'center', justifyContent: 'center',
     // Sombra teñida: el botón principal flota sobre el negro sin borde.
-    shadowColor: D.brand, shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35, shadowRadius: 22, elevation: 8,
+    shadowColor: D.brandSolid, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18, shadowRadius: 14, elevation: 4,
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.white, fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold },

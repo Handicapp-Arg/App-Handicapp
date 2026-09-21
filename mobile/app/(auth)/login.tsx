@@ -12,7 +12,7 @@ import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { AUTH_DARK as D, AuthDarkBackground } from '../../components/auth-dark';
 import { mostrarCortina, ocultarCortina } from '../../components/IngresoCurtain';
-import { loginBiometrico, guardarCredencialesBiometricas, hayCredencialesGuardadas, biometriaDisponible } from '../../lib/biometria';
+import { loginBiometrico, mensajeBiometrico, guardarCredencialesBiometricas, hayCredencialesGuardadas, biometriaDisponible } from '../../lib/biometria';
 import { ScanFace } from 'lucide-react-native';
 import { BottomSheet } from '../../components/BottomSheet';
 import { PressableScale } from '../../components/PressableScale';
@@ -78,13 +78,24 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [bioListo, setBioListo] = useState(false);
 
-  const entrarConBiometria = async () => {
-    const creds = await loginBiometrico();
-    if (!creds) return;
+  /**
+   * `silencioso` es para el intento automático al abrir la pantalla: ahí no
+   * corresponde mostrar ningún cartel, porque el usuario no pidió nada. Cuando
+   * toca el botón a propósito, sí tiene que enterarse de qué pasó.
+   */
+  const entrarConBiometria = async (silencioso = false) => {
+    const r = await loginBiometrico();
+    if (!r.ok) {
+      if (!silencioso) {
+        const msg = mensajeBiometrico(r.motivo);
+        if (msg) { setError(msg); haptic.error(); }
+      }
+      return;
+    }
     setLoading(true);
     mostrarCortina();
     try {
-      await login(creds.email, creds.password);
+      await login(r.email, r.password);
       haptic.success();
       setTimeout(() => ocultarCortina(), 250);
     } catch {
@@ -96,13 +107,17 @@ export default function LoginScreen() {
     }
   };
 
-  // Al llegar al login: si hay credenciales guardadas, Face ID sale solo.
+  // El botón se muestra con que el teléfono TENGA Face ID, aunque todavía no
+  // haya contraseña guardada: si se ocultara, quien nunca entró a mano vería
+  // desaparecer una opción que la app promete, sin ninguna explicación. Al
+  // tocarlo se le dice que entre una vez con contraseña.
+  // El intento automático, en cambio, solo corre si ya hay algo guardado, y va
+  // en silencio: el usuario todavía no pidió nada.
   useEffect(() => {
     (async () => {
-      if ((await biometriaDisponible()) && (await hayCredencialesGuardadas())) {
-        setBioListo(true);
-        void entrarConBiometria();
-      }
+      if (!(await biometriaDisponible())) return;
+      setBioListo(true);
+      if (await hayCredencialesGuardadas()) void entrarConBiometria(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -313,8 +328,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 4,
     // Sombra teñida con el verde: hace que el botón principal flote sobre el
     // negro sin necesidad de un borde.
-    shadowColor: D.brand, shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35, shadowRadius: 22, elevation: 8,
+    shadowColor: D.brandSolid, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18, shadowRadius: 14, elevation: 4,
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.white, fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold },

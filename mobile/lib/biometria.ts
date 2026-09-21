@@ -53,24 +53,53 @@ export async function hayCredencialesGuardadas(): Promise<boolean> {
 }
 
 /**
- * Pide Face ID y, si pasa, devuelve las credenciales guardadas.
- * `null` = canceló, falló o no hay nada guardado → login manual normal.
+ * Resultado del intento de ingreso con biometría.
+ *
+ * Devuelve un MOTIVO y no `null` a secas: antes todos los caminos que no
+ * terminaban bien devolvían lo mismo, así que la pantalla no podía distinguir
+ * "cancelaste" de "el sistema falló", y terminaba no diciendo nada. Tocar el
+ * botón y que no pase absolutamente nada es peor que un error.
  */
-export async function loginBiometrico(): Promise<{ email: string; password: string } | null> {
+export type ResultadoBiometrico =
+  | { ok: true; email: string; password: string }
+  /** El usuario cerró el cuadro de Face ID. No hay nada que avisar. */
+  | { ok: false; motivo: 'cancelado' }
+  /** El teléfono no tiene biometría o no está configurada. */
+  | { ok: false; motivo: 'sin-biometria' }
+  /** Nunca se guardó una contraseña: hay que entrar una vez a mano. */
+  | { ok: false; motivo: 'sin-credenciales' }
+  /** Face ID existe pero no reconoció, o el sistema devolvió un error. */
+  | { ok: false; motivo: 'fallo' };
+
+export async function loginBiometrico(): Promise<ResultadoBiometrico> {
   try {
-    if (!(await biometriaDisponible())) return null;
+    if (!(await biometriaDisponible())) return { ok: false, motivo: 'sin-biometria' };
+
     const email = await SecureStore.getItemAsync(KEY_EMAIL);
     const password = await SecureStore.getItemAsync(KEY_PASS);
-    if (!email || !password) return null;
+    if (!email || !password) return { ok: false, motivo: 'sin-credenciales' };
 
     const r = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Ingresá a HandicApp',
       cancelLabel: 'Usar contraseña',
       disableDeviceFallback: false,
     });
-    if (!r.success) return null;
-    return { email, password };
+    if (r.success) return { ok: true, email, password };
+
+    // `user_cancel` y `system_cancel` son salidas deliberadas, no errores.
+    const cancelado = r.error === 'user_cancel' || r.error === 'system_cancel' || r.error === 'app_cancel';
+    return { ok: false, motivo: cancelado ? 'cancelado' : 'fallo' };
   } catch {
-    return null;
+    return { ok: false, motivo: 'fallo' };
+  }
+}
+
+/** Qué decirle al usuario. `null` = no mostrar nada (canceló a propósito). */
+export function mensajeBiometrico(motivo: Exclude<ResultadoBiometrico, { ok: true }>['motivo']): string | null {
+  switch (motivo) {
+    case 'cancelado': return null;
+    case 'sin-biometria': return 'Este teléfono no tiene Face ID configurado.';
+    case 'sin-credenciales': return 'Entrá una vez con tu contraseña y después Face ID queda listo.';
+    case 'fallo': return 'No pudimos usar Face ID. Probá con tu contraseña.';
   }
 }

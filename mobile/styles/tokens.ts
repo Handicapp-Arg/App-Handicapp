@@ -105,10 +105,13 @@ export const shadow = {
 /** Sombra teñida del botón principal: lo despega sin agregarle borde. */
 export const brandShadow = (brand: string) => ({
   shadowColor: brand,
-  shadowOffset: { width: 0, height: 8 },
-  shadowOpacity: 0.28,
-  shadowRadius: 20,
-  elevation: 6,
+  shadowOffset: { width: 0, height: 6 },
+  // Bajo a propósito: la sombra tiene que dar apoyo, no brillo. Con más
+  // opacidad el verde rebota sobre el fondo y el botón se lee como un neón,
+  // que es justo lo que hace ver una app hecha con plantilla.
+  shadowOpacity: 0.14,
+  shadowRadius: 14,
+  elevation: 4,
 });
 
 export const weight = {
