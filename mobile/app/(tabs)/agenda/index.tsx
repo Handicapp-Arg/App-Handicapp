@@ -101,16 +101,25 @@ const FilaTurno = memo(function FilaTurno({
       >
         <Text style={s.filaHora}>{hora(appt.scheduled_at)}</Text>
         <View style={[s.filaBarra, { backgroundColor: colorDeTipo(appt.type, c) }]} />
+
+        <View style={s.filaTexto}>
+          <Text style={s.filaTitulo} numberOfLines={1}>{appt.title}</Text>
+          {/* De qué caballo es el turno. En la lista de caballos el subtítulo
+              sobraba porque el nombre ya identificaba la fila; acá es al revés:
+              sin esto, "Veterinario a las 14:30" no dice a cuál de tus caballos.
+              Es la pregunta central de la pantalla, no un adorno. */}
+          {!!appt.horse && <Text style={s.filaSub} numberOfLines={1}>{appt.horse.name}</Text>}
+        </View>
+
+        {/* La foto va al final, como sello: si se intercala antes del texto,
+            empuja el título y las filas dejan de arrancar a la misma altura. */}
         {fotoCaballo ? (
           <AppImage source={{ uri: fotoCaballo }} style={s.filaFoto} contentFit="cover" />
         ) : appt.horse ? (
-          // Sin foto va la inicial, no un hueco: la columna tiene que mantener
-          // su ancho o los títulos de las filas dejan de alinearse entre sí.
           <View style={[s.filaFoto, s.filaFotoVacia]}>
             <Text style={s.filaFotoInicial}>{appt.horse.name.charAt(0).toUpperCase()}</Text>
           </View>
         ) : null}
-        <Text style={s.filaTitulo} numberOfLines={1}>{appt.title}</Text>
       </PressableScale>
     </SwipeableRow>
   );
@@ -124,8 +133,11 @@ function FilaTurnoSkeleton({ s }: { s: Styles }) {
       <View style={s.filaBarraHueco}>
         <Skeleton width={3} height={38} borderRadius={radius.full} />
       </View>
-      <Skeleton width={38} height={38} borderRadius={radius.md} />
-      <Skeleton height={15} width="55%" />
+      <View style={{ flex: 1, gap: 6 }}>
+        <Skeleton height={15} width="55%" />
+        <Skeleton height={12} width="32%" />
+      </View>
+      <Skeleton width={38} height={38} borderRadius={radius.md + 1} />
     </View>
   );
 }
@@ -439,12 +451,14 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filaCompletada: { opacity: 0.45 },
   filaHora: { width: 52, fontSize: text.md, fontWeight: weight.bold, color: c.text, fontVariant: ['tabular-nums'] },
   filaBarra: { width: 3, height: 38, borderRadius: radius.full, flexShrink: 0 },
-  filaFoto: { width: 38, height: 38, borderRadius: radius.md, backgroundColor: c.surfaceAlt, flexShrink: 0 },
+  filaFoto: { width: 38, height: 38, borderRadius: radius.md + 1, backgroundColor: c.surfaceAlt, flexShrink: 0 },
   filaFotoVacia: { alignItems: 'center', justifyContent: 'center' },
   filaFotoInicial: { fontSize: text.base, fontWeight: weight.bold, color: c.textFaint },
   // El esqueleto necesita ocupar el mismo ancho que la barrita real.
   filaBarraHueco: { width: 3, flexShrink: 0 },
-  filaTitulo: { flex: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  filaTexto: { flex: 1, minWidth: 0 },
+  filaTitulo: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  filaSub: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
 
   /* ─── Calendario ───────────────────────────────────────────────────────── */
   calCuerpo: { paddingHorizontal: space[4] + 2, marginTop: space[2] },
