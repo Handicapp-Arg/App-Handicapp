@@ -6,7 +6,9 @@ import type { Router } from 'expo-router';
  * el árbol de navegación.
  */
 export const Routes = {
+  /** `(tabs)/index` redirige al Inicio: usar cualquiera de las dos es lo mismo. */
   tabsHome:            '/(tabs)',
+  tabsInicio:          '/(tabs)/inicio',
   tabsCaballos:        '/(tabs)/caballos',
   tabsEventos:         '/(tabs)/eventos',
   eventoNuevo:         '/(tabs)/eventos/nuevo',
@@ -28,6 +30,11 @@ export const Routes = {
   notificacionesConfig: '/notificaciones-config',
   notificacionesConfigRol: (rol: string) => `/notificaciones-config/${rol}`,
   superadmin:          '/superadmin',
+  /**
+   * El muro está "próximamente": no tiene pestaña ni fila en "Más", así que hoy
+   * nadie navega acá. Las rutas se dejan porque la pantalla existe entera y se
+   * va a habilitar más adelante.
+   */
   muro:                '/(tabs)/muro',
   muroNuevo:           '/(tabs)/muro/nuevo',
   mas:                 '/(tabs)/mas',

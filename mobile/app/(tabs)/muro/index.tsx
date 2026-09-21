@@ -14,14 +14,9 @@ import {
   useFeedComments, useAddComment, useDeleteComment,
   useTogglePin, useToggleHide,
 } from '../../../hooks/use-feed';
-import { useAgenda, APPOINTMENT_TYPES } from '../../../hooks/use-agenda';
-import { useHorses } from '../../../hooks/use-horses';
-import { useBills, monthLabel } from '../../../hooks/use-billing';
-import { useNotifications } from '../../../lib/notifications';
 import { Routes } from '../../../lib/routes';
 import { haptic } from '../../../lib/haptics';
 import { colors } from '../../../lib/colors';
-import { formatMoney } from '../../../lib/currency';
 import { Avatar as UserAvatar } from '../../../components/Avatar';
 import { PressableScale } from '../../../components/PressableScale';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
@@ -30,7 +25,7 @@ import { entradaLista } from '../../../styles/motion';
 import { fontFamily } from '../../../styles/fonts';
 import {
   Trash2, Send, Pin, MoreHorizontal, Heart, MessageCircle,
-  Eye, EyeOff, Bell, Plus, ChevronRight, FileText, Play,
+  Eye, EyeOff, Plus, Play,
 } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 import { AppImage } from '../../../components/AppImage';
@@ -43,7 +38,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { FormSheet } from '../../../components/FormSheet';
 import { useToast } from '../../../components/Toast';
-import { fechaHumana, diaLargo, hace, hora, vence } from '../../../lib/fechas';
+import { hace } from '../../../lib/fechas';
 
 /**
  * Reproductor real (expo-video; expo-av está deprecado). Se monta recién cuando
@@ -199,111 +194,6 @@ function CommentsSheet({ visible, post, onClose, currentUserId, isAdmin, c, s }:
         </>
       )}
     </FormSheet>
-  );
-}
-
-// ─── Pendientes (tarjeta invertida) ──────────────────────────────────────────
-
-/** Un pendiente ya normalizado: sale de datos reales (sanidad vencida o factura). */
-type Pendiente = {
-  id: string;
-  titulo: string;
-  detalle: string;
-  /** Foto del caballo, cuando el pendiente tiene una. */
-  fotoUrl?: string | null;
-  accion: string;
-  /** El principal se marca con el chip sólido; el resto con el chip velado. */
-  solido: boolean;
-  onPress: () => void;
-};
-
-/**
- * Chip sobre la tarjeta invertida. El "velado" no usa un rgba literal: apila un
- * velo del color del fondo con opacidad, así funciona igual en claro y oscuro
- * (donde la tarjeta invertida pasa a ser crema sobre negro).
- */
-function ChipInverso({ label, solido, onPress, s }: {
-  label: string; solido: boolean; onPress: () => void; s: Styles;
-}) {
-  return (
-    <PressableScale
-      onPress={() => { haptic.selection(); onPress(); }}
-      style={[s.chipInv, solido && s.chipInvSolido]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      {!solido && <View style={[StyleSheet.absoluteFill, s.velo]} />}
-      <Text style={[s.chipInvText, solido && s.chipInvTextSolido]}>{label}</Text>
-    </PressableScale>
-  );
-}
-
-function TarjetaPendientes({ pendientes, c, s }: { pendientes: Pendiente[]; c: ThemeColors; s: Styles }) {
-  return (
-    <View style={s.pendientes}>
-      <View style={s.pendientesHead}>
-        <View style={s.puntoAlerta} />
-        <Text style={s.pendientesHeadText}>
-          {pendientes.length === 1 ? '1 cosa para resolver' : `${pendientes.length} cosas para resolver`}
-        </Text>
-      </View>
-
-      {pendientes.map((p, i) => (
-        <View key={p.id}>
-          {i > 0 && <View style={s.divisorInv} />}
-          <View style={s.pendienteFila}>
-            {p.fotoUrl ? (
-              <AppImage source={{ uri: p.fotoUrl }} style={s.pendienteThumb} contentFit="cover" />
-            ) : (
-              <View style={[s.pendienteThumb, s.pendienteThumbVacio]}>
-                <View style={[StyleSheet.absoluteFill, s.velo]} />
-                <FileText size={20} color={c.bg} strokeWidth={1.9} />
-              </View>
-            )}
-            <View style={s.pendienteTexto}>
-              <Text style={s.pendienteTitulo} numberOfLines={1}>{p.titulo}</Text>
-              {!!p.detalle && <Text style={s.pendienteDetalle} numberOfLines={1}>{p.detalle}</Text>}
-            </View>
-            <ChipInverso label={p.accion} solido={p.solido} onPress={p.onPress} s={s} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// ─── Próximo turno ───────────────────────────────────────────────────────────
-
-function TarjetaProximoTurno({ turno, onPress, c, s }: {
-  turno: NonNullable<ReturnType<typeof useAgenda>['data']>[number];
-  onPress: () => void;
-  c: ThemeColors;
-  s: Styles;
-}) {
-  const meta = APPOINTMENT_TYPES[turno.type] ?? APPOINTMENT_TYPES.otro;
-  // El título lo escribe el usuario: si repite la etiqueta del tipo, no lo
-  // mostramos dos veces.
-  const bajada = [turno.title !== meta.label ? turno.title : '', fechaHumana(turno.scheduled_at)]
-    .filter(Boolean).join(' · ');
-
-  return (
-    <PressableScale
-      onPress={() => { haptic.selection(); onPress(); }}
-      style={s.turno}
-      accessibilityRole="button"
-      accessibilityLabel={`Próximo turno: ${meta.label}${turno.horse ? `, ${turno.horse.name}` : ''}`}
-    >
-      <View style={s.turnoHora}>
-        <Text style={s.turnoHoraText}>{hora(turno.scheduled_at)}</Text>
-      </View>
-      <View style={s.turnoTexto}>
-        <Text style={s.turnoTitulo} numberOfLines={1}>
-          {meta.label}{turno.horse ? ` · ${turno.horse.name}` : ''}
-        </Text>
-        {!!bajada && <Text style={s.turnoBajada} numberOfLines={1}>{bajada}</Text>}
-      </View>
-      <ChevronRight size={17} color={c.textFaint} strokeWidth={2.3} />
-    </PressableScale>
   );
 }
 
@@ -467,105 +357,30 @@ function FilaMuroSkeleton({ s }: { s: Styles }) {
   );
 }
 
-// ─── Encabezado del Inicio ───────────────────────────────────────────────────
+// ─── Encabezado del muro ─────────────────────────────────────────────────────
 
 /**
- * Encabezado de Inicio: saludo, lo que hay para resolver y el próximo turno.
- * Es lo que separa un feed genérico de un inicio con propósito: la primera
- * pantalla te saluda, te dice qué está pendiente y qué se viene.
+ * El saludo, los pendientes y el próximo turno se mudaron a `(tabs)/inicio`:
+ * el muro dejó de ser la pantalla de arranque y hoy no tiene puerta de entrada
+ * (ni barra ni "Más"). Queda con su propio título grande, como cualquier índice,
+ * para que el día que vuelva a habilitarse no haya que rearmarlo.
  *
- * Memoizado: es el ListHeaderComponent de la lista y trae tres consultas
- * propias. Si se redibujara cada vez que cambia un estado del feed, cada
- * scroll o cada menú abierto rearmaría pendientes, turno y saludo.
+ * Memoizado: es el `ListHeaderComponent`, y sin esto cualquier estado del feed
+ * (abrir un menú, abrir comentarios) lo redibujaba entero en cada scroll.
  */
-const InicioHeader = memo(function InicioHeader({ c, s }: { c: ThemeColors; s: Styles }) {
+const MuroHeader = memo(function MuroHeader({ c, s }: { c: ThemeColors; s: Styles }) {
   const router = useRouter();
-  const { user } = useAuth();
-  const { unread } = useNotifications();
-  const { data: turnos } = useAgenda(true);
-  const { data: caballos } = useHorses();
-  const { data: facturas } = useBills();
-
-  const nombre = (user?.name ?? '').split(' ')[0] || 'Hola';
-  const fecha = diaLargo(new Date().toISOString());
-  const proximoTurno = (turnos ?? []).filter(Boolean)[0];
-
-  // Los pendientes salen de datos reales: sanidad en rojo (viene en el listado
-  // de caballos) y facturas enviadas sin responder. Si no hay nada, la tarjeta
-  // no se dibuja — no inventamos un "todo en orden" que el backend no afirma.
-  const pendientes = useMemo<Pendiente[]>(() => {
-    const deSanidad: Pendiente[] = (caballos ?? [])
-      .filter((h) => h.health?.status === 'rojo')
-      .map((h) => ({
-        id: `sanidad-${h.id}`,
-        titulo: `${h.name}, ${h.health!.name}`,
-        detalle: vence(h.health!.next_due),
-        fotoUrl: h.image_url,
-        accion: 'Resolver',
-        solido: true,
-        onPress: () => router.push(Routes.caballo(h.id) as never),
-      }));
-
-    const deFacturas: Pendiente[] = (facturas ?? [])
-      .filter((b) => b.status === 'enviada')
-      .map((b) => ({
-        id: `factura-${b.id}`,
-        titulo: `Factura de ${monthLabel(b.month, b.year)}`,
-        detalle: [b.horse?.name, formatMoney(b.total, b.currency)].filter(Boolean).join(' · '),
-        accion: 'Ver',
-        solido: false,
-        onPress: () => router.push(Routes.factura(b.id) as never),
-      }));
-
-    return [...deSanidad, ...deFacturas].slice(0, 3);
-  }, [caballos, facturas, router]);
-
   return (
-    <View>
-      <View style={s.saludo}>
-        <View style={s.saludoTexto}>
-          <Text style={s.saludoFecha}>{fecha}</Text>
-          <Text style={s.saludoHola}>Hola, {nombre}</Text>
-        </View>
-        <PressableScale
-          onPress={() => { haptic.selection(); router.push(Routes.notificaciones as never); }}
-          style={s.campana}
-          accessibilityRole="button"
-          accessibilityLabel={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
-        >
-          <Bell size={21} color={c.text} strokeWidth={1.9} />
-          {unread > 0 && <View style={s.campanaPunto} />}
-        </PressableScale>
-      </View>
-
-      {pendientes.length > 0 && (
-        <View style={s.bloque}>
-          <TarjetaPendientes pendientes={pendientes} c={c} s={s} />
-        </View>
-      )}
-
-      {proximoTurno && (
-        <View style={s.bloque}>
-          <TarjetaProximoTurno
-            turno={proximoTurno}
-            onPress={() => router.push(Routes.tabsAgenda as never)}
-            c={c}
-            s={s}
-          />
-        </View>
-      )}
-
-      <View style={s.seccion}>
-        <Text style={s.seccionTitulo}>Novedades</Text>
-        <PressableScale
-          onPress={() => { haptic.selection(); router.push(Routes.muroNuevo as never); }}
-          style={s.seccionBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Crear publicación"
-        >
-          <Plus size={20} color={c.text} strokeWidth={2.1} />
-        </PressableScale>
-      </View>
+    <View style={s.seccion}>
+      <Text style={s.pageTitle}>Novedades</Text>
+      <PressableScale
+        onPress={() => { haptic.selection(); router.push(Routes.muroNuevo as never); }}
+        style={s.seccionBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Crear publicación"
+      >
+        <Plus size={20} color={c.text} strokeWidth={2.1} />
+      </PressableScale>
     </View>
   );
 });
@@ -641,7 +456,7 @@ export default function MuroTab() {
     />
   ), [user?.id, isAdmin, c, s]);
 
-  const Encabezado = useMemo(() => <InicioHeader c={c} s={s} />, [c, s]);
+  const Encabezado = useMemo(() => <MuroHeader c={c} s={s} />, [c, s]);
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -722,83 +537,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   /** Contenedor de la lista: sólo existe para animar la entrada del conjunto. */
   flex: { flex: 1 },
   list: { paddingBottom: 120 },
-  bloque: { paddingHorizontal: space[4], paddingTop: space[4] },
   deshabilitado: { opacity: 0.4 },
-  /** Velo del color del fondo: reemplaza cualquier rgba literal sobre la tarjeta invertida. */
-  velo: { backgroundColor: c.bg, opacity: 0.13, borderRadius: radius.full },
-
-  // --- Saludo ---------------------------------------------------------------
-  saludo: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: space[3],
-    paddingHorizontal: space[4], paddingTop: space[3],
-  },
-  saludoTexto: { flex: 1 },
-  saludoFecha: { fontSize: text.sm, color: c.textMuted, textTransform: 'capitalize', fontFamily: fontFamily.regular },
-  saludoHola: {
-    fontSize: text['2xl'], fontWeight: weight.bold, color: c.text,
-    letterSpacing: -1.1, marginTop: space[1], fontFamily: fontFamily.semibold,
-  },
-  campana: {
-    width: 46, height: 46, borderRadius: radius.thumb,
-    backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center',
-    ...(c.isDark ? {} : shadow.sm),
-  },
-  campanaPunto: {
-    position: 'absolute', top: 9, right: 10,
-    width: 9, height: 9, borderRadius: radius.full,
-    backgroundColor: c.danger,
-    // El anillo del color de la tarjeta despega el punto del ícono.
-    borderWidth: 2.5, borderColor: c.surface,
-  },
-
-  // --- Pendientes (superficie invertida) -----------------------------------
-  pendientes: { backgroundColor: c.text, borderRadius: radius.sheet, padding: space[4] + 2 },
-  pendientesHead: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  puntoAlerta: { width: 7, height: 7, borderRadius: radius.full, backgroundColor: c.danger },
-  pendientesHeadText: { fontSize: text.sm, color: c.textFaint, fontFamily: fontFamily.regular },
-  divisorInv: { height: 1, backgroundColor: c.bg, opacity: 0.1, marginVertical: space[3] + 2 },
-  pendienteFila: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[3] + 2 },
-  pendienteThumb: { width: 44, height: 44, borderRadius: radius.thumb - 1, overflow: 'hidden' },
-  pendienteThumbVacio: { alignItems: 'center', justifyContent: 'center' },
-  pendienteTexto: { flex: 1, minWidth: 0 },
-  pendienteTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.bg, fontFamily: fontFamily.semibold },
-  pendienteDetalle: { fontSize: text.sm, color: c.textFaint, marginTop: 2, fontFamily: fontFamily.regular },
-  chipInv: {
-    height: 34, paddingHorizontal: space[3] + 1, borderRadius: radius.full,
-    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-  },
-  chipInvSolido: { backgroundColor: c.bg },
-  chipInvText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.bg, fontFamily: fontFamily.semibold },
-  chipInvTextSolido: { color: c.text },
-
-  // --- Próximo turno --------------------------------------------------------
-  turno: {
-    flexDirection: 'row', alignItems: 'center', gap: space[3],
-    backgroundColor: c.surface, borderRadius: radius['2xl'],
-    paddingHorizontal: space[4], paddingVertical: space[4] - 1,
-    ...(c.isDark ? {} : shadow.md),
-  },
-  turnoHora: {
-    width: 46, height: 46, borderRadius: radius.thumb,
-    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
-  },
-  turnoHoraText: {
-    fontSize: 15, fontWeight: weight.bold, color: c.brand,
-    fontVariant: ['tabular-nums'], fontFamily: fontFamily.bold,
-  },
-  turnoTexto: { flex: 1, minWidth: 0 },
-  turnoTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, fontFamily: fontFamily.semibold },
-  turnoBajada: { fontSize: text.sm, color: c.textMuted, marginTop: 2, fontFamily: fontFamily.regular },
-
-  // --- Sección Novedades ----------------------------------------------------
+  // --- Encabezado ------------------------------------------------------------
   seccion: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: space[4], paddingTop: space[6], paddingBottom: space[3],
+    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
+    gap: space[3], paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[4],
   },
-  seccionTitulo: {
-    fontSize: text.md, fontWeight: weight.bold, color: c.text,
-    letterSpacing: -0.4, fontFamily: fontFamily.semibold,
+  pageTitle: {
+    flex: 1, fontSize: text['2xl'], fontWeight: weight.bold, color: c.text,
+    letterSpacing: -1.1, fontFamily: fontFamily.semibold,
   },
+  // Botón cuadrado de índice: negro sobre la superficie, no cuero — crear desde
+  // un índice no es la acción principal de la pantalla.
   seccionBtn: {
     width: touch.min, height: touch.min, borderRadius: radius.thumb,
     backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center',

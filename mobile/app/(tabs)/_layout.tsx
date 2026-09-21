@@ -2,7 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, ListPlus, CalendarClock } from 'lucide-react-native';
+import { Calendar, ListPlus, House } from 'lucide-react-native';
 import { HorseHeadNav } from '../../components/icons/equine';
 import { useEffect, useMemo, type ComponentType } from 'react';
 import Animated, {
@@ -14,7 +14,6 @@ import Animated, {
 import { haptic } from '../../lib/haptics';
 import { colors } from '../../lib/colors';
 import { useTheme, type ThemeColors } from '../../lib/theme';
-import { useAuth } from '../../lib/auth';
 import { weight } from '../../styles/tokens';
 import { duration, easing } from '../../styles/motion';
 
@@ -36,27 +35,25 @@ const BARRA_APAGADO = '#8A857C';
 type IconType = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
 const TABS: Record<string, { Icon: IconType; label: string }> = {
-  caballos: { Icon: HorseHeadNav,  label: 'Caballos' },
-  eventos:  { Icon: CalendarClock, label: 'Eventos' },
-  agenda:   { Icon: Calendar,      label: 'Agenda' },
-  mas:      { Icon: ListPlus,      label: 'Más' },
+  inicio:   { Icon: House,        label: 'Inicio' },
+  caballos: { Icon: HorseHeadNav, label: 'Caballos' },
+  agenda:   { Icon: Calendar,     label: 'Agenda' },
+  mas:      { Icon: ListPlus,     label: 'Más' },
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { c } = useTheme();
-  const { user } = useAuth();
-  const isProp = user?.role === 'propietario';
   const styles = useMemo(() => makeStyles(c), [c]);
   const activeName = state.routes[state.index]?.name;
 
-  // Las pestañas visibles dependen del rol, así que la posición del indicador
-  // se calcula sobre esta lista y no sobre `state.index` (que cuenta todas).
-  const visibles = useMemo(
-    () => ['caballos', isProp && 'eventos', 'agenda', 'mas'].filter(Boolean) as string[],
-    [isProp],
-  );
+  // Cuatro pestañas para todos los roles. Eventos se fue a "Más" (era la quinta
+  // y solo la veía el propietario) e Inicio ganó su lugar: la app ahora abre en
+  // una pantalla que SÍ está representada abajo. La posición del indicador se
+  // calcula sobre esta lista y no sobre `state.index` (que cuenta todas las
+  // rutas del navegador, incluidas las ocultas con `href: null`).
+  const visibles = useMemo(() => ['inicio', 'caballos', 'agenda', 'mas'], []);
   const activo = Math.max(0, visibles.indexOf(activeName));
 
   // Todas las pestañas a la izquierda de la activa están en su ancho angosto,
@@ -145,13 +142,19 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false, animation: 'shift', sceneStyle: { backgroundColor: c.bg } }}
     >
-      <Tabs.Screen name="muro" />
+      <Tabs.Screen name="inicio" />
       <Tabs.Screen name="caballos" />
       <Tabs.Screen name="agenda" />
       <Tabs.Screen name="mas" />
       <Tabs.Screen name="perfil"      options={{ href: null }} />
       <Tabs.Screen name="index"       options={{ href: null }} />
+      {/* Eventos sigue registrado acá (se navega desde "Más"), pero sin
+          pestaña propia: cinco pestañas abajo no entran. */}
       <Tabs.Screen name="eventos"     options={{ href: null }} />
+      {/* El muro queda "próximamente": sin pestaña y sin fila en "Más". El
+          código se conserva entero y la ruta sigue viva para el día que se
+          habilite. */}
+      <Tabs.Screen name="muro"        options={{ href: null }} />
       <Tabs.Screen name="facturacion" options={{ href: null }} />
       <Tabs.Screen name="remates"     options={{ href: null }} />
       <Tabs.Screen name="notificaciones" options={{ href: null }} />

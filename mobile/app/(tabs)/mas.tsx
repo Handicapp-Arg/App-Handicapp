@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Gavel, BookOpen, FileText, Receipt, CalendarClock,
   Inbox, Building2, Settings, ShieldCheck, ChevronRight,
-  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, QrCode, type LucideIcon, LogOut, Newspaper } from 'lucide-react-native';
+  MapPin, CreditCard, BarChart3, ClipboardList, KeyRound, QrCode, type LucideIcon, LogOut } from 'lucide-react-native';
 import { useAuth } from '../../lib/auth';
 import { usePlanStatus } from '../../hooks/use-plan';
 import { haptic } from '../../lib/haptics';
@@ -112,11 +112,8 @@ export default function MasScreen() {
   const push = (path: string) => nav.push(router, path);
 
   const principal: MenuItem[] = [
-    {
-      icon: Newspaper,
-      label: 'Muro',
-      path: '/muro',
-    },
+    // El Muro salió de acá: pasó a "próximamente" y no tiene puerta de entrada.
+    // La pantalla sigue existiendo (`(tabs)/muro`) para cuando se habilite.
     {
       icon: QrCode,
       label: 'Escanear QR',
@@ -137,11 +134,15 @@ export default function MasScreen() {
       label: 'Padrón de caballos',
       path: Routes.padron,
     },
-    ...(!isProp ? [{
+    // Eventos era la quinta pestaña del propietario; ahora vive acá para todos
+    // los roles. Antes esta fila la veían solo los NO propietarios (ellos lo
+    // tenían abajo); al sacarlo de la barra, el gating dejó de tener sentido y
+    // sin esto el propietario se quedaba sin ninguna puerta a Eventos.
+    {
       icon: CalendarClock,
       label: 'Eventos',
       path: Routes.tabsEventos,
-    }] : []),
+    },
     {
       icon: Receipt,
       label: 'Facturación',
