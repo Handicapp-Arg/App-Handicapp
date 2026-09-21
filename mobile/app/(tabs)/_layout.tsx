@@ -54,7 +54,19 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   // calcula sobre esta lista y no sobre `state.index` (que cuenta todas las
   // rutas del navegador, incluidas las ocultas con `href: null`).
   const visibles = useMemo(() => ['inicio', 'caballos', 'agenda', 'mas'], []);
-  const activo = Math.max(0, visibles.indexOf(activeName));
+
+  /**
+   * Todo lo que se alcanza desde "Más" —contratos, facturación, mi plan,
+   * eventos, perfil, avisos— no es una pestaña. Sin esto `indexOf` devolvía -1,
+   * la pastilla se iba a la primera posición y NINGÚN ícono quedaba encendido:
+   * la barra mostraba el indicador sobre Inicio con Inicio apagado.
+   *
+   * Marcar "Más" no es un parche: es de donde venís, y volver ahí con el dedo
+   * es lo que la barra tiene que ofrecerte mientras estás adentro.
+   */
+  const enPestaña = visibles.includes(activeName);
+  const nombreActivo = enPestaña ? activeName : 'mas';
+  const activo = visibles.indexOf(nombreActivo);
 
   // Todas las pestañas a la izquierda de la activa están en su ancho angosto,
   // así que la pastilla arranca en un múltiplo exacto del paso.
@@ -88,14 +100,20 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const renderTab = (name: string) => {
     const meta = TABS[name];
     if (!meta) return null;
-    const focused = activeName === name;
+    // `focused` es lo que se PINTA; `esRutaActual` es dónde estás de verdad.
+    // Separarlos importa: estando en Contratos, "Más" se ve encendida pero no
+    // es la ruta actual, así que tocarla tiene que llevarte de vuelta ahí. Si
+    // se usara `focused` para decidir, el toque no haría nada y quedarías
+    // encerrado en la sección.
+    const focused = nombreActivo === name;
+    const esRutaActual = activeName === name;
     const Icon = meta.Icon;
     const onPress = () => {
       haptic.selection();
       const route = state.routes.find((r) => r.name === name);
       if (!route) return;
       const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-      if (!focused && !event.defaultPrevented) navigation.navigate(name as never);
+      if (!esRutaActual && !event.defaultPrevented) navigation.navigate(name as never);
     };
     return (
       <TouchableOpacity
