@@ -17,7 +17,6 @@ import { ScanFace } from 'lucide-react-native';
 import { BottomSheet } from '../../components/BottomSheet';
 import { PressableScale } from '../../components/PressableScale';
 import { HorseshoeH } from '../../components/icons/equine';
-import { fontFamily } from '../../styles/fonts';
 
 
 
@@ -302,7 +301,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   hero: { flexGrow: 1, justifyContent: 'center', paddingVertical: 24 },
   title: {
     marginTop: 26,
-    fontSize: 34, lineHeight: 38, fontWeight: '700', fontFamily: fontFamily.bold,
+    fontSize: 34, lineHeight: 38, fontWeight: '700',
     letterSpacing: -1.3, color: D.text,
   },
   subtitle: { marginTop: 12, fontSize: 16, lineHeight: 23, color: D.textMuted },
@@ -338,20 +337,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.18, shadowRadius: 14, elevation: 4,
   },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: colors.white, fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold },
+  btnText: { color: colors.white, fontSize: 17, fontWeight: '600' },
 
   bioBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     height: 58, borderRadius: 20, backgroundColor: D.surface, marginTop: 2,
   },
-  bioBtnText: { fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.text },
+  bioBtnText: { fontSize: 17, fontWeight: '600', color: D.text },
 
   forgotBtn: { alignSelf: 'center', paddingVertical: 8, marginTop: 8 },
   forgotText: { fontSize: 15, color: D.textMuted },
 
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingTop: 26, paddingBottom: 12 },
   footerText: { fontSize: 15, color: D.textMuted },
-  link: { fontSize: 15, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.brand },
+  link: { fontSize: 15, fontWeight: '600', color: D.brand },
 
   devBtn: {
     alignItems: 'center', justifyContent: 'center',

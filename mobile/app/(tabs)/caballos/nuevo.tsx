@@ -6,19 +6,34 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'lucide-react-native';
+import { Camera, ChevronRight, ShieldCheck } from 'lucide-react-native';
 
 import { useCreateHorse, useUploadHorseImage } from '../../../hooks/use-horses';
+import { useActividades } from '../../../hooks/use-catalog';
+import { useMyOrganizations } from '../../../hooks/use-organizations';
+import { useAuth } from '../../../lib/auth';
 import { AppImage } from '../../../components/AppImage';
 import { DatePicker } from '../../../components/DatePicker';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { ActionSheet, type Accion } from '../../../components/ActionSheet';
+import { FilaSelector } from '../../../components/FilaSelector';
+import { PressableScale } from '../../../components/PressableScale';
 import { useToast } from '../../../components/Toast';
 import { haptic } from '../../../lib/haptics';
 import { Routes, nav } from '../../../lib/routes';
 import { colors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch } from '../../../styles/tokens';
+import { space, text, radius, weight, touch, shadow } from '../../../styles/tokens';
 import { useCommonStyles } from '../../../styles/common';
+
+/** Las tres opciones que acepta el backend, con el nombre que usa el campo. */
+const SEXOS = [
+  { value: 'macho',    label: 'Macho' },
+  { value: 'hembra',   label: 'Hembra' },
+  { value: 'castrado', label: 'Castrado' },
+] as const;
+
+type Sexo = (typeof SEXOS)[number]['value'];
 
 export default function NuevoCaballoScreen() {
   const router = useRouter();
@@ -30,12 +45,30 @@ export default function NuevoCaballoScreen() {
   const createHorse = useCreateHorse();
   const uploadImage = useUploadHorseImage();
   const toast = useToast();
+  const { user } = useAuth();
+  const { data: actividades } = useActividades();
+  const { data: organizaciones } = useMyOrganizations();
 
   const [name, setName] = useState('');
+  const [activityId, setActivityId] = useState('');
+  const [sex, setSex] = useState<Sexo | ''>('');
   const [birthDate, setBirthDate] = useState('');
+  const [establishmentId, setEstablishmentId] = useState('');
   const [microchip, setMicrochip] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [sheet, setSheet] = useState<'actividad' | 'sexo' | 'establecimiento' | null>(null);
+
+  /**
+   * "Dónde está" son los establecimientos a los que el usuario pertenece. El
+   * backend guarda el establecimiento como el USUARIO dueño de la organización
+   * (`owner_id`), y desde ahí resuelve la organización del caballo.
+   * Se saca la propia: nadie se elige a sí mismo como establecimiento.
+   */
+  const establecimientos = useMemo(
+    () => (organizaciones ?? []).filter((o) => o.owner_id !== user?.id),
+    [organizaciones, user?.id],
+  );
   // Al guardar con éxito salimos navegando: el guardia de descarte no debe interceptar.
   const guardado = useRef(false);
 
@@ -68,7 +101,8 @@ export default function NuevoCaballoScreen() {
     }
   };
 
-  const isDirty = !!name.trim() || !!birthDate || !!microchip || !!photoUri;
+  const isDirty = !!name.trim() || !!birthDate || !!microchip || !!photoUri
+    || !!activityId || !!sex || !!establishmentId;
   const isBusy = createHorse.isPending || uploadImage.isPending;
   const canSubmit = !!name.trim() && !isBusy;
 
@@ -85,16 +119,40 @@ export default function NuevoCaballoScreen() {
     return unsubscribe;
   }, [navigation, isDirty]);
 
+  const actividadSel = (actividades ?? []).find((a) => a.id === activityId);
+  const sexoSel = SEXOS.find((x) => x.value === sex);
+  const establecimientoSel = establecimientos.find((o) => o.owner_id === establishmentId);
+
+  const accionesActividad: Accion[] = (actividades ?? []).map((a) => ({
+    label: a.name,
+    onPress: () => setActivityId(a.id),
+  }));
+  const accionesSexo: Accion[] = SEXOS.map((x) => ({
+    label: x.label,
+    onPress: () => setSex(x.value),
+  }));
+  const accionesEstablecimiento: Accion[] = establecimientos.map((o) => ({
+    label: o.name,
+    onPress: () => setEstablishmentId(o.owner_id),
+  }));
+
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es obligatorio'); haptic.error(); return; }
     if (microchip && microchip.length !== 15) { setError('El microchip debe tener 15 dígitos (o dejalo vacío).'); return; }
     setError('');
     try {
-      const result = await createHorse.mutateAsync({
+      // El payload va en una variable y no como literal a propósito: el tipo
+      // del `mutationFn` de `useCreateHorse` todavía no declara activity_id ni
+      // sex (el hook lo mantiene otro frente), y el backend ya los acepta.
+      const payload = {
         name: name.trim(),
         birth_date: birthDate || undefined,
         microchip: microchip || undefined,
-      });
+        activity_id: activityId || undefined,
+        sex: sex || undefined,
+        establishment_id: establishmentId || undefined,
+      };
+      const result = await createHorse.mutateAsync(payload);
       let fotoFallo = false;
       if (photoUri) {
         try {
@@ -169,12 +227,43 @@ export default function NuevoCaballoScreen() {
           autoCapitalize="words"
           returnKeyType="next"
         />
+
+        {/* Grupo de filas estilo Ajustes: lo que se elige de una lista no se
+            tipea. Todo opcional — un caballo se puede dar de alta con el
+            nombre solo y completarse después desde su ficha. */}
+        <View style={s.grupo}>
+          <FilaSelector
+            primera
+            label="Para qué lo tenés"
+            valor={actividadSel?.name}
+            onPress={() => setSheet('actividad')}
+          />
+          <FilaSelector
+            label="Sexo"
+            valor={sexoSel?.label}
+            onPress={() => setSheet('sexo')}
+          />
+        </View>
+
         <DatePicker
           label="Fecha de nacimiento (opcional)"
           value={birthDate}
           onChange={setBirthDate}
           maxDate={new Date()}
         />
+
+        {/* Sin establecimientos a mano la fila no tiene nada que ofrecer. */}
+        {establecimientos.length > 0 ? (
+          <View style={s.grupo}>
+            <FilaSelector
+              primera
+              label="Dónde está"
+              valor={establecimientoSel?.name}
+              onPress={() => setSheet('establecimiento')}
+            />
+          </View>
+        ) : null}
+
         <TextInput
           style={inputStyle.base}
           value={microchip}
@@ -184,6 +273,26 @@ export default function NuevoCaballoScreen() {
           keyboardType="numeric"
           returnKeyType="done"
         />
+
+        {/* El padrón es la promesa fuerte del producto: si el caballo ya está
+            registrado, se trae el pedigrí en vez de tipearlo. Va como tarjeta
+            porque es una propuesta, no un campo más del formulario. */}
+        <PressableScale
+          style={s.padronCard}
+          onPress={() => { haptic.light(); nav.push(router, Routes.padron); }}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar el caballo en el padrón"
+        >
+          <View style={s.padronIcono}>
+            <ShieldCheck size={20} color={c.brand} strokeWidth={2.2} />
+          </View>
+          <View style={s.padronTexto}>
+            <Text style={s.padronTitulo}>¿Está en el padrón?</Text>
+            <Text style={s.padronBajada}>Buscalo y traé su pedigrí</Text>
+          </View>
+          <ChevronRight size={18} color={c.textFaint} strokeWidth={2} />
+        </PressableScale>
+
         {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
@@ -197,10 +306,29 @@ export default function NuevoCaballoScreen() {
         >
           {isBusy
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.submitBtnText}>Crear caballo</Text>
+            : <Text style={s.submitBtnText}>Guardar el caballo</Text>
           }
         </TouchableOpacity>
       </View>
+
+      <ActionSheet
+        visible={sheet === 'actividad'}
+        onClose={() => setSheet(null)}
+        title="Para qué lo tenés"
+        acciones={accionesActividad}
+      />
+      <ActionSheet
+        visible={sheet === 'sexo'}
+        onClose={() => setSheet(null)}
+        title="Sexo"
+        acciones={accionesSexo}
+      />
+      <ActionSheet
+        visible={sheet === 'establecimiento'}
+        onClose={() => setSheet(null)}
+        title="Dónde está"
+        acciones={accionesEstablecimiento}
+      />
     </View>
   );
 }
@@ -209,12 +337,33 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   body: { paddingHorizontal: space[4], paddingTop: space[2], paddingBottom: space[8], gap: space[5] },
   errorText: { fontSize: text.sm, color: c.danger },
+  // Cuadrado de 132 con las esquinas muy redondeadas, no un círculo: un caballo
+  // se reconoce por el cuerpo y el círculo le recortaba media foto.
   photoPickerBtn: { alignSelf: 'center', marginBottom: space[1], position: 'relative' },
-  photoPreview: { width: 110, height: 110, borderRadius: 55 },
-  photoPlaceholder: { width: 110, height: 110, borderRadius: 55, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', gap: 4 },
+  photoPreview: { width: 132, height: 132, borderRadius: radius['2xl'] + 4 },
+  photoPlaceholder: { width: 132, height: 132, borderRadius: radius['2xl'] + 4, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', gap: 4 },
   photoPlaceholderText: { fontSize: text.xs, fontWeight: weight.bold, color: c.textMuted },
   photoPlaceholderSub: { fontSize: text.xs, color: c.textFaint },
-  photoEditBadge: { position: 'absolute', bottom: 4, right: 4, width: 26, height: 26, borderRadius: 13, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
+  photoEditBadge: { position: 'absolute', bottom: 6, right: 6, width: 28, height: 28, borderRadius: radius.full, backgroundColor: c.brand, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
+
+  /* ─── Filas de selección ───────────────────────────────────────────────── */
+  // El grupo vive sobre el fondo, sin caja: la línea fina entre filas alcanza.
+  grupo: { marginTop: -space[1] },
+
+  /* ─── Tarjeta del padrón ───────────────────────────────────────────────── */
+  padronCard: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    padding: space[4], borderRadius: radius.card,
+    backgroundColor: c.surface,
+    ...(c.isDark ? {} : shadow.sm),
+  },
+  padronIcono: {
+    width: 40, height: 40, borderRadius: radius.full,
+    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
+  },
+  padronTexto: { flex: 1, minWidth: 0 },
+  padronTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  padronBajada: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
   footer: { paddingHorizontal: space[4], paddingTop: space[3] },
   submitBtn: { height: touch.button, justifyContent: 'center', borderRadius: radius.lg, backgroundColor: c.brand, alignItems: 'center' },
   submitBtnText: { fontSize: text.md, fontWeight: weight.semibold, color: colors.white },

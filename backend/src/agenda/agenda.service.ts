@@ -4,6 +4,7 @@ import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ServiceAppointment } from './service-appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { User } from '../auth/user.entity';
 import { Horse } from '../horses/horse.entity';
 import { HorseUser } from '../horses/horse-user.entity';
@@ -21,6 +22,20 @@ const TYPE_LABELS: Record<string, string> = {
   entrenamiento: 'Entrenamiento',
   otro: 'Otro',
 };
+
+/**
+ * Texto del "cuándo" del recordatorio. Antes el aviso siempre decía "mañana"
+ * porque la ventana era fija en 24 h; con la anticipación configurable hay que
+ * decir el día real. Se compara por fecha local, no por diferencia de horas:
+ * un turno a las 9 avisado a las 20 del día anterior es "mañana", no "en 13 h".
+ */
+function cuandoEs(fecha: Date, ahora: Date): string {
+  const soloDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dias = Math.round((soloDia(fecha) - soloDia(ahora)) / 86400000);
+  if (dias <= 0) return 'hoy';
+  if (dias === 1) return 'mañana';
+  return `el ${fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}`;
+}
 
 @Injectable()
 export class AgendaService {
@@ -82,8 +97,68 @@ export class AgendaService {
       ...dto,
       scheduled_at: new Date(dto.scheduled_at),
       notes: dto.notes ?? null,
+      professional: dto.professional?.trim() || null,
+      // Ojo con `??`: si el usuario eligió "no avisar" manda null, y un
+      // `?? 24` se lo pisaría. Solo el campo ausente toma el default.
+      remind_hours_before:
+        dto.remind_hours_before === undefined ? 24 : dto.remind_hours_before,
       created_by: user.id,
     });
+    return this.appointmentRepository.save(appointment);
+  }
+
+  async findOne(id: string, user: User): Promise<ServiceAppointment> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id }, relations: ['horse'],
+    });
+    if (!appointment) throw new NotFoundException('Turno no encontrado');
+    await this.assertAccess(appointment.horse, user);
+    return appointment;
+  }
+
+  /**
+   * Edición parcial. El control de acceso es el mismo que `complete()` y
+   * `remove()` (acceso al caballo del turno) MÁS una validación extra: si el
+   * turno se muda a otro caballo hay que tener acceso también al de destino,
+   * o alguien podría mover un turno propio al caballo de un tercero.
+   */
+  async update(id: string, dto: UpdateAppointmentDto, user: User): Promise<ServiceAppointment> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id }, relations: ['horse'],
+    });
+    if (!appointment) throw new NotFoundException('Turno no encontrado');
+    await this.assertAccess(appointment.horse, user);
+
+    if (dto.horse_id && dto.horse_id !== appointment.horse_id) {
+      const destino = await this.horseRepository.findOne({ where: { id: dto.horse_id } });
+      if (!destino) throw new NotFoundException('Caballo no encontrado');
+      await this.assertAccess(destino, user);
+      appointment.horse_id = destino.id;
+      appointment.horse = destino;
+    }
+
+    if (dto.type !== undefined) appointment.type = dto.type;
+    if (dto.title !== undefined) appointment.title = dto.title;
+    if (dto.notes !== undefined) appointment.notes = dto.notes ?? null;
+    if (dto.professional !== undefined) {
+      appointment.professional = dto.professional?.trim() || null;
+    }
+
+    // Si se movió la fecha o cambió la anticipación, el aviso que ya se mandó
+    // (o el que no se mandó) dejó de corresponder: se rearma el recordatorio.
+    let rearmar = false;
+    if (dto.scheduled_at !== undefined) {
+      const nueva = new Date(dto.scheduled_at);
+      if (nueva.getTime() !== appointment.scheduled_at.getTime()) rearmar = true;
+      appointment.scheduled_at = nueva;
+    }
+    if (dto.remind_hours_before !== undefined
+        && dto.remind_hours_before !== appointment.remind_hours_before) {
+      appointment.remind_hours_before = dto.remind_hours_before;
+      rearmar = true;
+    }
+    if (rearmar) appointment.reminder_sent = false;
+
     return this.appointmentRepository.save(appointment);
   }
 
@@ -106,15 +181,30 @@ export class AgendaService {
     await this.appointmentRepository.remove(appointment);
   }
 
-  // Cron: cada hora verifica turnos en las próximas 24h sin recordatorio enviado
+  /**
+   * Cron horario: avisa de cada turno cuando entra en SU propia ventana de
+   * anticipación (`remind_hours_before`), no en una de 24 h fija.
+   *
+   * La ventana se calcula en SQL contra la fila, no en JS, para no traerse
+   * todos los turnos futuros y filtrarlos en memoria. `remind_hours_before`
+   * nulo o 0 significa "no avisar" y queda fuera de la consulta.
+   *
+   * Límite conocido: como el cron corre una vez por hora, un aviso de "1 hora
+   * antes" puede salir hasta ~1 h antes de lo pedido (nunca después de la
+   * hora del turno, porque el filtro exige `scheduled_at >= now`).
+   */
   @Cron(CronExpression.EVERY_HOUR)
   async sendReminders(): Promise<void> {
     const now = new Date();
-    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const upcoming = await this.appointmentRepository
       .createQueryBuilder('a')
-      .where('a.scheduled_at BETWEEN :now AND :in24h', { now, in24h })
+      .where('a.scheduled_at >= :now', { now })
+      .andWhere('a.remind_hours_before IS NOT NULL')
+      .andWhere('a.remind_hours_before > 0')
+      .andWhere(
+        `a.scheduled_at <= CAST(:now AS timestamptz) + make_interval(hours => a.remind_hours_before)`,
+      )
       .andWhere('a.completed = false')
       .andWhere('a.reminder_sent = false')
       .leftJoinAndSelect('a.horse', 'horse')
@@ -129,8 +219,12 @@ export class AgendaService {
         hour: '2-digit', minute: '2-digit',
       });
       const typeLabel = TYPE_LABELS[appt.type] ?? appt.type;
-      const title = `🗓️ Turno mañana — ${typeLabel}`;
-      const message = `${appt.horse.name}: ${appt.title} mañana a las ${timeStr}.`;
+      // Con la anticipación configurable, "mañana" dejó de ser cierto: el aviso
+      // puede salir el mismo día o varios días antes. Se dice cuándo es.
+      const cuando = cuandoEs(appt.scheduled_at, now);
+      const title = `🗓️ Turno ${cuando} — ${typeLabel}`;
+      const quien = appt.professional ? ` con ${appt.professional}` : '';
+      const message = `${appt.horse.name}: ${appt.title}${quien} ${cuando} a las ${timeStr}.`;
 
       // Incluir propietario del caballo, creador del turno y usuarios asignados
       const recipientIds = new Set<string>([

@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  TextInput, ActivityIndicator, Alert, useWindowDimensions,
+  TextInput, ActivityIndicator, Alert, useWindowDimensions, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { AppImage } from '../../../components/AppImage';
 import {
-  X, Camera, Wheat, Syringe, Hammer, Activity, Wrench, Truck, Package,
+  X, Camera, Clock, Wheat, Syringe, Hammer, Activity, Truck, Package,
   HeartPulse, Dumbbell, ClipboardList, Trophy, Receipt, StickyNote,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -22,6 +23,7 @@ import { FilaSelector } from '../../../components/FilaSelector';
 import { PressableScale } from '../../../components/PressableScale';
 import { HorseshoeH } from '../../../components/icons/equine';
 import { haptic } from '../../../lib/haptics';
+import { hora } from '../../../lib/fechas';
 import { CURRENCY_OPTIONS, type Currency } from '../../../lib/currency';
 import { colors, makeEventTypeColors } from '../../../lib/colors';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
@@ -52,12 +54,14 @@ function defaultTypeForRole(role?: string): string {
   return 'salud';
 }
 
+// Espejo de `caballos/[id]/evento-nuevo.tsx`: el gasto se carga igual desde
+// los dos lados. "Mantenimiento" se sacó de las dos listas (se superponía con
+// "Otros"); el valor sigue existiendo para los gastos ya cargados.
 const EXPENSE_CATEGORIES = [
   { value: 'alimentacion',  label: 'Alimento',      Icon: Wheat },
   { value: 'veterinario',   label: 'Veterinario',   Icon: Syringe },
   { value: 'herradero',     label: 'Herradero',     Icon: Hammer },
   { value: 'entrenamiento', label: 'Entrenamiento', Icon: Activity },
-  { value: 'mantenimiento', label: 'Mantenimiento', Icon: Wrench },
   { value: 'transporte',    label: 'Transporte',    Icon: Truck },
   { value: 'otros',         label: 'Otros',         Icon: Package },
 ];
@@ -82,6 +86,11 @@ export default function NuevoEventoScreen() {
   const [type, setType] = useState<string>(() => defaultTypeForRole(user?.role));
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  // La hora arranca en "ahora": casi siempre se carga lo que acaba de pasar.
+  // Hasta ahora el formulario nunca la mandaba y TODOS los eventos quedaban sin
+  // hora, aunque la columna y el DTO ya existían.
+  const [timeDate, setTimeDate] = useState(() => new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [amount, setAmount] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('');
   const [currency, setCurrency] = useState<Currency>('ARS');
@@ -104,6 +113,9 @@ export default function NuevoEventoScreen() {
       setPhotoUris((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 5));
     }
   };
+
+  // "HH:MM", que es lo único que acepta el backend (`@Matches(/^\d{2}:\d{2}$/)`).
+  const timeStr = hora(timeDate.toISOString());
 
   const canSubmit = !!horseId && !!description.trim() && !createEvent.isPending;
   const isDirty = !!description.trim() || !!amount.trim() || photoUris.length > 0;
@@ -132,6 +144,7 @@ export default function NuevoEventoScreen() {
     try {
       await createEvent.mutateAsync({
         type, description, date, horse_id: horseId,
+        event_time: timeStr,
         amount: type === 'gasto' && amount ? String(parseFloat(amount) || 0) : undefined,
         expense_category: type === 'gasto' && expenseCategory ? expenseCategory : undefined,
         currency: type === 'gasto' ? currency : undefined,
@@ -239,6 +252,34 @@ export default function NuevoEventoScreen() {
         <View style={s.seccion}>
           <Text style={s.rotulo}>Cuándo</Text>
           <DatePicker label="Día" value={date} onChange={setDate} />
+
+          {/* Misma fila de hora que el turno nuevo: un solo patrón para todo
+              lo que se agenda o se registra. */}
+          <PressableScale
+            onPress={() => { haptic.selection(); setShowTimePicker(true); }}
+            style={s.horaBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`Hora: ${timeStr}`}
+          >
+            <Text style={s.horaLabel}>Hora</Text>
+            <Text style={s.horaValor}>{timeStr}</Text>
+            <Clock size={18} color={c.textFaint} strokeWidth={1.8} />
+          </PressableScale>
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={timeDate}
+              mode="time"
+              is24Hour
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(_, selected) => {
+                // En Android la hoja nativa se cierra sola; en iOS el spinner
+                // queda montado hasta que el usuario sale de la sección.
+                setShowTimePicker(Platform.OS === 'ios');
+                if (selected) setTimeDate(selected);
+              }}
+            />
+          )}
         </View>
 
         {/* Monto y categoría: solo para gastos */}
@@ -392,6 +433,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
     fontSize: text.md, color: c.text,
   },
+  horaBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: space[3],
+    minHeight: touch.field, borderRadius: radius.field,
+    paddingHorizontal: space[4], backgroundColor: c.surfaceAlt,
+  },
+  horaLabel: { flex: 1, fontSize: text.base, color: c.textMuted },
+  horaValor: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, fontVariant: ['tabular-nums'] },
   montoRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   monedaToggle: { flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: radius.field, padding: 3 },
   monedaBtn: { paddingHorizontal: space[3], paddingVertical: space[2] + 2, borderRadius: radius.field - 3 },

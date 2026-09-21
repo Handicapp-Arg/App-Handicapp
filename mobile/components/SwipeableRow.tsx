@@ -10,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { haptic } from '../lib/haptics';
 import { text, weight } from '../styles/tokens';
-import { fontFamily } from '../styles/fonts';
 
 const ANCHO_ACCION = 76;
 
@@ -142,7 +141,6 @@ const styles = StyleSheet.create({
   accionLabel: {
     fontSize: text.xs,
     fontWeight: weight.semibold,
-    fontFamily: fontFamily.semibold,
     color: '#fff',
   },
 });

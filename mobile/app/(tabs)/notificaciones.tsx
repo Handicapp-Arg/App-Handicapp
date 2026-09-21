@@ -19,7 +19,6 @@ import { Routes } from '../../lib/routes';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { space, text, radius, weight, touch } from '../../styles/tokens';
 import { entradaLista } from '../../styles/motion';
-import { fontFamily } from '../../styles/fonts';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -270,7 +269,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   sectionLabel: {
     fontSize: text.sm,
     fontWeight: weight.semibold,
-    fontFamily: fontFamily.semibold,
     color: c.textFaint,
     paddingHorizontal: space[4],
     paddingTop: space[5],
@@ -297,21 +295,18 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   rowTitle: {
     fontSize: text.md,
     fontWeight: weight.semibold,
-    fontFamily: fontFamily.semibold,
     color: c.text,
     letterSpacing: -0.1,
   },
-  rowTitleRead: { color: c.textMuted, fontWeight: weight.medium, fontFamily: fontFamily.medium },
+  rowTitleRead: { color: c.textMuted, fontWeight: weight.medium },
   rowMsg: {
     fontSize: text.base,
-    fontFamily: fontFamily.regular,
     color: c.textMuted,
     lineHeight: 21,
     marginTop: 2,
   },
   rowTime: {
     fontSize: text.sm,
-    fontFamily: fontFamily.regular,
     color: c.textFaint,
     marginTop: space[1] + 1,
   },

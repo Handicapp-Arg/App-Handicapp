@@ -372,6 +372,34 @@ Duraciones: `duration.fast` (120, responde al dedo), `duration.base` (200, sale)
 `duration.enter` (280, entra). Curvas: `easing.outQuart` por defecto.
 **Sin rebote**: nada de `withSpring` en press ni en hojas.
 
+## La tipografía (ley del 21/09)
+
+**Ninguna pantalla declara `fontFamily`.** La app entera es Inter y eso se
+resuelve UNA sola vez en `styles/fuente-global.ts`, que `app/_layout.tsx` llama
+antes de todo: envuelve `Text` y `TextInput` de `react-native` y les pone la
+variante de Inter que corresponde al `fontWeight` declarado.
+
+Por qué existía el problema: React Native no tiene "fuente de la app". Si un
+estilo no dice `fontFamily`, iOS usa San Francisco y Android usa Roboto. Como
+casi ninguna pantalla la declaraba, en Android convivían títulos en Inter con
+títulos en Roboto y se veía como dos apps pegadas.
+
+Reglas prácticas:
+
+- Se escribe **solo `fontWeight`** (siempre desde `weight` de tokens). La
+  familia la pone el envoltorio: `weight.semibold` → `Inter_600SemiBold`.
+- Inter viene en cinco archivos y cada uno se registra con su propio nombre de
+  familia, así que **fijar la familia "Inter" y dejar que el peso haga la
+  negrita da negrita falsa en Android**. Por eso el mapeo peso → variante.
+- Declarar `fontFamily` a mano sigue funcionando y **gana** sobre el
+  envoltorio, pero solo se justifica cuando se quiere una variante distinta del
+  peso declarado (quedan un puñado de casos así). Si familia y peso coinciden,
+  el `fontFamily` sobra: borralo.
+- Un `<Text>` adentro de otro `<Text>` sin peso propio sigue heredando la
+  tipografía del padre (el envoltorio no lo pisa).
+- El tope de escalado por accesibilidad (1.35x) también lo pone ese envoltorio:
+  `Text.defaultProps` ya no sirve, React 19 lo ignora en componentes de función.
+
 ## Las medidas
 
 Radios semánticos de `styles/tokens`: `radius.card` (22), `radius.field` (18),

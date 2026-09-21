@@ -10,7 +10,6 @@ import { HorseIcon } from './icons/equine';
 import { colors } from '../lib/colors';
 import { useTheme, type ThemeColors } from '../lib/theme';
 import { space, text, weight, radius, touch } from '../styles/tokens';
-import { fontFamily } from '../styles/fonts';
 
 type IconComp = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 const ICON_MAP: Record<string, IconComp> = {
@@ -78,13 +77,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   title: {
     fontSize: text.lg,
     fontWeight: weight.bold,
-    fontFamily: fontFamily.bold,
     color: c.text,
     textAlign: 'center',
   },
   message: {
     fontSize: text.md,
-    fontFamily: fontFamily.regular,
     color: c.textFaint,
     textAlign: 'center',
     lineHeight: 24,

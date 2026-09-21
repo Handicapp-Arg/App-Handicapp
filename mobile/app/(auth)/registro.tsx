@@ -15,7 +15,6 @@ import { AUTH_DARK as D, AuthDarkBackground } from '../../components/auth-dark';
 import { PressableScale } from '../../components/PressableScale';
 import { HorseshoeH } from '../../components/icons/equine';
 import { useInvitationByToken, ROLE_LABELS } from '../../hooks/use-organizations';
-import { fontFamily } from '../../styles/fonts';
 import api from '../../lib/api';
 
 /** Cómo se presenta cada rol en la elección: se habla de lo que hace la
@@ -380,7 +379,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   body: { flexGrow: 1, paddingTop: 30 },
 
   title: {
-    fontSize: 32, lineHeight: 36, fontWeight: '700', fontFamily: fontFamily.bold,
+    fontSize: 32, lineHeight: 36, fontWeight: '700',
     letterSpacing: -1.2, color: D.text,
   },
   subtitle: { marginTop: 10, fontSize: 16, lineHeight: 23, color: D.textMuted },
@@ -414,7 +413,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   tarjetaIconoActivo: { backgroundColor: D.successBg },
-  tarjetaTitulo: { fontSize: 18, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.text },
+  tarjetaTitulo: { fontSize: 18, fontWeight: '600', color: D.text },
   tarjetaDesc: { fontSize: 14, color: D.textMuted, marginTop: 2 },
 
   inviteBox: { marginTop: 20, backgroundColor: D.surface, borderRadius: 18, padding: 14 },
@@ -434,10 +433,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.18, shadowRadius: 14, elevation: 4,
   },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: colors.white, fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold },
+  btnText: { color: colors.white, fontSize: 17, fontWeight: '600' },
 
   legal: { marginTop: 12, textAlign: 'center', fontSize: 13, lineHeight: 18, color: D.textFaint },
   volverLogin: { marginTop: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   footerText: { fontSize: 15, color: D.textMuted },
-  link: { fontSize: 15, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.brand },
+  link: { fontSize: 15, fontWeight: '600', color: D.brand },
 });

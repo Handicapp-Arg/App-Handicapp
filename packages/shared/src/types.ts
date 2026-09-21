@@ -215,9 +215,22 @@ export interface Event {
   amount: number | null;
   currency: 'ARS' | 'USD';
   date: string;
+  /**
+   * Hora del evento en formato "HH:MM". Es opcional a propósito: se puede
+   * anotar algo que pasó sin acordarse de la hora, y todo lo cargado antes de
+   * que el formulario tuviera selector de hora quedó en null.
+   */
+  event_time?: string | null;
   horse_id: string;
   horse?: Horse;
   photos?: EventPhoto[];
+  /**
+   * Quién cargó el evento. Viene en el historial del caballo
+   * (`GET /horses/:id/events`) y en el listado general (`GET /events`), que lo
+   * firman junto a la hora. Puede faltar: los eventos viejos se guardaron sin
+   * autor.
+   */
+  author?: Pick<User, 'id' | 'name'> | null;
   created_at: string;
   updated_at: string;
 }

@@ -10,13 +10,48 @@ export interface ActivityPhoto {
   photographer?: { id: string; name: string };
 }
 
-export const ACTIVITY_TYPES: Record<string, { label: string; color: string; bg: string }> = {
-  alimentacion:  { label: 'Alimentación',  color: '#15803d', bg: '#f0fdf4' },
-  entrenamiento: { label: 'Entrenamiento', color: '#a16207', bg: '#fefce8' },
-  descanso:      { label: 'Descanso',      color: '#1d4ed8', bg: '#eff6ff' },
-  veterinario:   { label: 'Veterinario',   color: '#b91c1c', bg: '#fef2f2' },
-  otro:          { label: 'Otro',          color: '#374151', bg: '#f3f4f6' },
+/**
+ * Etiqueta por tipo guardado. Los valores (`alimentacion`, `entrenamiento`,
+ * `descanso`, `veterinario`, `otro`) son el enum de la columna en el backend:
+ * NO se tocan.
+ */
+export const ACTIVITY_TYPE_LABELS: Record<string, string> = {
+  alimentacion:  'Alimentación',
+  entrenamiento: 'Entrenamiento',
+  descanso:      'Descanso',
+  veterinario:   'Veterinario',
+  otro:          'Otro',
 };
+
+/**
+ * Colores por tipo desde el theme, no hexadecimales fijos: los que había
+ * (verde/amarillo/azul claros) quedaban ilegibles en modo oscuro.
+ */
+export const makeActivityTypeColors = (c: {
+  successSoft: string; success: string; goldSoft: string; goldText: string;
+  infoSoft: string; info: string; dangerSoft: string; danger: string;
+  surfaceAlt: string; textMuted: string;
+}): Record<string, { color: string; bg: string }> => ({
+  alimentacion:  { color: c.success,   bg: c.successSoft },
+  entrenamiento: { color: c.goldText,  bg: c.goldSoft },
+  descanso:      { color: c.info,      bg: c.infoSoft },
+  veterinario:   { color: c.danger,    bg: c.dangerSoft },
+  otro:          { color: c.textMuted, bg: c.surfaceAlt },
+});
+
+/**
+ * Chips de filtro del álbum: Todas / Trabajo / Salud / Potrero.
+ *
+ * Son etiquetas de cliente y agrupan valores guardados; el valor que viaja al
+ * backend sigue siendo el del enum. "Potrero" junta descanso, alimentación y
+ * "otro" para que ninguna foto quede fuera de todos los filtros.
+ */
+export const PHOTO_FILTERS: { key: string; label: string; tipos: string[] | null }[] = [
+  { key: 'todas',   label: 'Todas',   tipos: null },
+  { key: 'trabajo', label: 'Trabajo', tipos: ['entrenamiento'] },
+  { key: 'salud',   label: 'Salud',   tipos: ['veterinario'] },
+  { key: 'potrero', label: 'Potrero', tipos: ['descanso', 'alimentacion', 'otro'] },
+];
 
 export function useActivityPhotos(horseId: string) {
   return useQuery<ActivityPhoto[]>({

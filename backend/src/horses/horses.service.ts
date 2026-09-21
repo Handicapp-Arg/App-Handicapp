@@ -900,7 +900,25 @@ export class HorsesService implements OnModuleInit {
 
     return this.horseUserRepository.find({
       where: { horse_id: horseId, role: 'vet' },
-      relations: ['user'],
+      relations: { user: true },
+      // La ficha de Equipo muestra matrícula, sello de verificación y un botón
+      // de llamar: sin estas columnas el móvil solo tenía el email para mostrar.
+      select: {
+        id: true,
+        horse_id: true,
+        user_id: true,
+        role: true,
+        percentage: true,
+        user: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phone: true,
+          vet_license_number: true,
+          vet_license_status: true,
+        },
+      },
     });
   }
 
@@ -981,7 +999,18 @@ export class HorsesService implements OnModuleInit {
 
     return this.horseUserRepository.find({
       where: { horse_id: horseId, role: 'assignee' },
-      relations: ['user'],
+      relations: { user: true },
+      // `HorseUser.role` siempre vale 'assignee' acá: el rol que le sirve al
+      // usuario (jinete / peón / encargado) es el del propio User, así que va
+      // explícito en el select para que el móvil pueda rotular la fila.
+      select: {
+        id: true,
+        horse_id: true,
+        user_id: true,
+        role: true,
+        percentage: true,
+        user: { id: true, name: true, email: true, role: true },
+      },
     });
   }
 

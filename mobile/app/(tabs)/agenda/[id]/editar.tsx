@@ -3,29 +3,33 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   Clock, Stethoscope, Hammer, Trophy, Bug, Syringe, Dumbbell, MoreHorizontal,
   Check, ChevronRight, Search,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useCreateAppointment, APPOINTMENT_TYPES, AVISOS, AVISO_DEFAULT } from '../../../hooks/use-agenda';
-import { useHorses } from '../../../hooks/use-horses';
-import { DatePicker } from '../../../components/DatePicker';
-import { ScreenHeader } from '../../../components/ScreenHeader';
-import { AppImage } from '../../../components/AppImage';
-import { PressableScale } from '../../../components/PressableScale';
-import { HorseshoeH } from '../../../components/icons/equine';
-import { haptic } from '../../../lib/haptics';
-import { colors } from '../../../lib/colors';
-import { useTheme, type ThemeColors } from '../../../lib/theme';
-import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../styles/tokens';
-import { hora } from '../../../lib/fechas';
-import { useToast } from '../../../components/Toast';
-import { BottomSheet } from '../../../components/BottomSheet';
+import {
+  useAppointment, useUpdateAppointment, APPOINTMENT_TYPES, AVISOS, AVISO_DEFAULT,
+} from '../../../../hooks/use-agenda';
+import { useHorses } from '../../../../hooks/use-horses';
+import { DatePicker } from '../../../../components/DatePicker';
+import { ScreenHeader } from '../../../../components/ScreenHeader';
+import { AppImage } from '../../../../components/AppImage';
+import { PressableScale } from '../../../../components/PressableScale';
+import { Skeleton } from '../../../../components/Skeleton';
+import { ErrorState } from '../../../../components/ErrorState';
+import { HorseshoeH } from '../../../../components/icons/equine';
+import { haptic } from '../../../../lib/haptics';
+import { colors } from '../../../../lib/colors';
+import { useTheme, type ThemeColors } from '../../../../lib/theme';
+import { space, text, radius, weight, touch, shadow, brandShadow } from '../../../../styles/tokens';
+import { hora } from '../../../../lib/fechas';
+import { useToast } from '../../../../components/Toast';
+import { BottomSheet } from '../../../../components/BottomSheet';
 
-/** Un ícono por tipo de turno: la grilla se elige de un vistazo, sin leer. */
+/** Mismo mapa que el alta: la grilla se elige de un vistazo, sin leer. */
 const ICONO_TIPO: Record<string, LucideIcon> = {
   veterinario: Stethoscope,
   herrador: Hammer,
@@ -38,57 +42,86 @@ const ICONO_TIPO: Record<string, LucideIcon> = {
 
 const TIPOS = Object.keys(APPOINTMENT_TYPES);
 
-/**
- * Hasta acá el carrusel de fotos es lo más rápido para elegir. Pasado este
- * número, arrastrar buscando una foto se vuelve peor que buscar por nombre.
- */
+/** Igual que en el alta: pasado este número el carrusel se vuelve incómodo. */
 const TOPE_CARRUSEL = 6;
 
-export default function NuevoTurnoScreen() {
+/** 'YYYY-MM-DD' en hora LOCAL. `toISOString()` daría UTC y correría el día. */
+const aDia = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+export default function EditarTurnoScreen() {
+  const rawId = useLocalSearchParams<{ id: string }>().id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const s = useMemo(() => makeStyles(c), [c]);
   const { data: horses } = useHorses();
-  const create = useCreateAppointment();
+  const { data: turno, isLoading, isError, refetch } = useAppointment(id);
+  const update = useUpdateAppointment();
   const toast = useToast();
 
-  const [horseId, setHorseId] = useState(horses?.[0]?.id ?? '');
+  const [horseId, setHorseId] = useState('');
   const [pickerCaballo, setPickerCaballo] = useState(false);
   const [buscaCaballo, setBuscaCaballo] = useState('');
   const caballoElegido = (horses ?? []).find((h) => h.id === horseId);
   const [type, setType] = useState('veterinario');
   const [title, setTitle] = useState('');
   const [professional, setProfessional] = useState('');
-  // El aviso arranca en el default del backend: el caso común es querer que
-  // avise, no tener que acordarse de pedirlo.
   const [aviso, setAviso] = useState<number | null>(AVISO_DEFAULT);
   const [date, setDate] = useState('');
   const [timeDate, setTimeDate] = useState(() => { const d = new Date(); d.setHours(9, 0, 0, 0); return d; });
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [error, setError] = useState('');
+  const [precargado, setPrecargado] = useState(false);
 
   const timeStr = hora(timeDate.toISOString());
 
+  // Precargar una sola vez: si se repitiera con cada refetch, pisaría lo que el
+  // usuario está tipeando en el momento en que vuelve la consulta de fondo.
   useEffect(() => {
-    if (!horseId && horses?.[0]?.id) setHorseId(horses[0].id);
-  }, [horses]);
+    if (!turno || precargado) return;
+    const cuando = new Date(turno.scheduled_at);
+    setHorseId(turno.horse_id);
+    setType(turno.type);
+    setTitle(turno.title);
+    setProfessional(turno.professional ?? '');
+    // `undefined` es "el backend no mandó el campo" (turno viejo): vale el
+    // default. `null` sí es una elección del usuario: no avisar.
+    setAviso(turno.remind_hours_before === undefined ? AVISO_DEFAULT : turno.remind_hours_before);
+    setDate(aDia(cuando));
+    setTimeDate(cuando);
+    setPrecargado(true);
+  }, [turno, precargado]);
 
-  const isDirty = !!title.trim() || !!date || !!professional.trim();
-  // El título deja de ser obligatorio en la UI: si no se escribe nada, vale el
-  // nombre del tipo elegido ("Veterinario"). El backend igual recibe un title.
-  const canSubmit = !!horseId && !!date && !create.isPending;
+  /** La fecha+hora armada con lo que hay en el formulario. */
+  const fechaArmada = useMemo(() => {
+    if (!date) return null;
+    const dt = new Date(date + 'T12:00:00');
+    dt.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0);
+    return dt;
+  }, [date, timeDate]);
 
-  // Tras guardar con exito el back es programatico: el guardia no debe frenarlo.
+  const isDirty = !!turno && precargado && (
+    horseId !== turno.horse_id ||
+    type !== turno.type ||
+    title !== turno.title ||
+    professional !== (turno.professional ?? '') ||
+    aviso !== (turno.remind_hours_before === undefined ? AVISO_DEFAULT : turno.remind_hours_before) ||
+    (!!fechaArmada && fechaArmada.getTime() !== new Date(turno.scheduled_at).getTime())
+  );
+
+  const canSubmit = !!horseId && !!date && isDirty && !update.isPending;
+
+  // Tras guardar salimos con back: el guardia de descarte no debe frenarlo.
   const guardadoRef = useRef(false);
 
-  // Confirmar descarte solo si el formulario está sucio.
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove' as never, (e: any) => {
       if (!isDirty || guardadoRef.current) return;
       e.preventDefault();
-      Alert.alert('¿Descartar el turno?', 'Vas a perder lo que escribiste.', [
+      Alert.alert('¿Descartar los cambios?', 'Vas a perder lo que editaste.', [
         { text: 'Seguir editando', style: 'cancel' },
         { text: 'Descartar', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
       ]);
@@ -97,33 +130,61 @@ export default function NuevoTurnoScreen() {
   }, [navigation, isDirty]);
 
   const handleSubmit = async () => {
-    if (!horseId || !date) { setError('Elegí el caballo y el día'); haptic.error(); return; }
+    if (!id || !horseId || !fechaArmada) { setError('Elegí el caballo y el día'); haptic.error(); return; }
     setError('');
-    const dt = new Date(date + 'T12:00:00');
-    dt.setHours(timeDate.getHours(), timeDate.getMinutes());
     const titulo = title.trim() || APPOINTMENT_TYPES[type]?.label || 'Turno';
     try {
-      await create.mutateAsync({
+      // Se manda el turno completo, no un diff: son seis campos y el backend
+      // aplica solo lo que llega. Calcular el diff acá agregaba una fuente de
+      // errores sin ahorrar nada medible.
+      await update.mutateAsync({
+        id,
         horse_id: horseId,
         type,
         title: titulo,
-        scheduled_at: dt.toISOString(),
+        scheduled_at: fechaArmada.toISOString(),
         professional: professional.trim() || null,
         remind_hours_before: aviso,
       });
       haptic.success();
       guardadoRef.current = true;
-      toast.success('Turno agendado');
+      toast.success('Turno actualizado');
       router.back();
     } catch {
       haptic.error();
-      setError('No se pudo agendar el turno. Intentá de nuevo.');
+      setError('No se pudo guardar el turno. Intentá de nuevo.');
     }
   };
 
+  if (isError && !turno) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader showBack title="Editar turno" />
+        <ErrorState onRetry={() => refetch()} />
+      </View>
+    );
+  }
+
+  if (isLoading && !turno) {
+    return (
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <ScreenHeader showBack title="Editar turno" />
+        {/* Misma silueta que el formulario real: grilla, carrusel y dos filas. */}
+        <View style={s.esqueleto}>
+          <Skeleton height={17} width="35%" />
+          <Skeleton height={78} borderRadius={radius.button} />
+          <Skeleton height={17} width="45%" />
+          <Skeleton height={96} borderRadius={radius.button} />
+          <Skeleton height={touch.field} borderRadius={radius.field} />
+          <Skeleton height={touch.field} borderRadius={radius.field} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
-      <ScreenHeader scrollable showBack title="Nuevo turno" />
+      <ScreenHeader scrollable showBack title="Editar turno" />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.body}
@@ -132,7 +193,7 @@ export default function NuevoTurnoScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* ─── Para qué: grilla de tipos, la decisión que ordena todo lo demás ── */}
+        {/* ─── Para qué ───────────────────────────────────────────────────── */}
         <View style={s.seccion}>
           <Text style={s.rotulo}>Para qué</Text>
           <View style={s.grillaTipos}>
@@ -158,12 +219,7 @@ export default function NuevoTurnoScreen() {
           </View>
         </View>
 
-        {/* ─── Para qué caballo ───────────────────────────────────────────────
-            Con pocos caballos se eligen por la foto, que es lo más rápido.
-            Pasado ese número el carrusel obliga a arrastrar a ciegas buscando
-            una foto, así que se cambia por una fila que abre una hoja con
-            buscador: elegir entre veinte es un problema distinto al de elegir
-            entre tres. */}
+        {/* ─── Para qué caballo ───────────────────────────────────────────── */}
         <View style={s.seccion}>
           <Text style={s.rotulo}>Para qué caballo</Text>
 
@@ -182,7 +238,7 @@ export default function NuevoTurnoScreen() {
                 </View>
               )}
               <Text style={[s.elegirTexto, !caballoElegido && s.elegirPlaceholder]} numberOfLines={1}>
-                {caballoElegido?.name ?? 'Elegí un caballo'}
+                {caballoElegido?.name ?? turno?.horse?.name ?? 'Elegí un caballo'}
               </Text>
               <ChevronRight size={18} color={c.textFaint} strokeWidth={2.2} />
             </PressableScale>
@@ -203,9 +259,6 @@ export default function NuevoTurnoScreen() {
                     accessibilityState={{ selected: activo }}
                     accessibilityLabel={h.name}
                   >
-                    {/* El contenedor tiene que estirarse: la foto pide el 100%
-                        del ancho del padre, y si el padre se encoge al contenido
-                        la imagen se queda sin ancho y no se ve nada. */}
                     <View style={s.caballoFotoWrap}>
                       {h.image_url ? (
                         <AppImage source={{ uri: h.image_url }} style={s.caballoFoto} />
@@ -214,8 +267,6 @@ export default function NuevoTurnoScreen() {
                           <HorseshoeH size={26} color={c.textFaint} />
                         </View>
                       )}
-                      {/* El check dice "es este" sin discutirle el color a la
-                          foto; el borde duro competía con la imagen. */}
                       {activo && (
                         <View style={s.caballoCheck}>
                           <Check size={13} color={colors.white} strokeWidth={3} />
@@ -232,7 +283,7 @@ export default function NuevoTurnoScreen() {
           )}
         </View>
 
-        {/* ─── Cuándo ─────────────────────────────────────────────────────────── */}
+        {/* ─── Cuándo ─────────────────────────────────────────────────────── */}
         <View style={s.seccion}>
           <Text style={s.rotulo}>Cuándo</Text>
           <DatePicker label="Día" value={date} onChange={setDate} />
@@ -262,11 +313,7 @@ export default function NuevoTurnoScreen() {
           )}
         </View>
 
-        {/* ─── Aviso previo ───────────────────────────────────────────────────
-            Cuatro opciones fijas en vez de un número libre: nadie piensa el
-            recordatorio en horas, lo piensa en "un rato antes" o "el día
-            anterior". "No avisar" es una opción explícita, no la ausencia de
-            elección. */}
+        {/* ─── Aviso previo ───────────────────────────────────────────────── */}
         <View style={s.seccion}>
           <Text style={s.rotulo}>Avisarme</Text>
           <View style={s.filaAvisos}>
@@ -290,7 +337,6 @@ export default function NuevoTurnoScreen() {
           </View>
         </View>
 
-        {/* Campos libres, sin rótulo: el placeholder describe. Son opcionales. */}
         <TextInput
           style={s.input}
           value={professional}
@@ -313,23 +359,21 @@ export default function NuevoTurnoScreen() {
         {error ? <Text style={s.errorText}>{error}</Text> : null}
       </ScrollView>
 
-      {/* Un solo CTA verde: el acento de la pantalla vive acá y en ningún otro lado. */}
       <View style={[s.footer, { paddingBottom: insets.bottom + space[4] }]}>
         <PressableScale
           style={[s.submitBtn, !canSubmit && s.submitBtnOff]}
           disabled={!canSubmit}
           onPress={handleSubmit}
           accessibilityRole="button"
-          accessibilityLabel="Guardar el turno"
+          accessibilityLabel="Guardar los cambios"
         >
-          {create.isPending
+          {update.isPending
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.submitBtnText}>Guardar el turno</Text>
+            : <Text style={s.submitBtnText}>Guardar los cambios</Text>
           }
         </PressableScale>
       </View>
 
-      {/* Hoja de selección, solo para cuando hay muchos caballos. */}
       <BottomSheet
         visible={pickerCaballo}
         onClose={() => { setPickerCaballo(false); setBuscaCaballo(''); }}
@@ -388,13 +432,13 @@ export default function NuevoTurnoScreen() {
 const makeStyles = (c: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   body: { paddingHorizontal: space[4] + 2, paddingTop: space[2], paddingBottom: space[10], gap: space[6] },
+  esqueleto: { paddingHorizontal: space[4] + 2, paddingTop: space[3], gap: space[4] },
   seccion: { gap: space[3] },
   rotulo: { fontSize: text.sm, fontWeight: weight.semibold, color: c.textFaint },
 
   /* ─── Grilla de tipos ──────────────────────────────────────────────────── */
   grillaTipos: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 1 },
   tipo: {
-    // Cuatro por fila: (100% - 3 gaps) / 4. El gap es 9, así que 25% menos ~7.
     width: '23%',
     height: 78, borderRadius: radius.button,
     alignItems: 'center', justifyContent: 'center', gap: space[1] + 3,
@@ -402,7 +446,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surface,
     ...(c.isDark ? {} : shadow.sm),
   },
-  // Selección invertida (negro), no verde: el verde es guardar.
   tipoActivo: { backgroundColor: c.text },
   tipoTexto: { fontSize: text.xs, fontWeight: weight.medium, color: c.textMuted },
   tipoTextoActivo: { color: c.bg, fontWeight: weight.semibold },
@@ -414,8 +457,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center', backgroundColor: c.surface,
     ...(c.isDark ? {} : shadow.sm),
   },
-  // Anillo verde y fino, no negro y grueso: el negro duro pegado a una foto se
-  // lee como un error de recorte, y el grosor movía la tarjeta un pixel.
   caballoActivo: { borderWidth: 2, borderColor: c.brand, padding: space[2] },
   caballoCheck: {
     position: 'absolute', top: -5, right: -5,
@@ -423,8 +464,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-
-  /* Fila selectora, para cuando hay demasiados caballos para un carrusel. */
   elegirCaballo: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
     minHeight: touch.field, paddingHorizontal: space[4],
@@ -434,7 +473,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   elegirTexto: { flex: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
   elegirPlaceholder: { fontWeight: weight.regular, color: c.textFaint },
 
-  /* Hoja de selección */
   buscador: {
     flexDirection: 'row', alignItems: 'center', gap: space[2] + 2,
     height: touch.min, borderRadius: radius.field,
@@ -471,7 +509,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.field, justifyContent: 'center',
     backgroundColor: c.surfaceAlt,
   },
-  // Misma inversión que la grilla de tipos: el seleccionado es negro, no verde.
   avisoActivo: { backgroundColor: c.text },
   avisoTexto: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
   avisoTextoActivo: { color: c.bg, fontWeight: weight.semibold },

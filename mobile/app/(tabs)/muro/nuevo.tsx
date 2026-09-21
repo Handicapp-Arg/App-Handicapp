@@ -325,7 +325,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center',
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { fontSize: text.sm + 1, fontWeight: weight.semibold, color: colors.white, fontFamily: fontFamily.semibold },
+  ctaText: { fontSize: text.sm + 1, fontWeight: weight.semibold, color: colors.white },
 
   typeRow: { flexDirection: 'row', gap: space[2] },
   // El chip activo se marca con superficie neutra + texto pleno (el verde es del CTA).
@@ -341,7 +341,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   composerRow: { flexDirection: 'row', gap: space[3] + 1, alignItems: 'flex-start' },
   composerInput: {
     flex: 1, fontSize: text.md + 1, color: c.text, minHeight: 120,
-    paddingTop: space[2] + 2, fontFamily: fontFamily.regular,
+    paddingTop: space[2] + 2,
   },
 
   mediaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] + 2 },
@@ -352,7 +352,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   mediaAgregar: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center', gap: 7 },
-  mediaAgregarText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted, fontFamily: fontFamily.medium },
+  mediaAgregarText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
 
   filaOpcion: {
     flexDirection: 'row', alignItems: 'center', gap: space[3],
@@ -364,8 +364,8 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center',
   },
   filaThumbImg: { width: '100%', height: '100%' },
-  filaLabel: { flex: 1, fontSize: text.md, color: c.textMuted, fontFamily: fontFamily.regular },
-  filaValor: { fontSize: text.md, fontWeight: weight.semibold, color: c.text, fontFamily: fontFamily.semibold, maxWidth: 160 },
+  filaLabel: { flex: 1, fontSize: text.md, color: c.textMuted },
+  filaValor: { fontSize: text.md, fontWeight: weight.semibold, color: c.text, maxWidth: 160 },
 
   barra: { flexDirection: 'row', gap: space[2] + 2, paddingHorizontal: space[4], paddingTop: space[2] },
   barraBtn: {

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import {
   FileText, Dumbbell, Syringe, Flag, Receipt,
-  Wheat, Hammer, Activity, Wrench, Truck, Package, type LucideIcon,
+  Wheat, Hammer, Activity, Truck, Package, type LucideIcon,
 } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 
@@ -36,13 +36,18 @@ const EVENT_TYPE_OPTS = [
 
 type EventType = (typeof EVENT_TYPE_OPTS)[number]['key'];
 
-/** Mismas categorías que `eventos/nuevo.tsx`: el gasto se carga igual desde los dos lados. */
+/**
+ * Mismas categorías que `eventos/nuevo.tsx`: el gasto se carga igual desde los
+ * dos lados. Son seis y no siete para que la grilla de tres cierre en dos filas
+ * parejas; "Mantenimiento" se sacó porque se superponía con "Otros" y dejaba
+ * una celda suelta. El valor sigue existiendo en el backend, así que los gastos
+ * viejos se siguen viendo con su nombre en Finanzas.
+ */
 const EXPENSE_CATEGORIES: { value: string; label: string; Icon: LucideIcon }[] = [
   { value: 'alimentacion',  label: 'Alimento',      Icon: Wheat },
   { value: 'veterinario',   label: 'Veterinario',   Icon: Syringe },
   { value: 'herradero',     label: 'Herradero',     Icon: Hammer },
   { value: 'entrenamiento', label: 'Entrenamiento', Icon: Activity },
-  { value: 'mantenimiento', label: 'Mantenimiento', Icon: Wrench },
   { value: 'transporte',    label: 'Transporte',    Icon: Truck },
   { value: 'otros',         label: 'Otros',         Icon: Package },
 ];
@@ -77,8 +82,10 @@ export default function EventoNuevoScreen() {
 
   // `tipo=gasto` en la ruta abre el formulario ya en gasto (viene de Finanzas).
   const tipoParam = useLocalSearchParams<{ tipo?: string }>().tipo;
-  const tipoInicial: EventType =
-    EVENT_TYPE_OPTS.some((t) => t.key === tipoParam) ? (tipoParam as EventType) : 'nota';
+  // Si el origen ya fijó el tipo (Finanzas abre en "gasto"), la grilla "Qué
+  // pasó" no aporta nada y empuja el formulario hacia abajo: no se muestra.
+  const tipoDesdeOrigen = EVENT_TYPE_OPTS.some((t) => t.key === tipoParam);
+  const tipoInicial: EventType = tipoDesdeOrigen ? (tipoParam as EventType) : 'nota';
 
   const [type, setType] = useState<EventType>(tipoInicial);
   const [description, setDescription] = useState('');
@@ -179,6 +186,7 @@ export default function EventoNuevoScreen() {
         )}
 
         {/* ─── Qué pasó: el tipo se elige de un vistazo, no en una hoja ─── */}
+        {!tipoDesdeOrigen && (
         <View>
           <Text style={s.rotulo}>Qué pasó</Text>
           <View style={s.grilla}>
@@ -202,6 +210,7 @@ export default function EventoNuevoScreen() {
             })}
           </View>
         </View>
+        )}
 
         {/* ─── De qué es el gasto ─── */}
         {esGasto && (

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Linking } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Users, XCircle, Check, Home } from 'lucide-react-native';
+import { User, Users, XCircle, Check, Home, Phone } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 
 import {
@@ -25,6 +25,7 @@ import { Avatar } from '../../../../components/Avatar';
 import { EmptyState } from '../../../../components/EmptyState';
 import { ErrorState } from '../../../../components/ErrorState';
 import { Skeleton } from '../../../../components/Skeleton';
+import { VetVerifiedBadge, isVetVerified } from '../../../../components/VerifiedBadge';
 
 export default function EquipoScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -78,6 +79,14 @@ export default function EquipoScreen() {
   }, [showTransfer]);
 
   const orgRoleLabel: Record<string, string> = { jinete: 'Jinete', peon: 'Peón', encargado: 'Encargado' };
+
+  /** Marcar desde la ficha: el teléfono es el dato que se usa, no el mail. */
+  const llamar = (phone: string) => {
+    haptic.light();
+    Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => {
+      toast.error('No se pudo abrir el teléfono.');
+    });
+  };
 
   const handleRemoveVet = (vetUserId: string, vetName: string) => {
     Alert.alert('Quitar veterinario', `¿Quitás a ${vetName} del acceso a ${horse?.name}?`, [
@@ -190,9 +199,27 @@ export default function EquipoScreen() {
               <Animated.View key={v.id} entering={entradaFila(i)} style={[s.persona, i < arr.length - 1 && s.personaBorde]}>
                 <Avatar name={v.user.name} size={48} />
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={s.personaNombre} numberOfLines={1}>{v.user.name}</Text>
-                  <Text style={s.personaSub} numberOfLines={1}>{v.user.email}</Text>
+                  {/* Nombre + sello: el check azul solo si la matrícula está aprobada. */}
+                  <View style={s.nombreRow}>
+                    <Text style={s.personaNombre} numberOfLines={1}>{v.user.name}</Text>
+                    {isVetVerified(v.user) && <VetVerifiedBadge />}
+                  </View>
+                  {/* Lo que identifica a un veterinario es la matrícula, no el mail. */}
+                  <Text style={s.personaSub} numberOfLines={1}>
+                    {v.user.vet_license_number ? `Mat. ${v.user.vet_license_number}` : 'Sin matrícula cargada'}
+                  </Text>
                 </View>
+                {/* Llamar: solo si hay teléfono, si no el botón no tendría a dónde ir. */}
+                {!!v.user.phone && (
+                  <PressableScale
+                    style={s.llamar}
+                    onPress={() => llamar(v.user.phone as string)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Llamar a ${v.user.name}`}
+                  >
+                    <Phone size={17} color={c.brand} strokeWidth={2} />
+                  </PressableScale>
+                )}
                 {can('horses', 'update') && (
                   <PressableScale
                     onPress={() => handleRemoveVet(v.user_id, v.user.name)}
@@ -237,7 +264,10 @@ export default function EquipoScreen() {
                 <Avatar name={m.user.name} size={48} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.personaNombre} numberOfLines={1}>{m.user.name}</Text>
-                  <Text style={s.personaSub} numberOfLines={1}>{m.user.email}</Text>
+                  {/* El rol es lo que dice para qué está esta persona; el mail no. */}
+                  <Text style={s.personaSub} numberOfLines={1}>
+                    {orgRoleLabel[m.user.role] ?? m.user.role}
+                  </Text>
                 </View>
                 {canManageTeam && (
                   <PressableScale
@@ -477,7 +507,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   lista: { paddingHorizontal: space[4] },
   persona: { flexDirection: 'row', alignItems: 'center', gap: space[3] + 2, paddingVertical: space[3] + 2 },
   personaBorde: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
-  personaNombre: { fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  nombreRow: { flexDirection: 'row', alignItems: 'center', gap: space[1] + 2 },
+  personaNombre: { fontSize: text.md, fontWeight: weight.semibold, color: c.text, flexShrink: 1 },
+  llamar: {
+    width: touch.min, height: touch.min, borderRadius: radius.full,
+    backgroundColor: c.brandSoft, alignItems: 'center', justifyContent: 'center',
+  },
   personaSub: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
 
   /* La única tarjeta con superficie: el lugar donde vive el caballo. */

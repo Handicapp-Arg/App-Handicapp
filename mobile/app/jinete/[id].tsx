@@ -410,7 +410,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   horseName: {
     flex: 1,
     fontSize: text.xl,
-    fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: c.text,
   },
@@ -420,7 +419,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: text.lg,
-    fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: c.text,
   },
@@ -428,7 +426,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: text.sm,
     marginTop: space[4],
     marginBottom: space[2],
-    fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.textMuted,
   },
@@ -458,7 +455,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   chipText: {
     fontSize: text.md,
-    fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.text,
   },
@@ -474,7 +470,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
     paddingHorizontal: space[4],
     fontSize: text.lg,
-    fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.text,
   },
@@ -499,7 +494,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderColor: c.borderStrong, borderStyle: 'dashed', justifyContent: 'center',
     alignItems: 'center', gap: 2, backgroundColor: c.surfaceAlt,
   },
-  photoAddText: { fontSize: text.xs, color: c.textFaint, fontFamily: fontFamily.semibold, fontWeight: weight.semibold },
+  photoAddText: { fontSize: text.xs, color: c.textFaint, fontWeight: weight.semibold },
   labelOpt: { color: c.textFaint, fontWeight: weight.regular },
   photoBtnFull: {
     flexDirection: 'row',
@@ -513,7 +508,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     borderStyle: 'dashed',
     backgroundColor: c.surfaceAlt,
   },
-  photoBtnFullText: { fontSize: text.base, color: c.brand, fontFamily: fontFamily.semibold, fontWeight: weight.semibold },
+  photoBtnFullText: { fontSize: text.base, color: c.brand, fontWeight: weight.semibold },
   saveBtn: {
     marginTop: space[5],
     minHeight: touch.button,
@@ -526,7 +521,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   saveText: {
     fontSize: text.lg,
-    fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: colors.white,
   },
@@ -539,7 +533,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   summary: {
     fontSize: text.sm,
-    fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
     color: c.brand,
   },
@@ -562,7 +555,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   histDate: {
     fontSize: text.sm,
-    fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.textMuted,
     textTransform: 'capitalize',
@@ -570,14 +562,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   histBody: { flex: 1 },
   histDiscipline: {
     fontSize: text.base,
-    fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.text,
   },
   histMeta: {
     fontSize: text.sm,
     marginTop: 1,
-    fontFamily: fontFamily.medium,
     fontWeight: weight.medium,
     color: c.textMuted,
   },

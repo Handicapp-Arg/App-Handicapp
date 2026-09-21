@@ -39,6 +39,17 @@ export class ServiceAppointment {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  // Quién atiende el turno (vet, herrador, etc.). Texto libre a propósito: la
+  // mayoría de los profesionales no son usuarios de la app, así que exigir una
+  // relación dejaría el dato sin poder cargarse.
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  professional: string | null;
+
+  // Cuántas horas antes avisar. Default 24 para que los turnos ya existentes
+  // conserven el comportamiento histórico; NULL (o 0) significa "no avisar".
+  @Column({ type: 'int', nullable: true, default: 24 })
+  remind_hours_before: number | null;
+
   @Column({ default: false })
   completed: boolean;
 

@@ -5,7 +5,7 @@ import {
 import Animated from 'react-native-reanimated';
 import { useScrollToTop } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { Check, List, CalendarDays, Trash2, Plus } from 'lucide-react-native';
+import { Check, List, CalendarDays, Trash2, Plus, Pencil } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAgenda, useCompleteAppointment, useDeleteAppointment, APPOINTMENT_TYPES, type ServiceAppointment } from '../../../hooks/use-agenda';
 import { useHorses } from '../../../hooks/use-horses';
@@ -22,6 +22,7 @@ import { entradaLista } from '../../../styles/motion';
 import { hora, fechaHumana, diaLargo } from '../../../lib/fechas';
 import { ActionSheet } from '../../../components/ActionSheet';
 import { SwipeableRow } from '../../../components/SwipeableRow';
+import { Routes, nav } from '../../../lib/routes';
 
 /**
  * El color de la barrita de cada turno sale del THEME, no del hex que trae
@@ -88,6 +89,10 @@ const FilaTurno = memo(function FilaTurno({
 
   const abrir = useCallback(() => { haptic.selection(); onAbrirMenu(appt); }, [appt, onAbrirMenu]);
 
+  const subtitulo = [appt.horse?.name, appt.professional?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+
   // El ActionSheet NO vive acá: uno por fila significaba montar un BottomSheet
   // por turno (5 useSharedValue, 2 useAnimatedStyle y un Gesture.Pan cada uno)
   // aunque estuviera cerrado. Ahora hay UNO solo a nivel de pantalla.
@@ -104,11 +109,13 @@ const FilaTurno = memo(function FilaTurno({
 
         <View style={s.filaTexto}>
           <Text style={s.filaTitulo} numberOfLines={1}>{appt.title}</Text>
-          {/* De qué caballo es el turno. En la lista de caballos el subtítulo
-              sobraba porque el nombre ya identificaba la fila; acá es al revés:
-              sin esto, "Veterinario a las 14:30" no dice a cuál de tus caballos.
-              Es la pregunta central de la pantalla, no un adorno. */}
-          {!!appt.horse && <Text style={s.filaSub} numberOfLines={1}>{appt.horse.name}</Text>}
+          {/* De qué caballo es el turno y, si se cargó, con quién:
+              "Malbec · Dr. García". El separador aparece SOLO cuando hay las
+              dos partes; los turnos viejos no tienen profesional y no pueden
+              quedar con un " · " colgando.
+              Sin esta línea, "Veterinario a las 14:30" no dice a cuál de tus
+              caballos: es la pregunta central de la pantalla, no un adorno. */}
+          {!!subtitulo && <Text style={s.filaSub} numberOfLines={1}>{subtitulo}</Text>}
         </View>
 
         {/* La foto va al final, como sello: si se intercala antes del texto,
@@ -221,7 +228,14 @@ export default function AgendaScreen() {
   const abrirMenu = useCallback((appt: ServiceAppointment) => setTurnoAbierto(appt), []);
   const cerrarMenu = useCallback(() => setTurnoAbierto(null), []);
 
-  const irANuevo = () => { haptic.medium(); router.push('/(tabs)/agenda/nuevo' as never); };
+  const irANuevo = () => { haptic.medium(); nav.push(router, Routes.agendaNuevo); };
+
+  // El ActionSheet ya cierra la hoja y recién después dispara la acción, así
+  // que acá solo queda navegar: la transición del stack no compite con el
+  // fondo oscuro de la hoja.
+  const irAEditar = useCallback((appt: ServiceAppointment) => {
+    nav.push(router, Routes.agendaEditar(appt.id));
+  }, [router]);
 
   /**
    * `renderItem` estable: si fuera una closure nueva en cada render, la
@@ -403,6 +417,11 @@ export default function AgendaScreen() {
             Icon: Check,
             onPress: () => handleComplete(turnoAbierto.id),
           }]),
+          {
+            label: 'Editar turno',
+            Icon: Pencil,
+            onPress: () => irAEditar(turnoAbierto),
+          },
           {
             label: 'Eliminar turno',
             Icon: Trash2,

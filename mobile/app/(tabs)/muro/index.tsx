@@ -569,9 +569,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filaThumbMasText: { fontSize: text.xs, fontWeight: weight.bold, color: colors.white },
   filaTexto: { flex: 1, minWidth: 0, paddingTop: 2 },
   filaTituloRow: { flexDirection: 'row', alignItems: 'center' },
-  filaContenido: { flex: 1, fontSize: text.base, color: c.text, lineHeight: 21, fontFamily: fontFamily.regular },
+  filaContenido: { flex: 1, fontSize: text.base, color: c.text, lineHeight: 21 },
   filaMetaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 5 },
-  filaMeta: { fontSize: text.xs, color: c.textFaint, fontFamily: fontFamily.regular },
+  filaMeta: { fontSize: text.xs, color: c.textFaint },
   pinnedBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: c.warningSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full,

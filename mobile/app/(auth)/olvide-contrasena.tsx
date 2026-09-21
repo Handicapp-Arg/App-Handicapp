@@ -13,7 +13,6 @@ import { haptic } from '../../lib/haptics';
 import { useTheme, type ThemeColors } from '../../lib/theme';
 import { AUTH_DARK as D, AuthDarkBackground } from '../../components/auth-dark';
 import { PressableScale } from '../../components/PressableScale';
-import { fontFamily } from '../../styles/fonts';
 
 export default function OlvideContrasenaScreen() {
   const router = useRouter();
@@ -181,7 +180,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   body: { flexGrow: 1, paddingTop: 30 },
 
   title: {
-    fontSize: 30, lineHeight: 34, fontWeight: '700', fontFamily: fontFamily.bold,
+    fontSize: 30, lineHeight: 34, fontWeight: '700',
     letterSpacing: -1.1, color: D.text,
   },
   subtitle: { marginTop: 14, fontSize: 16, lineHeight: 23, color: D.textMuted },
@@ -213,7 +212,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.18, shadowRadius: 14, elevation: 4,
   },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: colors.white, fontSize: 17, fontWeight: '600', fontFamily: fontFamily.semibold },
+  btnText: { color: colors.white, fontSize: 17, fontWeight: '600' },
 
   ayuda: {
     marginTop: 26, backgroundColor: D.surface, borderRadius: 20,
@@ -223,10 +222,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     width: 40, height: 40, borderRadius: 14, backgroundColor: D.successBg,
     alignItems: 'center', justifyContent: 'center',
   },
-  ayudaTitulo: { fontSize: 16, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.text },
+  ayudaTitulo: { fontSize: 16, fontWeight: '600', color: D.text },
   ayudaTexto: { fontSize: 14, lineHeight: 20, color: D.textMuted, marginTop: 3 },
 
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingTop: 26, paddingBottom: 16 },
   footerText: { fontSize: 15, color: D.textMuted },
-  link: { fontSize: 15, fontWeight: '600', fontFamily: fontFamily.semibold, color: D.brand },
+  link: { fontSize: 15, fontWeight: '600', color: D.brand },
 });

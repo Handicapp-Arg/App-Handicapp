@@ -75,6 +75,19 @@ export default function FinanzasScreen() {
     return { barras: [...meses].reverse(), max, delta };
   }, [financial]);
 
+  /**
+   * Gastado en el año en curso. El backend manda hasta 24 meses en `monthly`
+   * (clave 'YYYY-MM'), así que el año calendario se suma acá y no hace falta
+   * un endpoint nuevo. Es lo que dice el hero: el acumulado histórico no le
+   * sirve a nadie para decidir nada.
+   */
+  const gastadoEsteAnio = useMemo(() => {
+    const anio = String(new Date().getFullYear());
+    return (financial?.monthly ?? [])
+      .filter((m) => m.month.startsWith(anio))
+      .reduce((acc, m) => acc + m.total, 0);
+  }, [financial]);
+
   if (isHorseError && !horse) {
     return (
       <View style={[s.root, { paddingTop: insets.top }]}>
@@ -125,9 +138,9 @@ export default function FinanzasScreen() {
           {/* ─── Hero: la tarjeta de tinta con el único número que importa ─── */}
           <Animated.View entering={entradaFila(0)} style={s.heroWrap}>
             <View style={s.hero}>
-              <Text style={s.heroLabel}>Total acumulado</Text>
+              <Text style={s.heroLabel}>Gastado este año</Text>
               <Text style={s.heroValor} numberOfLines={1} adjustsFontSizeToFit>
-                {formatMoney(financial.total)}
+                {formatMoney(gastadoEsteAnio)}
               </Text>
 
               <View style={s.heroMetaRow}>

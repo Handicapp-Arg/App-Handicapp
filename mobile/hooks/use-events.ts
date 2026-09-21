@@ -100,6 +100,8 @@ export function useCreateEvent() {
   return useMutation({
     mutationFn: async (payload: {
       type: string; description: string; date: string; horse_id: string;
+      /** "HH:MM". Opcional en el backend, pero el formulario la manda siempre. */
+      event_time?: string;
       amount?: string; expense_category?: string; currency?: string; photoUris?: string[];
     }) => {
       const { photoUris, ...fields } = payload;

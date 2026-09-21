@@ -9,11 +9,16 @@ import * as ImagePicker from 'expo-image-picker';
 import { ShieldCheck, Camera, ChevronRight } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 
-import { useHorse, useUpdateHorse, useDeleteHorse, useUploadHorseImage } from '../../../../hooks/use-horses';
+import {
+  useHorse, useUpdateHorse, useDeleteHorse, useUploadHorseImage,
+  useCatalogItems, useEstablecimientos,
+} from '../../../../hooks/use-horses';
 import { useAuth } from '../../../../lib/auth';
 import { DatePicker } from '../../../../components/DatePicker';
 import { ScreenHeader } from '../../../../components/ScreenHeader';
 import { PressableScale } from '../../../../components/PressableScale';
+import { FilaSelector } from '../../../../components/FilaSelector';
+import { ActionSheet, type Accion } from '../../../../components/ActionSheet';
 import { AppImage } from '../../../../components/AppImage';
 import { useToast } from '../../../../components/Toast';
 import { Skeleton } from '../../../../components/Skeleton';
@@ -26,6 +31,16 @@ import { Routes, nav } from '../../../../lib/routes';
 import { useCommonStyles } from '../../../../styles/common';
 
 const FOTO = 96;
+
+/** Las tres opciones que acepta el backend para `sex`. */
+const SEXOS: { value: 'macho' | 'hembra' | 'castrado'; label: string }[] = [
+  { value: 'macho', label: 'Macho' },
+  { value: 'hembra', label: 'Hembra' },
+  { value: 'castrado', label: 'Castrado' },
+];
+
+/** Qué hoja de opciones está abierta (una sola a la vez). */
+type Hoja = 'disciplina' | 'sexo' | 'donde' | null;
 
 export default function EditarCaballoScreen() {
   const rawId = useLocalSearchParams<{ id: string }>().id;
@@ -44,9 +59,18 @@ export default function EditarCaballoScreen() {
   const deleteHorse = useDeleteHorse();
   const uploadImage = useUploadHorseImage();
 
+  // Catálogos de las filas de selección. Solo se piden acá, donde se editan.
+  const { data: disciplinas } = useCatalogItems('activity');
+  const { data: establecimientos } = useEstablecimientos();
+
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [microchip, setMicrochip] = useState('');
+  const [activityId, setActivityId] = useState<string | null>(null);
+  const [sex, setSex] = useState<'macho' | 'hembra' | 'castrado' | null>(null);
+  const [color, setColor] = useState('');
+  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [hoja, setHoja] = useState<Hoja>(null);
   const [error, setError] = useState('');
   const [precargado, setPrecargado] = useState(false);
   // Al guardar con éxito salimos con back: el guardia de descarte no debe interceptar.
@@ -58,13 +82,31 @@ export default function EditarCaballoScreen() {
     setName(horse.name);
     setBirthDate(horse.birth_date ?? '');
     setMicrochip(horse.microchip ?? '');
+    setActivityId(horse.activity_id ?? null);
+    setSex(horse.sex ?? null);
+    setColor(horse.color ?? '');
+    setEstablishmentId(horse.establishment_id ?? null);
     setPrecargado(true);
   }, [horse, precargado]);
+
+  // El nombre de la disciplina puede venir en la relación (`horse.activity`)
+  // antes de que llegue el catálogo: así la fila nunca aparece vacía.
+  const disciplinaLabel =
+    disciplinas?.find((d) => d.id === activityId)?.name
+    ?? (activityId && activityId === horse?.activity_id ? horse?.activity?.name : undefined);
+  const dondeLabel =
+    establecimientos?.find((e) => e.id === establishmentId)?.name
+    ?? (establishmentId && establishmentId === horse?.establishment_id ? horse?.establishment?.name : undefined);
+  const sexoLabel = SEXOS.find((s2) => s2.value === sex)?.label;
 
   const isDirty = !!horse && precargado && (
     name !== horse.name ||
     birthDate !== (horse.birth_date ?? '') ||
-    microchip !== (horse.microchip ?? '')
+    microchip !== (horse.microchip ?? '') ||
+    activityId !== (horse.activity_id ?? null) ||
+    sex !== (horse.sex ?? null) ||
+    color !== (horse.color ?? '') ||
+    establishmentId !== (horse.establishment_id ?? null)
   );
   const canSubmit = !!name.trim() && isDirty && !updateHorse.isPending;
 
@@ -85,7 +127,16 @@ export default function EditarCaballoScreen() {
     if (!name.trim()) { setError('El nombre es obligatorio'); haptic.error(); return; }
     setError('');
     try {
-      await updateHorse.mutateAsync({ id: horse.id, name: name.trim(), birth_date: birthDate || null, microchip: microchip || null });
+      await updateHorse.mutateAsync({
+        id: horse.id,
+        name: name.trim(),
+        birth_date: birthDate || null,
+        microchip: microchip || null,
+        activity_id: activityId,
+        sex,
+        color: color.trim() || null,
+        establishment_id: establishmentId,
+      });
       haptic.success();
       toast.success('Cambios guardados');
       guardado.current = true;
@@ -153,7 +204,7 @@ export default function EditarCaballoScreen() {
           </View>
         </View>
         <View style={{ paddingHorizontal: space[4], marginTop: space[6], gap: space[4] }}>
-          {[1, 2, 3].map((i) => <Skeleton key={i} height={touch.field} borderRadius={radius.field} />)}
+          {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height={touch.field} borderRadius={radius.field} />)}
         </View>
       </View>
     );
@@ -219,6 +270,42 @@ export default function EditarCaballoScreen() {
           returnKeyType="done"
         />
 
+        {/* ─── Lo que define al caballo ───────────────────────────────────────
+            Disciplina, sexo y dónde está van como filas de selección (patrón
+            Ajustes de iOS) porque su valor sale de una lista cerrada; el
+            pelaje es texto libre, así que sigue siendo un campo. */}
+        <View style={s.grupo}>
+          <FilaSelector
+            primera
+            label="Disciplina"
+            valor={disciplinaLabel ?? undefined}
+            placeholder="Sin definir"
+            onPress={() => setHoja('disciplina')}
+          />
+          <FilaSelector
+            label="Sexo"
+            valor={sexoLabel}
+            placeholder="Sin definir"
+            onPress={() => setHoja('sexo')}
+          />
+          <FilaSelector
+            label="Dónde está"
+            valor={dondeLabel ?? undefined}
+            placeholder="Sin definir"
+            onPress={() => setHoja('donde')}
+          />
+        </View>
+
+        <TextInput
+          style={inputStyle.base}
+          value={color}
+          onChangeText={setColor}
+          placeholder="Pelaje (zaino, alazán, tordillo…)"
+          placeholderTextColor={c.textFaint}
+          autoCapitalize="words"
+          returnKeyType="done"
+        />
+
         {/* ─── Padrón ───────────────────────────────────────────────────────
             Si ya está vinculado, muestra el número. Si no, ofrece vincularlo:
             el alta manda a esa pantalla al crear el caballo, pero un caballo
@@ -280,6 +367,37 @@ export default function EditarCaballoScreen() {
             : <Text style={s.ctaText}>Guardar los cambios</Text>}
         </PressableScale>
       </View>
+
+      {/* ─── Hojas de opciones ───
+          "Sin definir" primero en cada una: un caballo puede no tener el dato,
+          y tiene que poder volver a vaciarse si se cargó por error. */}
+      <ActionSheet
+        visible={hoja === 'disciplina'}
+        onClose={() => setHoja(null)}
+        title="Disciplina"
+        acciones={[
+          { label: 'Sin definir', onPress: () => setActivityId(null) },
+          ...(disciplinas ?? []).map((d): Accion => ({ label: d.name, onPress: () => setActivityId(d.id) })),
+        ]}
+      />
+      <ActionSheet
+        visible={hoja === 'sexo'}
+        onClose={() => setHoja(null)}
+        title="Sexo"
+        acciones={[
+          { label: 'Sin definir', onPress: () => setSex(null) },
+          ...SEXOS.map((op): Accion => ({ label: op.label, onPress: () => setSex(op.value) })),
+        ]}
+      />
+      <ActionSheet
+        visible={hoja === 'donde'}
+        onClose={() => setHoja(null)}
+        title="Dónde está"
+        acciones={[
+          { label: 'Sin definir', onPress: () => setEstablishmentId(null) },
+          ...(establecimientos ?? []).map((e): Accion => ({ label: e.name, onPress: () => setEstablishmentId(e.id) })),
+        ]}
+      />
     </View>
   );
 }
@@ -298,6 +416,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   fotoBtnText: { fontSize: text.base - 1, fontWeight: weight.semibold, color: c.text },
   fotoAyuda: { fontSize: text.sm - 1, color: c.textFaint },
+
+  /* Grupo de filas de selección: una sola caja, líneas finas adentro. */
+  grupo: {
+    backgroundColor: c.surface, borderRadius: radius.button,
+    paddingHorizontal: space[4] - 2,
+    ...(c.isDark ? {} : shadow.md),
+  },
 
   /* Padrón: es una tarjeta de contenido real, así que sí lleva superficie. */
   padron: {

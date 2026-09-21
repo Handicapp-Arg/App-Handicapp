@@ -13,6 +13,8 @@ export const Routes = {
   tabsEventos:         '/(tabs)/eventos',
   eventoNuevo:         '/(tabs)/eventos/nuevo',
   tabsAgenda:          '/(tabs)/agenda',
+  agendaNuevo:         '/(tabs)/agenda/nuevo',
+  agendaEditar:        (id: string) => `/(tabs)/agenda/${id}/editar`,
   tabsFacturacion:     '/(tabs)/facturacion',
   facturacionNueva:    '/(tabs)/facturacion/nueva',
   factura:             (id: string) => `/(tabs)/facturacion/${id}`,

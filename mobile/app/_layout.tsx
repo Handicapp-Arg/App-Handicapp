@@ -1,6 +1,12 @@
+// Primera sentencia del layout raíz, antes de que se dibuje nada: fija Inter
+// como tipografía por defecto de TODO `<Text>` y `<TextInput>` de la app.
+// El porqué y el cómo, en styles/fuente-global.ts.
+import { aplicarFuenteGlobal } from '../styles/fuente-global';
+aplicarFuenteGlobal();
+
 import * as Sentry from '@sentry/react-native';
 import { Stack } from 'expo-router';
-import { Platform, Text, TextInput } from 'react-native';
+import { Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
@@ -19,12 +25,9 @@ import { configurarRed } from '../lib/network';
 // dibujo del logo— y el salto entre ambas se veía como una transición rara.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Accesibilidad: la app acompaña el tamaño de letra del sistema, con un tope
-// (1.35x) para que los tamaños extremos no rompan filas y botones fijos.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(Text as any).defaultProps = { ...(Text as any).defaultProps, maxFontSizeMultiplier: 1.35 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, maxFontSizeMultiplier: 1.35 };
+// Accesibilidad: la app acompaña el tamaño de letra del sistema con un tope de
+// 1.35x. Antes se hacía con `Text.defaultProps`, que React 19 ya no aplica en
+// componentes de función; ahora lo pone el mismo envoltorio de fuente-global.
 SplashScreen.setOptions({ duration: 320, fade: true });
 import { OfflineBanner } from '../components/OfflineBanner';
 import { IngresoCurtain } from '../components/IngresoCurtain';

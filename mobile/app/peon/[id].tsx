@@ -250,7 +250,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   horseName: {
     marginTop: space[3],
     fontSize: 32,
-    fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: c.text,
   },
@@ -297,14 +296,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   photoBtnText: {
     fontSize: 21,
-    fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: colors.white,
   },
   btnEmoji: { fontSize: 42, marginBottom: space[2] },
   btnLabel: {
     fontSize: 19,
-    fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.text,
     textAlign: 'center',
@@ -316,7 +313,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4],
     alignItems: 'center',
   },
-  reasonText: { fontSize: 22, fontFamily: fontFamily.bold, fontWeight: weight.bold, color: c.text },
+  reasonText: { fontSize: 22, fontWeight: weight.bold, color: c.text },
   noteInput: {
     backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
@@ -333,5 +330,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginTop: space[1],
   },
-  saveText: { fontSize: 22, fontFamily: fontFamily.bold, fontWeight: weight.bold, color: colors.white },
+  saveText: { fontSize: 22, fontWeight: weight.bold, color: colors.white },
 });

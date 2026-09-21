@@ -161,7 +161,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   headerBtnPrimary: { backgroundColor: c.surfaceAlt },
   headerBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.borderStrong },
   headerBtnDisabled: { opacity: 0.4 },
-  headerBtnText: { fontSize: text.sm, fontWeight: weight.medium, fontFamily: fontFamily.medium },
+  headerBtnText: { fontSize: text.sm, fontWeight: weight.medium },
   headerBtnTextPrimary: { color: c.text },
   headerBtnTextGhost: { color: c.text },
 });

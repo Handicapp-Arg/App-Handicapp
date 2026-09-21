@@ -48,11 +48,20 @@ export const makeMedicalTypeColors = (c: {
   sanidad:         { bg: c.surfaceAlt,  text: c.textMuted },
 });
 
-// Libreta sanitaria: enfermedades oficiales SENASA con su vigencia (días).
+/**
+ * Libreta sanitaria: enfermedades oficiales SENASA con su vigencia (días).
+ *
+ * OJO: esta lista está espejada en `backend/src/medical/medical.service.ts`
+ * (`SANITARY_DISEASES`). Si acá y allá no coinciden clave, vigencia y regex,
+ * el semáforo del listado (que lo calcula el backend) y el de la libreta (que
+ * lo calcula el cliente) muestran cosas distintas para el mismo caballo.
+ */
 export const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [
   { key: 'aie',              name: 'AIE',              validityDays: 60,  match: /aie|anemia|coggins/i },
   { key: 'encefalomielitis', name: 'Encefalomielitis', validityDays: 365, match: /encefalo/i },
-  { key: 'influenza',        name: 'Influenza',         validityDays: 90,  match: /influenza|gripe/i },
+  { key: 'influenza',        name: 'Influenza',        validityDays: 90,  match: /influenza|gripe/i },
+  { key: 'tetanos',          name: 'Tétanos',          validityDays: 365, match: /t[eé]tano|toxoide/i },
+  { key: 'desparasitacion',  name: 'Desparasitación',  validityDays: 180, match: /desparasit|antiparasit|ivermectina|vermífug|vermifug/i },
 ];
 
 export type HealthStatus = 'verde' | 'amarillo' | 'rojo';

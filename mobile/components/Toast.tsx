@@ -6,7 +6,6 @@ import { Check, AlertCircle, Info } from 'lucide-react-native';
 import { useTheme } from '../lib/theme';
 import { space, text, radius, weight } from '../styles/tokens';
 import { duration } from '../styles/motion';
-import { fontFamily } from '../styles/fonts';
 import { haptic } from '../lib/haptics';
 
 /**
@@ -155,14 +154,12 @@ const makeStyles = () => StyleSheet.create({
   message: {
     flex: 1,
     fontSize: text.base - 1,
-    fontFamily: fontFamily.medium,
     fontWeight: weight.medium,
     color: '#fbfaf7',
     lineHeight: 21,
   },
   accion: {
     fontSize: text.sm,
-    fontFamily: fontFamily.semibold,
     fontWeight: weight.semibold,
   },
 });

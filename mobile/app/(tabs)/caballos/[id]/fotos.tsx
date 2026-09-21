@@ -7,7 +7,7 @@ import { Camera, ShieldCheck } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useHorse } from '../../../../hooks/use-horses';
-import { useActivityPhotos, useUploadActivityPhoto, ACTIVITY_TYPES, type ActivityPhoto } from '../../../../hooks/use-activity-photos';
+import { useActivityPhotos, useUploadActivityPhoto, PHOTO_FILTERS, type ActivityPhoto } from '../../../../hooks/use-activity-photos';
 import { haptic } from '../../../../lib/haptics';
 import { useToast } from '../../../../components/Toast';
 import { colors } from '../../../../lib/colors';
@@ -49,12 +49,14 @@ export default function FotosScreen() {
   const { data: horse, isLoading, isError, refetch } = useHorse(id);
   const { data: activityPhotos } = useActivityPhotos(id);
   const uploadActivityPhoto = useUploadActivityPhoto(id);
-  const [activityType, setActivityType] = useState('all');
+  // El filtro guarda la CLAVE del chip (todas/trabajo/salud/potrero), que
+  // agrupa varios tipos guardados; no es un `activity_type` del backend.
+  const [filtro, setFiltro] = useState('todas');
 
-  const fotosFiltradas = useMemo(
-    () => (activityPhotos ?? []).filter((p) => activityType === 'all' || p.activity_type === activityType),
-    [activityPhotos, activityType],
-  );
+  const fotosFiltradas = useMemo(() => {
+    const tipos = PHOTO_FILTERS.find((f) => f.key === filtro)?.tipos ?? null;
+    return (activityPhotos ?? []).filter((p) => !tipos || tipos.includes(p.activity_type));
+  }, [activityPhotos, filtro]);
 
   /** Las fotos se agrupan por día ("Hoy", "Ayer", "vie 5 sep"): así se lee un
    *  diario. El grupo se aplana en rótulo + filas de a dos para que la lista
@@ -98,7 +100,10 @@ export default function FotosScreen() {
     try {
       await uploadActivityPhoto.mutateAsync({
         uri: result.assets[0].uri,
-        activity_type: activityType === 'all' ? 'otro' : activityType,
+        // El chip activo agrupa varios tipos, así que ya no sirve para decidir
+        // qué guardar: la foto sacada desde acá entra como "otro", que es el
+        // valor por defecto del backend.
+        activity_type: 'otro',
       });
       haptic.success();
       toast.success('Foto agregada');
@@ -150,13 +155,13 @@ export default function FotosScreen() {
         contentContainerStyle={s.chipsRow}
         keyboardShouldPersistTaps="handled"
       >
-        {[{ v: 'all', label: 'Todas' }, ...Object.entries(ACTIVITY_TYPES).map(([v, m]) => ({ v, label: m.label }))].map((f) => {
-          const activo = activityType === f.v;
+        {PHOTO_FILTERS.map((f) => {
+          const activo = filtro === f.key;
           return (
             <PressableScale
-              key={f.v}
+              key={f.key}
               style={[s.chip, activo ? s.chipActivo : s.chipInactivo]}
-              onPress={() => { haptic.selection(); setActivityType(f.v); }}
+              onPress={() => { haptic.selection(); setFiltro(f.key); }}
               accessibilityRole="button"
               accessibilityState={{ selected: activo }}
               accessibilityLabel={`Filtrar por ${f.label}`}
@@ -217,7 +222,7 @@ export default function FotosScreen() {
           <View style={{ paddingHorizontal: space[4] }}>
             <EmptyState
               icon="paw-outline"
-              title={activityType === 'all' ? 'Sin fotos verificadas' : 'Nada en este filtro'}
+              title={filtro === 'todas' ? 'Sin fotos verificadas' : 'Nada en este filtro'}
               message="Las fotos tomadas desde la app guardan quién la sacó y cuándo."
             />
           </View>

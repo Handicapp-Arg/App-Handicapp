@@ -18,7 +18,7 @@ import { ErrorState } from '../../../components/ErrorState';
 import { useAuth } from '../../../lib/auth';
 import { haptic } from '../../../lib/haptics';
 import { Routes, nav } from '../../../lib/routes';
-import { edadEnAnios, vence } from '../../../lib/fechas';
+import { edadEnAnios } from '../../../lib/fechas';
 import { useTheme, type ThemeColors } from '../../../lib/theme';
 import type { Horse } from '../../../../packages/shared/src';
 import { AppImage } from '../../../components/AppImage';
@@ -90,8 +90,11 @@ const HorseCard = memo(function HorseCard({ horse, monthlySpend, c, s }: {
         {horse.health && horse.health.status !== 'verde' ? (
           <View style={[s.chip, { backgroundColor: SEMAFORO[horse.health.status].fondo(c) }]}>
             <View style={[s.chipPunto, { backgroundColor: SEMAFORO[horse.health.status].punto(c) }]} />
+            {/* "Influenza vencida", no "Influenza · vencida hace 12 días": el
+                detalle con los días no entraba en pantallas chicas y quedaba
+                cortado a la mitad. Cuántos días hace vive en la ficha. */}
             <Text style={[s.chipText, { color: SEMAFORO[horse.health.status].texto(c) }]} numberOfLines={1}>
-              {`${horse.health.name} · ${vence(horse.health.next_due).toLowerCase()}`}
+              {`${horse.health.name} ${horse.health.status === 'rojo' ? 'vencida' : 'por vencer'}`}
             </Text>
           </View>
         ) : horse.establishment?.name ? (
@@ -124,19 +127,24 @@ const HIT_CHIP = { top: 10, bottom: 10, left: 4, right: 4 };
  */
 const FilaChips = memo(function FilaChips({
   activityOptions, estabOptions, filterActivity, filterEstab,
+  hayAtencion, filterAtencion, onAtencion,
   onActividad, onEstablecimiento, onLimpiar, c, s,
 }: {
   activityOptions: string[];
   estabOptions: string[];
   filterActivity: string;
   filterEstab: string;
+  /** Solo se ofrece el filtro si hay algo que atender: si no, es ruido. */
+  hayAtencion: boolean;
+  filterAtencion: boolean;
+  onAtencion: () => void;
   onActividad: (act: string) => void;
   onEstablecimiento: (est: string) => void;
   onLimpiar: () => void;
   c: ThemeColors;
   s: Styles;
 }) {
-  const sinFiltro = !filterActivity && !filterEstab;
+  const sinFiltro = !filterActivity && !filterEstab && !filterAtencion;
 
   return (
     <ScrollView
@@ -153,6 +161,22 @@ const FilaChips = memo(function FilaChips({
       >
         <Text style={[s.filterChipText, sinFiltro && s.filterChipTextActive]}>Todos</Text>
       </TouchableOpacity>
+      {/* Segundo, pegado a "Todos": es el atajo a lo urgente, no un filtro más.
+          El punto rojo repite el color del chip de la tarjeta. */}
+      {hayAtencion ? (
+        <TouchableOpacity
+          style={[s.filterChip, filterAtencion && s.filterChipActive]}
+          onPress={() => { haptic.selection(); onAtencion(); }}
+          activeOpacity={0.75}
+          hitSlop={HIT_CHIP}
+          accessibilityRole="button"
+          accessibilityState={{ selected: filterAtencion }}
+          accessibilityLabel="Ver solo los caballos que necesitan atención"
+        >
+          <View style={[s.filterChipPunto, { backgroundColor: c.danger }]} />
+          <Text style={[s.filterChipText, filterAtencion && s.filterChipTextActive]}>Atención</Text>
+        </TouchableOpacity>
+      ) : null}
       {activityOptions.map((act) => (
         <TouchableOpacity
           key={act}
@@ -189,6 +213,7 @@ const FilaChips = memo(function FilaChips({
 const CabezaCaballos = memo(function CabezaCaballos({
   puedeCrear, onCrear, hayBuscador, busqueda, onBusqueda, hasFilters,
   activityOptions, estabOptions, filterActivity, filterEstab,
+  hayAtencion, filterAtencion, onAtencion,
   onActividad, onEstablecimiento, onLimpiar, c, s,
 }: {
   puedeCrear: boolean;
@@ -201,6 +226,9 @@ const CabezaCaballos = memo(function CabezaCaballos({
   estabOptions: string[];
   filterActivity: string;
   filterEstab: string;
+  hayAtencion: boolean;
+  filterAtencion: boolean;
+  onAtencion: () => void;
   onActividad: (act: string) => void;
   onEstablecimiento: (est: string) => void;
   onLimpiar: () => void;
@@ -246,6 +274,9 @@ const CabezaCaballos = memo(function CabezaCaballos({
           estabOptions={estabOptions}
           filterActivity={filterActivity}
           filterEstab={filterEstab}
+          hayAtencion={hayAtencion}
+          filterAtencion={filterAtencion}
+          onAtencion={onAtencion}
           onActividad={onActividad}
           onEstablecimiento={onEstablecimiento}
           onLimpiar={onLimpiar}
@@ -267,6 +298,7 @@ export default function CaballosScreen() {
   const [busqueda, setBusqueda] = useState('');
   const [filterActivity, setFilterActivity] = useState('');
   const [filterEstab, setFilterEstab] = useState('');
+  const [filterAtencion, setFilterAtencion] = useState(false);
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<Horse>>(null);
   useScrollToTop(listRef);
@@ -288,7 +320,14 @@ export default function CaballosScreen() {
     () => [...new Set((horses ?? []).map((h) => h.establishment?.name).filter(Boolean))] as string[],
     [horses],
   );
-  const hasFilters = activityOptions.length > 1 || estabOptions.length > 1;
+  // El semáforo sanitario que ya pinta el chip de cada tarjeta es el mismo dato
+  // que alimenta este filtro: rojo (vencida) y amarillo (por vencer) son las
+  // dos que piden una decisión.
+  const hayAtencion = useMemo(
+    () => (horses ?? []).some((h) => h.health != null && h.health.status !== 'verde'),
+    [horses],
+  );
+  const hasFilters = activityOptions.length > 1 || estabOptions.length > 1 || hayAtencion;
   // El buscador aparece recién cuando hay tantos caballos que mirar la lista
   // deja de alcanzar; con cinco es ruido en pantalla.
   const hayBuscador = (horses ?? []).length >= 6;
@@ -302,14 +341,18 @@ export default function CaballosScreen() {
       const matchActivity = !filterActivity || h.activity?.name === filterActivity;
       const matchEstab = !filterEstab || h.establishment?.name === filterEstab;
       const matchTermino = !termino || h.name.toLowerCase().includes(termino);
-      return matchActivity && matchEstab && matchTermino;
+      const matchAtencion = !filterAtencion || (h.health != null && h.health.status !== 'verde');
+      return matchActivity && matchEstab && matchTermino && matchAtencion;
     }),
-    [horses, filterActivity, filterEstab, termino],
+    [horses, filterActivity, filterEstab, filterAtencion, termino],
   );
 
   // Callbacks estables: son props del encabezado memoizado, si cambiaran de
   // identidad en cada render la memo no serviría de nada.
-  const limpiarFiltros = useCallback(() => { setFilterActivity(''); setFilterEstab(''); }, []);
+  const limpiarFiltros = useCallback(() => {
+    setFilterActivity(''); setFilterEstab(''); setFilterAtencion(false);
+  }, []);
+  const alternarAtencion = useCallback(() => { setFilterAtencion((a) => !a); }, []);
   const elegirActividad = useCallback((act: string) => {
     setFilterActivity((actual) => (actual === act ? '' : act));
   }, []);
@@ -342,6 +385,9 @@ export default function CaballosScreen() {
       estabOptions={estabOptions}
       filterActivity={filterActivity}
       filterEstab={filterEstab}
+      hayAtencion={hayAtencion}
+      filterAtencion={filterAtencion}
+      onAtencion={alternarAtencion}
       onActividad={elegirActividad}
       onEstablecimiento={elegirEstablecimiento}
       onLimpiar={limpiarFiltros}
@@ -351,6 +397,7 @@ export default function CaballosScreen() {
   ), [
     puedeCrear, irANuevo, hayBuscador, busqueda, hasFilters,
     activityOptions, estabOptions, filterActivity, filterEstab,
+    hayAtencion, filterAtencion, alternarAtencion,
     elegirActividad, elegirEstablecimiento, limpiarFiltros, c, s,
   ]);
 
@@ -387,6 +434,14 @@ export default function CaballosScreen() {
                 icon="search-outline"
                 title="Ningún caballo con ese nombre"
                 message="Probá con otra parte del nombre."
+              />
+            ) : filterAtencion ? (
+              // Decir "no hay caballos registrados" con el filtro puesto sería
+              // mentira: lo que no hay es nada pendiente.
+              <EmptyState
+                icon="checkmark-circle-outline"
+                title="Está todo al día"
+                message="Ningún caballo tiene la sanidad vencida ni por vencer."
               />
             ) : (
               <EmptyState
@@ -464,6 +519,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   // Selección neutra invertida (como los toggles de apps consolidadas).
   filterChipActive: { backgroundColor: c.text },
+  filterChipPunto: { width: 6, height: 6, borderRadius: radius.full },
   filterChipText: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
   filterChipTextActive: { color: c.bg, fontWeight: weight.semibold },
 

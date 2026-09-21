@@ -38,7 +38,20 @@ export function useCreateHorse() {
 export function useUpdateHorse() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...dto }: { id: string; name?: string; birth_date?: string | null; microchip?: string | null }) => {
+    // La pantalla de editar manda las cinco filas de la maqueta, no solo tres:
+    // disciplina, sexo, pelaje y dónde está ya los acepta `UpdateHorseDto`.
+    // Todo es nullable porque "sin dato" es un valor válido y hay que poder
+    // volver a vaciar un campo que se cargó por error.
+    mutationFn: async ({ id, ...dto }: {
+      id: string;
+      name?: string;
+      birth_date?: string | null;
+      microchip?: string | null;
+      activity_id?: string | null;
+      establishment_id?: string | null;
+      sex?: 'macho' | 'hembra' | 'castrado' | null;
+      color?: string | null;
+    }) => {
       const { data } = await api.patch(`/horses/${id}`, dto);
       return data as Horse;
     },
@@ -156,8 +169,24 @@ export function useVeterinarios() {
   });
 }
 
+/** Vet asignado al caballo. La matrícula y el teléfono los agrega el select
+ *  de `GET /horses/:id/vets`: la ficha muestra sello verificado y llamada. */
+export interface HorseVet {
+  id: string;
+  user_id: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    phone: string | null;
+    vet_license_number: string | null;
+    vet_license_status: string | null;
+  };
+}
+
 export function useHorseVets(horseId: string) {
-  return useQuery<{ id: string; user_id: string; user: { id: string; name: string; email: string } }[]>({
+  return useQuery<HorseVet[]>({
     queryKey: ['horses', horseId, 'vets'],
     queryFn: async () => (await api.get(`/horses/${horseId}/vets`)).data,
     enabled: !!horseId,
@@ -182,8 +211,20 @@ export function useRemoveVet(horseId: string) {
 
 /* ─── Equipo asignado (jinete / peón / encargado) ─── */
 
+/**
+ * Persona asignada al caballo. `role` es el de la relación (siempre
+ * 'assignee'); el que se muestra es `user.role`, que es el operativo real:
+ * jinete / peón / encargado.
+ */
+export interface HorseAssignee {
+  id: string;
+  user_id: string;
+  role: string;
+  user: { id: string; name: string; email: string; role: string };
+}
+
 export function useHorseAssignees(horseId: string) {
-  return useQuery<{ id: string; user_id: string; role: string; user: { id: string; name: string; email: string } }[]>({
+  return useQuery<HorseAssignee[]>({
     queryKey: ['horses', horseId, 'assignees'],
     queryFn: async () => (await api.get(`/horses/${horseId}/assignees`)).data,
     enabled: !!horseId,
@@ -211,6 +252,32 @@ export function useRemoveMember(horseId: string) {
   return useMutation({
     mutationFn: (memberUserId: string) => api.delete(`/horses/${horseId}/assignees/${memberUserId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['horses', horseId, 'assignees'] }),
+  });
+}
+
+/* ─── Catálogos y establecimientos (para editar la ficha) ─── */
+
+export interface CatalogOption { id: string; name: string }
+
+/**
+ * Catálogo genérico (`type` = 'activity' | 'breed'). Lo sirve el backend desde
+ * `catalog_items`, que se siembra solo, así que no se cachea por poco tiempo:
+ * cambia una vez cada muerte de obispo.
+ */
+export function useCatalogItems(type: string) {
+  return useQuery<CatalogOption[]>({
+    queryKey: ['catalog-items', type],
+    queryFn: async () => (await api.get('/catalog-items', { params: { type } })).data,
+    enabled: !!type,
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+/** Establecimientos donde puede estar parado un caballo. */
+export function useEstablecimientos() {
+  return useQuery<CatalogOption[]>({
+    queryKey: ['establecimientos'],
+    queryFn: async () => (await api.get('/auth/users?role=establecimiento')).data,
   });
 }
 

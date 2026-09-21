@@ -22,6 +22,8 @@ export const SANITARY_DISEASES: { key: string; name: string; validityDays: numbe
   { key: 'aie',              name: 'AIE',             validityDays: 60,  match: /aie|anemia|coggins/i },
   { key: 'encefalomielitis', name: 'Encefalomielitis', validityDays: 365, match: /encefalo/i },
   { key: 'influenza',        name: 'Influenza',        validityDays: 90,  match: /influenza|gripe/i },
+  { key: 'tetanos',          name: 'Tétanos',          validityDays: 365, match: /t[eé]tano|toxoide/i },
+  { key: 'desparasitacion',  name: 'Desparasitación',  validityDays: 180, match: /desparasit|antiparasit|ivermectina|vermífug|vermifug/i },
 ];
 
 import { healthStatusFromNextDue, type HealthStatus } from './health-status';

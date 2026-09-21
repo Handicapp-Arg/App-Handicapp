@@ -336,7 +336,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     paddingHorizontal: space[4], paddingTop: space[3],
   },
   saludoTexto: { flex: 1 },
-  saludoFecha: { fontSize: text.sm, color: c.textMuted, textTransform: 'capitalize', fontFamily: fontFamily.regular },
+  saludoFecha: { fontSize: text.sm, color: c.textMuted, textTransform: 'capitalize' },
   saludoHola: {
     fontSize: text['2xl'], fontWeight: weight.bold, color: c.text,
     letterSpacing: -1.1, marginTop: space[1], fontFamily: fontFamily.semibold,
@@ -358,20 +358,20 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   pendientes: { backgroundColor: c.text, borderRadius: radius.sheet, padding: space[4] + 2 },
   pendientesHead: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   puntoAlerta: { width: 7, height: 7, borderRadius: radius.full, backgroundColor: c.danger },
-  pendientesHeadText: { fontSize: text.sm, color: c.textFaint, fontFamily: fontFamily.regular },
+  pendientesHeadText: { fontSize: text.sm, color: c.textFaint },
   divisorInv: { height: 1, backgroundColor: c.bg, opacity: 0.1, marginVertical: space[3] + 2 },
   pendienteFila: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[3] + 2 },
   pendienteThumb: { width: 44, height: 44, borderRadius: radius.thumb - 1, overflow: 'hidden' },
   pendienteThumbVacio: { alignItems: 'center', justifyContent: 'center' },
   pendienteTexto: { flex: 1, minWidth: 0 },
-  pendienteTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.bg, fontFamily: fontFamily.semibold },
-  pendienteDetalle: { fontSize: text.sm, color: c.textFaint, marginTop: 2, fontFamily: fontFamily.regular },
+  pendienteTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.bg },
+  pendienteDetalle: { fontSize: text.sm, color: c.textFaint, marginTop: 2 },
   chipInv: {
     height: 34, paddingHorizontal: space[3] + 1, borderRadius: radius.full,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   chipInvSolido: { backgroundColor: c.bg },
-  chipInvText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.bg, fontFamily: fontFamily.semibold },
+  chipInvText: { fontSize: text.sm, fontWeight: weight.semibold, color: c.bg },
   chipInvTextSolido: { color: c.text },
 
   // --- Próximo turno --------------------------------------------------------
@@ -387,9 +387,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   turnoHoraText: {
     fontSize: 15, fontWeight: weight.bold, color: c.brand,
-    fontVariant: ['tabular-nums'], fontFamily: fontFamily.bold,
+    fontVariant: ['tabular-nums'],
   },
   turnoTexto: { flex: 1, minWidth: 0 },
-  turnoTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, fontFamily: fontFamily.semibold },
-  turnoBajada: { fontSize: text.sm, color: c.textMuted, marginTop: 2, fontFamily: fontFamily.regular },
+  turnoTitulo: { fontSize: text.base, fontWeight: weight.semibold, color: c.text },
+  turnoBajada: { fontSize: text.sm, color: c.textMuted, marginTop: 2 },
 });

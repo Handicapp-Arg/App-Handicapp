@@ -162,6 +162,9 @@ const FilaTimeline = memo(function FilaTimeline({
 }) {
   const Icono = ICONO_TIPO[ev.type] ?? StickyNote;
   const horaEv = hora(ev.created_at);
+  // Firma del registro: "Joaquín Pérez · 10:20". Los eventos viejos se
+  // guardaron sin autor, así que la línea se arma con lo que haya.
+  const firma = [ev.author?.name, horaEv].filter(Boolean).join(' · ');
 
   // Sin `entering` por fila: la FlatList recicla celdas al scrollear.
   return (
@@ -182,7 +185,7 @@ const FilaTimeline = memo(function FilaTimeline({
           )}
         </View>
         {!!ev.description && <Text style={s.eventoDesc}>{ev.description}</Text>}
-        {!!horaEv && <Text style={s.eventoMeta}>{horaEv}</Text>}
+        {!!firma && <Text style={s.eventoMeta}>{firma}</Text>}
 
         {ev.type === 'entrenamiento' && (
           <TrainingMetricsPanel eventId={ev.id} canEdit={canEdit} />

@@ -14,7 +14,6 @@ import { ErrorState } from '../../components/ErrorState';
 import { Skeleton } from '../../components/Skeleton';
 import { Avatar } from '../../components/Avatar';
 import { space, text, weight, radius, shadow } from '../../styles/tokens';
-import { fontFamily } from '../../styles/fonts';
 import type { Horse } from '../../../packages/shared/src';
 import { AppImage } from '../../components/AppImage';
 
@@ -133,14 +132,12 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   hello: {
     fontSize: text.display,
     lineHeight: 40,
-    fontFamily: fontFamily.extrabold,
     fontWeight: weight.extrabold,
     color: c.text,
   },
   date: {
     fontSize: 19,
     marginTop: space[1],
-    fontFamily: fontFamily.medium,
     fontWeight: weight.medium,
     color: c.textMuted,
     textTransform: 'capitalize',
@@ -148,7 +145,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   subtitle: {
     fontSize: text.base,
     marginTop: space[2],
-    fontFamily: fontFamily.medium,
     fontWeight: weight.medium,
     color: c.textFaint,
   },
@@ -176,7 +172,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     flex: 1,
     marginLeft: space[4],
     fontSize: text.xl,
-    fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.text,
   },
@@ -196,7 +191,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   exitText: {
     fontSize: text.lg,
-    fontFamily: fontFamily.bold,
     fontWeight: weight.bold,
     color: c.textMuted,
   },

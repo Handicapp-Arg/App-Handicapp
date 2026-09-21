@@ -107,11 +107,19 @@ const FilaEvento = memo(function FilaEvento({
         <View style={s.filaHead}>
           {e.horse?.name ? <Text style={s.filaNombre} numberOfLines={1}>{e.horse.name}</Text> : null}
           <Text style={s.filaTipo} numberOfLines={1}>{tipoLabel}</Text>
+          {/* La hora cierra la línea ("Malbec · trabajo · 10:20"). Es opcional:
+              los eventos cargados antes del selector de hora vienen en null. */}
+          {e.event_time ? <Text style={s.filaHora}>{e.event_time}</Text> : null}
           {e.photos && e.photos.length > 0 && (
             <Camera size={12} color={c.textFaint} strokeWidth={2} />
           )}
         </View>
         <Text style={s.filaDesc} numberOfLines={2}>{e.description}</Text>
+        {/* Quién lo cargó: en un establecimiento con varias personas anotando,
+            saber de quién es el dato importa tanto como el dato. */}
+        {e.author?.name ? (
+          <Text style={s.filaAutor} numberOfLines={1}>{e.author.name}</Text>
+        ) : null}
         {e.amount != null && (
           <Text style={s.filaMonto}>{formatCurrency(e.amount, e.currency ?? 'ARS')}</Text>
         )}
@@ -264,8 +272,16 @@ function FeedEventos({ horseId, c, s }: { horseId: string; c: ThemeColors; s: St
               ) : null}
               <View style={s.detalleFila}>
                 <Text style={s.detalleLabel}>Fecha</Text>
-                <Text style={s.detalleValor}>{fechaHumana(detalle.date)}</Text>
+                <Text style={s.detalleValor}>
+                  {detalle.event_time ? `${fechaHumana(detalle.date)}, ${detalle.event_time}` : fechaHumana(detalle.date)}
+                </Text>
               </View>
+              {detalle.author?.name ? (
+                <View style={s.detalleFila}>
+                  <Text style={s.detalleLabel}>Lo cargó</Text>
+                  <Text style={s.detalleValor}>{detalle.author.name}</Text>
+                </View>
+              ) : null}
               {detalle.amount != null && (
                 <View style={s.detalleFila}>
                   <Text style={s.detalleLabel}>Monto</Text>
@@ -415,7 +431,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   filaHead: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] + 3 },
   filaNombre: { fontSize: text.base, fontWeight: weight.semibold, color: c.text, flexShrink: 1 },
   filaTipo: { fontSize: text.xs + 1, color: c.textFaint, textTransform: 'lowercase' },
+  filaHora: { fontSize: text.xs + 1, color: c.textFaint, fontVariant: ['tabular-nums'] },
   filaDesc: { fontSize: text.base - 1, color: c.textMuted, lineHeight: 21, marginTop: 3 },
+  // La firma va más apagada que la descripción: acompaña, no compite.
+  filaAutor: { fontSize: text.xs, color: c.textFaint, marginTop: 3 },
   // El monto es el dato hero de un gasto: por eso es lo único en negrita.
   filaMonto: { fontSize: text.md, fontWeight: weight.bold, color: c.text, marginTop: 5, fontVariant: ['tabular-nums'] },
   cargando: { padding: space[5], alignItems: 'center' },

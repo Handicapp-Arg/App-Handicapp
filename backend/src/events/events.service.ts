@@ -221,6 +221,11 @@ export class EventsService {
       // image_url va en la selección: el listado del móvil muestra la foto del
       // caballo en cada fila, y sin esto cae en el placeholder de la marca.
       .addSelect(['horse.id', 'horse.name', 'horse.image_url', 'horse.owner_id', 'horse.establishment_id'])
+      // El feed firma cada evento con quién lo cargó. Va como leftJoin + select
+      // acotado a id y nombre: el email y el resto del usuario no se muestran
+      // en ningún lado del feed, así que tampoco salen del backend.
+      .leftJoin('event.author', 'author')
+      .addSelect(['author.id', 'author.name'])
       .orderBy('event.date', 'DESC')
       .addOrderBy('event.created_at', 'DESC');
 
@@ -278,6 +283,11 @@ export class EventsService {
     const qb = this.eventRepository
       .createQueryBuilder('event')
       .leftJoinAndSelect('event.photos', 'photos')
+      // El historial del caballo firma cada registro ("Joaquín Pérez · 10:20"),
+      // así que el autor viaja con el evento. Solo id y nombre: el resto del
+      // usuario no pinta en el timeline y no tiene por qué salir del backend.
+      .leftJoin('event.author', 'author')
+      .addSelect(['author.id', 'author.name'])
       .where('event.horse_id = :horseId', { horseId })
       .orderBy('event.date', 'DESC');
 
