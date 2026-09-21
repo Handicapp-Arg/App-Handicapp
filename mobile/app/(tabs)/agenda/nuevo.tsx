@@ -192,7 +192,10 @@ export default function NuevoTurnoScreen() {
                     accessibilityState={{ selected: activo }}
                     accessibilityLabel={h.name}
                   >
-                    <View>
+                    {/* El contenedor tiene que estirarse: la foto pide el 100%
+                        del ancho del padre, y si el padre se encoge al contenido
+                        la imagen se queda sin ancho y no se ve nada. */}
+                    <View style={s.caballoFotoWrap}>
                       {h.image_url ? (
                         <AppImage source={{ uri: h.image_url }} style={s.caballoFoto} />
                       ) : (
@@ -397,6 +400,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   pickerFoto: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.surfaceAlt },
   pickerNombre: { flex: 1, fontSize: text.md, fontWeight: weight.semibold, color: c.text },
+  caballoFotoWrap: { alignSelf: 'stretch' },
   caballoFoto: { width: '100%', height: 58, borderRadius: radius.md + 2 },
   caballoFotoVacia: { backgroundColor: c.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   caballoNombre: { fontSize: text.sm, fontWeight: weight.medium, color: c.textMuted },
