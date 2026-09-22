@@ -225,7 +225,10 @@ export class HorsesService implements OnModuleInit {
 
     const rows: { horse_id: string; name: string; next_due: string }[] =
       await this.horseRepository.query(
-        `SELECT DISTINCT ON (horse_id) horse_id, name, next_due
+        // `::text` devuelve la fecha pelada (YYYY-MM-DD). Sin eso el driver la
+        // convierte en un Date y llega con hora y zona, que es como el
+        // semáforo terminó diciendo "verde" a vacunas vencidas.
+        `SELECT DISTINCT ON (horse_id) horse_id, name, next_due::text AS next_due
            FROM medical_records
           WHERE horse_id = ANY($1::uuid[])
             AND next_due IS NOT NULL
