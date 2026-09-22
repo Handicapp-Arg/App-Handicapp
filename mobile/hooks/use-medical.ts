@@ -66,11 +66,24 @@ export const SANITARY_DISEASES: { key: string; name: string; validityDays: numbe
 
 export type HealthStatus = 'verde' | 'amarillo' | 'rojo';
 
+/**
+ * Semáforo sanitario. ESPEJO de `backend/src/medical/health-status.ts`: si se
+ * cambia uno, se cambia el otro, o la lista de caballos y la libreta van a
+ * decir cosas distintas del mismo caballo.
+ *
+ * Acepta la fecha pelada (`2026-09-15`) o ISO completa (`2026-09-15T00:00:00.000Z`).
+ * La versión anterior le pegaba `T00:00:00` encima: con una fecha ISO quedaba
+ * inválida y caía en VERDE. En el backend eso ya pasó en producción, con
+ * caballos vencidos hace meses figurando como sanos.
+ *
+ * Ante una fecha ilegible falla hacia el lado SEGURO: dice rojo.
+ */
 export function healthStatusFromNextDue(nextDue: string | null | undefined): HealthStatus {
   if (!nextDue) return 'rojo';
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const due = new Date(nextDue + 'T00:00:00');
-  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86_400_000);
+  const due = new Date(`${String(nextDue).slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(due.getTime())) return 'rojo';
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
   if (diffDays < 0) return 'rojo';
   if (diffDays <= 15) return 'amarillo';
   return 'verde';
