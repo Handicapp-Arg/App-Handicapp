@@ -18,13 +18,21 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 /**
- * Tipos de registro que cuentan para la libreta sanitaria.
+ * Tipos de registro que pueden CUMPLIR una fila de la libreta sanitaria.
  *
- * `desparasitacion` tiene tipo propio en el enum, así que buscando solo
- * `sanidad` la fila "Desparasitación" no se podía dar por cumplida nunca: se
- * cargaba la desparasitación y la libreta seguía en rojo para siempre.
+ * La libreta miraba solo `sanidad`, pero en la práctica nadie carga así: una
+ * antigripal se carga como `vacuna` y una desparasitación como
+ * `desparasitacion`, que son los tipos que ofrece el formulario. Resultado:
+ * caballos con todas las vacunas puestas mostraban la libreta entera en rojo,
+ * y la fila "Desparasitación" no se podía cumplir nunca.
+ *
+ * Quedan afuera `analisis` y `tratamiento`, que no inmunizan contra nada.
  */
-export const TIPOS_LIBRETA = [MedicalRecordType.SANIDAD, MedicalRecordType.DEWORMING];
+export const TIPOS_LIBRETA = [
+  MedicalRecordType.SANIDAD,
+  MedicalRecordType.VACCINE,
+  MedicalRecordType.DEWORMING,
+];
 
 // Enfermedades oficiales de la libreta sanitaria con su vigencia (días).
 export const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [
