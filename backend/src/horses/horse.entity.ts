@@ -135,10 +135,17 @@ export class Horse {
   /**
    * Vencimiento sanitario más urgente, calculado al listar. No es una columna:
    * lo adjunta `HorsesService.attachHealth` y viaja solo en la respuesta.
+   *
+   * `sin_datos` no es un vencimiento: es "nunca se cargó ninguna vacuna de la
+   * libreta". Se distingue de `rojo` a propósito, porque falta de información
+   * no es lo mismo que una vacuna vencida.
    */
   health?: {
-    status: 'verde' | 'amarillo' | 'rojo';
-    name: string;
-    next_due: string;
+    status: 'verde' | 'amarillo' | 'rojo' | 'sin_datos';
+    /** Enfermedad del vencimiento que manda. null cuando status es 'sin_datos'. */
+    name: string | null;
+    next_due: string | null;
+    /** Cuántas enfermedades de la libreta no tienen NINGÚN registro. */
+    faltan: number;
   } | null;
 }

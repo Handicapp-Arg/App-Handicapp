@@ -232,6 +232,15 @@ export class HorsesService implements OnModuleInit {
    *
    * El nombre que se devuelve es el de la ENFERMEDAD, no el del registro: el
    * chip decía "Vacuna antitetánica Biogénesis lote 44 vencida".
+   *
+   * Se distinguen TRES cosas, no dos, porque antes sólo se miraban las
+   * enfermedades CON registro y un caballo al que nunca le cargaron una vacuna
+   * salía sano (falso negativo), contradiciendo a la libreta:
+   *   - `rojo`      → hay registro y su fecha ya pasó.
+   *   - `amarillo`  → hay registro y está por vencer.
+   *   - `sin_datos` → nada vencido ni por vencer, pero faltan vacunas por cargar.
+   *   - `verde`     → todo al día y la libreta completa.
+   * `faltan` se cuenta siempre, en los cuatro casos.
    */
   private async attachHealth(horses: Horse[]): Promise<Horse[]> {
     if (!horses.length) return horses;
@@ -262,11 +271,8 @@ export class HorsesService implements OnModuleInit {
       if (lista) lista.push(f); else porCaballo.set(f.horse_id, [f]);
     }
 
-    const PEOR: Record<string, number> = { rojo: 0, amarillo: 1, verde: 2 };
-
     for (const horse of horses) {
-      const suyos = porCaballo.get(horse.id);
-      if (!suyos?.length) { horse.health = null; continue; }
+      const suyos = porCaballo.get(horse.id) ?? [];
 
       // Por enfermedad, el registro más reciente (ya vienen por fecha DESC).
       const candidatos = SANITARY_DISEASES
@@ -277,13 +283,37 @@ export class HorsesService implements OnModuleInit {
         .filter((x): x is { nombre: string; next_due: string } => x !== null)
         .map((x) => ({ ...x, status: healthStatusFromNextDue(x.next_due) }));
 
-      if (!candidatos.length) { horse.health = null; continue; }
+      // Las que NO tienen ningún registro. Antes se ignoraban: un caballo sin
+      // una sola vacuna cargada daba verde (o directamente `null` y desaparecía
+      // del semáforo), mientras la libreta lo mostraba todo en rojo. Se cuenta
+      // siempre, aunque el estado que mande sea rojo o amarillo, para poder
+      // decir "además faltan N".
+      const faltan = SANITARY_DISEASES.length - candidatos.length;
 
-      // Gana la peor; entre dos iguales, la que vence antes.
-      candidatos.sort((a, b) =>
-        PEOR[a.status] - PEOR[b.status] || a.next_due.localeCompare(b.next_due));
-      const peor = candidatos[0];
-      horse.health = { status: peor.status, name: peor.nombre, next_due: peor.next_due };
+      // Orden de decisión: una vencida de verdad pesa más que una por vencer, y
+      // las dos pesan más que la falta de información.
+      const vencida = candidatos.filter((x) => x.status === 'rojo');
+      const porVencer = candidatos.filter((x) => x.status === 'amarillo');
+      // Entre dos del mismo estado, gana la que vence antes.
+      const primera = (lista: typeof candidatos) =>
+        [...lista].sort((a, b) => a.next_due.localeCompare(b.next_due))[0];
+
+      if (vencida.length) {
+        const peor = primera(vencida);
+        horse.health = { status: 'rojo', name: peor.nombre, next_due: peor.next_due, faltan };
+      } else if (porVencer.length) {
+        const peor = primera(porVencer);
+        horse.health = { status: 'amarillo', name: peor.nombre, next_due: peor.next_due, faltan };
+      } else if (faltan > 0) {
+        // No hay nada vencido ni por vencer, pero la libreta está incompleta:
+        // no es una urgencia, es información que falta cargar.
+        horse.health = { status: 'sin_datos', name: null, next_due: null, faltan };
+      } else {
+        // Todo al día y nada sin cargar: se devuelve igual la próxima a vencer
+        // para que la ficha pueda mostrar "Influenza, vence el ...".
+        const proxima = primera(candidatos);
+        horse.health = { status: 'verde', name: proxima.nombre, next_due: proxima.next_due, faltan: 0 };
+      }
     }
     return horses;
   }

@@ -181,12 +181,19 @@ export default function InicioTab() {
   // de caballos) y facturas enviadas sin responder. Si no hay nada, la tarjeta
   // no se dibuja — no inventamos un "todo en orden" que el backend no afirma.
   const pendientes = useMemo<Pendiente[]>(() => {
+    // Solo 'rojo': una vacuna vencida es una urgencia real. 'sin_datos' (nunca
+    // se cargó esa vacuna) queda afuera a propósito — es información que falta,
+    // no un vencimiento, y si entrara acá el Inicio quedaría inundado de
+    // "pendientes" el día que alguien da de alta un caballo nuevo. Esos se
+    // resuelven desde el filtro "Atención" de la lista de caballos.
     const deSanidad: Pendiente[] = (caballos.data ?? [])
       .filter((h) => h.health?.status === 'rojo')
       .map((h) => ({
         id: `sanidad-${h.id}`,
+        // En 'rojo' el backend siempre manda enfermedad y fecha (solo son null
+        // cuando el estado es 'sin_datos'), por eso el `!` se sostiene.
         titulo: `${h.name}, ${h.health!.name}`,
-        detalle: vence(h.health!.next_due),
+        detalle: vence(h.health!.next_due!),
         fotoUrl: h.image_url,
         accion: 'Resolver',
         solido: true,

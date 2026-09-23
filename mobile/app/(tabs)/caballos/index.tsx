@@ -35,7 +35,21 @@ const SEMAFORO = {
   rojo:     { fondo: (c: ThemeColors) => c.dangerSoft, punto: (c: ThemeColors) => c.danger,  texto: (c: ThemeColors) => c.danger },
   amarillo: { fondo: (c: ThemeColors) => c.goldSoft,   punto: (c: ThemeColors) => c.warning, texto: (c: ThemeColors) => c.goldText },
   verde:    { fondo: (c: ThemeColors) => c.brandSoft,  punto: (c: ThemeColors) => c.brand,   texto: (c: ThemeColors) => c.brand },
+  // "Falta cargar" no es una alarma: usa el ámbar sutil que ya existe, con el
+  // punto apagado (textFaint) para que a simple vista se lea como información
+  // incompleta y nunca se confunda con el rojo de una vacuna vencida.
+  sin_datos: { fondo: (c: ThemeColors) => c.goldSoft,  punto: (c: ThemeColors) => c.textFaint, texto: (c: ThemeColors) => c.goldText },
 } as const;
+
+/** El texto del chip sanitario. Devuelve null cuando no hay nada que decir. */
+function textoSemaforo(health: NonNullable<Horse['health']>): string | null {
+  if (health.status === 'rojo') return `${health.name} vencida`;
+  if (health.status === 'amarillo') return `${health.name} por vencer`;
+  if (health.status === 'sin_datos') {
+    return health.faltan === 1 ? 'Falta cargar 1 vacuna' : `Faltan ${health.faltan} vacunas`;
+  }
+  return null; // verde: no lleva chip.
+}
 
 /**
  * La tarjeta muestra la foto al costado y el dato que importa a la derecha.
@@ -87,14 +101,14 @@ const HorseCard = memo(function HorseCard({ horse, monthlySpend, c, s }: {
 
         {subtitle ? <Text style={s.cardMeta} numberOfLines={1}>{subtitle}</Text> : null}
 
-        {horse.health && horse.health.status !== 'verde' ? (
+        {horse.health && textoSemaforo(horse.health) ? (
           <View style={[s.chip, { backgroundColor: SEMAFORO[horse.health.status].fondo(c) }]}>
             <View style={[s.chipPunto, { backgroundColor: SEMAFORO[horse.health.status].punto(c) }]} />
             {/* "Influenza vencida", no "Influenza · vencida hace 12 días": el
                 detalle con los días no entraba en pantallas chicas y quedaba
                 cortado a la mitad. Cuántos días hace vive en la ficha. */}
             <Text style={[s.chipText, { color: SEMAFORO[horse.health.status].texto(c) }]} numberOfLines={1}>
-              {`${horse.health.name} ${horse.health.status === 'rojo' ? 'vencida' : 'por vencer'}`}
+              {textoSemaforo(horse.health)}
             </Text>
           </View>
         ) : horse.establishment?.name ? (
@@ -321,8 +335,11 @@ export default function CaballosScreen() {
     [horses],
   );
   // El semáforo sanitario que ya pinta el chip de cada tarjeta es el mismo dato
-  // que alimenta este filtro: rojo (vencida) y amarillo (por vencer) son las
-  // dos que piden una decisión.
+  // que alimenta este filtro: rojo (vencida), amarillo (por vencer) y sin_datos
+  // (nunca se cargó esa vacuna) piden todas una acción del usuario. `sin_datos`
+  // entra a propósito: este filtro es la forma de llegar justo a los caballos
+  // que hay que ir a completar, y si quedara afuera no habría manera de
+  // encontrarlos. La urgencia sí se distingue: eso lo decide el Inicio.
   const hayAtencion = useMemo(
     () => (horses ?? []).some((h) => h.health != null && h.health.status !== 'verde'),
     [horses],

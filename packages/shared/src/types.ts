@@ -116,9 +116,20 @@ export interface Horse {
    * donde el backend lo resuelve para todos los caballos en una consulta.
    */
   health?: {
-    status: 'verde' | 'amarillo' | 'rojo';
-    name: string;
-    next_due: string;
+    /**
+     * - `rojo`      → hay registro de esa vacuna y su fecha ya pasó (urgente).
+     * - `amarillo`  → hay registro y está por vencer.
+     * - `sin_datos` → nada vencido ni por vencer, pero hay vacunas de la libreta
+     *                 que NUNCA se cargaron. Es falta de información, no alarma.
+     * - `verde`     → todo al día y la libreta completa.
+     */
+    status: 'verde' | 'amarillo' | 'rojo' | 'sin_datos';
+    /** Enfermedad del vencimiento que manda. null cuando status es 'sin_datos'. */
+    name: string | null;
+    /** Fecha del vencimiento que manda. null cuando status es 'sin_datos'. */
+    next_due: string | null;
+    /** Cuántas enfermedades de la libreta no tienen NINGÚN registro. */
+    faltan: number;
   } | null;
   created_at: string;
 }
