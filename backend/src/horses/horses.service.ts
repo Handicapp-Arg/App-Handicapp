@@ -24,6 +24,7 @@ import { ShareToken } from './share-token.entity';
 import { CreateWeightRecordDto } from './dto/create-weight-record.dto';
 import { User } from '../auth/user.entity';
 import { healthStatusFromNextDue } from '../medical/health-status';
+import { SANITARY_DISEASES, TIPOS_LIBRETA } from '../medical/medical.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PlansService } from '../plans/plans.service';
 import { HorseRecordsService } from '../horse-records/horse-records.service';
@@ -216,36 +217,73 @@ export class HorsesService implements OnModuleInit {
   }
 
   /**
-   * Toma el vencimiento más urgente de cada caballo (el `next_due` más viejo,
-   * que es el ya vencido si lo hay) y deriva el semáforo con la misma función
-   * que usa la libreta sanitaria, para que no haya dos criterios distintos.
+   * Adjunta a cada caballo el vencimiento sanitario que hay que atender.
+   *
+   * Replica el criterio de la libreta (`MedicalService.getHealthBook`) y no
+   * otro: por cada enfermedad oficial se mira su ÚLTIMO registro por fecha, y
+   * de todas ellas gana la que está peor.
+   *
+   * La versión anterior hacía `DISTINCT ON (horse_id) ORDER BY next_due ASC`,
+   * que devuelve el vencimiento más viejo de toda la historia del caballo.
+   * Como revacunar no "resuelve" el registro anterior sino que agrega uno
+   * nuevo, cualquier caballo con dos aplicaciones de la misma vacuna quedaba
+   * en rojo PARA SIEMPRE, sin forma de sacarlo: la libreta decía verde y la
+   * lista decía "vencida hace dos años".
+   *
+   * El nombre que se devuelve es el de la ENFERMEDAD, no el del registro: el
+   * chip decía "Vacuna antitetánica Biogénesis lote 44 vencida".
    */
   private async attachHealth(horses: Horse[]): Promise<Horse[]> {
     if (!horses.length) return horses;
 
-    const rows: { horse_id: string; name: string; next_due: string }[] =
+    // Se traen los registros de libreta y el emparejado con cada enfermedad se
+    // hace acá, con las mismas expresiones que la libreta: viven en JavaScript,
+    // no se pueden aplicar en SQL sin duplicar el criterio.
+    const filas: { horse_id: string; name: string; date: string; next_due: string }[] =
       await this.horseRepository.query(
-        // `::text` devuelve la fecha pelada (YYYY-MM-DD). Sin eso el driver la
-        // convierte en un Date y llega con hora y zona, que es como el
+        // `::text` devuelve las fechas peladas (YYYY-MM-DD). Sin eso el driver
+        // las convierte en Date, llegan con hora y zona, y así fue como el
         // semáforo terminó diciendo "verde" a vacunas vencidas.
-        `SELECT DISTINCT ON (horse_id) horse_id, name, next_due::text AS next_due
+        `SELECT horse_id, name, date::text AS date, next_due::text AS next_due
            FROM medical_records
           WHERE horse_id = ANY($1::uuid[])
             AND next_due IS NOT NULL
-          ORDER BY horse_id, next_due ASC`,
-        [horses.map((h) => h.id)],
+            -- Mismos tipos que la libreta. Sin esto entraba cualquier registro
+            -- con vencimiento (un control de tratamiento, un análisis) y la
+            -- tarjeta contradecía a la libreta.
+            AND type = ANY($2::text[])
+          ORDER BY horse_id, date DESC`,
+        [horses.map((h) => h.id), TIPOS_LIBRETA],
       );
 
-    const porCaballo = new Map(rows.map((r) => [r.horse_id, r]));
+    const porCaballo = new Map<string, typeof filas>();
+    for (const f of filas) {
+      const lista = porCaballo.get(f.horse_id);
+      if (lista) lista.push(f); else porCaballo.set(f.horse_id, [f]);
+    }
+
+    const PEOR: Record<string, number> = { rojo: 0, amarillo: 1, verde: 2 };
+
     for (const horse of horses) {
-      const fila = porCaballo.get(horse.id);
-      horse.health = fila
-        ? {
-            status: healthStatusFromNextDue(fila.next_due),
-            name: fila.name,
-            next_due: fila.next_due,
-          }
-        : null;
+      const suyos = porCaballo.get(horse.id);
+      if (!suyos?.length) { horse.health = null; continue; }
+
+      // Por enfermedad, el registro más reciente (ya vienen por fecha DESC).
+      const candidatos = SANITARY_DISEASES
+        .map((enf) => {
+          const ultimo = suyos.find((f) => enf.match.test(f.name));
+          return ultimo ? { nombre: enf.name, next_due: ultimo.next_due } : null;
+        })
+        .filter((x): x is { nombre: string; next_due: string } => x !== null)
+        .map((x) => ({ ...x, status: healthStatusFromNextDue(x.next_due) }));
+
+      if (!candidatos.length) { horse.health = null; continue; }
+
+      // Gana la peor; entre dos iguales, la que vence antes.
+      candidatos.sort((a, b) =>
+        PEOR[a.status] - PEOR[b.status] || a.next_due.localeCompare(b.next_due));
+      const peor = candidatos[0];
+      horse.health = { status: peor.status, name: peor.nombre, next_due: peor.next_due };
     }
     return horses;
   }

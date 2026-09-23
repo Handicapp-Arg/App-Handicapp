@@ -24,17 +24,29 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 /**
- * Texto del "cuándo" del recordatorio. Antes el aviso siempre decía "mañana"
- * porque la ventana era fija en 24 h; con la anticipación configurable hay que
- * decir el día real. Se compara por fecha local, no por diferencia de horas:
- * un turno a las 9 avisado a las 20 del día anterior es "mañana", no "en 13 h".
+ * Zona del usuario. El proceso corre en UTC (en el VPS y en Render), así que
+ * sin fijarla el aviso hablaba en hora del servidor: un turno el martes a las
+ * 22:00 se guarda como miércoles 01:00 UTC y la notificación decía "mañana a
+ * las 01:00" cuando en realidad era "hoy a las 22:00". El dueño se perdía el
+ * turno por un día y tres horas.
  */
+const ZONA = 'America/Argentina/Buenos_Aires';
+
+/** El día calendario (YYYY-MM-DD) que esa fecha tiene EN ARGENTINA. */
+function diaEnZona(d: Date): string {
+  // 'en-CA' da ISO (YYYY-MM-DD), que se compara y se resta como texto.
+  return d.toLocaleDateString('en-CA', { timeZone: ZONA });
+}
+
 function cuandoEs(fecha: Date, ahora: Date): string {
-  const soloDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const dias = Math.round((soloDia(fecha) - soloDia(ahora)) / 86400000);
-  if (dias <= 0) return 'hoy';
-  if (dias === 1) return 'mañana';
-  return `el ${fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}`;
+  const diaFecha = diaEnZona(fecha);
+  const diaHoy = diaEnZona(ahora);
+  if (diaFecha <= diaHoy) return 'hoy';
+
+  const manana = new Date(ahora.getTime() + 86400000);
+  if (diaFecha === diaEnZona(manana)) return 'mañana';
+
+  return `el ${fecha.toLocaleDateString('es-AR', { timeZone: ZONA, day: 'numeric', month: 'long' })}`;
 }
 
 @Injectable()
@@ -113,6 +125,16 @@ export class AgendaService {
     });
     if (!appointment) throw new NotFoundException('Turno no encontrado');
     await this.assertAccess(appointment.horse, user);
+
+    // El caballo se devuelve recortado. La entidad completa incluye
+    // `public_token`, que es la llave de `GET /horses/public/:token` — un
+    // endpoint SIN autenticación que expone la ficha entera con su historial
+    // médico. Quien puede ver un turno no tiene por qué llevarse esa llave, y
+    // el token no expira ni se rota.
+    if (appointment.horse) {
+      const { id: hid, name, image_url } = appointment.horse;
+      appointment.horse = { id: hid, name, image_url } as Horse;
+    }
     return appointment;
   }
 
@@ -193,7 +215,19 @@ export class AgendaService {
    * antes" puede salir hasta ~1 h antes de lo pedido (nunca después de la
    * hora del turno, porque el filtro exige `scheduled_at >= now`).
    */
-  @Cron(CronExpression.EVERY_HOUR)
+  /**
+   * Cada 10 minutos, no cada hora. Dos razones, las dos por la anticipación
+   * configurable:
+   *
+   * 1. PRECISIÓN. "Avisame 1 hora antes" con un cron horario podía salir hasta
+   *    59 minutos antes de lo pedido.
+   * 2. TOLERANCIA A FALLOS. El filtro es una ventana, no un umbral: si el turno
+   *    sale de la ventana por arriba sin que el cron lo haya tomado, ya no
+   *    vuelve a entrar y el aviso NO SALE NUNCA. Con ventana de 1 hora y cron
+   *    horario, una sola corrida perdida (un deploy, un reinicio) bastaba para
+   *    perder el aviso. Con 10 minutos hay seis oportunidades por ventana.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async sendReminders(): Promise<void> {
     const now = new Date();
 
@@ -216,7 +250,7 @@ export class AgendaService {
       });
 
       const timeStr = appt.scheduled_at.toLocaleTimeString('es-AR', {
-        hour: '2-digit', minute: '2-digit',
+        timeZone: ZONA, hour: '2-digit', minute: '2-digit',
       });
       const typeLabel = TYPE_LABELS[appt.type] ?? appt.type;
       // Con la anticipación configurable, "mañana" dejó de ser cierto: el aviso
@@ -268,6 +302,18 @@ export class AgendaService {
         [horse.organization_id, user.id],
       );
       if (rows.length > 0) {
+        // Roles operativos (jinete/peón): NO acceden por ser miembros de la org,
+        // solo por estar asignados al caballo (lo de arriba, vía `entry`). Si
+        // llegaron hasta acá, no están asignados.
+        //
+        // Esta guarda existe igual en `HorsesService.assertAccess` y acá
+        // faltaba: un peón de la organización podía leer los turnos de un
+        // caballo al que el propio endpoint de caballos le daba 403, y desde
+        // que existe `PATCH /agenda/:id` también podía EDITARLOS o moverlos a
+        // otro caballo. Los dos controles tienen que decir lo mismo.
+        if (user.role === 'jinete' || user.role === 'peon') {
+          throw new ForbiddenException('No tenés acceso a este caballo');
+        }
         if (['admin', 'staff'].includes(rows[0].role_in_org)) {
           await this.assertOrgNotSuspended(horse.organization_id);
         }

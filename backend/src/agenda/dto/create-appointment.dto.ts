@@ -10,7 +10,10 @@ export class CreateAppointmentDto {
   @IsEnum(AppointmentType)
   type: AppointmentType;
 
+  // La columna es varchar(255): sin el tope, un título largo pasaba la
+  // validación y reventaba en Postgres con un 500 en vez de un 400 claro.
   @IsString()
+  @MaxLength(255)
   title: string;
 
   @IsISO8601()

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { MedicalRecord, MedicalRecordType } from './medical-record.entity';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
@@ -17,12 +17,22 @@ const TYPE_LABELS: Record<string, string> = {
   sanidad: 'Libreta sanitaria',
 };
 
+/**
+ * Tipos de registro que cuentan para la libreta sanitaria.
+ *
+ * `desparasitacion` tiene tipo propio en el enum, así que buscando solo
+ * `sanidad` la fila "Desparasitación" no se podía dar por cumplida nunca: se
+ * cargaba la desparasitación y la libreta seguía en rojo para siempre.
+ */
+export const TIPOS_LIBRETA = [MedicalRecordType.SANIDAD, MedicalRecordType.DEWORMING];
+
 // Enfermedades oficiales de la libreta sanitaria con su vigencia (días).
 export const SANITARY_DISEASES: { key: string; name: string; validityDays: number; match: RegExp }[] = [
   { key: 'aie',              name: 'AIE',             validityDays: 60,  match: /aie|anemia|coggins/i },
   { key: 'encefalomielitis', name: 'Encefalomielitis', validityDays: 365, match: /encefalo/i },
   { key: 'influenza',        name: 'Influenza',        validityDays: 90,  match: /influenza|gripe/i },
-  { key: 'tetanos',          name: 'Tétanos',          validityDays: 365, match: /t[eé]tano|toxoide/i },
+  // `toxoide` a secas clasificaba un "Toxoide botulínico" como antitetánica.
+  { key: 'tetanos',          name: 'Tétanos',          validityDays: 365, match: /t[eé]tano|toxoide\s*tet/i },
   { key: 'desparasitacion',  name: 'Desparasitación',  validityDays: 180, match: /desparasit|antiparasit|ivermectina|vermífug|vermifug/i },
 ];
 
@@ -67,7 +77,7 @@ export class MedicalService {
     await this.assertAccess(horse, user);
 
     const records = await this.recordRepository.find({
-      where: { horse_id: horseId, type: MedicalRecordType.SANIDAD },
+      where: { horse_id: horseId, type: In(TIPOS_LIBRETA) },
       order: { date: 'DESC' },
     });
 
@@ -91,11 +101,22 @@ export class MedicalService {
     await this.assertAccess(horse, user);
 
     // Libreta sanitaria: si no vino next_due, se auto-calcula según la vigencia
-    // oficial de la enfermedad (AIE 60d, Encefalomielitis 365d, Influenza 90d).
+    // oficial de la enfermedad (AIE 60d, Encefalomielitis 365d, Influenza 90d,
+    // Tétanos 365d, Desparasitación 180d). Incluye `desparasitacion`, que tiene
+    // tipo propio: sin esto se guardaba sin vencimiento y la libreta la seguía
+    // mostrando en rojo aunque estuviera hecha.
     let nextDue = dto.next_due ?? null;
-    if (dto.type === MedicalRecordType.SANIDAD && !nextDue) {
-      const disease = SANITARY_DISEASES.find((d) => d.match.test(dto.name ?? ''));
-      if (disease) nextDue = addDays(dto.date, disease.validityDays);
+    if (TIPOS_LIBRETA.includes(dto.type) && !nextDue) {
+      // Una vacuna combinada ("Triple: tétanos, influenza y encefalomielitis")
+      // coincide con varias enfermedades de vigencias distintas. Se toma la MÁS
+      // CORTA, no la primera de la lista: con la primera, la libreta mostraba
+      // ese mismo registro en la fila de Influenza —que se revacuna a los 90
+      // días— con el vencimiento a 365 de la encefalomielitis, o sea verde
+      // durante un año a una vacuna vencida. Ante la duda, se avisa antes.
+      const vigencias = SANITARY_DISEASES
+        .filter((d) => d.match.test(dto.name ?? ''))
+        .map((d) => d.validityDays);
+      if (vigencias.length) nextDue = addDays(dto.date, Math.min(...vigencias));
     }
 
     return this.recordRepository.save(
@@ -254,7 +275,7 @@ export class MedicalService {
 
     // Libreta sanitaria: último registro sanitario de cada enfermedad oficial.
     const records = await this.recordRepository.find({
-      where: { horse_id: horseId, type: MedicalRecordType.SANIDAD },
+      where: { horse_id: horseId, type: In(TIPOS_LIBRETA) },
       order: { date: 'DESC' },
     });
     const diseases = SANITARY_DISEASES.map((disease) => {
